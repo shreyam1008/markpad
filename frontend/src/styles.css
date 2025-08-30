@@ -1,0 +1,46 @@
+/* Minimal custom CSS — Tailwind handles most styling */
+
+/* Toolbar buttons */
+.toolbar-btn {
+  border: none;
+  background: transparent;
+  color: #3d403e;
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.toolbar-btn:hover {
+  background: #e7ece5;
+  color: #1a1c1b;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d8d6ce; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #6b6e68; }
+
+/* Modal kbd */
+#modal-body kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid #d8d6ce;
+  border-radius: 4px;
+  background: #e7ece5;
+  font-size: 11px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+}
+#modal-body p { margin-bottom: 6px; }
+
+/* Markdown body overrides */
+.markdown-body { background: #fffffc !important; }
+.markdown-body pre { border-radius: 8px; }
+.markdown-body code { font-size: 0.88em; }
+.markdown-body table { border-collapse: collapse; width: 100%; }
+.markdown-body th, .markdown-body td { border: 1px solid #d8d6ce; padding: 8px 12px; }
+.markdown-body blockquote { border-left: 3px solid #2f6f61; padding-left: 16px; color: #3d403e; }
+.markdown-body input[type="checkbox"] { margin-right: 6px; }

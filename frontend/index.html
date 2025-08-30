@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markpad</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#fafaf7',
+            sidebar: '#eceae4',
+            editor: '#fffffc',
+            border: '#d8d6ce',
+            'border-soft': '#e8e6df',
+            muted: '#6b6e68',
+            accent: '#2f6f61',
+            'accent-hover': '#267058',
+            'accent-text': '#fffffb',
+            selected: '#dde8df',
+            hover: '#e7ece5',
+            unsaved: '#c57933',
+            star: '#d49e2a',
+            'star-off': '#b8b5ad',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Markdown rendering -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.3.0/github-markdown-light.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body class="h-screen w-screen overflow-hidden bg-[#f4f2ed] text-[#1a1c1b] font-sans text-sm antialiased">
+  <div id="app" class="flex h-full w-full">
+
+    <!-- ── Sidebar (expanded) ─────────────────── -->
+    <aside id="sidebar" class="w-64 min-w-[256px] bg-sidebar border-r border-border flex flex-col">
+      <div class="flex items-center justify-between p-3 gap-2">
+        <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
+        <button id="btn-collapse" class="px-2 py-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Collapse sidebar">&laquo;</button>
+      </div>
+
+      <!-- Favorites -->
+      <div id="favorites-section" class="px-2 hidden">
+        <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Favorites</div>
+        <div id="favorites-list" class="space-y-0.5"></div>
+      </div>
+
+      <!-- Notes -->
+      <div class="flex-1 overflow-y-auto px-2 pb-2">
+        <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Notes</div>
+        <div id="notes-list" class="space-y-0.5"></div>
+      </div>
+    </aside>
+
+    <!-- ── Sidebar (collapsed) ────────────────── -->
+    <aside id="sidebar-collapsed" class="hidden w-12 min-w-[48px] bg-sidebar border-r border-border flex-col items-center py-3 gap-2">
+      <button id="btn-expand" class="p-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Expand sidebar">&raquo;</button>
+      <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors" title="New note">+</button>
+    </aside>
+
+    <!-- ── Main ───────────────────────────────── -->
+    <main id="main" class="flex-1 flex flex-col overflow-hidden bg-surface">
+
+      <!-- Top bar -->
+      <div class="flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
+        <div class="flex items-center gap-2 min-w-0">
+          <span id="note-title" class="font-semibold text-sm truncate max-w-[220px]">Untitled</span>
+          <span id="dirty-indicator" class="hidden text-[11px] font-semibold text-unsaved whitespace-nowrap">not saved</span>
+        </div>
+        <div class="flex gap-1">
+          <button id="tab-markdown" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-accent text-accent-text">Markdown</button>
+          <button id="tab-viewer" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-hover text-muted hover:bg-border">Viewer</button>
+        </div>
+        <div class="flex gap-1.5">
+          <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
+          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
+        </div>
+      </div>
+
+      <!-- Formatting toolbar -->
+      <div id="toolbar" class="flex items-center gap-0.5 px-4 py-1.5 border-b border-border-soft bg-surface flex-wrap">
+        <button data-action="bold" title="Bold (Ctrl+B)" class="toolbar-btn"><b>B</b></button>
+        <button data-action="italic" title="Italic (Ctrl+I)" class="toolbar-btn"><i>I</i></button>
+        <button data-action="strikethrough" title="Strikethrough" class="toolbar-btn"><s>S</s></button>
+        <span class="w-px h-4 bg-border mx-1"></span>
+        <button data-action="h1" title="Heading 1" class="toolbar-btn">H1</button>
+        <button data-action="h2" title="Heading 2" class="toolbar-btn">H2</button>
+        <button data-action="h3" title="Heading 3" class="toolbar-btn">H3</button>
+        <span class="w-px h-4 bg-border mx-1"></span>
+        <button data-action="code" title="Inline code" class="toolbar-btn">&lt;/&gt;</button>
+        <button data-action="codeblock" title="Code block" class="toolbar-btn">```</button>
+        <button data-action="link" title="Link" class="toolbar-btn">Link</button>
+        <button data-action="image" title="Image" class="toolbar-btn">Img</button>
+        <span class="w-px h-4 bg-border mx-1"></span>
+        <button data-action="ul" title="Bullet list" class="toolbar-btn">&bull; List</button>
+        <button data-action="ol" title="Numbered list" class="toolbar-btn">1. List</button>
+        <button data-action="task" title="Task list" class="toolbar-btn">&#9744; Task</button>
+        <button data-action="table" title="Insert table" class="toolbar-btn">Table</button>
+        <button data-action="hr" title="Horizontal rule" class="toolbar-btn">&mdash;</button>
+        <button data-action="quote" title="Blockquote" class="toolbar-btn">&ldquo; Quote</button>
+      </div>
+
+      <!-- Editor -->
+      <div id="editor-container" class="flex-1 overflow-hidden p-3">
+        <textarea id="editor"
+          class="w-full h-full border-none outline-none resize-none bg-editor text-[#1a1c1b] font-mono text-sm leading-7 p-5 rounded-lg"
+          placeholder="Start writing Markdown..."
+          spellcheck="false"
+          style="tab-size:4;"></textarea>
+      </div>
+
+      <!-- Viewer -->
+      <div id="viewer-container" class="hidden flex-1 overflow-y-auto p-3">
+        <div id="viewer" class="markdown-body bg-editor rounded-lg p-6 min-h-full text-[15px] leading-7"></div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
+        <span id="status-text">Ready</span>
+        <span id="status-stats"></span>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Modal overlay ──────────────────────── -->
+  <div id="modal-overlay" class="hidden fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+    <div class="bg-surface border border-border rounded-2xl w-full max-w-md shadow-xl overflow-hidden mx-6">
+      <div class="flex justify-between items-center px-5 pt-4 pb-3 border-b border-border-soft">
+        <h2 id="modal-title" class="text-base font-bold">Help</h2>
+        <button id="modal-close" class="text-muted hover:text-[#1a1c1b] text-xl leading-none px-1">&times;</button>
+      </div>
+      <div id="modal-body" class="px-5 py-4 text-[13px] leading-6 text-[#3d403e] max-h-[50vh] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <script src="src/main.js" type="module"></script>
+</body>
+</html>

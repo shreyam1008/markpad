@@ -1,32 +1,28 @@
 GO ?= /usr/local/go/bin/go
+WAILS ?= $(HOME)/go/bin/wails
 APP := markpad
-MAIN := ./cmd/markpad
 DIST := dist
 
-.PHONY: run build build-linux-local test test-core fmt clean wasm
+.PHONY: run dev build test test-core fmt clean
 
 run:
-	$(GO) run $(MAIN)
+	$(GO) build -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
+
+dev:
+	$(WAILS) dev
 
 build:
 	mkdir -p $(DIST)
-	$(GO) build -trimpath -ldflags="-s -w" -o $(DIST)/$(APP) $(MAIN)
-
-build-linux-local:
-	sh scripts/build-linux-local.sh
+	$(GO) build -trimpath -ldflags="-s -w" -o $(DIST)/$(APP) .
 
 test:
-	$(GO) test ./...
+	$(GO) test ./internal/session ./tests
 
 test-core:
-	$(GO) test ./internal/markdown ./internal/preview ./internal/session ./tests
+	$(GO) test ./internal/session ./tests
 
 fmt:
-	$(GO)fmt -w ./cmd ./internal
-
-wasm:
-	mkdir -p $(DIST)/web
-	gogio -target js -o $(DIST)/web $(MAIN)
+	$(GO)fmt -w . ./internal
 
 clean:
 	rm -rf $(DIST)
