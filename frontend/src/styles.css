@@ -1,22 +1,36 @@
 /* Minimal custom CSS — Tailwind handles most styling */
 
-/* Toolbar buttons */
-.toolbar-btn {
-  border: none;
-  background: transparent;
-  color: #3d403e;
-  padding: 3px 7px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background 0.1s, color 0.1s;
+/* Toolbar icon buttons */
+.tb {
+  border: none; background: transparent; color: #6b6e68; padding: 5px;
+  border-radius: 6px; cursor: pointer; transition: all 0.1s; display: flex;
+  align-items: center; justify-content: center; width: 28px; height: 28px;
+}
+.tb svg { width: 15px; height: 15px; }
+.tb:hover { background: #e7ece5; color: #1a1c1b; }
+.tb.txt { width: auto; padding: 4px 8px; font-size: 12px; font-weight: 700; }
+.tb-sep { width: 1px; height: 16px; background: #e8e6df; margin: 0 2px; flex-shrink: 0; }
+
+/* View mode buttons */
+.view-btn {
+  display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+  border-radius: 6px; border: none; background: transparent; color: #6b6e68;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.12s;
   white-space: nowrap;
 }
-.toolbar-btn:hover {
-  background: #e7ece5;
-  color: #1a1c1b;
+.view-btn:hover { color: #1a1c1b; }
+.view-btn.active { background: #2f6f61; color: #fffffb; }
+
+/* Context menu */
+.ctx-item {
+  display: block; width: 100%; text-align: left; border: none; background: none;
+  padding: 6px 14px; cursor: pointer; font-size: 13px; transition: background 0.08s;
 }
+.ctx-item:hover { background: #e7ece5; }
+
+/* Drag states */
+.note-dragging { opacity: 0.4; }
+.note-dragover { border-top: 2px solid #2f6f61 !important; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 7px; }
@@ -26,12 +40,8 @@
 
 /* Modal kbd */
 #modal-body kbd {
-  display: inline-block;
-  padding: 1px 5px;
-  border: 1px solid #d8d6ce;
-  border-radius: 4px;
-  background: #e7ece5;
-  font-size: 11px;
+  display: inline-block; padding: 1px 5px; border: 1px solid #d8d6ce;
+  border-radius: 4px; background: #e7ece5; font-size: 11px;
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
 #modal-body p { margin-bottom: 6px; }

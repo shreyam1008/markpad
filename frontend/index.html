@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Markpad</title>
 
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -26,6 +25,7 @@
             unsaved: '#c57933',
             star: '#d49e2a',
             'star-off': '#b8b5ad',
+            danger: '#c54b33',
           },
           fontFamily: {
             sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
@@ -36,50 +36,46 @@
     }
   </script>
 
-  <!-- Markdown rendering -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.3.0/github-markdown-light.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
 
-  <!-- Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="src/styles.css" />
 </head>
-<body class="h-screen w-screen overflow-hidden bg-[#f4f2ed] text-[#1a1c1b] font-sans text-sm antialiased">
+<body class="h-screen w-screen overflow-hidden bg-[#f4f2ed] text-[#1a1c1b] font-sans text-sm antialiased select-none">
   <div id="app" class="flex h-full w-full">
 
-    <!-- ── Sidebar (expanded) ─────────────────── -->
+    <!-- Sidebar expanded -->
     <aside id="sidebar" class="w-64 min-w-[256px] bg-sidebar border-r border-border flex flex-col">
       <div class="flex items-center justify-between p-3 gap-2">
         <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
         <button id="btn-collapse" class="px-2 py-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Collapse sidebar">&laquo;</button>
       </div>
 
-      <!-- Favorites -->
       <div id="favorites-section" class="px-2 hidden">
         <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Favorites</div>
         <div id="favorites-list" class="space-y-0.5"></div>
       </div>
 
-      <!-- Notes -->
       <div class="flex-1 overflow-y-auto px-2 pb-2">
         <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Notes</div>
         <div id="notes-list" class="space-y-0.5"></div>
       </div>
     </aside>
 
-    <!-- ── Sidebar (collapsed) ────────────────── -->
+    <!-- Sidebar collapsed -->
     <aside id="sidebar-collapsed" class="hidden w-12 min-w-[48px] bg-sidebar border-r border-border flex-col items-center py-3 gap-2">
       <button id="btn-expand" class="p-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Expand sidebar">&raquo;</button>
       <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors" title="New note">+</button>
     </aside>
 
-    <!-- ── Main ───────────────────────────────── -->
+    <!-- Main -->
     <main id="main" class="flex-1 flex flex-col overflow-hidden bg-surface">
 
       <!-- Top bar -->
@@ -88,9 +84,19 @@
           <span id="note-title" class="font-semibold text-sm truncate max-w-[220px]">Untitled</span>
           <span id="dirty-indicator" class="hidden text-[11px] font-semibold text-unsaved whitespace-nowrap">not saved</span>
         </div>
-        <div class="flex gap-1">
-          <button id="tab-markdown" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-accent text-accent-text">Markdown</button>
-          <button id="tab-viewer" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-hover text-muted hover:bg-border">Viewer</button>
+        <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
+          <button data-mode="markdown" class="view-btn active" title="Editor only">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
+            <span>Editor</span>
+          </button>
+          <button data-mode="split" class="view-btn" title="Split view">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
+            <span>Split</span>
+          </button>
+          <button data-mode="viewer" class="view-btn" title="Preview only">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+            <span>Preview</span>
+          </button>
         </div>
         <div class="flex gap-1.5">
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
@@ -99,40 +105,45 @@
       </div>
 
       <!-- Formatting toolbar -->
-      <div id="toolbar" class="flex items-center gap-0.5 px-4 py-1.5 border-b border-border-soft bg-surface flex-wrap">
-        <button data-action="bold" title="Bold (Ctrl+B)" class="toolbar-btn"><b>B</b></button>
-        <button data-action="italic" title="Italic (Ctrl+I)" class="toolbar-btn"><i>I</i></button>
-        <button data-action="strikethrough" title="Strikethrough" class="toolbar-btn"><s>S</s></button>
-        <span class="w-px h-4 bg-border mx-1"></span>
-        <button data-action="h1" title="Heading 1" class="toolbar-btn">H1</button>
-        <button data-action="h2" title="Heading 2" class="toolbar-btn">H2</button>
-        <button data-action="h3" title="Heading 3" class="toolbar-btn">H3</button>
-        <span class="w-px h-4 bg-border mx-1"></span>
-        <button data-action="code" title="Inline code" class="toolbar-btn">&lt;/&gt;</button>
-        <button data-action="codeblock" title="Code block" class="toolbar-btn">```</button>
-        <button data-action="link" title="Link" class="toolbar-btn">Link</button>
-        <button data-action="image" title="Image" class="toolbar-btn">Img</button>
-        <span class="w-px h-4 bg-border mx-1"></span>
-        <button data-action="ul" title="Bullet list" class="toolbar-btn">&bull; List</button>
-        <button data-action="ol" title="Numbered list" class="toolbar-btn">1. List</button>
-        <button data-action="task" title="Task list" class="toolbar-btn">&#9744; Task</button>
-        <button data-action="table" title="Insert table" class="toolbar-btn">Table</button>
-        <button data-action="hr" title="Horizontal rule" class="toolbar-btn">&mdash;</button>
-        <button data-action="quote" title="Blockquote" class="toolbar-btn">&ldquo; Quote</button>
+      <div id="toolbar" class="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
+        <button data-action="bold" title="Bold (Ctrl+B)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h4.5a3 3 0 011.93 5.3A3.5 3.5 0 019 14H4V2zm2 5h2.5a1 1 0 000-2H6v2zm0 2v3h3a1.5 1.5 0 000-3H6z"/></svg></button>
+        <button data-action="italic" title="Italic (Ctrl+I)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 2h6v2h-2.2l-2.6 8H9v2H3v-2h2.2l2.6-8H6V2z"/></svg></button>
+        <button data-action="strikethrough" title="Strikethrough" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 8h14v1.5H1V8zm4.3-4.8A3.2 3.2 0 018 2c1.6 0 3 .9 3.3 2.3l-1.5.3C9.5 3.6 8.8 3.2 8 3.2c-.7 0-1.4.3-1.5 1 0 .3.1.5.3.7H5a2.5 2.5 0 01.3-1.7zM8 12.8c.8 0 1.5-.4 1.7-1.1l1.5.3C10.8 13.3 9.5 14 8 14a3.5 3.5 0 01-2.8-1.3h1.6c.3.1.7.1 1.2.1z"/></svg></button>
+        <span class="tb-sep"></span>
+        <button data-action="h1" title="Heading 1" class="tb txt">H1</button>
+        <button data-action="h2" title="Heading 2" class="tb txt">H2</button>
+        <button data-action="h3" title="Heading 3" class="tb txt">H3</button>
+        <span class="tb-sep"></span>
+        <button data-action="code" title="Inline code" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.9 3.4L1.3 8l4.6 4.6 1.1-1.1L3.5 8 7 4.5 5.9 3.4zm4.2 0L9 4.5 12.5 8 9 11.5l1.1 1.1L14.7 8l-4.6-4.6z"/></svg></button>
+        <button data-action="codeblock" title="Code block" class="tb txt">```</button>
+        <span class="tb-sep"></span>
+        <button data-action="link" title="Link (Ctrl+K)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.9 11.1a3.1 3.1 0 010-4.4l.7.7a2 2 0 000 3l1.5 1.5a2 2 0 003 0l1.5-1.5a2 2 0 000-3l-.7-.7.7-.7.7.7a3.1 3.1 0 010 4.4l-1.5 1.5a3.1 3.1 0 01-4.4 0L6.9 11.1zM9.1 4.9a3.1 3.1 0 010 4.4l-.7-.7a2 2 0 000-3L6.9 4.1a2 2 0 00-3 0L2.4 5.6a2 2 0 000 3l.7.7-.7.7-.7-.7a3.1 3.1 0 010-4.4l1.5-1.5a3.1 3.1 0 014.4 0l1.5 1.5z"/></svg></button>
+        <button data-action="image" title="Image" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 00-1 1v8a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H2zm0 1h12v5.6L11.3 7 8 10.3 5.7 8 2 11.7V4zm3 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg></button>
+        <span class="tb-sep"></span>
+        <button data-action="ul" title="Bullet list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="2.5" cy="4" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="3" width="10" height="2" rx=".5"/><rect x="5" y="7" width="10" height="2" rx=".5"/><rect x="5" y="11" width="10" height="2" rx=".5"/></svg></button>
+        <button data-action="ol" title="Numbered list" class="tb txt">1.</button>
+        <button data-action="task" title="Task list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <span class="tb-sep"></span>
+        <button data-action="table" title="Table" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2" x2="6" y2="14" stroke="currentColor" stroke-width="1.3"/></svg></button>
+        <button data-action="hr" title="Horizontal rule" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg></button>
+        <button data-action="quote" title="Blockquote" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h3v4H4v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1zm7 0h3v4h-2v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1z"/></svg></button>
       </div>
 
-      <!-- Editor -->
-      <div id="editor-container" class="flex-1 overflow-hidden p-3">
-        <textarea id="editor"
-          class="w-full h-full border-none outline-none resize-none bg-editor text-[#1a1c1b] font-mono text-sm leading-7 p-5 rounded-lg"
-          placeholder="Start writing Markdown..."
-          spellcheck="false"
-          style="tab-size:4;"></textarea>
-      </div>
+      <!-- Content area: editor, split, or viewer -->
+      <div id="content-area" class="flex-1 flex overflow-hidden">
+        <div id="editor-container" class="flex-1 overflow-hidden p-3">
+          <textarea id="editor"
+            class="w-full h-full border-none outline-none resize-none bg-editor text-[#1a1c1b] font-mono text-sm leading-7 p-5 rounded-lg select-text"
+            placeholder="Start writing Markdown..."
+            spellcheck="false"
+            style="tab-size:4;"></textarea>
+        </div>
 
-      <!-- Viewer -->
-      <div id="viewer-container" class="hidden flex-1 overflow-y-auto p-3">
-        <div id="viewer" class="markdown-body bg-editor rounded-lg p-6 min-h-full text-[15px] leading-7"></div>
+        <div id="resize-divider" class="hidden w-1 cursor-col-resize bg-border hover:bg-accent transition-colors flex-shrink-0" title="Drag to resize"></div>
+
+        <div id="viewer-container" class="hidden flex-1 overflow-y-auto p-3">
+          <div id="viewer" class="markdown-body bg-editor rounded-lg p-6 min-h-full text-[15px] leading-7 select-text"></div>
+        </div>
       </div>
 
       <!-- Status bar -->
@@ -143,7 +154,13 @@
     </main>
   </div>
 
-  <!-- ── Modal overlay ──────────────────────── -->
+  <!-- Context menu -->
+  <div id="ctx-menu" class="hidden fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[160px] text-[13px]">
+    <button data-ctx="star" class="ctx-item">Star</button>
+    <button data-ctx="delete" class="ctx-item text-danger">Delete</button>
+  </div>
+
+  <!-- Modal -->
   <div id="modal-overlay" class="hidden fixed inset-0 bg-black/20 flex items-center justify-center z-50">
     <div class="bg-surface border border-border rounded-2xl w-full max-w-md shadow-xl overflow-hidden mx-6">
       <div class="flex justify-between items-center px-5 pt-4 pb-3 border-b border-border-soft">

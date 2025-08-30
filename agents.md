@@ -4,21 +4,22 @@ This file is the working contract for AI agents contributing to Markpad.
 
 ## Product intent
 
-Markpad is a small native Markdown notepad/viewer built with **Wails v2** (Go backend + web frontend using the OS native webview). It should feel as immediate as a traditional Notepad or Mousepad-style desktop app, while adding a polished Markdown viewer, session restore, a formatting toolbar, and a modern but quiet interface.
+Markpad is a small native Markdown notepad/viewer built with **Wails v2** (Go backend + web frontend using the OS native webview). It should feel as immediate as a traditional Notepad or Mousepad-style desktop app, while adding a polished split-view editor+preview, session restore, a formatting toolbar with SVG icons, drag-and-drop note reorder, and a modern but quiet interface.
 
 The core promise is:
 
 - Native desktop app powered by Go + system webview (NOT Electron).
-- Small binary (target <15 MB with embedded frontend assets).
+- Small binary (~8 MB production with embedded frontend assets).
 - Low idle memory and stable behavior with large text files.
-- Plain files stay plain: `.md`, `.markdown`, `.txt`, logs, and other text-like files.
+- Open any text-like file: `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, code, config, logs, and more.
+- Split view: Editor, Split (side-by-side), and Preview modes with resizable divider.
 - Unsaved work survives app close through local drafts.
 - Native OS file dialogs for Open, Save, Save As.
-- Full keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+O, Ctrl+Shift+V, etc.).
+- Full keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+O, Ctrl+Shift+E, Ctrl+Del, etc.).
 - Beautiful GitHub-style Markdown rendering via `marked.js` + `highlight.js`.
-- Markdown formatting toolbar (bold, italic, heading, code, table, list, link, image).
-- Star/favorite notes in sidebar.
-- Web/WASM edition is planned later using the same frontend code.
+- Formatting toolbar with SVG icon buttons (bold, italic, headings, code, table, list, link, image, blockquote).
+- Star/favorite notes in sidebar. Drag-and-drop to reorder notes.
+- Right-click context menu to star/delete notes.
 
 ## Tech stack
 
@@ -26,32 +27,43 @@ The core promise is:
 |-------|-----------|-----|
 | Backend | Go + Wails v2 | Lightweight native app, OS webview, native dialogs |
 | Frontend | Vanilla HTML/CSS/JS (no framework) | Minimal bundle, fast load, easy to maintain |
-| Styling | Tailwind CSS (CDN or built) | Utility-first, clean, responsive |
+| Styling | Tailwind CSS (CDN) | Utility-first, clean, responsive |
 | Markdown | marked.js + highlight.js + DOMPurify | GitHub-style rendering, syntax highlighting, XSS safe |
-| Icons | Lucide (SVG) or Bootstrap Icons (CDN) | Lightweight icon set |
-| Session | Go JSON persistence in app config dir | Same as before |
+| Icons | Inline SVG in toolbar buttons | No external icon library needed |
+| Session | Go JSON persistence in app config dir | Reliable, simple |
 
 ## Architecture
 
 ```
 markpad/
-  main.go                  # Wails app entry, window config, menus
-  app.go                   # Go backend: session, file ops, exposed to frontend
+  main.go                  # Wails app entry, window config, native menus
+  app.go                   # Go backend: session, file ops, ReorderNotes, DeleteNote
   internal/
-    session/               # Session persistence, drafts, bookmarks (KEEP existing)
+    session/               # Session persistence, drafts, bookmarks (pure Go, testable)
   frontend/
-    index.html             # Single-page app shell
+    index.html             # Single-page app shell (Tailwind + CDN libs)
     src/
-      main.js              # App initialization, Wails bindings
-      editor.js            # CodeMirror or textarea editor logic
-      preview.js           # marked.js rendering pipeline
-      toolbar.js           # Formatting toolbar actions
-      sidebar.js           # Sidebar: favorites + session notes
-      shortcuts.js         # Keyboard shortcut handler
-      styles.css           # Tailwind + custom styles
-  docs/                    # GitHub Pages website (separate from app)
-  packaging/               # Linux .desktop, metainfo, icons
+      main.js              # All frontend logic: editor, preview, split view, toolbar, sidebar, drag-drop, shortcuts, modals
+      styles.css           # Minimal custom CSS (toolbar, view buttons, context menu, drag states, scrollbar, markdown overrides)
+  docs/                    # GitHub Pages website (Tailwind CSS, SEO, animations)
+  packaging/               # Linux .desktop, metainfo, SVG app icon
+  tests/                   # Integration tests (session)
+  .github/workflows/       # CI: release.yml (Linux deb/AppImage, Windows exe, macOS dmg)
 ```
+
+## Go backend methods (exposed to frontend)
+
+- `GetSession()` — returns all notes, favorites, active ID
+- `GetActiveContent()` / `GetNoteContent(id)` — read draft content
+- `SetActive(id)` — switch active note
+- `NewNote()` — create empty untitled note
+- `UpdateContent(id, content)` — save draft, update title
+- `SaveActive(content)` / `SaveAsDialog(content)` — save to disk
+- `OpenFileDialog()` — open file via native OS dialog
+- `ToggleStar(id)` — toggle bookmark/favorite
+- `DeleteNote(id)` — remove note from session
+- `ReorderNotes(ids)` — reorder notes by ID array (for drag-drop)
+- `OpenPathFromBookmark(path)` — open a favorited file
 
 ## Tech constraints
 
@@ -61,9 +73,10 @@ markpad/
 - Keep core file/session logic in Go, testable outside the GUI.
 - All file I/O goes through Go backend methods exposed via Wails bindings.
 - Frontend calls Go methods via `window.go.main.App.MethodName()`.
-- Use native OS file dialogs from Wails runtime (`runtime.OpenFileDialog`, `runtime.SaveFileDialog`).
+- Use native OS file dialogs from Wails runtime.
 - Prefer standard-library Go for file IO, persistence, and tests.
 - Do not add Electron, Tauri, or heavy JS frameworks.
+- Build tags: `production,webkit2_41` for Linux production builds.
 
 ## UX principles
 
@@ -72,15 +85,17 @@ markpad/
 - Title should be "Untitled" for new notes until they are saved to a file.
 - Sidebar on the left: Favorites (starred) section above Notes (session) section.
 - Star icon beside each note in sidebar to toggle favorite.
-- Editor area with formatting toolbar above the textarea/editor.
-- Markdown and Viewer tabs to switch modes (shortcut: Ctrl+Shift+V).
+- Drag-and-drop to reorder notes. Right-click context menu to star/delete.
+- Three view modes: Editor, Split (side-by-side with resizable divider), Preview.
+- Ctrl+Shift+E cycles through view modes.
+- Formatting toolbar with SVG icon buttons above the editor.
 - "not saved" indicator visible when content is dirty.
 - Save button with accent color. Cancel button to revert.
-- Native OS file picker for Open/Save/Save As (not a text box).
+- Native OS file picker for Open/Save/Save As.
 - Help and About open as lightweight centered modals.
-- All standard notepad shortcuts: Ctrl+S (save), Ctrl+Shift+S (save as), Ctrl+N (new), Ctrl+O (open), Ctrl+Z/Y (undo/redo), Ctrl+B (bold), Ctrl+I (italic).
+- All standard notepad shortcuts: Ctrl+S, Ctrl+Shift+S, Ctrl+N, Ctrl+O, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+Del.
 - Closing and reopening restores documents, drafts, favorites, and active note.
-- Viewer mode renders beautiful GitHub-style Markdown with syntax-highlighted code, tables, task lists.
+- Preview renders GitHub-style Markdown with syntax-highlighted code, tables, task lists.
 
 ## Persistence rules
 
@@ -93,7 +108,7 @@ markpad/
 
 ## Performance rules
 
-- Debounce Markdown rendering (100-200ms after last keystroke).
+- Debounce Markdown rendering (120ms after last keystroke).
 - Do not re-render preview if content hasn't changed.
 - Keep CSS animations minimal and respect `prefers-reduced-motion`.
 - Frontend JS should be under 50KB minified (excluding CDN libs).
@@ -112,7 +127,6 @@ markpad/
 
 - Keep `README.md` useful for users and contributors.
 - Keep `TODO.md` as the forward-looking roadmap.
-- Docs under `docs/` for architecture, packaging, launch.
-- GitHub Pages website under `docs/` with SEO, downloads, branding.
+- GitHub Pages website under `docs/` with Tailwind CSS, SEO, animations.
 - MIT license.
-- CI/CD via GitHub Actions for cross-platform builds.
+- CI/CD via GitHub Actions for cross-platform builds (ubuntu-24.04, windows-latest, macos-latest).
