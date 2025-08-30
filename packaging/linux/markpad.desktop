@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Markpad
+Comment=Small native Markdown notepad
+Exec=markpad %F
+Icon=markpad
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/markdown;text/x-markdown;

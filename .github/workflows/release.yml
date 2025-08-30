@@ -1,0 +1,108 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev wget file desktop-file-utils
+      - name: Build binary
+        run: go build -trimpath -ldflags="-s -w" -o dist/markpad ./cmd/markpad
+      - name: Build deb
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p build/deb/DEBIAN build/deb/usr/bin build/deb/usr/share/applications build/deb/usr/share/icons/hicolor/scalable/apps build/deb/usr/share/metainfo
+          cp dist/markpad build/deb/usr/bin/markpad
+          cp packaging/linux/markpad.desktop build/deb/usr/share/applications/markpad.desktop
+          cp packaging/linux/markpad.svg build/deb/usr/share/icons/hicolor/scalable/apps/markpad.svg
+          cp packaging/linux/io.github.markpad.metainfo.xml build/deb/usr/share/metainfo/io.github.markpad.metainfo.xml
+          cat > build/deb/DEBIAN/control <<EOF
+          Package: markpad
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Markpad
+          Description: Small native Markdown notepad
+          EOF
+          dpkg-deb --build build/deb "dist/markpad_${VERSION}_amd64.deb"
+      - name: Build AppImage
+        run: |
+          mkdir -p build/Markpad.AppDir/usr/bin build/Markpad.AppDir/usr/share/applications build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps build/Markpad.AppDir/usr/share/metainfo
+          cp dist/markpad build/Markpad.AppDir/usr/bin/markpad
+          cp packaging/linux/markpad.desktop build/Markpad.AppDir/usr/share/applications/markpad.desktop
+          cp packaging/linux/markpad.svg build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps/markpad.svg
+          cp packaging/linux/markpad.svg build/Markpad.AppDir/markpad.svg
+          cp packaging/linux/io.github.markpad.metainfo.xml build/Markpad.AppDir/usr/share/metainfo/io.github.markpad.metainfo.xml
+          ln -s usr/share/applications/markpad.desktop build/Markpad.AppDir/markpad.desktop
+          wget -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool build/Markpad.AppDir dist/Markpad.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            dist/markpad
+            dist/*.deb
+            dist/*.AppImage
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+      - name: Build exe
+        run: go build -trimpath -ldflags="-s -w -H windowsgui" -o dist/markpad.exe ./cmd/markpad
+      - name: Zip exe
+        shell: pwsh
+        run: Compress-Archive -Path dist/markpad.exe -DestinationPath dist/markpad-windows-amd64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+      - name: Build app bundle
+        run: |
+          mkdir -p "dist/Markpad.app/Contents/MacOS" "dist/Markpad.app/Contents/Resources"
+          cp packaging/macos/Info.plist "dist/Markpad.app/Contents/Info.plist"
+          go build -trimpath -ldflags="-s -w" -o "dist/Markpad.app/Contents/MacOS/markpad" ./cmd/markpad
+      - name: Build dmg
+        run: hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: |
+            dist/Markpad.app
+            dist/Markpad.dmg
+
+  publish:
+    runs-on: ubuntu-22.04
+    needs: [linux, windows, macos]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
