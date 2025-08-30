@@ -5,9 +5,11 @@ Markpad is a small native Markdown notepad written in Go. It keeps the Notepad f
 The current MVP uses Gio for a native Go UI and goldmark for CommonMark/GFM-compatible Markdown rendering support. The app has:
 
 - A left sidebar of notes opened over time.
+- Bookmarks for pinned file paths.
 - Autosaved unsaved drafts stored in the user config directory.
 - Per-note Markdown and Viewer tabs.
-- Command-line opening for `.md` files.
+- Menus, Help, Tour, About, and Settings pages.
+- Command-line opening for Markdown and plain text files.
 - A deliberately light dependency shape: no Electron, no bundled browser runtime.
 
 ## Run
@@ -31,6 +33,17 @@ sudo apt-get install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev lib
 make build
 ./dist/markpad README.md
 ```
+
+On a Linux machine without the Gio header packages installed system-wide, this repo also has a non-root local build path:
+
+```sh
+make build-linux-local
+./dist/markpad README.md
+```
+
+That command downloads the required `-dev` packages into `/tmp/markpad-apt`, extracts headers into `/tmp/markpad-sysroot`, and produces `dist/markpad`.
+
+The current Linux binary built locally at about 7.5 MB stripped.
 
 ## Storage
 

@@ -9,9 +9,13 @@
 - [x] Viewer tab.
 - [x] Autosaved unsaved drafts.
 - [x] Session restore.
-- [x] Open `.md` files from command-line args.
+- [x] Open `.md`, `.txt`, and other text files from command-line args.
+- [x] Bookmarked file locations in the sidebar.
+- [x] App menus.
+- [x] Help, Tour, About, and Settings pages.
+- [x] Reduced motion and compact sidebar settings.
 - [ ] Native open/save-as dialogs.
-- [ ] File association for `.md`.
+- [ ] File association for `.md`, `.markdown`, and `.txt`.
 - [ ] Recent folder/workspace support.
 - [ ] External file watcher and reload prompt.
 - [ ] Better Markdown preview: tables, task lists, links, images, code highlighting.
@@ -32,6 +36,7 @@
 - [x] GitHub Actions release workflow draft.
 - [x] Linux `.deb` packaging draft.
 - [x] Linux AppImage packaging draft.
+- [x] Local Linux binary build script without root install.
 - [x] Windows `.exe` artifact.
 - [x] macOS `.dmg` artifact.
 - [ ] Real PNG/icon pipeline for Gio/gogio.
