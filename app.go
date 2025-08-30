@@ -151,6 +151,7 @@ func (a *App) SaveActive(content string) (SessionState, error) {
 	if err := a.store.SaveToDisk(doc, content); err != nil {
 		return a.GetSession(), err
 	}
+	_ = a.store.SaveSnapshot(doc.ID, content, "save")
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -182,6 +183,7 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 	if err := a.store.SaveAs(doc, path, content); err != nil {
 		return a.GetSession(), err
 	}
+	_ = a.store.SaveSnapshot(doc.ID, content, "save-as")
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -218,8 +220,50 @@ func (a *App) openPath(path string) (SessionState, error) {
 	}
 	doc := a.sess.AddFile(path, string(data))
 	_ = a.store.WriteDraft(doc, string(data))
+	_ = a.store.SaveSnapshot(doc.ID, string(data), "open")
 	_ = a.store.Save(a.sess)
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	return a.GetSession(), nil
+}
+
+func (a *App) GetHistory(id string) []session.HistoryEntry {
+	doc := a.sess.Find(id)
+	if doc == nil {
+		return []session.HistoryEntry{}
+	}
+	entries, err := a.store.ListHistory(doc.ID)
+	if err != nil {
+		return []session.HistoryEntry{}
+	}
+	return entries
+}
+
+func (a *App) GetHistoryContent(id string, timestamp string) string {
+	doc := a.sess.Find(id)
+	if doc == nil {
+		return ""
+	}
+	content, err := a.store.GetSnapshotContent(doc.ID, timestamp)
+	if err != nil {
+		return ""
+	}
+	return content
+}
+
+func (a *App) RestoreVersion(id string, timestamp string) (SessionState, error) {
+	doc := a.sess.Find(id)
+	if doc == nil {
+		return a.GetSession(), fmt.Errorf("note not found")
+	}
+	content, err := a.store.GetSnapshotContent(doc.ID, timestamp)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	doc.Dirty = true
+	doc.UpdatedAt = time.Now()
+	_ = a.store.WriteDraft(doc, content)
+	_ = a.store.SaveSnapshot(doc.ID, content, "restore")
+	_ = a.store.Save(a.sess)
 	return a.GetSession(), nil
 }
 
@@ -262,6 +306,13 @@ func (a *App) DeleteNote(id string) SessionState {
 	}
 	_ = a.store.Save(a.sess)
 	return a.GetSession()
+}
+
+func (a *App) OpenURL(url string) {
+	if strings.TrimSpace(url) == "" {
+		return
+	}
+	runtime.BrowserOpenURL(a.ctx, url)
 }
 
 func (a *App) ReorderNotes(ids []string) SessionState {

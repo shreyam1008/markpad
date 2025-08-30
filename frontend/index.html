@@ -101,6 +101,9 @@
         <div class="flex gap-1.5">
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
           <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
+          <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+          </button>
         </div>
       </div>
 
@@ -137,6 +140,7 @@
         <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1">&times;</button>
       </div>
 
+      <div id="content-wrapper" class="flex-1 flex overflow-hidden">
       <!-- Content area: editor, split, or viewer -->
       <div id="content-area" class="flex-1 flex overflow-hidden">
         <div id="editor-container" class="flex-1 overflow-hidden p-3">
@@ -154,12 +158,27 @@
         </div>
       </div>
 
+      </div><!-- end content-wrapper -->
+
       <!-- Status bar -->
       <div class="flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
         <span id="status-text">Ready</span>
         <span id="status-stats"></span>
       </div>
     </main>
+
+    <!-- History panel (right sidebar) -->
+    <aside id="history-panel" class="hidden w-72 min-w-[288px] bg-sidebar border-l border-border flex-col">
+      <div class="flex items-center justify-between p-3 border-b border-border">
+        <div class="flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+          <span class="text-xs font-bold uppercase tracking-widest text-muted">History</span>
+        </div>
+        <button id="history-close" class="text-muted hover:text-[#1a1c1b] text-lg leading-none px-1">&times;</button>
+      </div>
+      <div id="history-list" class="flex-1 overflow-y-auto px-2 py-2 space-y-1"></div>
+      <div id="history-empty" class="hidden flex-1 flex items-center justify-center text-muted text-xs p-4 text-center">No history yet.<br/>Versions are saved when you save the file.</div>
+    </aside>
   </div>
 
   <!-- Context menu -->
