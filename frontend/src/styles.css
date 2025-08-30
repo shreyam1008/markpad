@@ -46,6 +46,14 @@
 }
 #modal-body p { margin-bottom: 6px; }
 
+/* Save flash animation */
+@keyframes saveFlash {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(47, 111, 97, 0.5); }
+  30% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(47, 111, 97, 0.2); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(47, 111, 97, 0); }
+}
+.save-flash { animation: saveFlash 0.8s ease-out; }
+
 /* Markdown body overrides */
 .markdown-body { background: #fffffc !important; }
 .markdown-body pre { border-radius: 8px; }
