@@ -38,7 +38,6 @@ type pageMode int
 const (
 	pageEditor pageMode = iota
 	pageHelp
-	pageTour
 	pageAbout
 	pageSettings
 )
@@ -62,17 +61,21 @@ type App struct {
 	mode viewMode
 	page pageMode
 
-	openMenu menuKind
+	openMenu   menuKind
+	saveAsOpen bool
 
 	sidebar  layout.List
 	preview  layout.List
 	pageList layout.List
 
-	newButton      widget.Clickable
-	saveButton     widget.Clickable
-	bookmarkButton widget.Clickable
-	sourceTab      widget.Clickable
-	previewTab     widget.Clickable
+	newButton        widget.Clickable
+	saveButton       widget.Clickable
+	saveAsButton     widget.Clickable
+	cancelButton     widget.Clickable
+	collapseButton   widget.Clickable
+	sourceTab        widget.Clickable
+	previewTab       widget.Clickable
+	modalCloseButton widget.Clickable
 
 	fileMenuButton widget.Clickable
 	viewMenuButton widget.Clickable
@@ -80,16 +83,21 @@ type App struct {
 
 	fileNewItem      widget.Clickable
 	fileSaveItem     widget.Clickable
+	fileSaveAsItem   widget.Clickable
 	fileBookmarkItem widget.Clickable
 	viewSourceItem   widget.Clickable
 	viewPreviewItem  widget.Clickable
 	viewSettingsItem widget.Clickable
+	viewSidebarItem  widget.Clickable
 	helpHelpItem     widget.Clickable
-	helpTourItem     widget.Clickable
 	helpAboutItem    widget.Clickable
 
 	reducedMotionToggle widget.Clickable
 	compactModeToggle   widget.Clickable
+
+	saveAsEditor widget.Editor
+	saveAsSubmit widget.Clickable
+	saveAsCancel widget.Clickable
 
 	status   string
 	statusAt time.Time
@@ -100,9 +108,11 @@ type noteState struct {
 
 	editor widget.Editor
 	row    widget.Clickable
+	star   widget.Clickable
 
 	pendingDraft bool
 	lastFlush    time.Time
+	committed    string
 	lastPreview  string
 	blocks       []preview.Block
 }
@@ -160,12 +170,13 @@ func NewApp(store *session.Store, sess *session.Session) *App {
 		sess:      sess,
 		notes:     make(map[string]*noteState),
 		bookmarks: make(map[string]*bookmarkState),
-		mode:      viewSource,
+		mode:      viewPreview,
 		page:      pageEditor,
 		sidebar:   layout.List{Axis: layout.Vertical},
 		preview:   layout.List{Axis: layout.Vertical},
 		pageList:  layout.List{Axis: layout.Vertical},
 	}
+	ui.saveAsEditor.SingleLine = true
 	for _, doc := range sess.Documents {
 		ui.ensureNote(doc)
 	}
@@ -192,9 +203,11 @@ func (a *App) OpenPath(path string) {
 	doc := a.sess.AddFile(path, string(data))
 	note := a.ensureNote(doc)
 	note.editor.SetText(string(data))
+	note.committed = string(data)
 	note.pendingDraft = true
 	a.flushNote(note)
 	a.page = pageEditor
+	a.mode = viewPreview
 	a.setStatus("Opened " + filepath.Base(path))
 }
 
@@ -206,22 +219,36 @@ func (a *App) Layout(gtx layout.Context, th *material.Theme) layout.Dimensions {
 	}
 	a.flushPending(false)
 
-	return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+	return layout.Stack{Alignment: layout.NW}.Layout(gtx,
 		layout.Expanded(func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					widthDp := unit.Dp(276)
-					if a.sess.Preferences.CompactMode {
-						widthDp = unit.Dp(238)
-					}
-					width := gtx.Dp(widthDp)
-					gtx.Constraints.Min.X = width
-					gtx.Constraints.Max.X = width
-					return a.layoutSidebar(gtx, th)
+					return a.layoutMenuBar(gtx, th)
 				}),
 				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 					gtx.Constraints.Min = gtx.Constraints.Max
-					return a.layoutMain(gtx, th)
+					return layout.Flex{Axis: layout.Horizontal}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							if a.sess.Preferences.SidebarCollapsed {
+								width := gtx.Dp(unit.Dp(52))
+								gtx.Constraints.Min.X = width
+								gtx.Constraints.Max.X = width
+								return a.layoutCollapsedSidebar(gtx, th)
+							}
+							widthDp := unit.Dp(276)
+							if a.sess.Preferences.CompactMode {
+								widthDp = unit.Dp(238)
+							}
+							width := gtx.Dp(widthDp)
+							gtx.Constraints.Min.X = width
+							gtx.Constraints.Max.X = width
+							return a.layoutSidebar(gtx, th)
+						}),
+						layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+							gtx.Constraints.Min = gtx.Constraints.Max
+							return a.layoutMain(gtx, th)
+						}),
+					)
 				}),
 			)
 		}),
@@ -229,11 +256,20 @@ func (a *App) Layout(gtx layout.Context, th *material.Theme) layout.Dimensions {
 			if a.openMenu == menuNone {
 				return layout.Dimensions{}
 			}
-			return layout.Inset{Top: unit.Dp(62), Right: unit.Dp(18)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return layout.Inset{Top: unit.Dp(42), Left: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 				gtx.Constraints.Min.X = gtx.Dp(unit.Dp(248))
 				gtx.Constraints.Max.X = gtx.Dp(unit.Dp(248))
 				return a.layoutOpenMenu(gtx, th)
 			})
+		}),
+		layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+			if a.saveAsOpen {
+				return a.layoutSaveAsModal(gtx, th)
+			}
+			if a.page != pageEditor {
+				return a.layoutModalPage(gtx, th)
+			}
+			return layout.Dimensions{}
 		}),
 	)
 }
@@ -264,6 +300,7 @@ func (a *App) ensureNote(doc *session.Document) *noteState {
 	note := &noteState{
 		doc:       doc,
 		lastFlush: time.Now(),
+		committed: content,
 	}
 	note.editor.WrapPolicy = text.WrapHeuristically
 	note.editor.SetText(content)
@@ -291,8 +328,18 @@ func (a *App) handleToolbarActions(gtx layout.Context) {
 	if a.saveButton.Clicked(gtx) {
 		a.saveActive()
 	}
-	if a.bookmarkButton.Clicked(gtx) {
-		a.toggleActiveBookmark()
+	if a.saveAsButton.Clicked(gtx) {
+		a.openSaveAs()
+	}
+	if a.cancelButton.Clicked(gtx) {
+		a.cancelActiveChanges()
+	}
+	if a.collapseButton.Clicked(gtx) {
+		a.toggleSidebar()
+	}
+	if a.modalCloseButton.Clicked(gtx) {
+		a.page = pageEditor
+		a.saveAsOpen = false
 	}
 	if a.sourceTab.Clicked(gtx) {
 		a.showEditor(viewSource)
@@ -317,6 +364,10 @@ func (a *App) handleToolbarActions(gtx layout.Context) {
 		a.openMenu = menuNone
 		a.saveActive()
 	}
+	if a.fileSaveAsItem.Clicked(gtx) {
+		a.openMenu = menuNone
+		a.openSaveAs()
+	}
 	if a.fileBookmarkItem.Clicked(gtx) {
 		a.openMenu = menuNone
 		a.toggleActiveBookmark()
@@ -334,15 +385,14 @@ func (a *App) handleToolbarActions(gtx layout.Context) {
 		a.page = pageSettings
 		a.setStatus("Settings")
 	}
+	if a.viewSidebarItem.Clicked(gtx) {
+		a.openMenu = menuNone
+		a.toggleSidebar()
+	}
 	if a.helpHelpItem.Clicked(gtx) {
 		a.openMenu = menuNone
 		a.page = pageHelp
 		a.setStatus("Help")
-	}
-	if a.helpTourItem.Clicked(gtx) {
-		a.openMenu = menuNone
-		a.page = pageTour
-		a.setStatus("Tour")
 	}
 	if a.helpAboutItem.Clicked(gtx) {
 		a.openMenu = menuNone
@@ -359,6 +409,13 @@ func (a *App) handleToolbarActions(gtx layout.Context) {
 		_ = a.store.Save(a.sess)
 		a.setStatus("Compact mode updated")
 	}
+	if a.saveAsCancel.Clicked(gtx) {
+		a.saveAsOpen = false
+		a.setStatus("Save as cancelled")
+	}
+	if a.saveAsSubmit.Clicked(gtx) {
+		a.submitSaveAs()
+	}
 }
 
 func (a *App) newNote() {
@@ -368,6 +425,7 @@ func (a *App) newNote() {
 	note.pendingDraft = true
 	a.flushNote(note)
 	a.page = pageEditor
+	a.mode = viewSource
 	a.setStatus("New draft created")
 }
 
@@ -382,6 +440,16 @@ func (a *App) toggleMenu(kind menuKind) {
 		return
 	}
 	a.openMenu = kind
+}
+
+func (a *App) toggleSidebar() {
+	a.sess.Preferences.SidebarCollapsed = !a.sess.Preferences.SidebarCollapsed
+	_ = a.store.Save(a.sess)
+	if a.sess.Preferences.SidebarCollapsed {
+		a.setStatus("Sidebar collapsed")
+		return
+	}
+	a.setStatus("Sidebar expanded")
 }
 
 func (a *App) handleEditorEvents(gtx layout.Context, note *noteState) {
@@ -431,8 +499,7 @@ func (a *App) saveActive() {
 		return
 	}
 	if note.doc.Path == "" {
-		a.flushNote(note)
-		a.setStatus("Draft autosaved. Save-as UI is in TODO.md; open with a file path to save to disk.")
+		a.openSaveAs()
 		return
 	}
 	if err := a.store.SaveToDisk(note.doc, note.editor.Text()); err != nil {
@@ -440,8 +507,55 @@ func (a *App) saveActive() {
 		return
 	}
 	note.pendingDraft = false
+	note.committed = note.editor.Text()
 	_ = a.store.Save(a.sess)
 	a.setStatus("Saved " + filepath.Base(note.doc.Path))
+}
+
+func (a *App) openSaveAs() {
+	note := a.activeNote()
+	if note == nil {
+		return
+	}
+	path := note.doc.Path
+	if path == "" {
+		path = defaultSaveAsPath(note.doc.Title)
+	}
+	a.saveAsEditor.SetText(path)
+	a.saveAsOpen = true
+	a.openMenu = menuNone
+	a.setStatus("Choose where to save this note")
+}
+
+func (a *App) submitSaveAs() {
+	note := a.activeNote()
+	if note == nil {
+		a.saveAsOpen = false
+		return
+	}
+	path := strings.TrimSpace(a.saveAsEditor.Text())
+	if err := a.store.SaveAs(note.doc, path, note.editor.Text()); err != nil {
+		a.setStatus("Save as failed: " + err.Error())
+		return
+	}
+	note.pendingDraft = false
+	note.committed = note.editor.Text()
+	a.saveAsOpen = false
+	_ = a.store.Save(a.sess)
+	a.setStatus("Saved as " + filepath.Base(note.doc.Path))
+}
+
+func (a *App) cancelActiveChanges() {
+	note := a.activeNote()
+	if note == nil {
+		return
+	}
+	note.editor.SetText(note.committed)
+	note.doc.Title = session.TitleFromContent(note.committed, note.doc.Path)
+	note.doc.Dirty = note.doc.Path == ""
+	note.pendingDraft = true
+	a.flushNote(note)
+	a.setStatus("Changes reverted")
 }
 
 func (a *App) toggleActiveBookmark() {
@@ -449,17 +563,21 @@ func (a *App) toggleActiveBookmark() {
 	if note == nil {
 		return
 	}
+	a.toggleNoteBookmark(note)
+}
+
+func (a *App) toggleNoteBookmark(note *noteState) {
 	if note.doc.Path == "" {
-		a.setStatus("Drafts are already restored automatically. Open or save to a file path before bookmarking.")
+		a.setStatus("Save this note to a file before starring")
 		return
 	}
 	if a.sess.ToggleBookmark(note.doc.Path, note.editor.Text()) {
 		if bookmark := a.sess.FindBookmark(note.doc.Path); bookmark != nil {
 			a.ensureBookmark(bookmark)
 		}
-		a.setStatus("Bookmarked " + filepath.Base(note.doc.Path))
+		a.setStatus("Starred " + filepath.Base(note.doc.Path))
 	} else {
-		a.setStatus("Bookmark removed")
+		a.setStatus("Unstarred")
 	}
 	_ = a.store.Save(a.sess)
 }
@@ -475,27 +593,21 @@ func (a *App) layoutSidebar(gtx layout.Context, th *material.Theme) layout.Dimen
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-						title := material.H6(th, "Markpad")
-						title.Color = palette.text
-						return title.Layout(gtx)
-					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						label := material.Caption(th, version)
-						label.Color = palette.muted
-						return label.Layout(gtx)
+						btn := material.Button(th, &a.newButton, "+ New")
+						btn.CornerRadius = unit.Dp(8)
+						btn.Inset = layout.Inset{Top: unit.Dp(7), Bottom: unit.Dp(7), Left: unit.Dp(12), Right: unit.Dp(12)}
+						btn.Background = palette.accent
+						btn.Color = palette.accentText
+						return btn.Layout(gtx)
+					}),
+					layout.Flexed(1, layout.Spacer{}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return a.layoutSoftButton(gtx, th, &a.collapseButton, "<<")
 					}),
 				)
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				btn := material.Button(th, &a.newButton, "New note")
-				btn.CornerRadius = unit.Dp(8)
-				btn.Background = palette.accent
-				btn.Color = palette.accentText
-				return btn.Layout(gtx)
-			}),
-			layout.Rigid(layout.Spacer{Height: unit.Dp(16)}.Layout),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 				count := len(a.sess.Documents) + len(a.sess.Bookmarks)
 				if len(a.sess.Bookmarks) > 0 {
@@ -506,7 +618,7 @@ func (a *App) layoutSidebar(gtx layout.Context, th *material.Theme) layout.Dimen
 				return a.sidebar.Layout(gtx, count, func(gtx layout.Context, i int) layout.Dimensions {
 					if len(a.sess.Bookmarks) > 0 {
 						if i == 0 {
-							return a.layoutSectionLabel(gtx, th, "Bookmarks")
+							return a.layoutSectionLabel(gtx, th, "Favorites")
 						}
 						if i <= len(a.sess.Bookmarks) {
 							bookmark := a.sess.Bookmarks[i-1]
@@ -517,12 +629,12 @@ func (a *App) layoutSidebar(gtx layout.Context, th *material.Theme) layout.Dimen
 							return a.layoutBookmarkRow(gtx, th, state)
 						}
 						if i == len(a.sess.Bookmarks)+1 {
-							return a.layoutSectionLabel(gtx, th, "Session")
+							return a.layoutSectionLabel(gtx, th, "Notes")
 						}
 						i -= len(a.sess.Bookmarks) + 2
 					} else {
 						if i == 0 {
-							return a.layoutSectionLabel(gtx, th, "Session")
+							return a.layoutSectionLabel(gtx, th, "Notes")
 						}
 						i--
 					}
@@ -533,8 +645,26 @@ func (a *App) layoutSidebar(gtx layout.Context, th *material.Theme) layout.Dimen
 						a.page = pageEditor
 						_ = a.store.Save(a.sess)
 					}
+					if note.star.Clicked(gtx) {
+						a.toggleNoteBookmark(note)
+					}
 					return a.layoutNoteRow(gtx, th, note)
 				})
+			}),
+		)
+	})
+}
+
+func (a *App) layoutCollapsedSidebar(gtx layout.Context, th *material.Theme) layout.Dimensions {
+	fill(gtx, palette.sidebar)
+	return layout.Inset{Top: unit.Dp(12), Bottom: unit.Dp(12), Left: unit.Dp(8), Right: unit.Dp(8)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return a.layoutSoftButton(gtx, th, &a.collapseButton, ">>")
+			}),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				return a.layoutSoftButton(gtx, th, &a.newButton, "+")
 			}),
 		)
 	})
@@ -549,10 +679,7 @@ func (a *App) layoutSectionLabel(gtx layout.Context, th *material.Theme, value s
 }
 
 func (a *App) layoutNoteRow(gtx layout.Context, th *material.Theme, note *noteState) layout.Dimensions {
-	height := gtx.Dp(unit.Dp(64))
-	if a.sess.Preferences.CompactMode {
-		height = gtx.Dp(unit.Dp(54))
-	}
+	height := gtx.Dp(unit.Dp(54))
 	gtx.Constraints.Min.Y = height
 	gtx.Constraints.Max.Y = height
 
@@ -566,29 +693,51 @@ func (a *App) layoutNoteRow(gtx layout.Context, th *material.Theme, note *noteSt
 		} else if note.row.Hovered() {
 			fillRounded(gtx, palette.hover, 8)
 		}
-		return layout.UniformInset(unit.Dp(10)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					title := material.Body1(th, note.doc.Title)
-					title.Color = palette.text
-					title.MaxLines = 1
-					title.Truncator = "..."
-					return title.Layout(gtx)
+		return layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(10), Right: unit.Dp(6)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							title := material.Body2(th, note.doc.Title)
+							title.Color = palette.text
+							title.MaxLines = 1
+							title.Truncator = "..."
+							return title.Layout(gtx)
+						}),
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							status := "saved"
+							statusColor := palette.muted
+							if note.doc.Dirty {
+								status = "not saved"
+								statusColor = palette.unsaved
+							}
+							if note.doc.Path == "" {
+								status = "draft"
+								statusColor = palette.unsaved
+							}
+							label := material.Caption(th, status)
+							label.Color = statusColor
+							label.MaxLines = 1
+							return label.Layout(gtx)
+						}),
+					)
 				}),
 				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-					status := "saved"
-					if note.doc.Dirty {
-						status = "unsaved"
-					}
 					if note.doc.Path == "" {
-						status += " draft"
-					} else {
-						status += " " + fileKind(note.doc.Path)
+						return layout.Dimensions{}
 					}
-					label := material.Caption(th, status)
-					label.Color = palette.muted
-					label.MaxLines = 1
-					return label.Layout(gtx)
+					starred := a.sess.IsBookmarked(note.doc.Path)
+					icon := "+"
+					iconColor := palette.muted
+					if starred {
+						icon = "*"
+						iconColor = palette.starred
+					}
+					return note.star.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+						label := material.Body1(th, icon)
+						label.Color = iconColor
+						return layout.Inset{Left: unit.Dp(4), Right: unit.Dp(4)}.Layout(gtx, label.Layout)
+					})
 				}),
 			)
 		})
@@ -646,9 +795,6 @@ func (a *App) layoutMain(gtx layout.Context, th *material.Theme) layout.Dimensio
 			if note == nil {
 				return layout.Dimensions{Size: gtx.Constraints.Min}
 			}
-			if a.page != pageEditor {
-				return a.layoutPage(gtx, th)
-			}
 			switch a.mode {
 			case viewPreview:
 				return a.layoutPreview(gtx, th, note)
@@ -662,34 +808,58 @@ func (a *App) layoutMain(gtx layout.Context, th *material.Theme) layout.Dimensio
 	)
 }
 
-func (a *App) layoutTopBar(gtx layout.Context, th *material.Theme) layout.Dimensions {
+func (a *App) layoutMenuBar(gtx layout.Context, th *material.Theme) layout.Dimensions {
 	fill(gtx, palette.surface)
-	return layout.Inset{Top: unit.Dp(12), Bottom: unit.Dp(12), Left: unit.Dp(18), Right: unit.Dp(18)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+	return layout.Inset{Top: unit.Dp(5), Bottom: unit.Dp(5), Left: unit.Dp(8), Right: unit.Dp(14)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return a.layoutMenuButton(gtx, th, &a.fileMenuButton, "File", a.openMenu == menuFile)
 			}),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(6)}.Layout),
+			layout.Rigid(layout.Spacer{Width: unit.Dp(4)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return a.layoutMenuButton(gtx, th, &a.viewMenuButton, "View", a.openMenu == menuView)
 			}),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(6)}.Layout),
+			layout.Rigid(layout.Spacer{Width: unit.Dp(4)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return a.layoutMenuButton(gtx, th, &a.helpMenuButton, "Help", a.openMenu == menuHelp)
 			}),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(18)}.Layout),
 			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				note := a.activeNote()
+				label := material.Body2(th, "Markpad")
+				label.Color = palette.muted
+				label.Alignment = text.Middle
+				label.MaxLines = 1
+				return label.Layout(gtx)
+			}),
+		)
+	})
+}
+
+func (a *App) layoutTopBar(gtx layout.Context, th *material.Theme) layout.Dimensions {
+	fill(gtx, palette.surface)
+	return layout.Inset{Top: unit.Dp(10), Bottom: unit.Dp(10), Left: unit.Dp(18), Right: unit.Dp(18)}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				title := "Untitled"
-				if note != nil {
+				if note := a.activeNote(); note != nil {
 					title = note.doc.Title
 				}
-				label := material.H6(th, title)
+				label := material.Body1(th, title)
 				label.Color = palette.text
 				label.MaxLines = 1
 				label.Truncator = "..."
 				return label.Layout(gtx)
 			}),
+			layout.Rigid(layout.Spacer{Width: unit.Dp(10)}.Layout),
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				note := a.activeNote()
+				if note == nil || !note.doc.Dirty {
+					return layout.Dimensions{}
+				}
+				label := material.Caption(th, "not saved")
+				label.Color = palette.unsaved
+				return label.Layout(gtx)
+			}),
+			layout.Flexed(1, layout.Spacer{}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return a.layoutTab(gtx, th, &a.sourceTab, "Markdown", a.mode == viewSource)
 			}),
@@ -697,17 +867,13 @@ func (a *App) layoutTopBar(gtx layout.Context, th *material.Theme) layout.Dimens
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 				return a.layoutTab(gtx, th, &a.previewTab, "Viewer", a.mode == viewPreview)
 			}),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
+			layout.Flexed(1, layout.Spacer{}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				label := "Bookmark"
-				if note := a.activeNote(); note != nil && a.sess.IsBookmarked(note.doc.Path) {
-					label = "Bookmarked"
-				}
-				return a.layoutSoftButton(gtx, th, &a.bookmarkButton, label)
+				return a.layoutSoftButton(gtx, th, &a.cancelButton, "Cancel")
 			}),
 			layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
 			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return a.layoutSoftButton(gtx, th, &a.saveButton, "Save")
+				return a.layoutAccentButton(gtx, th, &a.saveButton, "Save")
 			}),
 		)
 	})
@@ -750,6 +916,15 @@ func (a *App) layoutSoftButton(gtx layout.Context, th *material.Theme, click *wi
 	return btn.Layout(gtx)
 }
 
+func (a *App) layoutAccentButton(gtx layout.Context, th *material.Theme, click *widget.Clickable, label string) layout.Dimensions {
+	btn := material.Button(th, click, label)
+	btn.CornerRadius = unit.Dp(8)
+	btn.Inset = layout.Inset{Top: unit.Dp(8), Bottom: unit.Dp(8), Left: unit.Dp(16), Right: unit.Dp(16)}
+	btn.Background = palette.accent
+	btn.Color = palette.accentText
+	return btn.Layout(gtx)
+}
+
 func (a *App) layoutOpenMenu(gtx layout.Context, th *material.Theme) layout.Dimensions {
 	return layout.Background{}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 		fillRounded(gtx, palette.menu, 8)
@@ -766,6 +941,9 @@ func (a *App) layoutOpenMenu(gtx layout.Context, th *material.Theme) layout.Dime
 						return a.layoutMenuItem(gtx, th, &a.fileSaveItem, "Save")
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return a.layoutMenuItem(gtx, th, &a.fileSaveAsItem, "Save as...")
+					}),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return a.layoutMenuItem(gtx, th, &a.fileBookmarkItem, "Bookmark file")
 					}),
 				)
@@ -780,14 +958,14 @@ func (a *App) layoutOpenMenu(gtx layout.Context, th *material.Theme) layout.Dime
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return a.layoutMenuItem(gtx, th, &a.viewSettingsItem, "Settings")
 					}),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return a.layoutMenuItem(gtx, th, &a.viewSidebarItem, "Toggle sidebar")
+					}),
 				)
 			case menuHelp:
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return a.layoutMenuItem(gtx, th, &a.helpHelpItem, "Help")
-					}),
-					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-						return a.layoutMenuItem(gtx, th, &a.helpTourItem, "Tour")
 					}),
 					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
 						return a.layoutMenuItem(gtx, th, &a.helpAboutItem, "About")
@@ -848,29 +1026,110 @@ func (a *App) layoutPreview(gtx layout.Context, th *material.Theme, note *noteSt
 	})
 }
 
+func (a *App) layoutModalPage(gtx layout.Context, th *material.Theme) layout.Dimensions {
+	fill(gtx, withAlpha(palette.text, 36))
+	return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Max.X = minInt(gtx.Constraints.Max.X-gtx.Dp(unit.Dp(80)), gtx.Dp(unit.Dp(520)))
+		gtx.Constraints.Max.Y = minInt(gtx.Constraints.Max.Y-gtx.Dp(unit.Dp(80)), gtx.Dp(unit.Dp(420)))
+		gtx.Constraints.Min = gtx.Constraints.Max
+		return layout.Background{}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			fillRounded(gtx, palette.menu, 16)
+			return layout.Dimensions{Size: gtx.Constraints.Min}
+		}, func(gtx layout.Context) layout.Dimensions {
+			return layout.UniformInset(unit.Dp(24)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+							layout.Flexed(1, layout.Spacer{}.Layout),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								return a.layoutSoftButton(gtx, th, &a.modalCloseButton, "Close")
+							}),
+						)
+					}),
+					layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
+					layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+						return a.layoutPage(gtx, th)
+					}),
+				)
+			})
+		})
+	})
+}
+
+func (a *App) layoutSaveAsModal(gtx layout.Context, th *material.Theme) layout.Dimensions {
+	fill(gtx, withAlpha(palette.text, 54))
+	return layout.Center.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+		gtx.Constraints.Max.X = minInt(gtx.Constraints.Max.X-gtx.Dp(unit.Dp(48)), gtx.Dp(unit.Dp(680)))
+		gtx.Constraints.Max.Y = minInt(gtx.Constraints.Max.Y-gtx.Dp(unit.Dp(48)), gtx.Dp(unit.Dp(260)))
+		gtx.Constraints.Min = gtx.Constraints.Max
+		return layout.Background{}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+			fillRounded(gtx, palette.menu, 14)
+			return layout.Dimensions{Size: gtx.Constraints.Min}
+		}, func(gtx layout.Context) layout.Dimensions {
+			return layout.UniformInset(unit.Dp(24)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						label := material.H5(th, "Save as")
+						label.Color = palette.text
+						return label.Layout(gtx)
+					}),
+					layout.Rigid(layout.Spacer{Height: unit.Dp(14)}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						label := material.Caption(th, "Enter a full path. Any extension is allowed, for example .md, .markdown, .txt, .log, or none.")
+						label.Color = palette.muted
+						label.WrapPolicy = text.WrapHeuristically
+						return label.Layout(gtx)
+					}),
+					layout.Rigid(layout.Spacer{Height: unit.Dp(12)}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						fillRounded(gtx, palette.editor, 8)
+						return layout.UniformInset(unit.Dp(12)).Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+							editor := material.Editor(th, &a.saveAsEditor, "Full file path")
+							editor.TextSize = unit.Sp(15)
+							editor.Color = palette.text
+							editor.HintColor = palette.muted
+							editor.SelectionColor = palette.selection
+							return editor.Layout(gtx)
+						})
+					}),
+					layout.Flexed(1, layout.Spacer{}.Layout),
+					layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+						return layout.Flex{Axis: layout.Horizontal, Alignment: layout.Middle}.Layout(gtx,
+							layout.Flexed(1, layout.Spacer{}.Layout),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								return a.layoutSoftButton(gtx, th, &a.saveAsCancel, "Cancel")
+							}),
+							layout.Rigid(layout.Spacer{Width: unit.Dp(8)}.Layout),
+							layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+								return a.layoutSoftButton(gtx, th, &a.saveAsSubmit, "Save")
+							}),
+						)
+					}),
+				)
+			})
+		})
+	})
+}
+
 func (a *App) layoutPage(gtx layout.Context, th *material.Theme) layout.Dimensions {
 	switch a.page {
-	case pageTour:
-		return a.layoutInfoPage(gtx, th, "Tour", []string{
-			"1. Open a Markdown or text file and it appears in the session list.",
-			"2. Pin important file paths with Bookmark so they stay above the session.",
-			"3. Switch between Markdown and Viewer without leaving the note.",
-			"4. Close the app any time. Drafts and unsaved changes restore on the next launch.",
-		})
 	case pageAbout:
-		return a.layoutInfoPage(gtx, th, "About Markpad", []string{
-			"Version " + version,
-			"Native Go/Gio desktop app for Markdown and text files.",
+		return a.layoutInfoPage(gtx, th, "About", []string{
+			"Markpad " + version,
+			"A small native Markdown notepad.",
+			"Built with Go and Gio.",
 			"Session store: " + a.store.Root(),
-			"Markdown engine: goldmark with GFM support.",
+			"MIT License",
 		})
 	case pageSettings:
 		return a.layoutSettingsPage(gtx, th)
 	default:
 		return a.layoutInfoPage(gtx, th, "Help", []string{
-			"Markpad keeps plain files plain: .md, .markdown, .txt, and other text-like files open as editable documents.",
-			"Unsaved drafts are stored locally and restored with the session.",
-			"Bookmarks pin file paths, while the session list tracks what you have opened recently.",
+			"Open .md, .txt, or other text files from the command line or File > New.",
+			"Star notes in the sidebar to pin them to Favorites.",
+			"Switch between Markdown editing and Viewer with the tabs.",
+			"Unsaved drafts are kept locally and restored with the session.",
+			"Use File > Save As to choose any path and extension.",
 		})
 	}
 }
@@ -989,9 +1248,17 @@ func layoutBlock(gtx layout.Context, th *material.Theme, block preview.Block) la
 			return bodyLabel(gtx, th, "- "+block.Text)
 		case preview.Ordered:
 			return bodyLabel(gtx, th, fmt.Sprintf("%d. %s", block.Level, block.Text))
+		case preview.Task:
+			marker := "[ ] "
+			if block.Checked {
+				marker = "[x] "
+			}
+			return bodyLabel(gtx, th, marker+block.Text)
 		case preview.Quote:
 			return quoteBlock(gtx, th, block.Text)
 		case preview.Code:
+			return codeBlock(gtx, th, block.Text)
+		case preview.Table:
 			return codeBlock(gtx, th, block.Text)
 		case preview.Rule:
 			gtx.Constraints.Min.Y = gtx.Dp(unit.Dp(1))
@@ -1093,6 +1360,36 @@ func documentStats(content string) string {
 	return fmt.Sprintf("%d lines, %d words, %d chars", lines, words, len(content))
 }
 
+func defaultSaveAsPath(title string) string {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Untitled"
+	}
+	name := strings.Map(func(r rune) rune {
+		switch r {
+		case '/', '\\', ':', '*', '?', '"', '<', '>', '|':
+			return '-'
+		default:
+			return r
+		}
+	}, title)
+	if filepath.Ext(name) == "" {
+		name += ".md"
+	}
+	dir, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(dir) == "" {
+		dir = "."
+	}
+	return filepath.Join(dir, name)
+}
+
+func minInt(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 var palette = struct {
 	background color.NRGBA
 	sidebar    color.NRGBA
@@ -1111,6 +1408,8 @@ var palette = struct {
 	code       color.NRGBA
 	codeText   color.NRGBA
 	rule       color.NRGBA
+	unsaved    color.NRGBA
+	starred    color.NRGBA
 }{
 	background: color.NRGBA{R: 0xE7, G: 0xE5, B: 0xDF, A: 0xFF},
 	sidebar:    color.NRGBA{R: 0xF2, G: 0xF0, B: 0xEA, A: 0xFF},
@@ -1129,4 +1428,6 @@ var palette = struct {
 	code:       color.NRGBA{R: 0x29, G: 0x2D, B: 0x32, A: 0xFF},
 	codeText:   color.NRGBA{R: 0xEA, G: 0xEF, B: 0xEC, A: 0xFF},
 	rule:       color.NRGBA{R: 0xD8, G: 0xD6, B: 0xCE, A: 0xFF},
+	unsaved:    color.NRGBA{R: 0xC5, G: 0x79, B: 0x33, A: 0xFF},
+	starred:    color.NRGBA{R: 0xD4, G: 0x9E, B: 0x2A, A: 0xFF},
 }

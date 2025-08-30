@@ -13,15 +13,18 @@ const (
 	Heading
 	Bullet
 	Ordered
+	Task
 	Quote
 	Code
+	Table
 	Rule
 )
 
 type Block struct {
-	Kind  Kind
-	Level int
-	Text  string
+	Kind    Kind
+	Level   int
+	Text    string
+	Checked bool
 }
 
 func Parse(source string) []Block {
@@ -43,7 +46,8 @@ func Parse(source string) []Block {
 		paragraph = paragraph[:0]
 	}
 
-	for _, raw := range lines {
+	for i := 0; i < len(lines); i++ {
+		raw := lines[i]
 		line := strings.TrimRight(raw, " \t")
 		trim := strings.TrimSpace(line)
 
@@ -75,6 +79,17 @@ func Parse(source string) []Block {
 		if level, text := heading(trim); level > 0 {
 			flushParagraph()
 			blocks = append(blocks, Block{Kind: Heading, Level: level, Text: text})
+			continue
+		}
+		if table, next, ok := table(lines, i); ok {
+			flushParagraph()
+			blocks = append(blocks, Block{Kind: Table, Text: table})
+			i = next
+			continue
+		}
+		if text, checked, ok := task(trim); ok {
+			flushParagraph()
+			blocks = append(blocks, Block{Kind: Task, Text: text, Checked: checked})
 			continue
 		}
 		if text, ok := unordered(trim); ok {
@@ -121,6 +136,18 @@ func unordered(line string) (string, bool) {
 		return strings.TrimSpace(line[2:]), true
 	}
 	return "", false
+}
+
+func task(line string) (string, bool, bool) {
+	text, ok := unordered(line)
+	if !ok || len(text) < 4 || text[0] != '[' || text[2] != ']' || !unicode.IsSpace(rune(text[3])) {
+		return "", false, false
+	}
+	marker := text[1]
+	if marker != ' ' && marker != 'x' && marker != 'X' {
+		return "", false, false
+	}
+	return strings.TrimSpace(text[4:]), marker == 'x' || marker == 'X', true
 }
 
 func ordered(line string) (int, string, bool) {
@@ -170,4 +197,84 @@ func isRule(line string) bool {
 		}
 	}
 	return count >= 3
+}
+
+func table(lines []string, start int) (string, int, bool) {
+	if start+1 >= len(lines) {
+		return "", start, false
+	}
+	header := strings.TrimSpace(lines[start])
+	separator := strings.TrimSpace(lines[start+1])
+	if !isTableRow(header) || !isTableSeparator(separator) {
+		return "", start, false
+	}
+	rows := [][]string{splitTableRow(header)}
+	i := start + 2
+	for i < len(lines) {
+		row := strings.TrimSpace(lines[i])
+		if !isTableRow(row) {
+			break
+		}
+		rows = append(rows, splitTableRow(row))
+		i++
+	}
+	return formatTable(rows), i - 1, true
+}
+
+func isTableRow(line string) bool {
+	return strings.Count(line, "|") >= 2
+}
+
+func isTableSeparator(line string) bool {
+	if !isTableRow(line) {
+		return false
+	}
+	for _, cell := range splitTableRow(line) {
+		cell = strings.Trim(cell, ":- ")
+		if cell != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func splitTableRow(line string) []string {
+	line = strings.TrimSpace(line)
+	line = strings.TrimPrefix(line, "|")
+	line = strings.TrimSuffix(line, "|")
+	parts := strings.Split(line, "|")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
+}
+
+func formatTable(rows [][]string) string {
+	widths := make([]int, 0)
+	for _, row := range rows {
+		for i, cell := range row {
+			if i == len(widths) {
+				widths = append(widths, 0)
+			}
+			if len(cell) > widths[i] {
+				widths[i] = len(cell)
+			}
+		}
+	}
+	var out strings.Builder
+	for i, row := range rows {
+		if i > 0 {
+			out.WriteByte('\n')
+		}
+		for j, cell := range row {
+			if j > 0 {
+				out.WriteString("  ")
+			}
+			out.WriteString(cell)
+			if pad := widths[j] - len(cell); pad > 0 {
+				out.WriteString(strings.Repeat(" ", pad))
+			}
+		}
+	}
+	return out.String()
 }

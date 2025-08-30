@@ -14,11 +14,14 @@
 - [x] App menus.
 - [x] Help, Tour, About, and Settings pages.
 - [x] Reduced motion and compact sidebar settings.
+- [x] Collapsible sidebar.
+- [x] In-app save-as modal with arbitrary extension support.
 - [ ] Native open/save-as dialogs.
 - [ ] File association for `.md`, `.markdown`, and `.txt`.
 - [ ] Recent folder/workspace support.
 - [ ] External file watcher and reload prompt.
-- [ ] Better Markdown preview: tables, task lists, links, images, code highlighting.
+- [x] Better Markdown preview basics: tables and task lists.
+- [ ] Rich Markdown preview: links, images, code highlighting, nested lists, and inline emphasis.
 - [ ] Source/preview scroll sync.
 - [ ] Keyboard shortcuts: new, open, save, save as, source/viewer toggle.
 
@@ -49,7 +52,8 @@
 - [ ] Build the Gio app for WebAssembly with `gogio -target js`.
 - [ ] Decide local-first browser storage strategy: IndexedDB drafts plus optional file-system access API.
 - [ ] Make the web app visually identical to desktop.
-- [ ] Create hosting site and download page.
+- [x] Create GitHub Pages website scaffold with screenshot and download placeholders.
+- [ ] Wire website download links to real release artifacts.
 - [ ] Consider a Rust/WASM parser only if Go/WASM preview becomes too heavy.
 - [ ] Add a performance budget for web: load time, WASM size, first-input latency, large-note scroll latency.
 
@@ -61,3 +65,11 @@
 - [ ] Minimal backlinks/wiki-links.
 - [ ] Export HTML/PDF.
 - [ ] Theme settings.
+
+## Documentation and Launch
+
+- [x] Project-local agent guide.
+- [x] MIT license.
+- [x] Architecture, packaging, and launch docs.
+- [ ] Add real screenshots to README and website.
+- [ ] Publish GitHub Pages after repository settings are enabled.

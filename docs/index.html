@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
+    <meta
+      name="description"
+      content="Markpad is a small, fast, native Go Markdown notepad with session restore, autosaved drafts, favorites, and a beautiful Viewer mode. No Electron, no bloat. Under 8 MB."
+    />
+    <meta
+      name="keywords"
+      content="markpad, markdown editor, markdown notepad, native markdown, go markdown, gio, lightweight notepad, markdown viewer, linux notepad, appimage, session restore, open source"
+    />
+    <meta name="author" content="Shreyam Adhikari" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#2f6f61" />
+    <link rel="canonical" href="https://shreyam1008.github.io/markpad/" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Markpad" />
+    <meta property="og:title" content="Markpad — Native Markdown Notepad" />
+    <meta
+      property="og:description"
+      content="A tiny native Go Markdown notepad with session restore, autosaved drafts, and a beautiful Viewer. Under 8 MB, no Electron."
+    />
+    <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
+    <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Markpad — Native Markdown Notepad" />
+    <meta
+      name="twitter:description"
+      content="Small, fast, native Markdown notepad. Session restore, drafts, favorites, Viewer mode. No Electron."
+    />
+    <meta name="twitter:image" content="https://shreyam1008.github.io/markpad/og.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Markpad",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, Windows, macOS",
+        "softwareVersion": "0.2.0-dev",
+        "author": {
+          "@type": "Person",
+          "name": "Shreyam Adhikari",
+          "url": "https://shreyam1008.com.np"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://shreyam1008.github.io/markpad/",
+        "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
+        "sameAs": ["https://github.com/shreyam1008/markpad"],
+        "description": "A tiny native Go Markdown notepad with session restore, autosaved drafts, favorites, and a beautiful Viewer mode.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Markpad home">
+        <span class="brand-mark">M</span>
+        <span class="brand-text">Markpad</span>
+      </a>
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#downloads">Downloads</a>
+        <a href="https://github.com/shreyam1008/markpad">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="eyebrow">Native Go desktop app by shreyam1008</p>
+        <h1>A tiny Markdown notepad that just works.</h1>
+        <p class="lede">
+          Markpad opens fast, restores your session, keeps unsaved drafts safe,
+          and renders Markdown beautifully. No Electron. No bloat. Under 8 MB.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#downloads">Download</a>
+          <a class="btn btn-secondary" href="https://github.com/shreyam1008/markpad">View source</a>
+        </div>
+        <ul class="pill-row">
+          <li>Native Go + Gio</li>
+          <li>Under 8 MB</li>
+          <li>Session restore</li>
+          <li>MIT License</li>
+          <li>Linux, Windows, macOS</li>
+        </ul>
+      </section>
+
+      <section class="showcase" id="screenshots">
+        <div class="window-card">
+          <div class="window-bar"><span></span><span></span><span></span></div>
+          <div class="screenshot-slot">
+            <p>Main app screenshot — Markdown tab with sidebar and favorites</p>
+          </div>
+        </div>
+        <div class="window-card window-card-sm">
+          <div class="window-bar"><span></span><span></span><span></span></div>
+          <div class="screenshot-slot">
+            <p>Viewer mode — rendered Markdown with headings, code, tables</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="features" id="features">
+        <div class="section-heading">
+          <p class="eyebrow">Why Markpad</p>
+          <h2>Traditional notepad speed, modern Markdown viewer.</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Plain files stay plain</h3>
+            <p>Open <code>.md</code>, <code>.txt</code>, <code>.log</code>, and other text files. No proprietary database. No import step.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Session restore</h3>
+            <p>Close and reopen. Every note, draft, favorite, and active tab comes back exactly as you left it.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Markdown + Viewer</h3>
+            <p>Every note has two tabs: Markdown for editing and Viewer for a clean rendered reading experience with tables, tasks, and code.</p>
+          </article>
+          <article class="feature-card">
+            <h3>No Electron</h3>
+            <p>Written in Go with Gio. A single native binary under 8 MB with low idle memory. Starts instantly.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Favorites and drafts</h3>
+            <p>Star notes in the sidebar to pin them. Unsaved work survives app close through local drafts stored in your config directory.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Save anywhere</h3>
+            <p>Save As lets you choose any path and any extension. Markdown, plain text, log files, or no extension at all.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="downloads" id="downloads">
+        <div class="section-heading">
+          <p class="eyebrow">Downloads</p>
+          <h2>Get Markpad for your platform.</h2>
+          <p>Release artifacts are built by GitHub Actions on every tagged version.</p>
+        </div>
+        <div class="download-grid">
+          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
+            <strong>Linux AppImage</strong>
+            <span>Portable, no install</span>
+          </a>
+          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
+            <strong>Linux .deb</strong>
+            <span>Debian, Ubuntu</span>
+          </a>
+          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
+            <strong>Windows .exe</strong>
+            <span>Portable zip</span>
+          </a>
+          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
+            <strong>macOS .dmg</strong>
+            <span>Apple Silicon + Intel</span>
+          </a>
+          <a class="download-card" href="https://github.com/shreyam1008/markpad">
+            <strong>Source code</strong>
+            <span>Build from Go</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="tech">
+        <div class="section-heading">
+          <p class="eyebrow">Under the hood</p>
+          <h2>Lean, native, no runtime.</h2>
+        </div>
+        <div class="tech-grid">
+          <div class="tech-item"><strong>Go</strong><span>Single compiled binary</span></div>
+          <div class="tech-item"><strong>Gio</strong><span>Native GPU-accelerated UI</span></div>
+          <div class="tech-item"><strong>goldmark</strong><span>CommonMark + GFM Markdown</span></div>
+          <div class="tech-item"><strong>Cloudless</strong><span>All data stays local</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p>
+          Built by <a href="https://shreyam1008.com.np">Shreyam Adhikari</a> as a small open-source native Markdown notepad.
+        </p>
+        <p>MIT licensed. <a href="https://github.com/shreyam1008/markpad">GitHub</a></p>
+      </div>
+    </footer>
+  </body>
+</html>

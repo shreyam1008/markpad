@@ -60,3 +60,32 @@ func TestSaveToDiskMarksClean(t *testing.T) {
 		t.Fatal("document stayed dirty after save")
 	}
 }
+
+func TestSaveAsSetsAbsolutePathAndPreservesExtension(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "draft.log")
+	doc := NewDocument("", "# Draft")
+
+	if err := store.SaveAs(doc, path, "plain log"); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "plain log" {
+		t.Fatalf("file = %q", data)
+	}
+	if !filepath.IsAbs(doc.Path) {
+		t.Fatalf("path is not absolute: %q", doc.Path)
+	}
+	if doc.Title != "draft.log" {
+		t.Fatalf("title = %q", doc.Title)
+	}
+	if doc.Dirty {
+		t.Fatal("document stayed dirty after save as")
+	}
+}
