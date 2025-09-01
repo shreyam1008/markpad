@@ -59,9 +59,12 @@
   padding: 8px 10px; border-radius: 8px; cursor: pointer;
   transition: background 0.1s, border-color 0.1s; border-left: 3px solid transparent;
   min-height: 52px; box-sizing: border-box;
+  border-bottom: 1px solid #e8e6df;
 }
+.hist-entry:last-child { border-bottom: none; }
 .hist-entry:hover { background: #e7ece5; }
-.hist-entry.active { background: #dde8df; border-left-color: #2f6f61; }
+.hist-entry.active { background: #d0e4d4; border-left-color: #2f6f61; box-shadow: inset 0 0 0 1px rgba(47,111,97,0.15); }
+.hist-entry.first { background: #eaf2eb; }
 .hist-badge {
   display: inline-block; padding: 1px 6px; border-radius: 4px;
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
@@ -73,9 +76,10 @@
 
 /* Diff view */
 .diff-view { font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.6; }
-.diff-line { padding: 0 12px; white-space: pre-wrap; word-break: break-all; }
-.diff-add { background: #d4edda; color: #1a5928; }
-.diff-del { background: #fde2e2; color: #8b1a1a; }
+.diff-line { padding: 0 12px; white-space: pre-wrap; word-break: break-all; border-left: 3px solid transparent; }
+.diff-gutter { display: inline-block; width: 16px; text-align: center; opacity: 0.6; user-select: none; }
+.diff-add { background: #d4edda; color: #1a5928; border-left-color: #1a5928; }
+.diff-del { background: #fde2e2; color: #8b1a1a; border-left-color: #8b1a1a; }
 .diff-ctx { color: #6b6e68; }
 .diff-hunk { color: #5b53a8; font-weight: 600; padding: 6px 12px; background: #f0eff8; margin: 4px 0; border-radius: 4px; }
 

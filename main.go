@@ -48,11 +48,28 @@ func main() {
 	})
 
 	viewMenu := appMenu.AddSubmenu("View")
-	viewMenu.AddText("Toggle Markdown/Viewer", keys.Combo("e", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+	viewMenu.AddText("Cycle View Mode", keys.Combo("e", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:toggleview")
 	})
 	viewMenu.AddText("Toggle Sidebar", keys.Combo("b", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:togglesidebar")
+	})
+	viewMenu.AddSeparator()
+	viewMenu.AddText("Find", keys.CmdOrCtrl("f"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:find")
+	})
+	viewMenu.AddText("Version History", keys.CmdOrCtrl("h"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:history")
+	})
+	viewMenu.AddSeparator()
+	viewMenu.AddText("Zoom In", keys.CmdOrCtrl("="), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:zoomin")
+	})
+	viewMenu.AddText("Zoom Out", keys.CmdOrCtrl("-"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:zoomout")
+	})
+	viewMenu.AddText("Reset Zoom", keys.CmdOrCtrl("0"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:zoomreset")
 	})
 
 	helpMenu := appMenu.AddSubmenu("Help")
