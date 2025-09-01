@@ -25,6 +25,8 @@ const sidebarCol   = $('sidebar-collapsed');
 const notesList    = $('notes-list');
 const favsList     = $('favorites-list');
 const favsSection  = $('favorites-section');
+const recentList   = $('recent-list');
+const recentSection = $('recent-section');
 const editor       = $('editor');
 const editorCont   = $('editor-container');
 const viewerCont   = $('viewer-container');
@@ -64,6 +66,39 @@ function fileIcon(path) {
   if (!path) return '\u270f';
   const ext = path.split('.').pop().toLowerCase();
   return FILE_ICONS[ext] || '\ud83d\udcc4';
+}
+
+const MD_EXTS = new Set(['md', 'markdown', 'mdx']);
+const CODE_EXTS = new Set([
+  'py', 'js', 'ts', 'go', 'rs', 'rb', 'lua', 'sh', 'bash', 'zsh',
+  'json', 'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf',
+  'html', 'htm', 'css', 'svg', 'sql', 'c', 'cpp', 'h', 'java',
+  'kt', 'swift', 'r', 'pl', 'php', 'ex', 'exs', 'zig', 'nim',
+  'dockerfile', 'makefile', 'cmake',
+]);
+function getFileType(path) {
+  if (!path) return 'md';
+  const ext = path.split('.').pop().toLowerCase();
+  if (MD_EXTS.has(ext)) return 'md';
+  if (CODE_EXTS.has(ext)) return 'code';
+  return 'text';
+}
+
+const CODE_LINE_CAP = 5000;
+function renderCode(content, path) {
+  const ext = path ? path.split('.').pop().toLowerCase() : '';
+  const langMap = { py: 'python', js: 'javascript', ts: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini' };
+  const lang = langMap[ext] || ext;
+  const lines = content.split('\n');
+  const capped = lines.length > CODE_LINE_CAP;
+  const toHighlight = capped ? lines.slice(0, CODE_LINE_CAP).join('\n') : content;
+  let highlighted;
+  try {
+    if (lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
+    else highlighted = hljs.highlightAuto(toHighlight).value;
+  } catch { highlighted = toHighlight.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  const capNote = capped ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">Showing first ${CODE_LINE_CAP} of ${lines.length} lines</div>` : '';
+  return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code>${highlighted}</code></pre>${capNote}`;
 }
 
 // ── Markdown ─────────────────────────────────────────────
@@ -108,11 +143,18 @@ function renderSession(state) {
   cachedNotes = state.notes || [];
   notesList.innerHTML = '';
   favsList.innerHTML = '';
+  recentList.innerHTML = '';
 
   const hasFavs = state.favorites && state.favorites.length > 0;
   favsSection.classList.toggle('hidden', !hasFavs);
   if (hasFavs) state.favorites.forEach(f => favsList.appendChild(makeFavRow(f)));
   cachedNotes.forEach(n => notesList.appendChild(makeNoteRow(n)));
+
+  // Recent files (exclude currently open paths)
+  const openPaths = new Set(cachedNotes.filter(n => n.path).map(n => n.path));
+  const recents = (state.recents || []).filter(r => !openPaths.has(r.path));
+  recentSection.classList.toggle('hidden', recents.length === 0);
+  recents.forEach(r => recentList.appendChild(makeRecentRow(r)));
 
   const active = cachedNotes.find(n => n.id === activeId);
   noteTitle.textContent = active ? (active.path ? active.title : 'Untitled') : 'Untitled';
@@ -132,6 +174,23 @@ function makeFavRow(fav) {
   row.addEventListener('click', async () => {
     try {
       renderSession(await window.go.main.App.OpenPathFromBookmark(fav.path));
+      loadContent(await window.go.main.App.GetActiveContent());
+      restoreNoteView();
+    } catch {}
+  });
+  return row;
+}
+
+function makeRecentRow(recent) {
+  const row = el('div', 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-hover text-muted');
+  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-40');
+  ico.textContent = fileIcon(recent.path);
+  const t = el('span', 'text-[12px] truncate'); t.textContent = recent.title;
+  row.append(ico, t);
+  row.title = recent.path;
+  row.addEventListener('click', async () => {
+    try {
+      renderSession(await window.go.main.App.OpenPathFromBookmark(recent.path));
       loadContent(await window.go.main.App.GetActiveContent());
       restoreNoteView();
     } catch {}
@@ -233,14 +292,25 @@ function loadContent(content) {
   currentContent = content || '';
   committedContent = currentContent;
   editor.value = currentContent;
-  if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
+  if (viewMode !== 'markdown') {
+    const active = cachedNotes.find(n => n.id === activeId);
+    const ft = getFileType(active?.path);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+  }
   updateStats();
   if (historyOpen) renderHistory();
 }
 
 function restoreNoteView() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const ft = getFileType(active?.path);
   const saved = noteViewModes[activeId];
-  setView(saved || 'viewer');
+  if (ft !== 'md') {
+    // Code/text: default to code view (viewer), allow editor
+    setView(saved === 'markdown' ? 'markdown' : 'viewer');
+  } else {
+    setView(saved || 'viewer');
+  }
 }
 
 // ── Context menu ─────────────────────────────────────────
@@ -259,18 +329,30 @@ ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () 
 
 // ── View mode (editor / split / viewer) ──────────────────
 function setView(mode) {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const ft = getFileType(active?.path);
+
+  // For code/text files, only allow 'markdown' (editor) or 'viewer' (highlighted code)
+  if (ft !== 'md' && mode === 'split') mode = 'viewer';
+
   viewMode = mode;
   if (activeId) noteViewModes[activeId] = mode;
   document.querySelectorAll('.view-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
+    // Hide split button for non-md files
+    if (b.dataset.mode === 'split') b.classList.toggle('hidden', ft !== 'md');
   });
   const showEditor = mode === 'markdown' || mode === 'split';
   const showViewer = mode === 'viewer' || mode === 'split';
   editorCont.classList.toggle('hidden', !showEditor);
   viewerCont.classList.toggle('hidden', !showViewer);
   divider.classList.toggle('hidden', mode !== 'split');
-  toolbar.classList.toggle('hidden', !showEditor);
-  if (showViewer) viewer.innerHTML = renderMd(currentContent);
+  // Hide formatting toolbar for non-md files
+  toolbar.classList.toggle('hidden', !showEditor || ft !== 'md');
+  if (showViewer) {
+    if (ft === 'md') viewer.innerHTML = renderMd(currentContent);
+    else viewer.innerHTML = renderCode(currentContent, active?.path);
+  }
   if (mode !== 'split') {
     editorCont.style.flex = '';
     viewerCont.style.flex = '';
@@ -283,8 +365,10 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 });
 
 function cycleView() {
-  const modes = ['markdown', 'split', 'viewer'];
-  setView(modes[(modes.indexOf(viewMode) + 1) % 3]);
+  const active = cachedNotes.find(n => n.id === activeId);
+  const ft = getFileType(active?.path);
+  const modes = ft === 'md' ? ['markdown', 'split', 'viewer'] : ['markdown', 'viewer'];
+  setView(modes[(modes.indexOf(viewMode) + 1) % modes.length]);
 }
 
 // ── Resizable split divider ──────────────────────────────
@@ -338,7 +422,11 @@ editor.addEventListener('input', () => {
 
   if (viewMode !== 'markdown') {
     clearTimeout(renderTimer);
-    renderTimer = setTimeout(() => { viewer.innerHTML = renderMd(currentContent); }, RENDER_MS);
+    renderTimer = setTimeout(() => {
+      const active = cachedNotes.find(n => n.id === activeId);
+      const ft = getFileType(active?.path);
+      viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+    }, RENDER_MS);
   }
 });
 
@@ -481,7 +569,7 @@ function simpleDiff(oldText, newText) {
     return result;
   }
   // Build LCS table
-  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
       dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
@@ -721,7 +809,11 @@ $('btn-new-mini').addEventListener('click', doNew);
 saveBtn.addEventListener('click', doSave);
 $('btn-cancel').addEventListener('click', async () => {
   editor.value = committedContent; currentContent = committedContent;
-  if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
+  if (viewMode !== 'markdown') {
+    const active = cachedNotes.find(n => n.id === activeId);
+    const ft = getFileType(active?.path);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+  }
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
   if (activeId) {
     await window.go.main.App.UpdateContent(activeId, currentContent);
@@ -756,9 +848,9 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.4.0</p>
-    <p>A tiny native Markdown notepad built with Go + Wails.</p>
-    <p>Split view, version history, session restore, find, formatting toolbar, favorites, drag-and-drop reorder. Under 10 MB.</p>
+    <p><b>Markpad</b> v0.5.0</p>
+    <p>A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
+    <p>Syntax highlighting, split view, version history with diffs, session restore, favorites, recently opened, formatting toolbar. Under 10 MB.</p>
     <p style="margin-top:8px;"><a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot; MIT License &middot; by Shreyam Adhikari</p>
   `));
 }

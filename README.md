@@ -1,93 +1,48 @@
 # Markpad
 
-A tiny native Markdown notepad built with **Go + Wails**. Opens fast, saves your work, and gets out of the way.
+A tiny native Markdown notepad. Opens fast, saves your work, gets out of the way.
 
-No Electron. System webview. Single binary under 10 MB.
-
-## Features
-
-- **Split View** — Editor, Split (side-by-side with resizable divider), and Preview modes. `Ctrl+Shift+E` to cycle.
-- **Open Anything** — `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, `.svg`, code, config, logs, and more.
-- **Session Restore** — Close and reopen. Every note, draft, favorite, and active document comes back exactly as you left it.
-- **Version History** — Every save creates a snapshot. Click the clock icon to browse all versions in a right-side timeline panel. Click any entry to see a unified diff (green added, red removed, collapsed context). Restore any old version or go back to current. `Ctrl+H` to toggle.
-- **Favorites & Drag-and-Drop** — Star notes for quick access. Drag to reorder. Right-click context menu.
-- **Formatting Toolbar** — Bold, italic, strikethrough, headings, code, links, images, lists, tables, blockquotes. All with SVG icon buttons and keyboard shortcuts.
-- **Auto-List Continuation** — Press Enter in a list (`-`, `*`, `1.`, `- [ ]`) and the pattern continues. Enter on an empty item ends the list.
-- **Find in Editor** — `Ctrl+F` to search with wrap-around.
-- **External Links** — Links in the preview and modals open in your system browser, not the app.
-- **Autosaved Drafts** — Unsaved work survives app close. Drafts live under the config directory.
-- **Save Animation** — Smooth visual pulse on save. Bold "NOT SAVED" indicator when dirty.
-- **File Type Icons** — Each note shows an icon based on its file extension.
-- **Per-Note View Memory** — Remembers which view mode (editor/split/preview) you used for each note.
-- **Word Count & Reading Time** — Status bar shows lines, words, characters, and estimated reading time.
-- **Native Dialogs** — OS file picker for Open, Save, Save As.
-- **Keyboard Shortcuts** — `Ctrl+S`, `Ctrl+N`, `Ctrl+O`, `Ctrl+Shift+S`, `Ctrl+B/I/K`, `Ctrl+F`, `Ctrl+H`, `Ctrl+Del`, and more.
+No Electron. No cloud. Single binary under 10 MB. Pure local, pure offline.
 
 ## Install
 
-Download from the [Releases page](https://github.com/shreyam1008/markpad/releases):
+| Platform | Download | How |
+|----------|----------|-----|
+| **Linux** | [AppImage](https://github.com/shreyam1008/markpad/releases) | Portable — download, `chmod +x`, run |
+| **Linux** | [.deb](https://github.com/shreyam1008/markpad/releases) | `sudo dpkg -i markpad_*.deb` |
+| **Windows** | [.exe](https://github.com/shreyam1008/markpad/releases) | Portable zip — extract, run |
+| **macOS** | [.dmg](https://github.com/shreyam1008/markpad/releases) | Drag to Applications |
 
-- **Linux**: AppImage (portable) or `.deb` (Debian/Ubuntu)
-- **Windows**: `.exe` (portable zip)
-- **macOS**: `.dmg` (Apple Silicon + Intel)
-
-## Build from Source
-
-**Prerequisites**: Go 1.21+, Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
-
-On Linux, install WebKit2GTK:
+Or build from source:
 
 ```sh
+# Prerequisites: Go 1.21+, Wails CLI
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Linux: also install WebKit2GTK
 sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
-```
 
-Build and run:
-
-```sh
+wails build   # → build/bin/markpad (~8 MB)
 wails dev     # development mode with hot reload
-wails build   # production binary in build/bin/
 ```
 
-Or with `make`:
+## What It Does
 
-```sh
-make dev      # wails dev
-make build    # production build
-```
+- **Open anything** — `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.html`, `.css`, code, config, logs
+- **Code files get syntax highlighting** — language-aware via highlight.js, no markdown preview clutter
+- **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
+- **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
+- **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
+- **Sidebar** — Favorites / Open / Recent sections. Star, drag-and-drop reorder, right-click context menu
+- **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
+- **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
+- **Find** — `Ctrl+F` with wrap-around
+- **Autosaved drafts** — Unsaved work survives app close
+- **File type icons, word count, reading time, save animation, per-note view memory**
 
-The production binary is ~8 MB stripped.
+## Philosophy
 
-## Storage
-
-All data is local. Drafts, session state, and version history live under the platform config directory:
-
-- **Linux**: `~/.config/markpad/`
-- **macOS**: `~/Library/Application Support/markpad/`
-- **Windows**: `%AppData%\markpad\`
-
-```
-markpad/
-  session.json          # notes, favorites, active state
-  drafts/               # autosaved draft files
-  history/<doc-id>/     # version snapshots (JSON, max 50 per note)
-```
-
-## Architecture
-
-```
-markpad/
-  main.go               # Wails app entry, window config, native menus
-  app.go                 # Go backend: session, file ops, history, exposed to JS
-  internal/session/      # Session persistence, drafts, bookmarks, version history
-  frontend/
-    index.html           # Single-page app shell (Tailwind + CDN libs)
-    src/main.js          # All frontend logic: editor, preview, toolbar, sidebar, history
-    src/styles.css       # Minimal custom CSS
-  docs/                  # GitHub Pages website
-  packaging/             # Linux .desktop, metainfo, SVG icon
-```
-
-**Tech stack**: Go · Wails v2 · Vanilla JS · Tailwind CSS · marked.js · highlight.js · DOMPurify
+Markpad exists because every "lightweight" editor ships 200 MB of Chromium. This one uses your OS's built-in webview. The binary is under 10 MB. Memory footprint stays low. There's no telemetry, no accounts, no sync, no internet access. Just a notepad.
 
 ## Keyboard Shortcuts
 
@@ -97,15 +52,48 @@ markpad/
 | `Ctrl+O` | Open file |
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Save As |
-| `Ctrl+Shift+E` | Cycle view mode |
+| `Ctrl+Shift+E` | Cycle view |
 | `Ctrl+Shift+B` | Toggle sidebar |
-| `Ctrl+H` | Toggle version history |
-| `Ctrl+F` | Find in editor |
-| `Ctrl+B` | Bold |
-| `Ctrl+I` | Italic |
-| `Ctrl+K` | Link |
+| `Ctrl+H` | Version history |
+| `Ctrl+F` | Find |
+| `Ctrl+B/I/K` | Bold / Italic / Link |
 | `Ctrl+Del` | Delete draft |
-| `Esc` | Close modal / find / history |
+| `Esc` | Close panel |
+
+## Storage
+
+All data is local:
+
+| Platform | Path |
+|----------|------|
+| Linux | `~/.config/markpad/` |
+| macOS | `~/Library/Application Support/markpad/` |
+| Windows | `%AppData%\markpad\` |
+
+```
+session.json    # notes, favorites, recents, active state
+drafts/         # autosaved draft files
+history/        # version snapshots (max 50 per note)
+```
+
+## Contributing
+
+```sh
+git clone https://github.com/shreyam1008/markpad.git
+cd markpad
+wails dev       # starts dev server with hot reload
+```
+
+- Go backend in `app.go` and `internal/session/`
+- Frontend in `frontend/` — vanilla JS, Tailwind CSS, no build step
+- Tests: `go test ./...`
+- Format: `gofmt -w .`
+
+PRs welcome. Keep it simple, keep it fast.
+
+## Tech Stack
+
+Go · Wails v2 · Vanilla JS · Tailwind CSS · marked.js · highlight.js · DOMPurify
 
 ## License
 

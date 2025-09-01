@@ -58,14 +58,23 @@
         <button id="btn-collapse" class="px-2 py-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Collapse sidebar">&laquo;</button>
       </div>
 
-      <div id="favorites-section" class="px-2 hidden">
-        <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Favorites</div>
-        <div id="favorites-list" class="space-y-0.5"></div>
-      </div>
-
       <div class="flex-1 overflow-y-auto px-2 pb-2">
-        <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Notes</div>
-        <div id="notes-list" class="space-y-0.5"></div>
+        <div id="favorites-section" class="hidden">
+          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Favorites</div>
+          <div id="favorites-list" class="space-y-0.5 mb-1"></div>
+          <div class="mx-2 border-t border-border-soft"></div>
+        </div>
+
+        <div>
+          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Open</div>
+          <div id="notes-list" class="space-y-0.5 mb-1"></div>
+        </div>
+
+        <div id="recent-section" class="hidden">
+          <div class="mx-2 border-t border-border-soft"></div>
+          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Recent</div>
+          <div id="recent-list" class="space-y-0.5"></div>
+        </div>
       </div>
     </aside>
 
