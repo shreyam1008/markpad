@@ -68,11 +68,13 @@ const saveBtn      = $('btn-save');
 const FILE_ICONS = {
   md: '\ud83d\udcdd', markdown: '\ud83d\udcdd', mdx: '\ud83d\udcdd',
   txt: '\ud83d\udcc4', log: '\ud83d\udcc4', csv: '\ud83d\udcc4', tsv: '\ud83d\udcc4',
-  json: '{ }', yaml: '\u2699', yml: '\u2699', xml: '\u2699', toml: '\u2699',
-  py: '\ud83d\udc0d', js: 'JS', ts: 'TS', go: 'Go', rs: '\ud83e\udda0', rb: '\u2666',
-  sh: '\ud83d\udcbb', bash: '\ud83d\udcbb', zsh: '\ud83d\udcbb',
-  html: '\ud83c\udf10', htm: '\ud83c\udf10', css: '\ud83c\udfa8', svg: '\u25b3',
-  lua: '\ud83c\udf19',
+  json: '{ }', yaml: '\u2699', yml: '\u2699', xml: '\u2699', toml: '\u2699', ini: '\u2699', cfg: '\u2699', conf: '\u2699',
+  py: '\ud83d\udc0d', js: 'JS', ts: 'TS', jsx: 'JSX', tsx: 'TSX', go: 'Go', rs: '\ud83e\udda0', rb: '\u2666',
+  java: '\u2615', c: 'C', cpp: 'C+', h: 'H', cs: 'C#', kt: 'Kt', swift: '\ud83d\udc26', dart: '\ud83c\udfaf',
+  sh: '\ud83d\udcbb', bash: '\ud83d\udcbb', zsh: '\ud83d\udcbb', fish: '\ud83d\udcbb', ps1: '\ud83d\udcbb', bat: '\ud83d\udcbb',
+  html: '\ud83c\udf10', htm: '\ud83c\udf10', css: '\ud83c\udfa8', scss: '\ud83c\udfa8', less: '\ud83c\udfa8', svg: '\u25b3',
+  vue: 'V', svelte: 'S', php: 'PHP', sql: 'SQL', r: 'R',
+  lua: '\ud83c\udf19', dockerfile: '\ud83d\udc33', makefile: 'M', env: '\u2699',
 };
 function fileIcon(path) {
   if (!path) return '\u270f';
@@ -82,11 +84,12 @@ function fileIcon(path) {
 
 const MD_EXTS = new Set(['md', 'markdown', 'mdx']);
 const CODE_EXTS = new Set([
-  'py', 'js', 'ts', 'go', 'rs', 'rb', 'lua', 'sh', 'bash', 'zsh',
-  'json', 'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf',
-  'html', 'htm', 'css', 'svg', 'sql', 'c', 'cpp', 'h', 'java',
-  'kt', 'swift', 'r', 'pl', 'php', 'ex', 'exs', 'zig', 'nim',
-  'dockerfile', 'makefile', 'cmake',
+  'py', 'js', 'ts', 'jsx', 'tsx', 'go', 'rs', 'rb', 'lua', 'sh', 'bash', 'zsh', 'fish',
+  'json', 'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf', 'properties', 'env',
+  'html', 'htm', 'css', 'scss', 'less', 'svg', 'vue', 'svelte',
+  'sql', 'c', 'cpp', 'h', 'hpp', 'java', 'cs', 'kt', 'swift', 'dart',
+  'r', 'pl', 'php', 'ex', 'exs', 'zig', 'nim', 'ps1', 'bat', 'cmd',
+  'dockerfile', 'makefile', 'cmake', 'gradle', 'tf', 'hcl',
 ]);
 function getFileType(path) {
   if (!path) return 'md';
@@ -313,12 +316,18 @@ function loadContent(content) {
   if (historyOpen) renderHistory();
 }
 
+function defaultViewForFileType(path) {
+  const ft = getFileType(path);
+  if (ft === 'md') return 'viewer';   // Markdown → preview
+  if (ft === 'code') return 'viewer'; // Code → syntax-highlighted view
+  return 'markdown';                  // Plain text → editor
+}
+
 function restoreNoteView() {
   const active = cachedNotes.find(n => n.id === activeId);
   const ft = getFileType(active?.path);
   const saved = noteViewModes[activeId];
   if (ft !== 'md') {
-    // Code/text: default to code view (viewer), allow editor
     setView(saved === 'markdown' ? 'markdown' : 'viewer');
   } else {
     setView(saved || 'viewer');
@@ -844,7 +853,8 @@ async function doOpen() {
   try {
     renderSession(await window.go.main.App.OpenFileDialog());
     loadContent(await window.go.main.App.GetActiveContent());
-    setView('viewer');
+    const active = cachedNotes.find(n => n.id === activeId);
+    setView(defaultViewForFileType(active?.path));
     statusText.textContent = 'Opened';
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
@@ -900,7 +910,7 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.3 <span style="opacity:0.6;font-style:italic;">Aaradhya</span></p>
+    <p><b>Markpad</b> v0.4 <span style="opacity:0.6;font-style:italic;">Balram</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
     <p>Syntax highlighting, split view, version history with diffs, session restore, favorites, recently opened, formatting toolbar. Under 10 MB.</p>
     <p style="margin-top:8px;">
@@ -926,6 +936,22 @@ function boot() {
     applyZoom(true);
     registerEvents();
     interceptLinks(viewer);
+
+    // Drag-and-drop files from OS
+    if (window.runtime && window.runtime.OnFileDrop) {
+      window.runtime.OnFileDrop(async (x, y, paths) => {
+        if (!paths || paths.length === 0) return;
+        for (const path of paths) {
+          try {
+            renderSession(await window.go.main.App.OpenDroppedFile(path));
+          } catch (err) { statusText.textContent = 'Drop error: ' + err; }
+        }
+        loadContent(await window.go.main.App.GetActiveContent());
+        const active = cachedNotes.find(n => n.id === activeId);
+        setView(defaultViewForFileType(active?.path));
+        statusText.textContent = paths.length === 1 ? 'Opened dropped file' : `Opened ${paths.length} files`;
+      }, true);
+    }
     interceptLinks(modalBodyEl);
     loadApp();
   }
