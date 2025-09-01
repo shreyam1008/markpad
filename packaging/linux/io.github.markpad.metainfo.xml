@@ -2,15 +2,49 @@
 <component type="desktop-application">
   <id>io.github.markpad</id>
   <name>Markpad</name>
-  <summary>Small native Markdown notepad</summary>
+  <summary>Small native Markdown notepad with split view and version history</summary>
+  <developer id="io.github.shreyam1008">
+    <name>Shreyam Adhikari</name>
+  </developer>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>
-    <p>Markpad is a small native Markdown notepad with autosaved drafts, session restore, and source/viewer tabs.</p>
+    <p>Markpad is a tiny native Markdown notepad built with Go and the system webview. No Electron, under 10 MB, fast startup.</p>
+    <p>Features include:</p>
+    <ul>
+      <li>Split view: Editor, side-by-side split, and preview modes with resizable divider</li>
+      <li>Version history: every save creates a snapshot you can browse, preview, and restore</li>
+      <li>Session restore: all notes, drafts, and favorites survive app close</li>
+      <li>Formatting toolbar with bold, italic, headings, code, tables, lists, links, and more</li>
+      <li>Find in editor with wrap-around search</li>
+      <li>Auto-list continuation for bullets, numbered lists, and task lists</li>
+      <li>Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML, CSS, and more</li>
+      <li>Favorites, drag-and-drop reorder, file type icons, word count, reading time</li>
+    </ul>
   </description>
   <launchable type="desktop-id">markpad.desktop</launchable>
+  <url type="homepage">https://shreyam1008.github.io/markpad/</url>
+  <url type="bugtracker">https://github.com/shreyam1008/markpad/issues</url>
+  <url type="vcs-browser">https://github.com/shreyam1008/markpad</url>
   <categories>
     <category>Utility</category>
     <category>TextEditor</category>
   </categories>
+  <keywords>
+    <keyword>notepad</keyword>
+    <keyword>note</keyword>
+    <keyword>markdown</keyword>
+    <keyword>editor</keyword>
+    <keyword>text</keyword>
+    <keyword>writer</keyword>
+    <keyword>viewer</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.4.0" date="2026-04-30">
+      <description>
+        <p>Version history, auto-list continuation, external links open in browser, UX refinements.</p>
+      </description>
+    </release>
+  </releases>
 </component>

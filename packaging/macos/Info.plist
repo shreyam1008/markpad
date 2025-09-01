@@ -13,9 +13,9 @@
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>0.4.0</string>
   <key>CFBundleVersion</key>
-  <string>0.1.0</string>
+  <string>0.4.0</string>
   <key>LSMinimumSystemVersion</key>
   <string>11.0</string>
   <key>CFBundleDocumentTypes</key>
@@ -27,6 +27,65 @@
       <array>
         <string>md</string>
         <string>markdown</string>
+        <string>mdx</string>
+      </array>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Text document</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>txt</string>
+        <string>log</string>
+        <string>csv</string>
+      </array>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Data file</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>json</string>
+        <string>yaml</string>
+        <string>yml</string>
+        <string>toml</string>
+        <string>xml</string>
+        <string>ini</string>
+        <string>cfg</string>
+      </array>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Source code</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>py</string>
+        <string>go</string>
+        <string>js</string>
+        <string>ts</string>
+        <string>rs</string>
+        <string>rb</string>
+        <string>sh</string>
+        <string>lua</string>
+      </array>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Web file</string>
+      <key>CFBundleTypeExtensions</key>
+      <array>
+        <string>html</string>
+        <string>htm</string>
+        <string>css</string>
+        <string>svg</string>
       </array>
       <key>CFBundleTypeRole</key>
       <string>Editor</string>

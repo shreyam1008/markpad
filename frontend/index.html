@@ -176,6 +176,10 @@
         </div>
         <button id="history-close" class="text-muted hover:text-[#1a1c1b] text-lg leading-none px-1">&times;</button>
       </div>
+      <div id="history-actions" class="hidden px-3 py-2 border-b border-border-soft flex gap-1.5">
+        <button id="history-restore" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors">Restore this version</button>
+        <button id="history-back" class="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-hover text-muted hover:bg-border transition-colors">Back to current</button>
+      </div>
       <div id="history-list" class="flex-1 overflow-y-auto px-2 py-2 space-y-1"></div>
       <div id="history-empty" class="hidden flex-1 flex items-center justify-center text-muted text-xs p-4 text-center">No history yet.<br/>Versions are saved when you save the file.</div>
     </aside>

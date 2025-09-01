@@ -1,9 +1,12 @@
 [Desktop Entry]
 Type=Application
 Name=Markpad
-Comment=Small native Markdown notepad
+GenericName=Text Editor
+Comment=Small native Markdown notepad with split view, version history, and session restore
 Exec=markpad %F
 Icon=markpad
 Terminal=false
-Categories=Utility;TextEditor;
-MimeType=text/markdown;text/x-markdown;text/plain;
+StartupNotify=true
+Categories=Utility;TextEditor;Development;
+MimeType=text/markdown;text/x-markdown;text/plain;application/json;application/x-yaml;text/x-python;text/x-go;text/x-script.python;text/html;text/css;text/xml;text/x-log;
+Keywords=notepad;note;notes;text;editor;markdown;md;writer;pad;writing;code;viewer;

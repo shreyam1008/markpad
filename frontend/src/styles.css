@@ -57,7 +57,8 @@
 /* History panel */
 .hist-entry {
   padding: 8px 10px; border-radius: 8px; cursor: pointer;
-  transition: all 0.1s; border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s; border-left: 3px solid transparent;
+  min-height: 52px; box-sizing: border-box;
 }
 .hist-entry:hover { background: #e7ece5; }
 .hist-entry.active { background: #dde8df; border-left-color: #2f6f61; }
@@ -69,6 +70,14 @@
 .hist-badge.open { background: #e0dff8; color: #5b53a8; }
 .hist-badge.restore { background: #fde6d8; color: #c57933; }
 .hist-badge.save-as { background: #d8eef0; color: #2a7b8a; }
+
+/* Diff view */
+.diff-view { font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.6; }
+.diff-line { padding: 0 12px; white-space: pre-wrap; word-break: break-all; }
+.diff-add { background: #d4edda; color: #1a5928; }
+.diff-del { background: #fde2e2; color: #8b1a1a; }
+.diff-ctx { color: #6b6e68; }
+.diff-hunk { color: #5b53a8; font-weight: 600; padding: 6px 12px; background: #f0eff8; margin: 4px 0; border-radius: 4px; }
 
 /* Markdown body overrides */
 .markdown-body { background: #fffffc !important; }

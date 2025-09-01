@@ -1,0 +1,65 @@
+name: markpad
+base: core24
+version: '0.4.0'
+summary: Small native Markdown notepad
+description: |
+  Markpad is a tiny native Markdown notepad built with Go and the system webview.
+  No Electron, under 10 MB, fast startup.
+
+  Features: split view, version history, session restore, formatting toolbar,
+  find in editor, auto-list continuation, favorites, drag-and-drop, file type
+  icons, word count, reading time, and full keyboard shortcuts.
+
+  Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML,
+  CSS, and more.
+grade: stable
+confinement: strict
+icon: packaging/linux/markpad.svg
+
+architectures:
+  - build-on: [amd64]
+
+apps:
+  markpad:
+    command: bin/markpad
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+      - browser-support
+
+parts:
+  markpad:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/1.26/stable
+    build-packages:
+      - gcc
+      - pkg-config
+      - libgtk-3-dev
+      - libwebkit2gtk-4.1-dev
+    stage-packages:
+      - libgtk-3-0t64
+      - libwebkit2gtk-4.1-0
+    build-environment:
+      - CGO_ENABLED: "1"
+    override-build: |
+      go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o $CRAFT_PART_INSTALL/bin/markpad .
+
+  desktop-entry:
+    plugin: dump
+    source: .
+    organize:
+      packaging/linux/markpad.desktop: share/applications/markpad.desktop
+      packaging/linux/markpad.svg: share/icons/hicolor/scalable/apps/markpad.svg
+      packaging/linux/io.github.markpad.metainfo.xml: share/metainfo/io.github.markpad.metainfo.xml
+    stage:
+      - share/applications/markpad.desktop
+      - share/icons/hicolor/scalable/apps/markpad.svg
+      - share/metainfo/io.github.markpad.metainfo.xml
