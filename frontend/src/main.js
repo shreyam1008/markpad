@@ -16,6 +16,7 @@ let historyOpen = false;
 let historySelectedTs = null;
 let saving = false;
 const noteViewModes = {};
+const collapsedSections = JSON.parse(localStorage.getItem('markpad-sections') || '{}');
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
 
@@ -83,6 +84,7 @@ function fileIcon(path) {
 }
 
 const MD_EXTS = new Set(['md', 'markdown', 'mdx']);
+const TEXT_EXTS = new Set(['txt', 'log', 'csv', 'tsv']);
 const CODE_EXTS = new Set([
   'py', 'js', 'ts', 'jsx', 'tsx', 'go', 'rs', 'rb', 'lua', 'sh', 'bash', 'zsh', 'fish',
   'json', 'yaml', 'yml', 'xml', 'toml', 'ini', 'cfg', 'conf', 'properties', 'env',
@@ -91,13 +93,29 @@ const CODE_EXTS = new Set([
   'r', 'pl', 'php', 'ex', 'exs', 'zig', 'nim', 'ps1', 'bat', 'cmd',
   'dockerfile', 'makefile', 'cmake', 'gradle', 'tf', 'hcl',
 ]);
-function getFileType(path) {
+const PDF_EXTS = new Set(['pdf']);
+const EBOOK_EXTS = new Set(['epub', 'mobi', 'azw', 'azw3', 'fb2']);
+const OFFICE_EXTS = new Set(['doc', 'docx', 'odt', 'rtf', 'pages']);
+const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'ico']);
+const ARCHIVE_EXTS = new Set(['zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar']);
+function fileExt(path) { return path ? path.split('.').pop().toLowerCase() : ''; }
+function getFileType(path, kind) {
+  if (kind) return kind === 'markdown' ? 'md' : kind;
   if (!path) return 'md';
-  const ext = path.split('.').pop().toLowerCase();
+  const ext = fileExt(path);
   if (MD_EXTS.has(ext)) return 'md';
+  if (TEXT_EXTS.has(ext)) return 'text';
   if (CODE_EXTS.has(ext)) return 'code';
+  if (PDF_EXTS.has(ext)) return 'pdf';
+  if (EBOOK_EXTS.has(ext)) return 'ebook';
+  if (OFFICE_EXTS.has(ext)) return 'office';
+  if (IMAGE_EXTS.has(ext)) return 'image';
+  if (ARCHIVE_EXTS.has(ext)) return 'archive';
   return 'text';
 }
+function activeType() { const active = cachedNotes.find(n => n.id === activeId); return getFileType(active?.path, active?.kind); }
+function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'archive'].includes(type); }
+function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
 
 const CODE_LINE_CAP = 5000;
 function renderCode(content, path) {
@@ -114,6 +132,25 @@ function renderCode(content, path) {
   } catch { highlighted = toHighlight.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   const capNote = capped ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">Showing first ${CODE_LINE_CAP} of ${lines.length} lines</div>` : '';
   return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code>${highlighted}</code></pre>${capNote}`;
+}
+
+
+function renderDocumentCard(note) {
+  const type = getFileType(note?.path, note?.kind);
+  const icon = fileIcon(note?.path);
+  const size = note?.size ? formatBytes(note.size) : 'Unknown size';
+  const title = note?.title || 'Document';
+  const path = note?.path || '';
+  const label = typeLabel(type);
+  return `
+    <div class="doc-card">
+      <div class="doc-icon">${icon}</div>
+      <div class="doc-title">${title}</div>
+      <div class="doc-meta">${label} · ${size}</div>
+      <div class="doc-path">${path.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <p class="doc-note">This format is kept read-only in Markpad to stay tiny, fast, and safe. Open it in your system viewer for full rendering.</p>
+      <button class="doc-open" data-open-external="${path.replace(/"/g,'&quot;')}">Open Externally</button>
+    </div>`;
 }
 
 // ── Markdown ─────────────────────────────────────────────
@@ -159,6 +196,7 @@ function renderSession(state) {
   notesList.innerHTML = '';
   favsList.innerHTML = '';
   recentList.innerHTML = '';
+  applySectionState();
 
   const hasFavs = state.favorites && state.favorites.length > 0;
   favsSection.classList.toggle('hidden', !hasFavs);
@@ -197,22 +235,32 @@ function makeFavRow(fav) {
 }
 
 function makeRecentRow(recent) {
-  const row = el('div', 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-hover text-muted');
-  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-40');
+  const row = el('div', `group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-hover ${recent.missing ? 'opacity-55' : 'text-muted'}`);
+  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-50');
   ico.textContent = fileIcon(recent.path);
-  const t = el('span', 'text-[12px] truncate'); t.textContent = recent.title;
-  row.append(ico, t);
+  const body = el('div', 'flex-1 min-w-0');
+  const t = el('div', 'text-[12px] truncate'); t.textContent = recent.title;
+  const sub = el('div', 'text-[10px] truncate text-muted'); sub.textContent = recent.missing ? 'missing' : typeLabel(getFileType(recent.path, recent.kind));
+  body.append(t, sub);
+  const rm = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
+  rm.textContent = '×';
+  rm.title = 'Remove from recent';
+  rm.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    renderSession(await window.go.main.App.RemoveRecent(recent.path));
+  });
+  row.append(ico, body, rm);
   row.title = recent.path;
   row.addEventListener('click', async () => {
+    if (recent.missing) { statusText.textContent = 'Recent file is missing'; return; }
     try {
       renderSession(await window.go.main.App.OpenPathFromBookmark(recent.path));
       loadContent(await window.go.main.App.GetActiveContent());
       restoreNoteView();
-    } catch {}
+    } catch (err) { statusText.textContent = 'Open failed: ' + err; }
   });
   return row;
 }
-
 function makeNoteRow(note) {
   const isActive = note.id === activeId;
   const canDelete = !note.path;
@@ -228,7 +276,7 @@ function makeNoteRow(note) {
   const title = el('div', 'text-[13px] font-medium truncate');
   title.textContent = note.path ? note.title : 'Untitled';
   const status = el('div', `text-[11px] ${note.dirty ? 'text-unsaved font-semibold' : 'text-muted'}`);
-  status.textContent = note.dirty ? 'NOT SAVED' : (note.path ? 'saved' : 'draft');
+  status.textContent = note.dirty ? 'NOT SAVED' : (note.path ? typeLabel(getFileType(note.path, note.kind)) : 'draft');
   content.append(title, status);
   row.appendChild(content);
 
@@ -244,18 +292,18 @@ function makeNoteRow(note) {
     actions.appendChild(star);
   }
 
-  if (canDelete) {
-    const del = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
-    del.textContent = '\u2715';
-    del.title = 'Delete draft';
-    del.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      renderSession(await window.go.main.App.DeleteNote(note.id));
-      if (note.id === activeId) loadContent(await window.go.main.App.GetActiveContent());
-      statusText.textContent = 'Draft deleted';
-    });
-    actions.appendChild(del);
-  }
+  const close = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
+  close.textContent = '×';
+  close.title = note.path ? 'Close file' : 'Close draft';
+  close.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (note.dirty) { statusText.textContent = 'Save or cancel changes before closing'; return; }
+    renderSession(await window.go.main.App.CloseNote(note.id));
+    if (note.id === activeId) loadContent(await window.go.main.App.GetActiveContent());
+    restoreNoteView();
+    statusText.textContent = note.path ? 'File closed' : 'Draft closed';
+  });
+  actions.appendChild(close);
 
   row.appendChild(actions);
 
@@ -275,7 +323,7 @@ function makeNoteRow(note) {
     starBtn.textContent = note.star ? 'Unstar' : 'Star';
     starBtn.style.display = note.path ? '' : 'none';
     const delBtn = ctxMenu.querySelector('[data-ctx="delete"]');
-    delBtn.style.display = canDelete ? '' : 'none';
+    delBtn.style.display = canDelete && !note.dirty ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
     ctxMenu.style.top = e.clientY + 'px';
     ctxMenu.classList.remove('hidden');
@@ -309,25 +357,28 @@ function loadContent(content) {
   editor.value = currentContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+    const ft = getFileType(active?.path, active?.kind);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
   }
   updateStats();
   if (historyOpen) renderHistory();
 }
 
-function defaultViewForFileType(path) {
-  const ft = getFileType(path);
-  if (ft === 'md') return 'viewer';   // Markdown → preview
-  if (ft === 'code') return 'viewer'; // Code → syntax-highlighted view
-  return 'markdown';                  // Plain text → editor
+function defaultViewForFileType(path, kind) {
+  const ft = getFileType(path, kind);
+  if (isReadOnlyType(ft)) return 'viewer';
+  if (ft === 'md') return 'viewer';
+  if (ft === 'code') return 'viewer';
+  return 'markdown';
 }
 
 function restoreNoteView() {
   const active = cachedNotes.find(n => n.id === activeId);
-  const ft = getFileType(active?.path);
+  const ft = getFileType(active?.path, active?.kind);
   const saved = noteViewModes[activeId];
-  if (ft !== 'md') {
+  if (isReadOnlyType(ft)) {
+    setView('viewer');
+  } else if (ft !== 'md') {
     setView(saved === 'markdown' ? 'markdown' : 'viewer');
   } else {
     setView(saved || 'viewer');
@@ -351,17 +402,17 @@ ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () 
 // ── View mode (editor / split / viewer) ──────────────────
 function setView(mode) {
   const active = cachedNotes.find(n => n.id === activeId);
-  const ft = getFileType(active?.path);
+  const ft = getFileType(active?.path, active?.kind);
 
-  // For code/text files, only allow 'markdown' (editor) or 'viewer' (highlighted code)
+  if (isReadOnlyType(ft)) mode = 'viewer';
   if (ft !== 'md' && mode === 'split') mode = 'viewer';
 
   viewMode = mode;
   if (activeId) noteViewModes[activeId] = mode;
   document.querySelectorAll('.view-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
-    // Hide split button for non-md files
     if (b.dataset.mode === 'split') b.classList.toggle('hidden', ft !== 'md');
+    if (b.dataset.mode === 'markdown') b.classList.toggle('hidden', isReadOnlyType(ft));
   });
   const showEditor = mode === 'markdown' || mode === 'split';
   const showViewer = mode === 'viewer' || mode === 'split';
@@ -370,9 +421,15 @@ function setView(mode) {
   divider.classList.toggle('hidden', mode !== 'split');
   // Hide formatting toolbar for non-md files
   toolbar.classList.toggle('hidden', !showEditor || ft !== 'md');
+  editor.readOnly = isReadOnlyType(ft);
+  saveBtn.disabled = isReadOnlyType(ft);
+  saveBtn.classList.toggle('opacity-50', isReadOnlyType(ft));
+  $('btn-cancel').classList.toggle('hidden', isReadOnlyType(ft));
+  const viewerLabel = document.querySelector('[data-mode="viewer"] span');
+  if (viewerLabel) viewerLabel.textContent = isReadOnlyType(ft) ? 'Document' : ft === 'code' ? 'Code View' : 'Preview';
   if (showViewer) {
     if (ft === 'md') viewer.innerHTML = renderMd(currentContent);
-    else viewer.innerHTML = renderCode(currentContent, active?.path);
+    else viewer.innerHTML = isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
   }
   if (mode !== 'split') {
     editorCont.style.flex = '';
@@ -387,8 +444,8 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 
 function cycleView() {
   const active = cachedNotes.find(n => n.id === activeId);
-  const ft = getFileType(active?.path);
-  const modes = ft === 'md' ? ['markdown', 'split', 'viewer'] : ['markdown', 'viewer'];
+  const ft = getFileType(active?.path, active?.kind);
+  const modes = isReadOnlyType(ft) ? ['viewer'] : ft === 'md' ? ['markdown', 'split', 'viewer'] : ['markdown', 'viewer'];
   setView(modes[(modes.indexOf(viewMode) + 1) % modes.length]);
 }
 
@@ -428,8 +485,28 @@ function toggleSidebar() {
 $('btn-collapse').addEventListener('click', toggleSidebar);
 $('btn-expand').addEventListener('click', toggleSidebar);
 
+function applySectionState() {
+  document.querySelectorAll('[data-section-toggle]').forEach(btn => {
+    const key = btn.dataset.sectionToggle;
+    const body = document.querySelector(`[data-section-body="${key}"]`);
+    const collapsed = !!collapsedSections[key];
+    if (body) body.classList.toggle('hidden', collapsed);
+    btn.querySelector('[data-chevron]').textContent = collapsed ? '▸' : '▾';
+  });
+}
+document.querySelectorAll('[data-section-toggle]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.sectionToggle;
+    collapsedSections[key] = !collapsedSections[key];
+    localStorage.setItem('markpad-sections', JSON.stringify(collapsedSections));
+    applySectionState();
+  });
+});
+
 // ── Editor ───────────────────────────────────────────────
 editor.addEventListener('input', () => {
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (isReadOnlyType(getFileType(active?.path, active?.kind))) return;
   currentContent = editor.value;
   updateStats();
   dirtyInd.classList.remove('hidden');
@@ -445,8 +522,8 @@ editor.addEventListener('input', () => {
     clearTimeout(renderTimer);
     renderTimer = setTimeout(() => {
       const active = cachedNotes.find(n => n.id === activeId);
-      const ft = getFileType(active?.path);
-      viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+      const ft = getFileType(active?.path, active?.kind);
+      viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
     }, RENDER_MS);
   }
 });
@@ -499,6 +576,12 @@ editor.addEventListener('keydown', (e) => {
 });
 
 function updateStats() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  if (isReadOnlyType(type)) {
+    statusStats.textContent = `${typeLabel(type)} · ${active?.size ? formatBytes(active.size) : 'read-only'}`;
+    return;
+  }
   const t = currentContent;
   const lines = t ? t.split('\n').length : 0;
   const words = t.trim() ? t.trim().split(/\s+/).length : 0;
@@ -537,8 +620,8 @@ function historyBackToCurrent() {
   editor.value = currentContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+    const ft = getFileType(active?.path, active?.kind);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
   }
   statusText.textContent = 'Ready';
 }
@@ -828,6 +911,8 @@ async function doSave() {
 }
 
 async function doSaveAs() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (isReadOnlyType(getFileType(active?.path, active?.kind))) { statusText.textContent = 'Read-only document: open externally to edit'; return; }
   statusText.textContent = 'Save As...';
   try {
     renderSession(await window.go.main.App.SaveAsDialog(currentContent));
@@ -854,8 +939,8 @@ async function doOpen() {
     renderSession(await window.go.main.App.OpenFileDialog());
     loadContent(await window.go.main.App.GetActiveContent());
     const active = cachedNotes.find(n => n.id === activeId);
-    setView(defaultViewForFileType(active?.path));
-    statusText.textContent = 'Opened';
+    setView(defaultViewForFileType(active?.path, active?.kind));
+    statusText.textContent = `Opened ${typeLabel(getFileType(active?.path, active?.kind))}`;
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
 
@@ -867,8 +952,8 @@ $('btn-cancel').addEventListener('click', async () => {
   editor.value = committedContent; currentContent = committedContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+    const ft = getFileType(active?.path, active?.kind);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
   }
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
   if (activeId) {
@@ -877,10 +962,29 @@ $('btn-cancel').addEventListener('click', async () => {
   }
 });
 
+viewer.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-open-external]');
+  if (!btn) return;
+  window.go.main.App.OpenExternalPath(btn.dataset.openExternal);
+});
+
 // ── Modal ────────────────────────────────────────────────
 function showModal(t, html) { modalTitle.textContent = t; modalBodyEl.innerHTML = html; modalOverlay.classList.remove('hidden'); }
 $('modal-close').addEventListener('click', () => modalOverlay.classList.add('hidden'));
 modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.add('hidden'); });
+
+
+function showPreferences() {
+  showModal('Preferences', `
+    <p><b>Files</b></p>
+    <p>Markdown opens in Preview with Editor and Split available. Code opens in Code View with Edit available. Text opens directly in Editor.</p>
+    <p>PDF, ebook, office, image, and archive files are read-only cards. Use <b>Open Externally</b> for full rendering.</p>
+    <p><b>Sidebar</b></p>
+    <p>Favorites, Open, and Recent are collapsible. Open files behave like lightweight tabs and can be reordered or closed.</p>
+    <p><b>Performance</b></p>
+    <p>No embedded PDF engine or heavy editor runtime is bundled. This keeps startup fast, memory low, and the app under the tiny-native goal.</p>
+  `);
+}
 
 // ── Wails events ─────────────────────────────────────────
 function registerEvents() {
@@ -896,9 +1000,10 @@ function registerEvents() {
   window.runtime.EventsOn('menu:zoomin', zoomIn);
   window.runtime.EventsOn('menu:zoomout', zoomOut);
   window.runtime.EventsOn('menu:zoomreset', zoomReset);
+  window.runtime.EventsOn('menu:preferences', showPreferences);
   window.runtime.EventsOn('menu:help', () => showModal('Help', `
     <p><b>Markpad</b> is a native Markdown notepad.</p>
-    <p>Open any text file: <code>.md</code>, <code>.txt</code>, <code>.json</code>, <code>.py</code>, <code>.go</code>, and more.</p>
+    <p>Open Markdown, text, code, config, logs, PDFs, ebooks, and office documents.</p>
     <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
     <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
@@ -910,9 +1015,9 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.4 <span style="opacity:0.6;font-style:italic;">Balram</span></p>
+    <p><b>Markpad</b> v0.5 <span style="opacity:0.6;font-style:italic;">Chitrakala</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Syntax highlighting, split view, version history with diffs, session restore, favorites, recently opened, formatting toolbar. Under 10 MB.</p>
+    <p>Markdown split view, code view, read-only document cards, version history with diffs, session restore, favorites, recent files, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
@@ -926,7 +1031,8 @@ async function loadApp() {
   try {
     renderSession(await window.go.main.App.GetSession());
     loadContent(await window.go.main.App.GetActiveContent());
-    setView('viewer');
+    const active = cachedNotes.find(n => n.id === activeId);
+    setView(defaultViewForFileType(active?.path, active?.kind));
     statusText.textContent = 'Ready';
   } catch (err) { statusText.textContent = 'Load error: ' + err; }
 }
@@ -948,8 +1054,8 @@ function boot() {
         }
         loadContent(await window.go.main.App.GetActiveContent());
         const active = cachedNotes.find(n => n.id === activeId);
-        setView(defaultViewForFileType(active?.path));
-        statusText.textContent = paths.length === 1 ? 'Opened dropped file' : `Opened ${paths.length} files`;
+        setView(defaultViewForFileType(active?.path, active?.kind));
+        statusText.textContent = paths.length === 1 ? `Opened ${typeLabel(getFileType(active?.path, active?.kind))}` : `Opened ${paths.length} files`;
       }, true);
     }
     interceptLinks(modalBodyEl);

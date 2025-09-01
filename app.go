@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,11 +54,15 @@ type NoteInfo struct {
 	Path  string `json:"path"`
 	Dirty bool   `json:"dirty"`
 	Star  bool   `json:"star"`
+	Kind  string `json:"kind"`
+	Size  int64  `json:"size"`
 }
 
 type RecentInfo struct {
-	Path  string `json:"path"`
-	Title string `json:"title"`
+	Path    string `json:"path"`
+	Title   string `json:"title"`
+	Kind    string `json:"kind"`
+	Missing bool   `json:"missing"`
 }
 
 type SessionState struct {
@@ -72,24 +77,32 @@ type SessionState struct {
 func (a *App) GetSession() SessionState {
 	state := SessionState{ActiveID: a.sess.ActiveID}
 	for _, doc := range a.sess.Documents {
+		kind, size := fileKindAndSize(doc.Path)
 		state.Notes = append(state.Notes, NoteInfo{
 			ID:    doc.ID,
 			Title: doc.Title,
 			Path:  doc.Path,
 			Dirty: doc.Dirty,
 			Star:  a.sess.IsBookmarked(doc.Path),
+			Kind:  kind,
+			Size:  size,
 		})
 	}
 	for _, bm := range a.sess.Bookmarks {
+		kind, size := fileKindAndSize(bm.Path)
 		state.Favorites = append(state.Favorites, NoteInfo{
 			ID:    bm.ID,
 			Title: bm.Title,
 			Path:  bm.Path,
 			Star:  true,
+			Kind:  kind,
+			Size:  size,
 		})
 	}
 	for _, r := range a.sess.RecentFiles {
-		state.Recents = append(state.Recents, RecentInfo{Path: r.Path, Title: r.Title})
+		kind, _ := fileKindAndSize(r.Path)
+		_, err := os.Stat(r.Path)
+		state.Recents = append(state.Recents, RecentInfo{Path: r.Path, Title: r.Title, Kind: kind, Missing: err != nil})
 	}
 	return state
 }
@@ -140,6 +153,9 @@ func (a *App) UpdateContent(id string, content string) {
 	if doc == nil {
 		return
 	}
+	if isReadOnlyPath(doc.Path) {
+		return
+	}
 	doc.Dirty = true
 	doc.UpdatedAt = time.Now()
 	if doc.Path == "" {
@@ -156,6 +172,9 @@ func (a *App) SaveActive(content string) (SessionState, error) {
 	}
 	if doc.Path == "" {
 		return a.SaveAsDialog(content)
+	}
+	if isReadOnlyPath(doc.Path) {
+		return a.GetSession(), fmt.Errorf("read-only document: open externally to edit")
 	}
 	if err := a.store.SaveToDisk(doc, content); err != nil {
 		return a.GetSession(), err
@@ -178,9 +197,9 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 		Title:           "Save As",
 		DefaultFilename: defaultName,
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Markdown", Pattern: "*.md;*.markdown"},
-			{DisplayName: "Text", Pattern: "*.txt"},
-			{DisplayName: "All Files", Pattern: "*.*"},
+			{DisplayName: "All Files", Pattern: "*"},
+			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
+			{DisplayName: "Text", Pattern: "*.txt;*.log"},
 		},
 	})
 	if err != nil {
@@ -208,6 +227,8 @@ func (a *App) OpenFileDialog() (SessionState, error) {
 			{DisplayName: "Code", Pattern: "*.py;*.js;*.ts;*.jsx;*.tsx;*.go;*.rs;*.rb;*.lua;*.java;*.c;*.cpp;*.h;*.cs;*.php;*.swift;*.kt;*.dart;*.r;*.sql"},
 			{DisplayName: "Shell & Scripts", Pattern: "*.sh;*.bash;*.zsh;*.fish;*.ps1;*.bat;*.cmd"},
 			{DisplayName: "Web", Pattern: "*.html;*.htm;*.css;*.scss;*.less;*.svg;*.vue;*.svelte"},
+			{DisplayName: "Documents", Pattern: "*.pdf;*.epub;*.mobi;*.azw;*.azw3;*.fb2;*.doc;*.docx;*.odt;*.rtf"},
+			{DisplayName: "Images & Archives", Pattern: "*.png;*.jpg;*.jpeg;*.gif;*.webp;*.zip;*.tar;*.gz;*.7z;*.rar"},
 		},
 	})
 	if err != nil {
@@ -225,13 +246,36 @@ func (a *App) OpenDroppedFile(path string) (SessionState, error) {
 }
 
 func (a *App) openPath(path string) (SessionState, error) {
+	abs, err := filepath.Abs(path)
+	if err == nil {
+		path = abs
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	if info.IsDir() {
+		return a.GetSession(), fmt.Errorf("folders are not supported")
+	}
+	if isReadOnlyPath(path) {
+		doc := a.sess.AddFile(path, "")
+		a.sess.AddRecent(path)
+		_ = a.store.WriteDraft(doc, "")
+		_ = a.store.Save(a.sess)
+		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		return a.GetSession(), nil
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return a.GetSession(), err
 	}
-	abs, err := filepath.Abs(path)
-	if err == nil {
-		path = abs
+	if looksBinary(data) {
+		doc := a.sess.AddFile(path, "")
+		a.sess.AddRecent(path)
+		_ = a.store.WriteDraft(doc, "")
+		_ = a.store.Save(a.sess)
+		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		return a.GetSession(), nil
 	}
 	doc := a.sess.AddFile(path, string(data))
 	a.sess.AddRecent(path)
@@ -301,6 +345,46 @@ func (a *App) OpenPathFromBookmark(path string) (SessionState, error) {
 	return a.openPath(path)
 }
 
+func (a *App) CloseNote(id string) SessionState {
+	if strings.TrimSpace(id) == "" || a.sess == nil {
+		return a.GetSession()
+	}
+	next := ""
+	filtered := a.sess.Documents[:0]
+	for _, doc := range a.sess.Documents {
+		if doc.ID == id {
+			continue
+		}
+		if next == "" {
+			next = doc.ID
+		}
+		filtered = append(filtered, doc)
+	}
+	a.sess.Documents = filtered
+	if len(a.sess.Documents) == 0 {
+		doc := session.NewDocument("", "")
+		doc.Title = "Untitled"
+		a.sess.Add(doc)
+		_ = a.store.WriteDraft(doc, "")
+	} else if a.sess.ActiveID == id {
+		a.sess.ActiveID = next
+	}
+	_ = a.store.Save(a.sess)
+	return a.GetSession()
+}
+
+func (a *App) RemoveRecent(path string) SessionState {
+	filtered := a.sess.RecentFiles[:0]
+	for _, recent := range a.sess.RecentFiles {
+		if filepath.Clean(recent.Path) != filepath.Clean(path) {
+			filtered = append(filtered, recent)
+		}
+	}
+	a.sess.RecentFiles = filtered
+	_ = a.store.Save(a.sess)
+	return a.GetSession()
+}
+
 func (a *App) DeleteNote(id string) SessionState {
 	target := a.sess.Find(id)
 	if target == nil || target.Path != "" {
@@ -331,6 +415,17 @@ func (a *App) OpenURL(url string) {
 	runtime.BrowserOpenURL(a.ctx, url)
 }
 
+func (a *App) OpenExternalPath(path string) {
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	abs, err := filepath.Abs(path)
+	if err == nil {
+		path = abs
+	}
+	runtime.BrowserOpenURL(a.ctx, (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String())
+}
+
 func (a *App) ReorderNotes(ids []string) SessionState {
 	byID := make(map[string]*session.Document, len(a.sess.Documents))
 	for _, doc := range a.sess.Documents {
@@ -351,4 +446,62 @@ func (a *App) ReorderNotes(ids []string) SessionState {
 	a.sess.Documents = reordered
 	_ = a.store.Save(a.sess)
 	return a.GetSession()
+}
+
+func fileKindAndSize(path string) (string, int64) {
+	if strings.TrimSpace(path) == "" {
+		return "markdown", 0
+	}
+	info, err := os.Stat(path)
+	size := int64(0)
+	if err == nil {
+		size = info.Size()
+	}
+	return fileKind(path), size
+}
+
+func fileKind(path string) string {
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
+	switch ext {
+	case "md", "markdown", "mdx":
+		return "markdown"
+	case "txt", "log", "csv", "tsv":
+		return "text"
+	case "pdf":
+		return "pdf"
+	case "epub", "mobi", "azw", "azw3", "fb2":
+		return "ebook"
+	case "doc", "docx", "odt", "rtf", "pages":
+		return "office"
+	case "png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "ico":
+		return "image"
+	case "zip", "tar", "gz", "bz2", "xz", "7z", "rar":
+		return "archive"
+	case "py", "js", "ts", "jsx", "tsx", "go", "rs", "rb", "lua", "sh", "bash", "zsh", "fish", "json", "yaml", "yml", "xml", "toml", "ini", "cfg", "conf", "properties", "env", "html", "htm", "css", "scss", "less", "svg", "vue", "svelte", "sql", "c", "cpp", "h", "hpp", "java", "cs", "kt", "swift", "dart", "r", "pl", "php", "ex", "exs", "zig", "nim", "ps1", "bat", "cmd", "gradle", "tf", "hcl":
+		return "code"
+	default:
+		return "text"
+	}
+}
+
+func isReadOnlyPath(path string) bool {
+	switch fileKind(path) {
+	case "pdf", "ebook", "office", "image", "archive":
+		return true
+	default:
+		return false
+	}
+}
+
+func looksBinary(data []byte) bool {
+	limit := len(data)
+	if limit > 8192 {
+		limit = 8192
+	}
+	for i := 0; i < limit; i++ {
+		if data[i] == 0 {
+			return true
+		}
+	}
+	return false
 }

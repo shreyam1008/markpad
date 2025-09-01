@@ -60,20 +60,20 @@
 
       <div class="flex-1 overflow-y-auto px-2 pb-2">
         <div id="favorites-section" class="hidden">
-          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Favorites</div>
-          <div id="favorites-list" class="space-y-0.5 mb-1"></div>
+          <button data-section-toggle="favorites" class="section-head"><span data-chevron>▾</span><span>Favorites</span></button>
+          <div id="favorites-list" data-section-body="favorites" class="space-y-0.5 mb-1"></div>
           <div class="mx-2 border-t border-border-soft"></div>
         </div>
 
         <div>
-          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Open</div>
-          <div id="notes-list" class="space-y-0.5 mb-1"></div>
+          <button data-section-toggle="open" class="section-head"><span data-chevron>▾</span><span>Open</span></button>
+          <div id="notes-list" data-section-body="open" class="space-y-0.5 mb-1"></div>
         </div>
 
         <div id="recent-section" class="hidden">
           <div class="mx-2 border-t border-border-soft"></div>
-          <div class="px-2 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Recent</div>
-          <div id="recent-list" class="space-y-0.5"></div>
+          <button data-section-toggle="recent" class="section-head"><span data-chevron>▾</span><span>Recent</span></button>
+          <div id="recent-list" data-section-body="recent" class="space-y-0.5"></div>
         </div>
       </div>
     </aside>
