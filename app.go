@@ -78,13 +78,16 @@ func (a *App) shutdown(ctx context.Context) {
 // ---------- Types returned to frontend ----------
 
 type NoteInfo struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Path  string `json:"path"`
-	Dirty bool   `json:"dirty"`
-	Star  bool   `json:"star"`
-	Kind  string `json:"kind"`
-	Size  int64  `json:"size"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Path      string `json:"path"`
+	Dirty     bool   `json:"dirty"`
+	Star      bool   `json:"star"`
+	Kind      string `json:"kind"`
+	Size      int64  `json:"size"`
+	ScrollTop int    `json:"scrollTop"`
+	ViewTop   int    `json:"viewTop"`
+	Cursor    int    `json:"cursor"`
 }
 
 type RecentInfo struct {
@@ -108,13 +111,16 @@ func (a *App) GetSession() SessionState {
 	for _, doc := range a.sess.Documents {
 		kind, size := fileKindAndSize(doc.Path)
 		state.Notes = append(state.Notes, NoteInfo{
-			ID:    doc.ID,
-			Title: doc.Title,
-			Path:  doc.Path,
-			Dirty: doc.Dirty,
-			Star:  a.sess.IsBookmarked(doc.Path),
-			Kind:  kind,
-			Size:  size,
+			ID:        doc.ID,
+			Title:     doc.Title,
+			Path:      doc.Path,
+			Dirty:     doc.Dirty,
+			Star:      a.sess.IsBookmarked(doc.Path),
+			Kind:      kind,
+			Size:      size,
+			ScrollTop: doc.ScrollTop,
+			ViewTop:   doc.ViewTop,
+			Cursor:    doc.Cursor,
 		})
 	}
 	for _, bm := range a.sess.Bookmarks {
@@ -165,6 +171,17 @@ func (a *App) SetActive(id string) {
 		a.sess.ActiveID = id
 		_ = a.store.Save(a.sess)
 	}
+}
+
+func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor int) {
+	doc := a.sess.Find(id)
+	if doc == nil {
+		return
+	}
+	doc.ScrollTop = scrollTop
+	doc.ViewTop = viewTop
+	doc.Cursor = cursor
+	_ = a.store.Save(a.sess)
 }
 
 func (a *App) NewNote() SessionState {

@@ -15,6 +15,9 @@ let findOpen = false;
 let historyOpen = false;
 let historySelectedTs = null;
 let saving = false;
+let readPosTimer = null;
+let pdfRenderToken = 0;
+let viewerRenderKey = '';
 const noteViewModes = {};
 const noteScrollPos = {};
 const collapsedSections = JSON.parse(localStorage.getItem('markpad-sections') || '{}');
@@ -117,22 +120,23 @@ function getFileType(path, kind) {
 function activeType() { const active = cachedNotes.find(n => n.id === activeId); return getFileType(active?.path, active?.kind); }
 function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'archive'].includes(type); }
 function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
+function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 const CODE_LINE_CAP = 5000;
 function renderCode(content, path) {
   const ext = path ? path.split('.').pop().toLowerCase() : '';
-  const langMap = { py: 'python', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', zsh: 'bash', fish: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini', h: 'c', hpp: 'cpp', cs: 'csharp', kt: 'kotlin', ex: 'elixir', exs: 'elixir', pl: 'perl', ps1: 'powershell', bat: 'dos', cmd: 'dos', tf: 'hcl', gradle: 'groovy', svelte: 'xml', vue: 'xml', md: 'markdown', mdx: 'markdown' };
+  const langMap = { py: 'python', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', bash: 'bash', zsh: 'bash', fish: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini', h: 'c', hpp: 'cpp', cs: 'csharp', kt: 'kotlin', ex: 'elixir', exs: 'elixir', pl: 'perl', ps1: 'powershell', bat: 'dos', cmd: 'dos', tf: 'hcl', gradle: 'groovy', svelte: 'xml', vue: 'xml' };
   const lang = langMap[ext] || ext;
   const lines = content.split('\n');
   const capped = lines.length > CODE_LINE_CAP;
   const toHighlight = capped ? lines.slice(0, CODE_LINE_CAP).join('\n') : content;
-  let highlighted;
+  let highlighted = escapeHtml(toHighlight);
   try {
-    if (lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
-    else highlighted = hljs.highlightAuto(toHighlight).value;
-  } catch { highlighted = toHighlight.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    if (window.hljs && lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
+    else if (window.hljs) highlighted = hljs.highlightAuto(toHighlight).value;
+  } catch {}
   const capNote = capped ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">Showing first ${CODE_LINE_CAP} of ${lines.length} lines</div>` : '';
-  return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code>${highlighted}</code></pre>${capNote}`;
+  return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code class="language-${escapeHtml(lang)}">${highlighted}</code></pre>${capNote}`;
 }
 
 
@@ -159,46 +163,58 @@ async function renderPdf(note) {
   if (!window.pdfjsLib) return renderDocumentCard(note);
   const path = note?.path;
   if (!path) return renderDocumentCard(note);
+  const token = ++pdfRenderToken;
   viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading PDF...</div>';
   try {
-    const b64 = await window.go.main.App.ReadFileBase64(path);
-    const raw = atob(b64);
+    let b64 = await window.go.main.App.ReadFileBase64(path);
+    let raw = atob(b64);
+    b64 = '';
     const arr = new Uint8Array(raw.length);
     for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    raw = '';
     const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
+    if (token !== pdfRenderToken) return;
     const container = document.createElement('div');
     container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;';
     const header = document.createElement('div');
     header.style.cssText = 'text-align:center;color:#6b6e68;font-size:12px;font-weight:600;margin-bottom:8px;';
     header.textContent = `${note.title || 'PDF'} — ${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
     container.appendChild(header);
-    // Render pages lazily — first 5 immediately, rest on scroll
-    const MAX_INITIAL = 5;
+    const MAX_INITIAL = 2;
+    const LOAD_STEP = 3;
     const renderPage = async (num) => {
       const page = await pdf.getPage(num);
-      const scale = 1.5;
+      const scale = 1.15;
       const vp = page.getViewport({ scale });
       const canvas = document.createElement('canvas');
       canvas.width = vp.width;
       canvas.height = vp.height;
       canvas.style.cssText = 'max-width:100%;border:1px solid #e8e6df;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);';
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
       return canvas;
     };
     for (let i = 1; i <= Math.min(MAX_INITIAL, pdf.numPages); i++) {
       container.appendChild(await renderPage(i));
     }
     if (pdf.numPages > MAX_INITIAL) {
+      let rendered = MAX_INITIAL;
       const more = document.createElement('button');
       more.style.cssText = 'border:none;background:#2f6f61;color:#fffffb;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:8px 0;';
-      more.textContent = `Load remaining ${pdf.numPages - MAX_INITIAL} pages`;
+      more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
       more.addEventListener('click', async () => {
         more.textContent = 'Loading...';
         more.disabled = true;
-        for (let i = MAX_INITIAL + 1; i <= pdf.numPages; i++) {
+        const end = Math.min(rendered + LOAD_STEP, pdf.numPages);
+        for (let i = rendered + 1; i <= end; i++) {
           container.insertBefore(await renderPage(i), more);
         }
-        more.remove();
+        rendered = end;
+        if (rendered >= pdf.numPages) more.remove();
+        else {
+          more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
+          more.disabled = false;
+        }
+        restoreScrollPos();
       });
       container.appendChild(more);
     }
@@ -209,6 +225,7 @@ async function renderPdf(note) {
     container.appendChild(openBtn);
     viewer.innerHTML = '';
     viewer.appendChild(container);
+    restoreScrollPos();
   } catch (err) {
     viewer.innerHTML = renderDocumentCard(note) + '<div style="text-align:center;color:#c54b33;font-size:12px;margin-top:8px;">PDF render error: ' + (err.message || err) + '</div>';
   }
@@ -240,6 +257,9 @@ async function renderImagePreview(note) {
 // ── Viewer dispatch ──────────────────────────────────────
 function renderViewer(content, active) {
   const ft = getFileType(active?.path, active?.kind);
+  const stableKey = `${ft}:${active?.id || ''}:${active?.path || ''}`;
+  if ((ft === 'pdf' || ft === 'image') && viewerRenderKey === stableKey) return;
+  viewerRenderKey = stableKey;
   if (ft === 'pdf') { renderPdf(active); return; }
   if (ft === 'image') { renderImagePreview(active); return; }
   if (ft === 'md') { viewer.innerHTML = renderMd(content); return; }
@@ -295,6 +315,11 @@ function renderSession(state) {
   const hasFavs = state.favorites && state.favorites.length > 0;
   favsSection.classList.toggle('hidden', !hasFavs);
   if (hasFavs) state.favorites.forEach(f => favsList.appendChild(makeFavRow(f)));
+  cachedNotes.forEach(n => {
+    if (!noteScrollPos[n.id] && ((n.scrollTop || 0) || (n.viewTop || 0) || (n.cursor || 0))) {
+      noteScrollPos[n.id] = { editor: n.scrollTop || 0, viewer: n.viewTop || 0, cursor: n.cursor || 0 };
+    }
+  });
   cachedNotes.forEach(n => notesList.appendChild(makeNoteRow(n)));
 
   // Recent files (exclude currently open paths)
@@ -451,11 +476,15 @@ function el(tag, cls) { const e = document.createElement(tag); if (cls) e.classN
 
 function saveScrollPos() {
   if (!activeId) return;
-  noteScrollPos[activeId] = {
+  const pos = {
     editor: editor.scrollTop,
     viewer: viewer.parentElement ? viewer.parentElement.scrollTop : 0,
     cursor: editor.selectionStart
   };
+  noteScrollPos[activeId] = pos;
+  if (window.go?.main?.App?.UpdateReadPosition) {
+    window.go.main.App.UpdateReadPosition(activeId, pos.editor, pos.viewer, pos.cursor).catch(() => {});
+  }
 }
 
 function restoreScrollPos() {
@@ -467,6 +496,11 @@ function restoreScrollPos() {
     if (viewer.parentElement) viewer.parentElement.scrollTop = pos.viewer || 0;
     editor.selectionStart = editor.selectionEnd = pos.cursor || 0;
   });
+}
+
+function queueReadPositionSave() {
+  clearTimeout(readPosTimer);
+  readPosTimer = setTimeout(saveScrollPos, 350);
 }
 
 function loadContent(content) {
@@ -655,6 +689,11 @@ document.querySelectorAll('[data-section-toggle]').forEach(btn => {
 });
 
 // ── Editor ───────────────────────────────────────────────
+editor.addEventListener('scroll', queueReadPositionSave);
+editor.addEventListener('keyup', queueReadPositionSave);
+viewerCont.addEventListener('scroll', queueReadPositionSave);
+window.addEventListener('beforeunload', saveScrollPos);
+
 editor.addEventListener('input', () => {
   const active = cachedNotes.find(n => n.id === activeId);
   if (isReadOnlyType(getFileType(active?.path, active?.kind))) return;

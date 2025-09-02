@@ -57,7 +57,7 @@ This file tracks what each layer costs so new features stay within budget.
 | Cold start (empty note) | ~30 MB | Go runtime + webview + DOM |
 | 5 markdown files open | ~35 MB | Drafts in memory, DOM renders |
 | 10 MB markdown file open | ~55 MB | Large textarea + preview HTML |
-| PDF open (10 pages rendered) | ~50 MB | Canvas bitmaps in webview |
+| PDF open (2 pages rendered) | ~42-50 MB | Lower scale canvas bitmaps in webview |
 | 20 files + history panel | ~45 MB | Session JSON + snapshot metadata |
 
 ## Budget rules
@@ -67,7 +67,7 @@ This file tracks what each layer costs so new features stay within budget.
 - **No new sync CDN scripts.** Any new library must load with `defer` or on-demand.
 - **Syntax highlighting capped at 5000 lines.** Prevents webview OOM on huge files.
 - **LCS diff capped at 5000 lines.** Falls back to full old/new for larger files.
-- **PDF: first 5 pages rendered, rest on-demand.** Prevents canvas memory bloat.
+- **PDF: first 2 pages rendered, next pages in batches of 3.** Prevents canvas memory bloat.
 - **Images limited to 50 MB via ReadFileBase64.** Go-side guard.
 - **History: max 50 snapshots per note.** Auto-pruned on save.
 

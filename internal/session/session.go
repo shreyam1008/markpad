@@ -25,6 +25,9 @@ type Document struct {
 	Dirty     bool      `json:"dirty"`
 	UpdatedAt time.Time `json:"updated_at"`
 	SavedAt   time.Time `json:"saved_at,omitempty"`
+	ScrollTop int       `json:"scroll_top,omitempty"`
+	ViewTop   int       `json:"view_top,omitempty"`
+	Cursor    int       `json:"cursor,omitempty"`
 }
 
 type Bookmark struct {
