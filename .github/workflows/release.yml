@@ -99,11 +99,22 @@ jobs:
           cp packaging/macos/Info.plist "dist/Markpad.app/Contents/Info.plist"
           go build -tags production -trimpath -ldflags="-s -w" -o "dist/Markpad.app/Contents/MacOS/markpad" .
       - name: Build dmg
-        run: hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg"
+        continue-on-error: true
+        run: |
+          for i in 1 2 3; do
+            hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg" && break
+            echo "hdiutil attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+      - name: Zip app bundle as fallback
+        run: cd dist && zip -r Markpad-macOS.zip Markpad.app
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: macos
-          path: dist/Markpad.dmg
+          path: |
+            dist/Markpad.dmg
+            dist/Markpad-macOS.zip
 
   publish:
     runs-on: ubuntu-24.04
