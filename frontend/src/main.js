@@ -16,6 +16,7 @@ let historyOpen = false;
 let historySelectedTs = null;
 let saving = false;
 const noteViewModes = {};
+const noteScrollPos = {};
 const collapsedSections = JSON.parse(localStorage.getItem('markpad-sections') || '{}');
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
@@ -120,7 +121,7 @@ function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text',
 const CODE_LINE_CAP = 5000;
 function renderCode(content, path) {
   const ext = path ? path.split('.').pop().toLowerCase() : '';
-  const langMap = { py: 'python', js: 'javascript', ts: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini' };
+  const langMap = { py: 'python', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', zsh: 'bash', fish: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini', h: 'c', hpp: 'cpp', cs: 'csharp', kt: 'kotlin', ex: 'elixir', exs: 'elixir', pl: 'perl', ps1: 'powershell', bat: 'dos', cmd: 'dos', tf: 'hcl', gradle: 'groovy', svelte: 'xml', vue: 'xml', md: 'markdown', mdx: 'markdown' };
   const lang = langMap[ext] || ext;
   const lines = content.split('\n');
   const capped = lines.length > CODE_LINE_CAP;
@@ -318,6 +319,7 @@ function makeFavRow(fav) {
   const t = el('span', 'text-[13px] font-medium truncate'); t.textContent = fav.title || 'Untitled';
   row.append(icon, t);
   row.addEventListener('click', async () => {
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     try {
       renderSession(await window.go.main.App.OpenPathFromBookmark(fav.path));
       loadContent(await window.go.main.App.GetActiveContent());
@@ -346,6 +348,7 @@ function makeRecentRow(recent) {
   row.title = recent.path;
   row.addEventListener('click', async () => {
     if (recent.missing) { statusText.textContent = 'Recent file is missing'; return; }
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     try {
       renderSession(await window.go.main.App.OpenPathFromBookmark(recent.path));
       loadContent(await window.go.main.App.GetActiveContent());
@@ -399,7 +402,7 @@ function makeNoteRow(note) {
   row.appendChild(close);
 
   row.addEventListener('click', async () => {
-    if (activeId) noteViewModes[activeId] = viewMode;
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     await window.go.main.App.SetActive(note.id);
     activeId = note.id;
     loadContent(await window.go.main.App.GetNoteContent(note.id));
@@ -446,16 +449,37 @@ function makeNoteRow(note) {
 
 function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
 
+function saveScrollPos() {
+  if (!activeId) return;
+  noteScrollPos[activeId] = {
+    editor: editor.scrollTop,
+    viewer: viewer.parentElement ? viewer.parentElement.scrollTop : 0,
+    cursor: editor.selectionStart
+  };
+}
+
+function restoreScrollPos() {
+  if (!activeId) return;
+  const pos = noteScrollPos[activeId];
+  if (!pos) return;
+  requestAnimationFrame(() => {
+    editor.scrollTop = pos.editor || 0;
+    if (viewer.parentElement) viewer.parentElement.scrollTop = pos.viewer || 0;
+    editor.selectionStart = editor.selectionEnd = pos.cursor || 0;
+  });
+}
+
 function loadContent(content) {
   currentContent = content || '';
   committedContent = currentContent;
   editor.value = currentContent;
-  if (viewMode !== 'markdown') {
-    const active = cachedNotes.find(n => n.id === activeId);
-    renderViewer(currentContent, active);
-  }
+  const active = cachedNotes.find(n => n.id === activeId);
+  const ft = getFileType(active?.path, active?.kind);
+  if (isReadOnlyType(ft)) dirtyInd.classList.add('hidden');
+  if (viewMode !== 'markdown') renderViewer(currentContent, active);
   updateStats();
   if (historyOpen) renderHistory();
+  restoreScrollPos();
 }
 
 function defaultViewForFileType(path, kind) {
@@ -1050,7 +1074,7 @@ async function doSaveAs() {
 }
 
 async function doNew() {
-  if (activeId) noteViewModes[activeId] = viewMode;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
     renderSession(await window.go.main.App.NewNote());
     loadContent('');
@@ -1061,7 +1085,7 @@ async function doNew() {
 }
 
 async function doOpen() {
-  if (activeId) noteViewModes[activeId] = viewMode;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
     renderSession(await window.go.main.App.OpenFileDialog());
     loadContent(await window.go.main.App.GetActiveContent());
@@ -1149,7 +1173,17 @@ async function showPreferences() {
 function showChangelog() {
   showModal('Changelog', `
     <div style="font-size:12px;line-height:1.7;">
-      <p><b>v0.6 Dhruva</b> <span style="color:#6b6e68;">— Current</span></p>
+      <p><b>v0.7 Eklavya</b> <span style="color:#6b6e68;">— Current</span></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Scroll position memory: remembers where you left off in each note</li>
+        <li>Extended syntax highlighting: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more language mappings</li>
+        <li>Fixed Open Folder: uses xdg-open/open/explorer (was broken on Linux)</li>
+        <li>Fixed PDF dirty indicator: read-only files no longer show "NOT SAVED"</li>
+        <li>Performance: pdf.js deferred, highlight.js extras deferred, faster cold start</li>
+        <li>BUNDLE_BUDGET.md: tracks size/memory cost of every feature</li>
+        <li>Comprehensive agents.md: strict guardrails for AI-assisted development</li>
+      </ul>
+      <p><b>v0.6 Dhruva</b></p>
       <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
         <li>Single instance: only one window, second launch opens files in existing</li>
         <li>PDF rendering via pdf.js (page-by-page, lazy, lightweight)</li>
@@ -1231,9 +1265,9 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.6 <span style="opacity:0.6;font-style:italic;">Dhruva</span></p>
+    <p><b>Markpad</b> v0.7 <span style="opacity:0.6;font-style:italic;">Eklavya</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Single instance, PDF rendering, image preview, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
+    <p>Single instance, PDF rendering, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
