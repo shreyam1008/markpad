@@ -11,8 +11,11 @@ The core promise is:
 - Native desktop app powered by Go + system webview (NOT Electron).
 - Small binary (~8 MB production with embedded frontend assets).
 - Low idle memory and stable behavior with large text files.
-- Open any text-like file: `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, code, config, logs, and more.
+- Open any file: `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, `.pdf`, images, ebooks, archives, and more.
 - Split view: Editor, Split (side-by-side), and Preview modes with resizable divider.
+- PDF rendering via pdf.js (page-by-page canvas, lazy, lightweight).
+- Image inline preview for image files.
+- Single instance: only one window; second launches open files in existing window.
 - Version history: every save creates a snapshot, browse/preview/restore old versions in a right-side timeline panel.
 - Unsaved work survives app close through local drafts.
 - Native OS file dialogs for Open, Save, Save As.
@@ -20,9 +23,14 @@ The core promise is:
 - Beautiful GitHub-style Markdown rendering via `marked.js` + `highlight.js`.
 - Formatting toolbar with SVG icon buttons (bold, italic, headings, code, table, list, link, image, blockquote).
 - Find in editor (Ctrl+F) with wrap-around search.
+- Single instance lock via Wails SingleInstanceLock. Second launches pass files to existing window.
+- File info (i) button in title bar opens metadata modal.
+- Status bar shows file type, line/word/char counts, reading time, and encoding.
 - File type icons in sidebar, per-note view mode memory, reading time in status bar.
-- Star/favorite notes in sidebar. Drag-and-drop to reorder notes.
-- Right-click context menu to star/delete notes. Only unsaved drafts can be deleted.
+- Star/favorite notes in sidebar (star on left, close on right). Drag-and-drop to reorder notes.
+- Rich right-click context menu: Star, File Info, Open Folder, Copy Path, Close, Delete.
+- File info modal with path, size, type, modified date, Open Folder button.
+- In-app changelog (Help > Changelog).
 - Save animation with visual pulse. Bold "NOT SAVED" indicator.
 
 ## Tech stack
@@ -75,6 +83,14 @@ markpad/
 - `GetHistoryContent(id, timestamp)` — get full content of a specific snapshot
 - `RestoreVersion(id, timestamp)` — restore a note to a previous version
 - `OpenURL(url)` — open external URL in the system browser (not in webview)
+- `GetFileInfo(id)` — file metadata (name, path, size, kind, modified) for info modal
+- `OpenContainingFolder(path)` — open file's parent folder in OS file manager
+- `ReadFileBase64(path)` — read file bytes as base64 (for PDF/image rendering)
+- `GetStoragePath()` — return app config/data directory path
+- `CloseNote(id)` — close a non-dirty note from the session
+- `RemoveRecent(path)` — remove a file from the recent list
+- `OpenDroppedFile(path)` — open a file dropped from the OS
+- `OpenExternalPath(path)` — open a file in the OS default app
 
 ## Tech constraints
 
@@ -96,9 +112,12 @@ markpad/
 - Title should be "Untitled" for new notes until they are saved to a file.
 - Sidebar on the left: Favorites / Open / Recent sections.
 - Star icon beside each note in sidebar to toggle favorite.
-- Drag-and-drop to reorder notes. Right-click context menu to star/delete.
+- Drag-and-drop to reorder notes. Rich right-click context menu (Star, File Info, Open Folder, Copy Path, Close, Delete).
 - Three view modes: Editor, Split (side-by-side with resizable divider), Preview.
 - Code files (non-md): only Editor and Code View (syntax-highlighted). No split, no markdown toolbar.
+- PDF files: rendered page-by-page via pdf.js CDN. First 5 pages load immediately, rest on demand.
+- Image files: inline preview via base64 data URL with Open Externally button.
+- Ebook/office/archive: read-only info card with Open Externally.
 - Ctrl+Shift+E cycles through view modes (2 modes for code, 3 for markdown).
 - Formatting toolbar with SVG icon buttons above the editor (markdown files only).
 - "not saved" indicator visible when content is dirty.

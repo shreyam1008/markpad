@@ -153,6 +153,99 @@ function renderDocumentCard(note) {
     </div>`;
 }
 
+// ── PDF rendering (pdf.js) ───────────────────────────────
+async function renderPdf(note) {
+  if (!window.pdfjsLib) return renderDocumentCard(note);
+  const path = note?.path;
+  if (!path) return renderDocumentCard(note);
+  viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading PDF...</div>';
+  try {
+    const b64 = await window.go.main.App.ReadFileBase64(path);
+    const raw = atob(b64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
+    const container = document.createElement('div');
+    container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;';
+    const header = document.createElement('div');
+    header.style.cssText = 'text-align:center;color:#6b6e68;font-size:12px;font-weight:600;margin-bottom:8px;';
+    header.textContent = `${note.title || 'PDF'} — ${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
+    container.appendChild(header);
+    // Render pages lazily — first 5 immediately, rest on scroll
+    const MAX_INITIAL = 5;
+    const renderPage = async (num) => {
+      const page = await pdf.getPage(num);
+      const scale = 1.5;
+      const vp = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width;
+      canvas.height = vp.height;
+      canvas.style.cssText = 'max-width:100%;border:1px solid #e8e6df;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);';
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      return canvas;
+    };
+    for (let i = 1; i <= Math.min(MAX_INITIAL, pdf.numPages); i++) {
+      container.appendChild(await renderPage(i));
+    }
+    if (pdf.numPages > MAX_INITIAL) {
+      const more = document.createElement('button');
+      more.style.cssText = 'border:none;background:#2f6f61;color:#fffffb;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:8px 0;';
+      more.textContent = `Load remaining ${pdf.numPages - MAX_INITIAL} pages`;
+      more.addEventListener('click', async () => {
+        more.textContent = 'Loading...';
+        more.disabled = true;
+        for (let i = MAX_INITIAL + 1; i <= pdf.numPages; i++) {
+          container.insertBefore(await renderPage(i), more);
+        }
+        more.remove();
+      });
+      container.appendChild(more);
+    }
+    const openBtn = document.createElement('button');
+    openBtn.className = 'doc-open';
+    openBtn.textContent = 'Open Externally';
+    openBtn.dataset.openExternal = path;
+    container.appendChild(openBtn);
+    viewer.innerHTML = '';
+    viewer.appendChild(container);
+  } catch (err) {
+    viewer.innerHTML = renderDocumentCard(note) + '<div style="text-align:center;color:#c54b33;font-size:12px;margin-top:8px;">PDF render error: ' + (err.message || err) + '</div>';
+  }
+}
+
+// ── Image preview ────────────────────────────────────────
+async function renderImagePreview(note) {
+  const path = note?.path;
+  if (!path) return renderDocumentCard(note);
+  viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading image...</div>';
+  try {
+    const b64 = await window.go.main.App.ReadFileBase64(path);
+    const ext = fileExt(path);
+    const mimeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', tiff: 'image/tiff', ico: 'image/x-icon', svg: 'image/svg+xml' };
+    const mime = mimeMap[ext] || 'image/png';
+    const size = note?.size ? formatBytes(note.size) : '';
+    viewer.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;">
+        <div style="font-size:14px;font-weight:700;color:#1a1c1b;">${note.title || 'Image'}</div>
+        <div style="font-size:12px;color:#6b6e68;">${ext.toUpperCase()} ${size ? '· ' + size : ''}</div>
+        <img src="data:${mime};base64,${b64}" style="max-width:100%;max-height:70vh;border-radius:8px;border:1px solid #e8e6df;box-shadow:0 4px 16px rgba(0,0,0,0.08);" />
+        <button class="doc-open" data-open-external="${path.replace(/"/g, '&quot;')}">Open Externally</button>
+      </div>`;
+  } catch (err) {
+    viewer.innerHTML = renderDocumentCard(note) + '<div style="text-align:center;color:#c54b33;font-size:12px;margin-top:8px;">Image load error: ' + (err.message || err) + '</div>';
+  }
+}
+
+// ── Viewer dispatch ──────────────────────────────────────
+function renderViewer(content, active) {
+  const ft = getFileType(active?.path, active?.kind);
+  if (ft === 'pdf') { renderPdf(active); return; }
+  if (ft === 'image') { renderImagePreview(active); return; }
+  if (ft === 'md') { viewer.innerHTML = renderMd(content); return; }
+  if (isReadOnlyType(ft)) { viewer.innerHTML = renderDocumentCard(active); return; }
+  viewer.innerHTML = renderCode(content, active?.path);
+}
+
 // ── Markdown ─────────────────────────────────────────────
 marked.setOptions({
   gfm: true,
@@ -268,6 +361,17 @@ function makeNoteRow(note) {
   row.dataset.noteId = note.id;
   row.draggable = true;
 
+  // Star on the left
+  if (note.path) {
+    const star = el('button', `text-sm border-none cursor-pointer px-0.5 flex-shrink-0 ${note.star ? 'text-star' : 'text-star-off opacity-0 group-hover:opacity-100 hover:text-star'} transition-opacity`);
+    star.textContent = note.star ? '\u2605' : '\u2606';
+    star.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      renderSession(await window.go.main.App.ToggleStar(note.id));
+    });
+    row.appendChild(star);
+  }
+
   const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-60');
   ico.textContent = fileIcon(note.path);
   row.appendChild(ico);
@@ -280,20 +384,9 @@ function makeNoteRow(note) {
   content.append(title, status);
   row.appendChild(content);
 
-  const actions = el('div', 'flex items-center gap-0.5 flex-shrink-0');
-
-  if (note.path) {
-    const star = el('button', `text-sm border-none cursor-pointer px-0.5 ${note.star ? 'text-star' : 'text-star-off hover:text-star'}`);
-    star.textContent = note.star ? '\u2605' : '\u2606';
-    star.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      renderSession(await window.go.main.App.ToggleStar(note.id));
-    });
-    actions.appendChild(star);
-  }
-
-  const close = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
-  close.textContent = '×';
+  // Close on the right
+  const close = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity flex-shrink-0');
+  close.textContent = '\u00d7';
   close.title = note.path ? 'Close file' : 'Close draft';
   close.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -303,9 +396,7 @@ function makeNoteRow(note) {
     restoreNoteView();
     statusText.textContent = note.path ? 'File closed' : 'Draft closed';
   });
-  actions.appendChild(close);
-
-  row.appendChild(actions);
+  row.appendChild(close);
 
   row.addEventListener('click', async () => {
     if (activeId) noteViewModes[activeId] = viewMode;
@@ -319,11 +410,15 @@ function makeNoteRow(note) {
   row.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     ctxNoteId = note.id;
+    const hasPath = !!note.path;
     const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
     starBtn.textContent = note.star ? 'Unstar' : 'Star';
-    starBtn.style.display = note.path ? '' : 'none';
-    const delBtn = ctxMenu.querySelector('[data-ctx="delete"]');
-    delBtn.style.display = canDelete && !note.dirty ? '' : 'none';
+    starBtn.style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="info"]').style.display = '';
+    ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
+    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canDelete && !note.dirty ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
     ctxMenu.style.top = e.clientY + 'px';
     ctxMenu.classList.remove('hidden');
@@ -357,8 +452,7 @@ function loadContent(content) {
   editor.value = currentContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path, active?.kind);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
+    renderViewer(currentContent, active);
   }
   updateStats();
   if (historyOpen) renderHistory();
@@ -389,6 +483,40 @@ function restoreNoteView() {
 document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
+});
+ctxMenu.querySelector('[data-ctx="info"]').addEventListener('click', async () => {
+  if (ctxNoteId) {
+    const prevId = activeId;
+    if (ctxNoteId !== activeId) {
+      await window.go.main.App.SetActive(ctxNoteId);
+      activeId = ctxNoteId;
+    }
+    await showFileInfo();
+    if (prevId !== ctxNoteId) {
+      await window.go.main.App.SetActive(prevId);
+      activeId = prevId;
+    }
+  }
+});
+ctxMenu.querySelector('[data-ctx="folder"]').addEventListener('click', () => {
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (note && note.path) window.go.main.App.OpenContainingFolder(note.path);
+  else statusText.textContent = 'No file path';
+});
+ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', () => {
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (note && note.path) {
+    navigator.clipboard.writeText(note.path).then(() => { statusText.textContent = 'Path copied'; });
+  } else statusText.textContent = 'No file path to copy';
+});
+ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
+  if (!ctxNoteId) return;
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (note && note.dirty) { statusText.textContent = 'Save or cancel changes before closing'; return; }
+  renderSession(await window.go.main.App.CloseNote(ctxNoteId));
+  if (ctxNoteId === activeId) loadContent(await window.go.main.App.GetActiveContent());
+  restoreNoteView();
+  statusText.textContent = 'Closed';
 });
 ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
@@ -428,8 +556,7 @@ function setView(mode) {
   const viewerLabel = document.querySelector('[data-mode="viewer"] span');
   if (viewerLabel) viewerLabel.textContent = isReadOnlyType(ft) ? 'Document' : ft === 'code' ? 'Code View' : 'Preview';
   if (showViewer) {
-    if (ft === 'md') viewer.innerHTML = renderMd(currentContent);
-    else viewer.innerHTML = isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
+    renderViewer(currentContent, active);
   }
   if (mode !== 'split') {
     editorCont.style.flex = '';
@@ -522,8 +649,7 @@ editor.addEventListener('input', () => {
     clearTimeout(renderTimer);
     renderTimer = setTimeout(() => {
       const active = cachedNotes.find(n => n.id === activeId);
-      const ft = getFileType(active?.path, active?.kind);
-      viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
+      renderViewer(currentContent, active);
     }, RENDER_MS);
   }
 });
@@ -579,14 +705,16 @@ function updateStats() {
   const active = cachedNotes.find(n => n.id === activeId);
   const type = getFileType(active?.path, active?.kind);
   if (isReadOnlyType(type)) {
-    statusStats.textContent = `${typeLabel(type)} · ${active?.size ? formatBytes(active.size) : 'read-only'}`;
+    statusStats.textContent = `${typeLabel(type)} \u00b7 ${active?.size ? formatBytes(active.size) : 'read-only'}`;
     return;
   }
   const t = currentContent;
   const lines = t ? t.split('\n').length : 0;
   const words = t.trim() ? t.trim().split(/\s+/).length : 0;
   const readMin = Math.max(1, Math.ceil(words / 200));
-  statusStats.textContent = `${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 ~${readMin} min read`;
+  const ext = active?.path ? fileExt(active.path) : '';
+  const lang = ext ? ext.toUpperCase() : typeLabel(type);
+  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 ~${readMin} min \u00b7 UTF-8`;
 }
 
 // ── Save animation ───────────────────────────────────────
@@ -620,8 +748,7 @@ function historyBackToCurrent() {
   editor.value = currentContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path, active?.kind);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
+    renderViewer(currentContent, active);
   }
   statusText.textContent = 'Ready';
 }
@@ -947,13 +1074,13 @@ async function doOpen() {
 // ── Buttons ──────────────────────────────────────────────
 $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
+$('btn-fileinfo').addEventListener('click', showFileInfo);
 saveBtn.addEventListener('click', doSave);
 $('btn-cancel').addEventListener('click', async () => {
   editor.value = committedContent; currentContent = committedContent;
   if (viewMode !== 'markdown') {
     const active = cachedNotes.find(n => n.id === activeId);
-    const ft = getFileType(active?.path, active?.kind);
-    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : isReadOnlyType(ft) ? renderDocumentCard(active) : renderCode(currentContent, active?.path);
+    renderViewer(currentContent, active);
   }
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
   if (activeId) {
@@ -972,17 +1099,98 @@ viewer.addEventListener('click', (e) => {
 function showModal(t, html) { modalTitle.textContent = t; modalBodyEl.innerHTML = html; modalOverlay.classList.remove('hidden'); }
 $('modal-close').addEventListener('click', () => modalOverlay.classList.add('hidden'));
 modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.add('hidden'); });
+modalBodyEl.addEventListener('click', (e) => {
+  const folder = e.target.closest('[data-open-folder]');
+  if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
+});
 
 
-function showPreferences() {
+async function showFileInfo() {
+  if (!activeId) return;
+  const info = await window.go.main.App.GetFileInfo(activeId);
+  const sizeStr = info.size ? formatBytes(info.size) : 'N/A';
+  showModal('File Info', `
+    <table style="width:100%;border-collapse:collapse;">
+      <tr><td style="padding:4px 8px;color:#6b6e68;white-space:nowrap;">Name</td><td style="padding:4px 8px;font-weight:600;">${info.name}</td></tr>
+      <tr><td style="padding:4px 8px;color:#6b6e68;">Type</td><td style="padding:4px 8px;">${info.label}${info.readOnly ? ' <span style="color:#c54b33;font-size:11px;">(read-only)</span>' : ''}</td></tr>
+      <tr><td style="padding:4px 8px;color:#6b6e68;">Size</td><td style="padding:4px 8px;">${sizeStr}</td></tr>
+      <tr><td style="padding:4px 8px;color:#6b6e68;">Modified</td><td style="padding:4px 8px;">${info.modified || 'N/A'}</td></tr>
+      <tr><td style="padding:4px 8px;color:#6b6e68;">Path</td><td style="padding:4px 8px;word-break:break-all;font-size:12px;">${info.path || 'Not saved'}</td></tr>
+      <tr><td style="padding:4px 8px;color:#6b6e68;">Storage</td><td style="padding:4px 8px;word-break:break-all;font-size:11px;color:#6b6e68;">${await window.go.main.App.GetStoragePath()}</td></tr>
+    </table>
+    ${info.path ? '<div style="margin-top:12px;text-align:center;"><button data-open-folder="' + info.path.replace(/"/g, '&quot;') + '" style="border:none;background:#2f6f61;color:#fffffb;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Open Folder</button></div>' : ''}
+  `);
+}
+
+async function showPreferences() {
+  const storagePath = await window.go.main.App.GetStoragePath();
   showModal('Preferences', `
-    <p><b>Files</b></p>
-    <p>Markdown opens in Preview with Editor and Split available. Code opens in Code View with Edit available. Text opens directly in Editor.</p>
-    <p>PDF, ebook, office, image, and archive files are read-only cards. Use <b>Open Externally</b> for full rendering.</p>
-    <p><b>Sidebar</b></p>
-    <p>Favorites, Open, and Recent are collapsible. Open files behave like lightweight tabs and can be reordered or closed.</p>
-    <p><b>Performance</b></p>
-    <p>No embedded PDF engine or heavy editor runtime is bundled. This keeps startup fast, memory low, and the app under the tiny-native goal.</p>
+    <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + syntax-highlighted Code View</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Rendered pages via pdf.js (read-only)</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
+      <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
+    </table>
+    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Sidebar</h3>
+    <p>Favorites, Open, and Recent are collapsible sections. Open files are reorderable tabs with close buttons. Right-click for context actions.</p>
+    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Single Instance</h3>
+    <p>Only one Markpad window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
+    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Storage</h3>
+    <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
+    <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
+    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
+    <p>PDFs render page-by-page via pdf.js (~500 KB CDN). No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. This keeps the binary under 10 MB and memory low.</p>
+  `);
+}
+
+function showChangelog() {
+  showModal('Changelog', `
+    <div style="font-size:12px;line-height:1.7;">
+      <p><b>v0.6 Dhruva</b> <span style="color:#6b6e68;">— Current</span></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Single instance: only one window, second launch opens files in existing</li>
+        <li>PDF rendering via pdf.js (page-by-page, lazy, lightweight)</li>
+        <li>Image inline preview for image files</li>
+        <li>File info modal with path, size, type, modified date, open folder</li>
+        <li>Rich right-click context menu on all sidebar sections</li>
+        <li>Improved history diff contrast</li>
+        <li>Real preferences panel with file handling table</li>
+        <li>In-app changelog</li>
+      </ul>
+      <p><b>v0.5 Chitrakala</b></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>File verticals: markdown, code, text, PDF/ebook/office/image/archive</li>
+        <li>Read-only document cards with Open Externally</li>
+        <li>Collapsible sidebar sections, close buttons, remove recent</li>
+        <li>Preferences menu, expanded file dialog categories</li>
+      </ul>
+      <p><b>v0.4 Balram</b></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Drag-and-drop file open from OS</li>
+        <li>Smart view mode per file type</li>
+        <li>Expanded file type icons and code extensions</li>
+      </ul>
+      <p><b>v0.3 Aaradhya</b></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Split view with resizable divider</li>
+        <li>Formatting toolbar with SVG icons</li>
+        <li>Drag-and-drop reorder, right-click context menu</li>
+        <li>Syntax highlighting for code files</li>
+        <li>3-section sidebar: Favorites / Open / Recent</li>
+      </ul>
+      <p><b>v0.2</b></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Version history with diffs</li>
+        <li>Find bar, zoom, enhanced menus</li>
+      </ul>
+      <p><b>v0.1</b></p>
+      <ul style="margin:4px 0 0 16px;padding:0;list-style:disc;">
+        <li>Initial release: editor, session restore, favorites, autosaved drafts</li>
+      </ul>
+    </div>
   `);
 }
 
@@ -1001,6 +1209,14 @@ function registerEvents() {
   window.runtime.EventsOn('menu:zoomout', zoomOut);
   window.runtime.EventsOn('menu:zoomreset', zoomReset);
   window.runtime.EventsOn('menu:preferences', showPreferences);
+  window.runtime.EventsOn('menu:fileinfo', showFileInfo);
+  window.runtime.EventsOn('menu:changelog', showChangelog);
+  window.runtime.EventsOn('secondInstance', async () => {
+    renderSession(await window.go.main.App.GetSession());
+    loadContent(await window.go.main.App.GetActiveContent());
+    restoreNoteView();
+    statusText.textContent = 'File opened from second instance';
+  });
   window.runtime.EventsOn('menu:help', () => showModal('Help', `
     <p><b>Markpad</b> is a native Markdown notepad.</p>
     <p>Open Markdown, text, code, config, logs, PDFs, ebooks, and office documents.</p>
@@ -1015,9 +1231,9 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.5 <span style="opacity:0.6;font-style:italic;">Chitrakala</span></p>
+    <p><b>Markpad</b> v0.6 <span style="opacity:0.6;font-style:italic;">Dhruva</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Markdown split view, code view, read-only document cards, version history with diffs, session restore, favorites, recent files, and zoom. Under 10 MB.</p>
+    <p>Single instance, PDF rendering, image preview, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
@@ -13,7 +14,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.5"
+const Version = "0.6"
 
 //go:embed all:frontend
 var assets embed.FS
@@ -81,9 +82,22 @@ func main() {
 	helpMenu.AddText("Help", nil, func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:help")
 	})
+	helpMenu.AddText("Changelog", nil, func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:changelog")
+	})
+	helpMenu.AddSeparator()
 	helpMenu.AddText("About", nil, func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:about")
 	})
+
+	// Handle CLI file arguments: open files passed on the command line
+	var cliFiles []string
+	for _, arg := range os.Args[1:] {
+		if !strings.HasPrefix(arg, "-") {
+			cliFiles = append(cliFiles, arg)
+		}
+	}
+	app.pendingFiles = cliFiles
 
 	err := wails.Run(&options.App{
 		Title:     "Markpad",
@@ -98,6 +112,10 @@ func main() {
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
 			DisableWebViewDrop: true,
+		},
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId:               "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single",
+			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
