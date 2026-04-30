@@ -88,7 +88,7 @@ func TestBookmarkToggleDeduplicatesByAbsolutePath(t *testing.T) {
 	if len(sess.Bookmarks) != 1 {
 		t.Fatalf("duplicate bookmark inserted, got %d", len(sess.Bookmarks))
 	}
-	if sess.Bookmarks[0].Title != "Note edited" {
+	if sess.Bookmarks[0].Title != "note.md" {
 		t.Fatalf("bookmark title = %q", sess.Bookmarks[0].Title)
 	}
 }
@@ -100,9 +100,9 @@ func TestPlainTextAndMarkdownTitles(t *testing.T) {
 		content string
 		want    string
 	}{
-		{name: "markdown heading", path: "note.md", content: "# Project\n\nBody", want: "Project"},
-		{name: "plain first line", path: "note.txt", content: "todo list\n- one", want: "todo list"},
-		{name: "path fallback", path: "meeting-notes.txt", content: "\n\n", want: "meeting-notes"},
+		{name: "markdown heading", path: "note.md", content: "# Project\n\nBody", want: "note.md"},
+		{name: "plain first line", path: "note.txt", content: "todo list\n- one", want: "note.txt"},
+		{name: "path fallback", path: "meeting-notes.txt", content: "\n\n", want: "meeting-notes.txt"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

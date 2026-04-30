@@ -4,11 +4,12 @@ Markpad is a small native Markdown notepad written in Go. It keeps the Notepad f
 
 The current MVP uses Gio for a native Go UI and goldmark for CommonMark/GFM-compatible Markdown rendering support. The app has:
 
-- A left sidebar of notes opened over time.
-- Bookmarks for pinned file paths.
+- A collapsible left sidebar of notes opened over time.
+- Favorites/bookmarks for pinned file paths shown above the session.
 - Autosaved unsaved drafts stored in the user config directory.
 - Per-note Markdown and Viewer tabs.
-- Menus, Help, Tour, About, and Settings pages.
+- Traditional File/View/Help menu bar above the whole app.
+- Menus, Help, Tour, About, Settings, and Save as modals.
 - Command-line opening for Markdown and plain text files.
 - A deliberately light dependency shape: no Electron, no bundled browser runtime.
 
@@ -67,6 +68,14 @@ Comparable projects influenced the product shape:
 
 Full research summary: [docs/research/2026-04-30.md](docs/research/2026-04-30.md)
 
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Packaging](docs/packaging.md)
+- [Launch plan](docs/launch.md)
+- [Research notes](docs/research/2026-04-30.md)
+- [GitHub Pages website scaffold](docs/index.html)
+
 ## Packaging
 
 The repo includes GitHub Actions for:
@@ -77,6 +86,10 @@ The repo includes GitHub Actions for:
 
 Packaging is in `.github/workflows/release.yml`. Push a tag like `v0.1.0` to produce release artifacts.
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Current Boundaries
 
-This is a native MVP, not the final giant-file editor. The TODO keeps the next technical steps explicit: file picker/save-as, rope or piece-table storage for huge files, synchronized scroll, and the WASM/web edition.
+This is a native MVP, not the final giant-file editor. The TODO keeps the next technical steps explicit: native file dialogs, rope or piece-table storage for huge files, synchronized scroll, and the WASM/web edition.

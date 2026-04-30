@@ -36,8 +36,9 @@ type Bookmark struct {
 }
 
 type Preferences struct {
-	ReducedMotion bool `json:"reduced_motion"`
-	CompactMode   bool `json:"compact_mode"`
+	ReducedMotion    bool `json:"reduced_motion"`
+	CompactMode      bool `json:"compact_mode"`
+	SidebarCollapsed bool `json:"sidebar_collapsed"`
 }
 
 type Session struct {
@@ -160,6 +161,19 @@ func (s *Store) SaveToDisk(doc *Document, content string) error {
 	doc.UpdatedAt = now
 	doc.Title = TitleFromContent(content, doc.Path)
 	return s.WriteDraft(doc, content)
+}
+
+func (s *Store) SaveAs(doc *Document, path string, content string) error {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return errors.New("save path is required")
+	}
+	abs, err := filepath.Abs(path)
+	if err == nil {
+		path = abs
+	}
+	doc.Path = path
+	return s.SaveToDisk(doc, content)
 }
 
 func (sess *Session) Find(id string) *Document {
@@ -299,6 +313,9 @@ func NewID() string {
 }
 
 func TitleFromContent(content string, path string) string {
+	if path != "" {
+		return filepath.Base(path)
+	}
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -311,11 +328,6 @@ func TitleFromContent(content string, path string) string {
 		if line != "" {
 			return truncate(line, 80)
 		}
-	}
-	if path != "" {
-		base := filepath.Base(path)
-		ext := filepath.Ext(base)
-		return strings.TrimSuffix(base, ext)
 	}
 	return "Untitled"
 }
