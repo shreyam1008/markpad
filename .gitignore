@@ -1,0 +1,11 @@
+dist/
+build/
+*.AppImage
+*.deb
+*.dmg
+*.exe
+*.zip
+*.test
+coverage.out
+.DS_Store
+.codex

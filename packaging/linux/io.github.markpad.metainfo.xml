@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.markpad</id>
+  <name>Markpad</name>
+  <summary>Small native Markdown notepad</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>Markpad is a small native Markdown notepad with autosaved drafts, session restore, and source/viewer tabs.</p>
+  </description>
+  <launchable type="desktop-id">markpad.desktop</launchable>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+  </categories>
+</component>
