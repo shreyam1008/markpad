@@ -6,4 +6,4 @@ Exec=markpad %F
 Icon=markpad
 Terminal=false
 Categories=Utility;TextEditor;
-MimeType=text/markdown;text/x-markdown;
+MimeType=text/markdown;text/x-markdown;text/plain;
