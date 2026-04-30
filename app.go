@@ -242,6 +242,10 @@ func (a *App) OpenPathFromBookmark(path string) (SessionState, error) {
 }
 
 func (a *App) DeleteNote(id string) SessionState {
+	target := a.sess.Find(id)
+	if target == nil || target.Path != "" {
+		return a.GetSession()
+	}
 	filtered := make([]*session.Document, 0, len(a.sess.Documents))
 	for _, doc := range a.sess.Documents {
 		if doc.ID != id {

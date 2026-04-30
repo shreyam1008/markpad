@@ -1,7 +1,7 @@
 // Markpad — vanilla JS + Tailwind + Wails
 // All file I/O via window.go.main.App.*
 
-let viewMode = 'markdown'; // 'markdown' | 'split' | 'viewer'
+let viewMode = 'viewer'; // 'markdown' | 'split' | 'viewer'
 let sidebarCollapsed = false;
 let currentContent = '';
 let committedContent = '';
@@ -11,6 +11,8 @@ let draftTimer = null;
 let renderTimer = null;
 let draggedNoteId = null;
 let ctxNoteId = null;
+let findOpen = false;
+const noteViewModes = {};
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
 
@@ -31,9 +33,29 @@ const dirtyInd     = $('dirty-indicator');
 const statusText   = $('status-text');
 const statusStats  = $('status-stats');
 const ctxMenu      = $('ctx-menu');
+const findBar      = $('find-bar');
+const findInput    = $('find-input');
+const findInfo     = $('find-info');
 const modalOverlay = $('modal-overlay');
 const modalTitle   = $('modal-title');
 const modalBodyEl  = $('modal-body');
+const saveBtn      = $('btn-save');
+
+// ── File type icons ──────────────────────────────────────
+const FILE_ICONS = {
+  md: '\ud83d\udcdd', markdown: '\ud83d\udcdd', mdx: '\ud83d\udcdd',
+  txt: '\ud83d\udcc4', log: '\ud83d\udcc4', csv: '\ud83d\udcc4', tsv: '\ud83d\udcc4',
+  json: '{ }', yaml: '\u2699', yml: '\u2699', xml: '\u2699', toml: '\u2699',
+  py: '\ud83d\udc0d', js: 'JS', ts: 'TS', go: 'Go', rs: '\ud83e\udda0', rb: '\u2666',
+  sh: '\ud83d\udcbb', bash: '\ud83d\udcbb', zsh: '\ud83d\udcbb',
+  html: '\ud83c\udf10', htm: '\ud83c\udf10', css: '\ud83c\udfa8', svg: '\u25b3',
+  lua: '\ud83c\udf19',
+};
+function fileIcon(path) {
+  if (!path) return '\u270f';
+  const ext = path.split('.').pop().toLowerCase();
+  return FILE_ICONS[ext] || '\ud83d\udcc4';
+}
 
 // ── Markdown ─────────────────────────────────────────────
 marked.setOptions({
@@ -81,40 +103,65 @@ function makeFavRow(fav) {
     try {
       renderSession(await window.go.main.App.OpenPathFromBookmark(fav.path));
       loadContent(await window.go.main.App.GetActiveContent());
+      restoreNoteView();
     } catch {}
   });
   return row;
 }
 
 function makeNoteRow(note) {
-  const active = note.id === activeId;
-  const row = el('div', `flex items-center gap-1.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${active ? 'bg-selected' : 'hover:bg-hover'}`);
+  const isActive = note.id === activeId;
+  const canDelete = !note.path;
+  const row = el('div', `group flex items-center gap-1.5 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${isActive ? 'bg-selected ring-1 ring-accent/30' : 'hover:bg-hover'}`);
   row.dataset.noteId = note.id;
   row.draggable = true;
+
+  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-60');
+  ico.textContent = fileIcon(note.path);
+  row.appendChild(ico);
 
   const content = el('div', 'flex-1 min-w-0');
   const title = el('div', 'text-[13px] font-medium truncate');
   title.textContent = note.path ? note.title : 'Untitled';
-  const status = el('div', `text-[11px] ${note.dirty ? 'text-unsaved' : 'text-muted'}`);
-  status.textContent = note.dirty ? 'not saved' : (note.path ? 'saved' : 'draft');
+  const status = el('div', `text-[11px] ${note.dirty ? 'text-unsaved font-semibold' : 'text-muted'}`);
+  status.textContent = note.dirty ? 'NOT SAVED' : (note.path ? 'saved' : 'draft');
   content.append(title, status);
   row.appendChild(content);
 
+  const actions = el('div', 'flex items-center gap-0.5 flex-shrink-0');
+
   if (note.path) {
-    const star = el('button', `flex-shrink-0 text-sm border-none cursor-pointer px-1 ${note.star ? 'text-star' : 'text-star-off hover:text-star'}`);
+    const star = el('button', `text-sm border-none cursor-pointer px-0.5 ${note.star ? 'text-star' : 'text-star-off hover:text-star'}`);
     star.textContent = note.star ? '\u2605' : '\u2606';
     star.addEventListener('click', async (e) => {
       e.stopPropagation();
       renderSession(await window.go.main.App.ToggleStar(note.id));
     });
-    row.appendChild(star);
+    actions.appendChild(star);
   }
 
+  if (canDelete) {
+    const del = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
+    del.textContent = '\u2715';
+    del.title = 'Delete draft';
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      renderSession(await window.go.main.App.DeleteNote(note.id));
+      if (note.id === activeId) loadContent(await window.go.main.App.GetActiveContent());
+      statusText.textContent = 'Draft deleted';
+    });
+    actions.appendChild(del);
+  }
+
+  row.appendChild(actions);
+
   row.addEventListener('click', async () => {
+    if (activeId) noteViewModes[activeId] = viewMode;
     await window.go.main.App.SetActive(note.id);
     activeId = note.id;
     loadContent(await window.go.main.App.GetNoteContent(note.id));
     renderSession(await window.go.main.App.GetSession());
+    restoreNoteView();
   });
 
   row.addEventListener('contextmenu', (e) => {
@@ -123,6 +170,8 @@ function makeNoteRow(note) {
     const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
     starBtn.textContent = note.star ? 'Unstar' : 'Star';
     starBtn.style.display = note.path ? '' : 'none';
+    const delBtn = ctxMenu.querySelector('[data-ctx="delete"]');
+    delBtn.style.display = canDelete ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
     ctxMenu.style.top = e.clientY + 'px';
     ctxMenu.classList.remove('hidden');
@@ -158,6 +207,11 @@ function loadContent(content) {
   updateStats();
 }
 
+function restoreNoteView() {
+  const saved = noteViewModes[activeId];
+  setView(saved || 'viewer');
+}
+
 // ── Context menu ─────────────────────────────────────────
 document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
@@ -165,14 +219,17 @@ ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () =>
 });
 ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (note && note.path) return;
   renderSession(await window.go.main.App.DeleteNote(ctxNoteId));
   if (ctxNoteId === activeId) loadContent(await window.go.main.App.GetActiveContent());
-  statusText.textContent = 'Note deleted';
+  statusText.textContent = 'Draft deleted';
 });
 
 // ── View mode (editor / split / viewer) ──────────────────
 function setView(mode) {
   viewMode = mode;
+  if (activeId) noteViewModes[activeId] = mode;
   document.querySelectorAll('.view-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
   });
@@ -183,6 +240,10 @@ function setView(mode) {
   divider.classList.toggle('hidden', mode !== 'split');
   toolbar.classList.toggle('hidden', !showEditor);
   if (showViewer) viewer.innerHTML = renderMd(currentContent);
+  if (mode !== 'split') {
+    editorCont.style.flex = '';
+    viewerCont.style.flex = '';
+  }
 }
 
 document.querySelectorAll('.view-btn').forEach(btn => {
@@ -263,8 +324,51 @@ function updateStats() {
   const t = currentContent;
   const lines = t ? t.split('\n').length : 0;
   const words = t.trim() ? t.trim().split(/\s+/).length : 0;
-  statusStats.textContent = `${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch`;
+  const readMin = Math.max(1, Math.ceil(words / 200));
+  statusStats.textContent = `${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 ~${readMin} min read`;
 }
+
+// ── Save animation ───────────────────────────────────────
+function flashSave() {
+  saveBtn.classList.add('save-flash');
+  dirtyInd.classList.add('hidden');
+  statusText.textContent = 'Saved';
+  setTimeout(() => saveBtn.classList.remove('save-flash'), 800);
+}
+
+// ── Find bar (Ctrl+F) ───────────────────────────────────
+function toggleFind() {
+  findOpen = !findOpen;
+  findBar.classList.toggle('hidden', !findOpen);
+  if (findOpen) { findInput.value = ''; findInput.focus(); findInfo.textContent = ''; }
+}
+
+function doFind() {
+  const q = findInput.value;
+  if (!q) { findInfo.textContent = ''; return; }
+  const text = editor.value;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase(), editor.selectionEnd);
+  if (idx !== -1) {
+    editor.focus();
+    editor.setSelectionRange(idx, idx + q.length);
+    findInfo.textContent = 'Found';
+  } else {
+    const first = text.toLowerCase().indexOf(q.toLowerCase());
+    if (first !== -1) {
+      editor.focus();
+      editor.setSelectionRange(first, first + q.length);
+      findInfo.textContent = 'Wrapped';
+    } else {
+      findInfo.textContent = 'Not found';
+    }
+  }
+}
+
+findInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); doFind(); }
+  else if (e.key === 'Escape') { e.preventDefault(); toggleFind(); editor.focus(); }
+});
+$('find-close')?.addEventListener('click', () => { toggleFind(); editor.focus(); });
 
 // ── Toolbar ──────────────────────────────────────────────
 toolbar.addEventListener('click', (e) => {
@@ -313,40 +417,65 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key === 'o') { e.preventDefault(); await doOpen(); }
   else if (ctrl && shift && key === 'E') { e.preventDefault(); cycleView(); }
   else if (ctrl && shift && key === 'B') { e.preventDefault(); toggleSidebar(); }
-  else if (ctrl && !shift && key === 'b') { e.preventDefault(); applyFormat('bold'); }
-  else if (ctrl && !shift && key === 'i') { e.preventDefault(); applyFormat('italic'); }
-  else if (ctrl && !shift && key === 'k') { e.preventDefault(); applyFormat('link'); }
-  else if (key === 'Escape') { modalOverlay.classList.add('hidden'); ctxMenu.classList.add('hidden'); }
-  else if (key === 'Delete' && ctrl) { e.preventDefault(); if (activeId) { renderSession(await window.go.main.App.DeleteNote(activeId)); loadContent(await window.go.main.App.GetActiveContent()); } }
+  else if (ctrl && !shift && key === 'f') { e.preventDefault(); toggleFind(); }
+  else if (ctrl && !shift && key === 'b' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('bold'); }
+  else if (ctrl && !shift && key === 'i' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('italic'); }
+  else if (ctrl && !shift && key === 'k' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('link'); }
+  else if (key === 'Escape') { if (findOpen) toggleFind(); modalOverlay.classList.add('hidden'); ctxMenu.classList.add('hidden'); }
+  else if (key === 'Delete' && ctrl) {
+    e.preventDefault();
+    const note = cachedNotes.find(n => n.id === activeId);
+    if (note && !note.path) {
+      renderSession(await window.go.main.App.DeleteNote(activeId));
+      loadContent(await window.go.main.App.GetActiveContent());
+    }
+  }
 });
 
 // ── Actions ──────────────────────────────────────────────
 async function doSave() {
   statusText.textContent = 'Saving...';
-  try { renderSession(await window.go.main.App.SaveActive(currentContent)); committedContent = currentContent; statusText.textContent = 'Saved'; }
-  catch (err) { statusText.textContent = 'Save failed: ' + err; }
+  try {
+    renderSession(await window.go.main.App.SaveActive(currentContent));
+    committedContent = currentContent;
+    flashSave();
+  } catch (err) { statusText.textContent = 'Save failed: ' + err; }
 }
 
 async function doSaveAs() {
   statusText.textContent = 'Save As...';
-  try { renderSession(await window.go.main.App.SaveAsDialog(currentContent)); committedContent = currentContent; statusText.textContent = 'Saved'; }
-  catch (err) { statusText.textContent = 'Save As failed: ' + err; }
+  try {
+    renderSession(await window.go.main.App.SaveAsDialog(currentContent));
+    committedContent = currentContent;
+    flashSave();
+  } catch (err) { statusText.textContent = 'Save As failed: ' + err; }
 }
 
 async function doNew() {
-  try { renderSession(await window.go.main.App.NewNote()); loadContent(''); setView('markdown'); editor.focus(); statusText.textContent = 'New note'; }
-  catch (err) { statusText.textContent = 'Error: ' + err; }
+  if (activeId) noteViewModes[activeId] = viewMode;
+  try {
+    renderSession(await window.go.main.App.NewNote());
+    loadContent('');
+    setView('markdown');
+    editor.focus();
+    statusText.textContent = 'New note';
+  } catch (err) { statusText.textContent = 'Error: ' + err; }
 }
 
 async function doOpen() {
-  try { renderSession(await window.go.main.App.OpenFileDialog()); loadContent(await window.go.main.App.GetActiveContent()); statusText.textContent = 'Opened'; }
-  catch (err) { statusText.textContent = 'Open failed: ' + err; }
+  if (activeId) noteViewModes[activeId] = viewMode;
+  try {
+    renderSession(await window.go.main.App.OpenFileDialog());
+    loadContent(await window.go.main.App.GetActiveContent());
+    setView('viewer');
+    statusText.textContent = 'Opened';
+  } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
 
 // ── Buttons ──────────────────────────────────────────────
 $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
-$('btn-save').addEventListener('click', doSave);
+saveBtn.addEventListener('click', doSave);
 $('btn-cancel').addEventListener('click', () => {
   editor.value = committedContent; currentContent = committedContent;
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
@@ -369,13 +498,13 @@ function registerEvents() {
   window.runtime.EventsOn('menu:help', () => showModal('Help', `
     <p><b>Markpad</b> is a native Markdown notepad.</p>
     <p>Open any text file: <code>.md</code>, <code>.txt</code>, <code>.json</code>, <code>.py</code>, <code>.go</code>, and more.</p>
-    <p>Star notes to pin them. Drag to reorder. Right-click to delete.</p>
+    <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
     <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar</p>
+    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
-    <p><kbd>Ctrl+Del</kbd> Delete note &nbsp; <kbd>Esc</kbd> Close modal</p>
+    <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
     <p><b>Markpad</b> v0.3.0</p>
@@ -390,7 +519,7 @@ async function loadApp() {
   try {
     renderSession(await window.go.main.App.GetSession());
     loadContent(await window.go.main.App.GetActiveContent());
-    setView('split');
+    setView('viewer');
     statusText.textContent = 'Ready';
   } catch (err) { statusText.textContent = 'Load error: ' + err; }
 }
