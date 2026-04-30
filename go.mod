@@ -2,18 +2,12 @@ module markpad
 
 go 1.24
 
-require (
-	gioui.org v0.9.0
-	github.com/wailsapp/wails/v2 v2.12.0
-	github.com/yuin/goldmark v1.8.2
-)
+require github.com/wailsapp/wails/v2 v2.12.0
 
 require (
-	gioui.org/shader v1.0.8 // indirect
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -36,8 +30,6 @@ require (
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/image v0.26.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.24.0 // indirect

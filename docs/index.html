@@ -4,14 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta
-      name="description"
-      content="Markpad is a small, fast, native Go Markdown notepad with session restore, autosaved drafts, favorites, and a beautiful Viewer mode. No Electron, no bloat. Under 8 MB."
-    />
-    <meta
-      name="keywords"
-      content="markpad, markdown editor, markdown notepad, native markdown, go markdown, gio, lightweight notepad, markdown viewer, linux notepad, appimage, session restore, open source"
-    />
+    <meta name="description" content="Markpad is a small, fast, native Markdown notepad built with Go and Wails. Split view, session restore, autosaved drafts, favorites, and beautiful rendering. No Electron. Under 10 MB." />
+    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -21,19 +15,13 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Markpad" />
     <meta property="og:title" content="Markpad — Native Markdown Notepad" />
-    <meta
-      property="og:description"
-      content="A tiny native Go Markdown notepad with session restore, autosaved drafts, and a beautiful Viewer. Under 8 MB, no Electron."
-    />
+    <meta property="og:description" content="A tiny native Markdown notepad with split view, session restore, drafts, and beautiful rendering. Under 10 MB, no Electron." />
     <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
     <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Markpad — Native Markdown Notepad" />
-    <meta
-      name="twitter:description"
-      content="Small, fast, native Markdown notepad. Session restore, drafts, favorites, Viewer mode. No Electron."
-    />
+    <meta name="twitter:description" content="Small, fast, native Markdown notepad by shreyam1008. Split view, favorites, session restore. No Electron." />
     <meta name="twitter:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <script type="application/ld+json">
@@ -43,163 +31,208 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.2.0-dev",
-        "author": {
-          "@type": "Person",
-          "name": "Shreyam Adhikari",
-          "url": "https://shreyam1008.com.np"
-        },
+        "softwareVersion": "0.3.0",
+        "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad"],
-        "description": "A tiny native Go Markdown notepad with session restore, autosaved drafts, favorites, and a beautiful Viewer mode.",
+        "description": "A tiny native Markdown notepad with split view, session restore, favorites, and GitHub-style rendering.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bg: '#f4f2ed', paper: '#fffffc', ink: '#1a1c1b', muted: '#6b6e68',
+              accent: '#2f6f61', 'accent-light': '#3d9484', 'accent-soft': '#dde8df',
+              line: '#d8d6ce', gold: '#d49e2a',
+            },
+            fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+            animation: { 'fade-up': 'fadeUp 0.6s ease-out both', 'float': 'float 6s ease-in-out infinite' },
+            keyframes: {
+              fadeUp: { '0%': { opacity: '0', transform: 'translateY(24px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+              float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
+            }
+          }
+        }
       }
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      html { scroll-behavior: smooth; }
+      .delay-1 { animation-delay: 0.1s; }
+      .delay-2 { animation-delay: 0.2s; }
+      .delay-3 { animation-delay: 0.3s; }
+      .delay-4 { animation-delay: 0.4s; }
+      .window-dots span { width: 12px; height: 12px; border-radius: 50%; }
+      .window-dots span:nth-child(1) { background: #ff5f57; }
+      .window-dots span:nth-child(2) { background: #ffbd2e; }
+      .window-dots span:nth-child(3) { background: #27c93f; }
+    </style>
   </head>
-  <body>
-    <header class="topbar">
-      <a class="brand" href="#top" aria-label="Markpad home">
-        <span class="brand-mark">M</span>
-        <span class="brand-text">Markpad</span>
-      </a>
-      <nav class="nav">
-        <a href="#features">Features</a>
-        <a href="#screenshots">Screenshots</a>
-        <a href="#downloads">Downloads</a>
-        <a href="https://github.com/shreyam1008/markpad">GitHub</a>
-      </nav>
+  <body class="bg-bg text-ink font-sans antialiased">
+
+    <!-- Nav -->
+    <header class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-bg/80 border-b border-line/40">
+      <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
+        <a href="#top" class="flex items-center gap-2 font-bold text-lg group">
+          <span class="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center text-sm font-extrabold group-hover:scale-110 transition-transform">M</span>
+          <span>Markpad</span>
+        </a>
+        <nav class="flex items-center gap-6 text-sm font-medium text-muted">
+          <a href="#features" class="hover:text-accent transition-colors">Features</a>
+          <a href="#screenshots" class="hover:text-accent transition-colors">Screenshots</a>
+          <a href="#downloads" class="hover:text-accent transition-colors">Downloads</a>
+          <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent transition-colors">GitHub</a>
+        </nav>
+      </div>
     </header>
 
     <main id="top">
-      <section class="hero">
-        <p class="eyebrow">Native Go desktop app by shreyam1008</p>
-        <h1>A tiny Markdown notepad that just works.</h1>
-        <p class="lede">
-          Markpad opens fast, restores your session, keeps unsaved drafts safe,
-          and renders Markdown beautifully. No Electron. No bloat. Under 8 MB.
+      <!-- Hero -->
+      <section class="pt-32 pb-20 px-6 text-center max-w-3xl mx-auto">
+        <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
+        <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny Markdown notepad<br/>that just works.</h1>
+        <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
+          Split view editor. Session restore. Autosaved drafts. Favorites. Drag-and-drop reorder. GitHub-style rendering. Native OS dialogs. No Electron. Under 10 MB.
         </p>
-        <div class="cta-row">
-          <a class="btn btn-primary" href="#downloads">Download</a>
-          <a class="btn btn-secondary" href="https://github.com/shreyam1008/markpad">View source</a>
+        <div class="flex justify-center gap-3 mb-8 animate-fade-up delay-3">
+          <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
+          <a href="https://github.com/shreyam1008/markpad" class="px-6 py-3 bg-paper border border-line rounded-xl font-semibold hover:bg-accent-soft transition-colors">View source</a>
         </div>
-        <ul class="pill-row">
-          <li>Native Go + Gio</li>
-          <li>Under 8 MB</li>
-          <li>Session restore</li>
-          <li>MIT License</li>
-          <li>Linux, Windows, macOS</li>
-        </ul>
+        <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Split View</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">MIT License</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Linux, Windows, macOS</span>
+        </div>
       </section>
 
-      <section class="showcase" id="screenshots">
-        <div class="window-card">
-          <div class="window-bar"><span></span><span></span><span></span></div>
-          <div class="screenshot-slot">
-            <p>Main app screenshot — Markdown tab with sidebar and favorites</p>
+      <!-- Screenshots -->
+      <section id="screenshots" class="max-w-4xl mx-auto px-6 pb-24 space-y-8">
+        <div class="bg-paper rounded-2xl border border-line shadow-xl overflow-hidden animate-float">
+          <div class="flex items-center gap-2 px-4 py-3 bg-bg/60 border-b border-line/60">
+            <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
+            <span class="text-xs text-muted ml-2">Markpad - Split View</span>
+          </div>
+          <div class="h-72 flex items-center justify-center text-muted text-sm bg-gradient-to-br from-accent-soft/30 to-paper">
+            <p>Split view screenshot &mdash; editor + live preview side-by-side</p>
           </div>
         </div>
-        <div class="window-card window-card-sm">
-          <div class="window-bar"><span></span><span></span><span></span></div>
-          <div class="screenshot-slot">
-            <p>Viewer mode — rendered Markdown with headings, code, tables</p>
+        <div class="grid grid-cols-2 gap-6">
+          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
+              <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
+            </div>
+            <div class="h-40 flex items-center justify-center text-muted text-xs bg-gradient-to-br from-accent-soft/20 to-paper">Sidebar with favorites + notes</div>
+          </div>
+          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
+              <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
+            </div>
+            <div class="h-40 flex items-center justify-center text-muted text-xs bg-gradient-to-br from-accent-soft/20 to-paper">Formatting toolbar + keyboard shortcuts</div>
           </div>
         </div>
       </section>
 
-      <section class="features" id="features">
-        <div class="section-heading">
-          <p class="eyebrow">Why Markpad</p>
-          <h2>Traditional notepad speed, modern Markdown viewer.</h2>
+      <!-- Features -->
+      <section id="features" class="max-w-5xl mx-auto px-6 pb-24">
+        <div class="text-center mb-12">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Why Markpad</p>
+          <h2 class="text-3xl font-bold">Notepad speed. Modern features.</h2>
         </div>
-        <div class="feature-grid">
-          <article class="feature-card">
-            <h3>Plain files stay plain</h3>
-            <p>Open <code>.md</code>, <code>.txt</code>, <code>.log</code>, and other text files. No proprietary database. No import step.</p>
-          </article>
-          <article class="feature-card">
-            <h3>Session restore</h3>
-            <p>Close and reopen. Every note, draft, favorite, and active tab comes back exactly as you left it.</p>
-          </article>
-          <article class="feature-card">
-            <h3>Markdown + Viewer</h3>
-            <p>Every note has two tabs: Markdown for editing and Viewer for a clean rendered reading experience with tables, tasks, and code.</p>
-          </article>
-          <article class="feature-card">
-            <h3>No Electron</h3>
-            <p>Written in Go with Gio. A single native binary under 8 MB with low idle memory. Starts instantly.</p>
-          </article>
-          <article class="feature-card">
-            <h3>Favorites and drafts</h3>
-            <p>Star notes in the sidebar to pin them. Unsaved work survives app close through local drafts stored in your config directory.</p>
-          </article>
-          <article class="feature-card">
-            <h3>Save anywhere</h3>
-            <p>Save As lets you choose any path and any extension. Markdown, plain text, log files, or no extension at all.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="downloads" id="downloads">
-        <div class="section-heading">
-          <p class="eyebrow">Downloads</p>
-          <h2>Get Markpad for your platform.</h2>
-          <p>Release artifacts are built by GitHub Actions on every tagged version.</p>
-        </div>
-        <div class="download-grid">
-          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
-            <strong>Linux AppImage</strong>
-            <span>Portable, no install</span>
-          </a>
-          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
-            <strong>Linux .deb</strong>
-            <span>Debian, Ubuntu</span>
-          </a>
-          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
-            <strong>Windows .exe</strong>
-            <span>Portable zip</span>
-          </a>
-          <a class="download-card" href="https://github.com/shreyam1008/markpad/releases">
-            <strong>macOS .dmg</strong>
-            <span>Apple Silicon + Intel</span>
-          </a>
-          <a class="download-card" href="https://github.com/shreyam1008/markpad">
-            <strong>Source code</strong>
-            <span>Build from Go</span>
-          </a>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Split View</h3>
+            <p class="text-sm text-muted">Edit and preview side-by-side. Resizable divider. Switch between Editor, Split, and Preview modes.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Open Anything</h3>
+            <p class="text-sm text-muted">Markdown, text, JSON, YAML, Python, Go, shell scripts, HTML, CSS, and any text file. Native OS file dialogs.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Session Restore</h3>
+            <p class="text-sm text-muted">Close and reopen. Every note, draft, favorite, and active document comes back exactly as you left it.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">No Electron</h3>
+            <p class="text-sm text-muted">Go + Wails + system webview. A single binary under 10 MB. Low memory. Starts instantly.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Drag, Star, Delete</h3>
+            <p class="text-sm text-muted">Drag-and-drop to reorder. Star notes for favorites. Right-click to delete. Full keyboard shortcuts.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Formatting Toolbar</h3>
+            <p class="text-sm text-muted">Bold, italic, headings, code, links, images, lists, tables, blockquotes. All with icon buttons and shortcuts.</p>
+          </div>
         </div>
       </section>
 
-      <section class="tech">
-        <div class="section-heading">
-          <p class="eyebrow">Under the hood</p>
-          <h2>Lean, native, no runtime.</h2>
+      <!-- Downloads -->
+      <section id="downloads" class="max-w-4xl mx-auto px-6 pb-24">
+        <div class="text-center mb-12">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
+          <h2 class="text-3xl font-bold">Get Markpad for your platform.</h2>
+          <p class="text-muted mt-2">Built by GitHub Actions on every tagged release.</p>
         </div>
-        <div class="tech-grid">
-          <div class="tech-item"><strong>Go</strong><span>Single compiled binary</span></div>
-          <div class="tech-item"><strong>Gio</strong><span>Native GPU-accelerated UI</span></div>
-          <div class="tech-item"><strong>goldmark</strong><span>CommonMark + GFM Markdown</span></div>
-          <div class="tech-item"><strong>Cloudless</strong><span>All data stays local</span></div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+            <div class="text-2xl mb-2">&#128039;</div>
+            <strong class="block group-hover:text-accent transition-colors">Linux AppImage</strong>
+            <span class="text-xs text-muted">Portable, no install</span>
+          </a>
+          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+            <div class="text-2xl mb-2">&#128230;</div>
+            <strong class="block group-hover:text-accent transition-colors">Linux .deb</strong>
+            <span class="text-xs text-muted">Debian, Ubuntu</span>
+          </a>
+          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+            <div class="text-2xl mb-2">&#127466;</div>
+            <strong class="block group-hover:text-accent transition-colors">Windows .exe</strong>
+            <span class="text-xs text-muted">Portable zip</span>
+          </a>
+          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+            <div class="text-2xl mb-2">&#127822;</div>
+            <strong class="block group-hover:text-accent transition-colors">macOS .dmg</strong>
+            <span class="text-xs text-muted">Apple Silicon + Intel</span>
+          </a>
+          <a href="https://github.com/shreyam1008/markpad" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center sm:col-span-2 lg:col-span-1">
+            <div class="text-2xl mb-2">&#128187;</div>
+            <strong class="block group-hover:text-accent transition-colors">Source Code</strong>
+            <span class="text-xs text-muted">Build from Go</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Tech -->
+      <section class="max-w-4xl mx-auto px-6 pb-24">
+        <div class="text-center mb-10">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Under the Hood</p>
+          <h2 class="text-3xl font-bold">Lean, native, no runtime.</h2>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Go</strong><span class="text-xs text-muted">Single binary</span></div>
+          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Wails</strong><span class="text-xs text-muted">System webview</span></div>
+          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">marked.js</strong><span class="text-xs text-muted">GFM Markdown</span></div>
+          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Cloudless</strong><span class="text-xs text-muted">All data local</span></div>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner">
-        <p>
-          Built by <a href="https://shreyam1008.com.np">Shreyam Adhikari</a> as a small open-source native Markdown notepad.
-        </p>
-        <p>MIT licensed. <a href="https://github.com/shreyam1008/markpad">GitHub</a></p>
-      </div>
+    <footer class="border-t border-line py-8 text-center text-sm text-muted">
+      <p>Built with care by <a href="https://github.com/shreyam1008" class="text-accent hover:underline">Shreyam Adhikari</a></p>
+      <p class="mt-1">MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
     </footer>
   </body>
 </html>

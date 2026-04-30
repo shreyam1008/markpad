@@ -190,8 +190,11 @@ func (a *App) OpenFileDialog() (SessionState, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open File",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Markdown", Pattern: "*.md;*.markdown"},
-			{DisplayName: "Text", Pattern: "*.txt;*.log"},
+			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
+			{DisplayName: "Text", Pattern: "*.txt;*.log;*.csv;*.tsv"},
+			{DisplayName: "Code", Pattern: "*.json;*.yaml;*.yml;*.xml;*.toml;*.ini;*.cfg;*.conf"},
+			{DisplayName: "Scripts", Pattern: "*.sh;*.bash;*.zsh;*.py;*.js;*.ts;*.go;*.rs;*.rb;*.lua"},
+			{DisplayName: "Web", Pattern: "*.html;*.htm;*.css;*.svg"},
 			{DisplayName: "All Files", Pattern: "*.*"},
 		},
 	})
@@ -253,6 +256,28 @@ func (a *App) DeleteNote(id string) SessionState {
 			a.sess.ActiveID = ""
 		}
 	}
+	_ = a.store.Save(a.sess)
+	return a.GetSession()
+}
+
+func (a *App) ReorderNotes(ids []string) SessionState {
+	byID := make(map[string]*session.Document, len(a.sess.Documents))
+	for _, doc := range a.sess.Documents {
+		byID[doc.ID] = doc
+	}
+	reordered := make([]*session.Document, 0, len(ids))
+	for _, id := range ids {
+		if doc, ok := byID[id]; ok {
+			reordered = append(reordered, doc)
+			delete(byID, id)
+		}
+	}
+	for _, doc := range a.sess.Documents {
+		if _, ok := byID[doc.ID]; ok {
+			reordered = append(reordered, doc)
+		}
+	}
+	a.sess.Documents = reordered
 	_ = a.store.Save(a.sess)
 	return a.GetSession()
 }
