@@ -4,7 +4,7 @@ This file is the working contract for AI agents contributing to Markpad.
 
 ## Product intent
 
-Markpad is a small native Markdown notepad/viewer built with **Wails v2** (Go backend + web frontend using the OS native webview). It should feel as immediate as a traditional Notepad or Mousepad-style desktop app, while adding a polished split-view editor+preview, session restore, a formatting toolbar with SVG icons, drag-and-drop note reorder, and a modern but quiet interface.
+Markpad is a small native Markdown notepad/viewer built with **Wails v2** (Go backend + web frontend using the OS native webview). It should feel as immediate as a traditional Notepad or Mousepad-style desktop app, while adding a polished split-view editor+preview, version history, session restore, a formatting toolbar with SVG icons, drag-and-drop note reorder, and a modern but quiet interface.
 
 The core promise is:
 
@@ -13,13 +13,17 @@ The core promise is:
 - Low idle memory and stable behavior with large text files.
 - Open any text-like file: `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, code, config, logs, and more.
 - Split view: Editor, Split (side-by-side), and Preview modes with resizable divider.
+- Version history: every save creates a snapshot, browse/preview/restore old versions in a right-side timeline panel.
 - Unsaved work survives app close through local drafts.
 - Native OS file dialogs for Open, Save, Save As.
-- Full keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+O, Ctrl+Shift+E, Ctrl+Del, etc.).
+- Full keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+O, Ctrl+Shift+E, Ctrl+H, Ctrl+F, Ctrl+Del, etc.).
 - Beautiful GitHub-style Markdown rendering via `marked.js` + `highlight.js`.
 - Formatting toolbar with SVG icon buttons (bold, italic, headings, code, table, list, link, image, blockquote).
+- Find in editor (Ctrl+F) with wrap-around search.
+- File type icons in sidebar, per-note view mode memory, reading time in status bar.
 - Star/favorite notes in sidebar. Drag-and-drop to reorder notes.
-- Right-click context menu to star/delete notes.
+- Right-click context menu to star/delete notes. Only unsaved drafts can be deleted.
+- Save animation with visual pulse. Bold "NOT SAVED" indicator.
 
 ## Tech stack
 
@@ -37,14 +41,16 @@ The core promise is:
 ```
 markpad/
   main.go                  # Wails app entry, window config, native menus
-  app.go                   # Go backend: session, file ops, ReorderNotes, DeleteNote
+  app.go                   # Go backend: session, file ops, history, ReorderNotes, DeleteNote
   internal/
-    session/               # Session persistence, drafts, bookmarks (pure Go, testable)
+    session/               # Session persistence, drafts, bookmarks, version history (pure Go, testable)
+      session.go           # Core session, document, bookmark, store, draft I/O
+      history.go           # Snapshot storage, listing, restore, pruning (max 50 per note)
   frontend/
     index.html             # Single-page app shell (Tailwind + CDN libs)
     src/
-      main.js              # All frontend logic: editor, preview, split view, toolbar, sidebar, drag-drop, shortcuts, modals
-      styles.css           # Minimal custom CSS (toolbar, view buttons, context menu, drag states, scrollbar, markdown overrides)
+      main.js              # All frontend logic: editor, preview, split view, toolbar, sidebar, history panel, find bar, drag-drop, shortcuts, modals
+      styles.css           # Minimal custom CSS (toolbar, view buttons, context menu, drag states, history panel, scrollbar, markdown overrides)
   docs/                    # GitHub Pages website (Tailwind CSS, SEO, animations)
   packaging/               # Linux .desktop, metainfo, SVG app icon
   tests/                   # Integration tests (session)
@@ -61,9 +67,13 @@ markpad/
 - `SaveActive(content)` / `SaveAsDialog(content)` — save to disk
 - `OpenFileDialog()` — open file via native OS dialog
 - `ToggleStar(id)` — toggle bookmark/favorite
-- `DeleteNote(id)` — remove note from session
+- `DeleteNote(id)` — remove unsaved note from session (saved files cannot be deleted)
 - `ReorderNotes(ids)` — reorder notes by ID array (for drag-drop)
 - `OpenPathFromBookmark(path)` — open a favorited file
+- `GetHistory(id)` — list version snapshots for a note (newest first)
+- `GetHistoryContent(id, timestamp)` — get full content of a specific snapshot
+- `RestoreVersion(id, timestamp)` — restore a note to a previous version
+- `OpenURL(url)` — open external URL in the system browser (not in webview)
 
 ## Tech constraints
 
@@ -96,6 +106,14 @@ markpad/
 - All standard notepad shortcuts: Ctrl+S, Ctrl+Shift+S, Ctrl+N, Ctrl+O, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+Del.
 - Closing and reopening restores documents, drafts, favorites, and active note.
 - Preview renders GitHub-style Markdown with syntax-highlighted code, tables, task lists.
+- History panel (right sidebar): toggles with clock icon button or Ctrl+H. Shows timeline of saved versions with badges, timestamps, line/byte counts, and preview text. Click to view, hover to see Restore button.
+- Find bar: Ctrl+F toggles inline search above editor. Enter for next match with wrap. Esc to close.
+- Auto-list continuation: Enter in a list (-, *, 1., - [ ]) continues the pattern. Enter on empty prefix ends the list.
+- External links in preview and modals open in the system browser via `OpenURL`.
+- Per-note view mode memory: remembers editor/split/preview per note, defaults to Preview.
+- File type icons in sidebar: shows emoji/text icon based on file extension.
+- Reading time and word count in status bar.
+- Save animation: button pulses on save. "NOT SAVED" indicator is bold and animated.
 
 ## Persistence rules
 
@@ -105,6 +123,10 @@ markpad/
 - Save to existing file path when known.
 - New untitled notes remain drafts until a save-as path is chosen.
 - Keep bookmark/favorite paths absolute and deduplicated.
+- Version history snapshots stored under `history/<doc-id>/` as timestamped JSON files.
+- Each snapshot stores: timestamp, source (save/open/save-as/restore), content, bytes, lines, preview text.
+- Max 50 snapshots per note; oldest are pruned automatically.
+- Snapshots are created on: save, save-as, open, and restore.
 
 ## Performance rules
 

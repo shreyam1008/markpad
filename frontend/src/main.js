@@ -12,6 +12,9 @@ let renderTimer = null;
 let draggedNoteId = null;
 let ctxNoteId = null;
 let findOpen = false;
+let historyOpen = false;
+let historySelectedTs = null;
+let saving = false;
 const noteViewModes = {};
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
@@ -36,6 +39,9 @@ const ctxMenu      = $('ctx-menu');
 const findBar      = $('find-bar');
 const findInput    = $('find-input');
 const findInfo     = $('find-info');
+const histPanel    = $('history-panel');
+const histList     = $('history-list');
+const histEmpty    = $('history-empty');
 const modalOverlay = $('modal-overlay');
 const modalTitle   = $('modal-title');
 const modalBodyEl  = $('modal-body');
@@ -76,6 +82,22 @@ function renderMd(md) {
   });
 }
 
+// ── External link handler ───────────────────────────────
+function interceptLinks(container) {
+  container.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.go && window.go.main && window.go.main.App) {
+        window.go.main.App.OpenURL(href);
+      }
+    }
+  });
+}
+
 // ── Session ──────────────────────────────────────────────
 function renderSession(state) {
   if (!state) return;
@@ -92,6 +114,11 @@ function renderSession(state) {
   const active = cachedNotes.find(n => n.id === activeId);
   noteTitle.textContent = active ? (active.path ? active.title : 'Untitled') : 'Untitled';
   dirtyInd.classList.toggle('hidden', !(active && active.dirty));
+
+  requestAnimationFrame(() => {
+    const activeRow = notesList.querySelector(`[data-note-id="${activeId}"]`);
+    if (activeRow) activeRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
 }
 
 function makeFavRow(fav) {
@@ -205,6 +232,7 @@ function loadContent(content) {
   editor.value = currentContent;
   if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
   updateStats();
+  if (historyOpen) renderHistory();
 }
 
 function restoreNoteView() {
@@ -244,6 +272,7 @@ function setView(mode) {
     editorCont.style.flex = '';
     viewerCont.style.flex = '';
   }
+  if (!showEditor && findOpen) toggleFind();
 }
 
 document.querySelectorAll('.view-btn').forEach(btn => {
@@ -318,6 +347,43 @@ editor.addEventListener('keydown', (e) => {
     editor.selectionStart = editor.selectionEnd = s + 4;
     editor.dispatchEvent(new Event('input'));
   }
+  if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+    const pos = editor.selectionStart;
+    const text = editor.value;
+    const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+    const line = text.substring(lineStart, pos);
+    const ulMatch = line.match(/^(\s*)([-*])\s(.+)/);
+    const olMatch = line.match(/^(\s*)(\d+)\.\s(.+)/);
+    const taskMatch = line.match(/^(\s*)- \[([ x])\]\s(.+)/);
+    const emptyUl = line.match(/^(\s*)([-*])\s$/);
+    const emptyOl = line.match(/^(\s*)(\d+)\.\s$/);
+    const emptyTask = line.match(/^(\s*)- \[([ x])\]\s$/);
+    if (emptyUl || emptyOl || emptyTask) {
+      e.preventDefault();
+      editor.value = text.substring(0, lineStart) + '\n' + text.substring(pos);
+      editor.selectionStart = editor.selectionEnd = lineStart + 1;
+      editor.dispatchEvent(new Event('input'));
+    } else if (taskMatch) {
+      e.preventDefault();
+      const prefix = `\n${taskMatch[1]}- [ ] `;
+      editor.value = text.substring(0, pos) + prefix + text.substring(pos);
+      editor.selectionStart = editor.selectionEnd = pos + prefix.length;
+      editor.dispatchEvent(new Event('input'));
+    } else if (ulMatch) {
+      e.preventDefault();
+      const prefix = `\n${ulMatch[1]}${ulMatch[2]} `;
+      editor.value = text.substring(0, pos) + prefix + text.substring(pos);
+      editor.selectionStart = editor.selectionEnd = pos + prefix.length;
+      editor.dispatchEvent(new Event('input'));
+    } else if (olMatch) {
+      e.preventDefault();
+      const next = parseInt(olMatch[2]) + 1;
+      const prefix = `\n${olMatch[1]}${next}. `;
+      editor.value = text.substring(0, pos) + prefix + text.substring(pos);
+      editor.selectionStart = editor.selectionEnd = pos + prefix.length;
+      editor.dispatchEvent(new Event('input'));
+    }
+  }
 });
 
 function updateStats() {
@@ -335,6 +401,76 @@ function flashSave() {
   statusText.textContent = 'Saved';
   setTimeout(() => saveBtn.classList.remove('save-flash'), 800);
 }
+
+// ── History panel ────────────────────────────────────────
+async function toggleHistory() {
+  historyOpen = !historyOpen;
+  histPanel.classList.toggle('hidden', !historyOpen);
+  if (historyOpen) histPanel.classList.add('flex');
+  else histPanel.classList.remove('flex');
+  if (historyOpen) await renderHistory();
+}
+
+async function renderHistory() {
+  if (!activeId) return;
+  const entries = await window.go.main.App.GetHistory(activeId);
+  histList.innerHTML = '';
+  historySelectedTs = null;
+  histEmpty.classList.toggle('hidden', entries.length > 0);
+  histList.classList.toggle('hidden', entries.length === 0);
+  entries.forEach(entry => {
+    const row = el('div', 'hist-entry');
+    const top = el('div', 'flex items-center justify-between gap-2 mb-1');
+    const badge = el('span', `hist-badge ${entry.source}`);
+    badge.textContent = entry.source === 'save-as' ? 'save as' : entry.source;
+    const ago = el('span', 'text-[10px] text-muted');
+    ago.textContent = entry.timeAgo;
+    top.append(badge, ago);
+    const meta = el('div', 'text-[11px] text-muted');
+    meta.textContent = `${entry.lines} lines \u00b7 ${formatBytes(entry.bytes)}`;
+    const preview = el('div', 'text-[11px] text-[#3d403e] truncate mt-0.5');
+    preview.textContent = entry.preview;
+    row.append(top, meta, preview);
+    row.addEventListener('click', async () => {
+      historySelectedTs = entry.timestamp;
+      histList.querySelectorAll('.hist-entry').forEach(e => e.classList.remove('active'));
+      row.classList.add('active');
+      const content = await window.go.main.App.GetHistoryContent(activeId, entry.timestamp);
+      if (viewMode === 'markdown' || viewMode === 'split') {
+        editor.value = content;
+        editor.setSelectionRange(0, 0);
+      }
+      if (viewMode === 'viewer' || viewMode === 'split') {
+        viewer.innerHTML = renderMd(content);
+      }
+      statusText.textContent = `Viewing: ${entry.timeAgo} (${entry.source})`;
+    });
+    const restoreBtn = el('button', 'mt-1 text-[10px] font-semibold text-accent hover:underline hidden');
+    restoreBtn.textContent = 'Restore this version';
+    row.appendChild(restoreBtn);
+    row.addEventListener('mouseenter', () => restoreBtn.classList.remove('hidden'));
+    row.addEventListener('mouseleave', () => { if (!row.classList.contains('active')) restoreBtn.classList.add('hidden'); });
+    restoreBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        renderSession(await window.go.main.App.RestoreVersion(activeId, entry.timestamp));
+        loadContent(await window.go.main.App.GetNoteContent(activeId));
+        statusText.textContent = 'Version restored';
+        await renderHistory();
+      } catch (err) { statusText.textContent = 'Restore failed: ' + err; }
+    });
+    histList.appendChild(row);
+  });
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+$('btn-history').addEventListener('click', toggleHistory);
+$('history-close').addEventListener('click', toggleHistory);
 
 // ── Find bar (Ctrl+F) ───────────────────────────────────
 function toggleFind() {
@@ -417,11 +553,17 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key === 'o') { e.preventDefault(); await doOpen(); }
   else if (ctrl && shift && key === 'E') { e.preventDefault(); cycleView(); }
   else if (ctrl && shift && key === 'B') { e.preventDefault(); toggleSidebar(); }
+  else if (ctrl && !shift && key === 'h') { e.preventDefault(); toggleHistory(); }
   else if (ctrl && !shift && key === 'f') { e.preventDefault(); toggleFind(); }
   else if (ctrl && !shift && key === 'b' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('bold'); }
   else if (ctrl && !shift && key === 'i' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('italic'); }
   else if (ctrl && !shift && key === 'k' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('link'); }
-  else if (key === 'Escape') { if (findOpen) toggleFind(); modalOverlay.classList.add('hidden'); ctxMenu.classList.add('hidden'); }
+  else if (key === 'Escape') {
+    if (findOpen) toggleFind();
+    if (historyOpen) toggleHistory();
+    modalOverlay.classList.add('hidden');
+    ctxMenu.classList.add('hidden');
+  }
   else if (key === 'Delete' && ctrl) {
     e.preventDefault();
     const note = cachedNotes.find(n => n.id === activeId);
@@ -434,12 +576,16 @@ document.addEventListener('keydown', async (e) => {
 
 // ── Actions ──────────────────────────────────────────────
 async function doSave() {
+  if (saving) return;
+  saving = true;
   statusText.textContent = 'Saving...';
   try {
     renderSession(await window.go.main.App.SaveActive(currentContent));
     committedContent = currentContent;
     flashSave();
+    if (historyOpen) await renderHistory();
   } catch (err) { statusText.textContent = 'Save failed: ' + err; }
+  finally { saving = false; }
 }
 
 async function doSaveAs() {
@@ -448,6 +594,7 @@ async function doSaveAs() {
     renderSession(await window.go.main.App.SaveAsDialog(currentContent));
     committedContent = currentContent;
     flashSave();
+    if (historyOpen) await renderHistory();
   } catch (err) { statusText.textContent = 'Save As failed: ' + err; }
 }
 
@@ -476,9 +623,14 @@ async function doOpen() {
 $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
 saveBtn.addEventListener('click', doSave);
-$('btn-cancel').addEventListener('click', () => {
+$('btn-cancel').addEventListener('click', async () => {
   editor.value = committedContent; currentContent = committedContent;
+  if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
+  if (activeId) {
+    await window.go.main.App.UpdateContent(activeId, currentContent);
+    renderSession(await window.go.main.App.GetSession());
+  }
 });
 
 // ── Modal ────────────────────────────────────────────────
@@ -499,17 +651,18 @@ function registerEvents() {
     <p><b>Markpad</b> is a native Markdown notepad.</p>
     <p>Open any text file: <code>.md</code>, <code>.txt</code>, <code>.json</code>, <code>.py</code>, <code>.go</code>, and more.</p>
     <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
+    <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
     <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find</p>
+    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.3.0</p>
+    <p><b>Markpad</b> v0.4.0</p>
     <p>A tiny native Markdown notepad built with Go + Wails.</p>
-    <p>System webview, under 10 MB, session restore, split view, favorites.</p>
+    <p>Split view, version history, session restore, find, formatting toolbar, favorites, drag-and-drop reorder. Under 10 MB.</p>
     <p style="margin-top:8px;"><a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot; MIT License &middot; by Shreyam Adhikari</p>
   `));
 }
@@ -525,7 +678,12 @@ async function loadApp() {
 }
 
 function boot() {
-  if (window.go && window.go.main && window.go.main.App) { registerEvents(); loadApp(); }
+  if (window.go && window.go.main && window.go.main.App) {
+    registerEvents();
+    interceptLinks(viewer);
+    interceptLinks(modalBodyEl);
+    loadApp();
+  }
   else setTimeout(boot, 80);
 }
 boot();

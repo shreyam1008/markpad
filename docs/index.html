@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta name="description" content="Markpad is a small, fast, native Markdown notepad built with Go and Wails. Split view, session restore, autosaved drafts, favorites, and beautiful rendering. No Electron. Under 10 MB." />
-    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, appimage, session restore, open source, shreyam1008" />
+    <meta name="description" content="Markpad is a small, fast, native Markdown notepad built with Go and Wails. Split view, version history, session restore, autosaved drafts, favorites, find, and beautiful rendering. No Electron. Under 10 MB." />
+    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, version history, find, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -15,13 +15,13 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Markpad" />
     <meta property="og:title" content="Markpad — Native Markdown Notepad" />
-    <meta property="og:description" content="A tiny native Markdown notepad with split view, session restore, drafts, and beautiful rendering. Under 10 MB, no Electron." />
+    <meta property="og:description" content="A tiny native Markdown notepad with split view, version history, session restore, find, and beautiful rendering. Under 10 MB, no Electron." />
     <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
     <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Markpad — Native Markdown Notepad" />
-    <meta name="twitter:description" content="Small, fast, native Markdown notepad by shreyam1008. Split view, favorites, session restore. No Electron." />
+    <meta name="twitter:description" content="Small, fast, native Markdown notepad by shreyam1008. Split view, version history, favorites, session restore. No Electron." />
     <meta name="twitter:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <script type="application/ld+json">
@@ -31,13 +31,13 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.3.0",
+        "softwareVersion": "0.4.0",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad"],
-        "description": "A tiny native Markdown notepad with split view, session restore, favorites, and GitHub-style rendering.",
+        "description": "A tiny native Markdown notepad with split view, version history, session restore, favorites, find, and GitHub-style rendering.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
@@ -102,7 +102,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny Markdown notepad<br/>that just works.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Split view editor. Session restore. Autosaved drafts. Favorites. Drag-and-drop reorder. GitHub-style rendering. Native OS dialogs. No Electron. Under 10 MB.
+          Split view. Version history. Session restore. Autosaved drafts. Find. Favorites. Drag-and-drop reorder. GitHub-style rendering. No Electron. Under 10 MB.
         </p>
         <div class="flex justify-center gap-3 mb-8 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -112,6 +112,7 @@
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Split View</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">MIT License</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Linux, Windows, macOS</span>
@@ -175,6 +176,22 @@
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Formatting Toolbar</h3>
             <p class="text-sm text-muted">Bold, italic, headings, code, links, images, lists, tables, blockquotes. All with icon buttons and shortcuts.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Version History</h3>
+            <p class="text-sm text-muted">Every save creates a snapshot. Browse the timeline, preview old versions, and restore instantly. Like git, built in.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Find in Editor</h3>
+            <p class="text-sm text-muted">Ctrl+F to search with wrap-around. Reading time, word count, and line stats in the status bar.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">File Type Icons</h3>
+            <p class="text-sm text-muted">Each note shows its file type icon. Per-note view mode memory. Save animation with visual feedback.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Smart Lists</h3>
+            <p class="text-sm text-muted">Lists auto-continue on Enter. Bullets, numbered lists, and task lists. Enter on an empty item ends the list.</p>
           </div>
         </div>
       </section>

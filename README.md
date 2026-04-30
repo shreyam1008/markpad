@@ -1,95 +1,112 @@
 # Markpad
 
-Markpad is a small native Markdown notepad written in Go. It keeps the Notepad feeling: open fast, type immediately, close without ceremony, and come back to the exact session later.
+A tiny native Markdown notepad built with **Go + Wails**. Opens fast, saves your work, and gets out of the way.
 
-The current MVP uses Gio for a native Go UI and goldmark for CommonMark/GFM-compatible Markdown rendering support. The app has:
+No Electron. System webview. Single binary under 10 MB.
 
-- A collapsible left sidebar of notes opened over time.
-- Favorites/bookmarks for pinned file paths shown above the session.
-- Autosaved unsaved drafts stored in the user config directory.
-- Per-note Markdown and Viewer tabs.
-- Traditional File/View/Help menu bar above the whole app.
-- Menus, Help, Tour, About, Settings, and Save as modals.
-- Command-line opening for Markdown and plain text files.
-- A deliberately light dependency shape: no Electron, no bundled browser runtime.
+## Features
 
-## Run
+- **Split View** — Editor, Split (side-by-side with resizable divider), and Preview modes. `Ctrl+Shift+E` to cycle.
+- **Open Anything** — `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, `.svg`, code, config, logs, and more.
+- **Session Restore** — Close and reopen. Every note, draft, favorite, and active document comes back exactly as you left it.
+- **Version History** — Every save creates a snapshot. Click the clock icon to browse all versions in a right-side timeline panel. Preview and restore any old version instantly. `Ctrl+H` to toggle.
+- **Favorites & Drag-and-Drop** — Star notes for quick access. Drag to reorder. Right-click context menu.
+- **Formatting Toolbar** — Bold, italic, strikethrough, headings, code, links, images, lists, tables, blockquotes. All with SVG icon buttons and keyboard shortcuts.
+- **Auto-List Continuation** — Press Enter in a list (`-`, `*`, `1.`, `- [ ]`) and the pattern continues. Enter on an empty item ends the list.
+- **Find in Editor** — `Ctrl+F` to search with wrap-around.
+- **External Links** — Links in the preview and modals open in your system browser, not the app.
+- **Autosaved Drafts** — Unsaved work survives app close. Drafts live under the config directory.
+- **Save Animation** — Smooth visual pulse on save. Bold "NOT SAVED" indicator when dirty.
+- **File Type Icons** — Each note shows an icon based on its file extension.
+- **Per-Note View Memory** — Remembers which view mode (editor/split/preview) you used for each note.
+- **Word Count & Reading Time** — Status bar shows lines, words, characters, and estimated reading time.
+- **Native Dialogs** — OS file picker for Open, Save, Save As.
+- **Keyboard Shortcuts** — `Ctrl+S`, `Ctrl+N`, `Ctrl+O`, `Ctrl+Shift+S`, `Ctrl+B/I/K`, `Ctrl+F`, `Ctrl+H`, `Ctrl+Del`, and more.
 
-This environment has Go at `/usr/local/go/bin/go`. If `go` is on your `PATH`, use `go` instead.
+## Install
 
-On Linux, Gio needs native build headers before the desktop binary can compile:
+Download from the [Releases page](https://github.com/shreyam1008/markpad/releases):
+
+- **Linux**: AppImage (portable) or `.deb` (Debian/Ubuntu)
+- **Windows**: `.exe` (portable zip)
+- **macOS**: `.dmg` (Apple Silicon + Intel)
+
+## Build from Source
+
+**Prerequisites**: Go 1.21+, Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
+
+On Linux, install WebKit2GTK:
 
 ```sh
-sudo apt-get install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
 ```
+
+Build and run:
 
 ```sh
-/usr/local/go/bin/go run ./cmd/markpad
-/usr/local/go/bin/go run ./cmd/markpad README.md
+wails dev     # development mode with hot reload
+wails build   # production binary in build/bin/
 ```
 
-## Build
+Or with `make`:
 
 ```sh
-make build
-./dist/markpad README.md
+make dev      # wails dev
+make build    # production build
 ```
 
-On a Linux machine without the Gio header packages installed system-wide, this repo also has a non-root local build path:
-
-```sh
-make build-linux-local
-./dist/markpad README.md
-```
-
-That command downloads the required `-dev` packages into `/tmp/markpad-apt`, extracts headers into `/tmp/markpad-sysroot`, and produces `dist/markpad`.
-
-The current Linux binary built locally at about 7.5 MB stripped.
+The production binary is ~8 MB stripped.
 
 ## Storage
 
-Drafts and session metadata live under the platform config directory:
+All data is local. Drafts, session state, and version history live under the platform config directory:
 
-- Linux: `~/.config/markpad`
-- macOS: `~/Library/Application Support/markpad`
-- Windows: `%AppData%\markpad`
+- **Linux**: `~/.config/markpad/`
+- **macOS**: `~/Library/Application Support/markpad/`
+- **Windows**: `%AppData%\markpad\`
 
-Unsaved notes are real draft files under `drafts/`, so closing the app should not lose work.
+```
+markpad/
+  session.json          # notes, favorites, active state
+  drafts/               # autosaved draft files
+  history/<doc-id>/     # version snapshots (JSON, max 50 per note)
+```
 
-## Research Notes
+## Architecture
 
-Comparable projects influenced the product shape:
+```
+markpad/
+  main.go               # Wails app entry, window config, native menus
+  app.go                 # Go backend: session, file ops, history, exposed to JS
+  internal/session/      # Session persistence, drafts, bookmarks, version history
+  frontend/
+    index.html           # Single-page app shell (Tailwind + CDN libs)
+    src/main.js          # All frontend logic: editor, preview, toolbar, sidebar, history
+    src/styles.css       # Minimal custom CSS
+  docs/                  # GitHub Pages website
+  packaging/             # Linux .desktop, metainfo, SVG icon
+```
 
-- MarkText proves the market still wants a simple, elegant cross-platform Markdown editor focused on speed and usability: https://github.com/marktext/marktext
-- Ferrite highlights the key positioning: no Electron, low memory, and dual-pane source/rendered editing: https://getferrite.dev/
-- Verso’s plain-file philosophy is the right default here: open `.md`, edit, close, no proprietary database: https://verso.imzl.com/
-- Gio is the best fit for a Go-first native app with a future WASM route because it supports desktop platforms and WebAssembly while depending mainly on platform graphics/input libraries: https://gioui.org/
-- goldmark is the Markdown parser choice because it is pure Go, CommonMark compliant, and includes GFM extensions: https://pkg.go.dev/github.com/yuin/goldmark
+**Tech stack**: Go · Wails v2 · Vanilla JS · Tailwind CSS · marked.js · highlight.js · DOMPurify
 
-Full research summary: [docs/research/2026-04-30.md](docs/research/2026-04-30.md)
+## Keyboard Shortcuts
 
-## Documentation
-
-- [Architecture](docs/architecture.md)
-- [Packaging](docs/packaging.md)
-- [Launch plan](docs/launch.md)
-- [Research notes](docs/research/2026-04-30.md)
-- [GitHub Pages website scaffold](docs/index.html)
-
-## Packaging
-
-The repo includes GitHub Actions for:
-
-- Linux binary, `.deb`, and AppImage
-- Windows `.exe`
-- macOS `.dmg`
-
-Packaging is in `.github/workflows/release.yml`. Push a tag like `v0.1.0` to produce release artifacts.
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+N` | New note |
+| `Ctrl+O` | Open file |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Save As |
+| `Ctrl+Shift+E` | Cycle view mode |
+| `Ctrl+Shift+B` | Toggle sidebar |
+| `Ctrl+H` | Toggle version history |
+| `Ctrl+F` | Find in editor |
+| `Ctrl+B` | Bold |
+| `Ctrl+I` | Italic |
+| `Ctrl+K` | Link |
+| `Ctrl+Del` | Delete draft |
+| `Esc` | Close modal / find / history |
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Current Boundaries
-
-This is a native MVP, not the final giant-file editor. The TODO keeps the next technical steps explicit: native file dialogs, rope or piece-table storage for huge files, synchronized scroll, and the WASM/web edition.

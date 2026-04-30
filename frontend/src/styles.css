@@ -54,6 +54,22 @@
 }
 .save-flash { animation: saveFlash 0.8s ease-out; }
 
+/* History panel */
+.hist-entry {
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: all 0.1s; border-left: 3px solid transparent;
+}
+.hist-entry:hover { background: #e7ece5; }
+.hist-entry.active { background: #dde8df; border-left-color: #2f6f61; }
+.hist-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.hist-badge.save { background: #dde8df; color: #2f6f61; }
+.hist-badge.open { background: #e0dff8; color: #5b53a8; }
+.hist-badge.restore { background: #fde6d8; color: #c57933; }
+.hist-badge.save-as { background: #d8eef0; color: #2a7b8a; }
+
 /* Markdown body overrides */
 .markdown-body { background: #fffffc !important; }
 .markdown-body pre { border-radius: 8px; }
