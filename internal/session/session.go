@@ -27,9 +27,24 @@ type Document struct {
 	SavedAt   time.Time `json:"saved_at,omitempty"`
 }
 
+type Bookmark struct {
+	ID           string    `json:"id"`
+	Title        string    `json:"title"`
+	Path         string    `json:"path"`
+	AddedAt      time.Time `json:"added_at"`
+	LastOpenedAt time.Time `json:"last_opened_at,omitempty"`
+}
+
+type Preferences struct {
+	ReducedMotion bool `json:"reduced_motion"`
+	CompactMode   bool `json:"compact_mode"`
+}
+
 type Session struct {
-	ActiveID  string      `json:"active_id"`
-	Documents []*Document `json:"documents"`
+	ActiveID    string      `json:"active_id"`
+	Documents   []*Document `json:"documents"`
+	Bookmarks   []*Bookmark `json:"bookmarks,omitempty"`
+	Preferences Preferences `json:"preferences"`
 }
 
 type Store struct {
@@ -82,6 +97,9 @@ func (s *Store) Load() (*Session, error) {
 	}
 	for _, doc := range sess.Documents {
 		normalizeDocument(doc)
+	}
+	for _, bookmark := range sess.Bookmarks {
+		normalizeBookmark(bookmark)
 	}
 	if sess.ActiveID == "" || sess.Find(sess.ActiveID) == nil {
 		sess.ActiveID = sess.Documents[0].ID
@@ -188,7 +206,74 @@ func (sess *Session) AddFile(path string, content string) *Document {
 	doc.Dirty = false
 	doc.SavedAt = time.Now()
 	sess.Add(doc)
+	sess.TouchBookmark(path)
 	return doc
+}
+
+func (sess *Session) BookmarkFile(path string, content string) *Bookmark {
+	abs, err := filepath.Abs(path)
+	if err == nil {
+		path = abs
+	}
+	if existing := sess.FindBookmark(path); existing != nil {
+		existing.LastOpenedAt = time.Now()
+		existing.Title = TitleFromContent(content, path)
+		return existing
+	}
+	now := time.Now()
+	bookmark := &Bookmark{
+		ID:           NewID(),
+		Title:        TitleFromContent(content, path),
+		Path:         path,
+		AddedAt:      now,
+		LastOpenedAt: now,
+	}
+	sess.Bookmarks = append([]*Bookmark{bookmark}, sess.Bookmarks...)
+	return bookmark
+}
+
+func (sess *Session) ToggleBookmark(path string, content string) bool {
+	if strings.TrimSpace(path) == "" {
+		return false
+	}
+	if existing := sess.FindBookmark(path); existing != nil {
+		sess.RemoveBookmark(existing.ID)
+		return false
+	}
+	sess.BookmarkFile(path, content)
+	return true
+}
+
+func (sess *Session) IsBookmarked(path string) bool {
+	return sess.FindBookmark(path) != nil
+}
+
+func (sess *Session) FindBookmark(path string) *Bookmark {
+	if strings.TrimSpace(path) == "" {
+		return nil
+	}
+	for _, bookmark := range sess.Bookmarks {
+		if samePath(bookmark.Path, path) {
+			return bookmark
+		}
+	}
+	return nil
+}
+
+func (sess *Session) TouchBookmark(path string) {
+	if bookmark := sess.FindBookmark(path); bookmark != nil {
+		bookmark.LastOpenedAt = time.Now()
+	}
+}
+
+func (sess *Session) RemoveBookmark(id string) {
+	filtered := sess.Bookmarks[:0]
+	for _, bookmark := range sess.Bookmarks {
+		if bookmark.ID != id {
+			filtered = append(filtered, bookmark)
+		}
+	}
+	sess.Bookmarks = filtered
 }
 
 func NewDocument(path string, content string) *Document {
@@ -245,6 +330,28 @@ func normalizeDocument(doc *Document) {
 	doc.DraftFile = filepath.Base(doc.DraftFile)
 	if doc.Title == "" {
 		doc.Title = "Untitled"
+	}
+	if doc.Path != "" {
+		if abs, err := filepath.Abs(doc.Path); err == nil {
+			doc.Path = abs
+		}
+	}
+}
+
+func normalizeBookmark(bookmark *Bookmark) {
+	if bookmark.ID == "" {
+		bookmark.ID = NewID()
+	}
+	if bookmark.Path != "" {
+		if abs, err := filepath.Abs(bookmark.Path); err == nil {
+			bookmark.Path = abs
+		}
+	}
+	if bookmark.Title == "" {
+		bookmark.Title = TitleFromContent("", bookmark.Path)
+	}
+	if bookmark.AddedAt.IsZero() {
+		bookmark.AddedAt = time.Now()
 	}
 }
 
