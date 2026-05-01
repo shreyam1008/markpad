@@ -55,10 +55,16 @@ type NoteInfo struct {
 	Star  bool   `json:"star"`
 }
 
+type RecentInfo struct {
+	Path  string `json:"path"`
+	Title string `json:"title"`
+}
+
 type SessionState struct {
-	ActiveID  string     `json:"activeId"`
-	Notes     []NoteInfo `json:"notes"`
-	Favorites []NoteInfo `json:"favorites"`
+	ActiveID  string       `json:"activeId"`
+	Notes     []NoteInfo   `json:"notes"`
+	Favorites []NoteInfo   `json:"favorites"`
+	Recents   []RecentInfo `json:"recents"`
 }
 
 // ---------- Session methods ----------
@@ -81,6 +87,9 @@ func (a *App) GetSession() SessionState {
 			Path:  bm.Path,
 			Star:  true,
 		})
+	}
+	for _, r := range a.sess.RecentFiles {
+		state.Recents = append(state.Recents, RecentInfo{Path: r.Path, Title: r.Title})
 	}
 	return state
 }
@@ -219,6 +228,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 		path = abs
 	}
 	doc := a.sess.AddFile(path, string(data))
+	a.sess.AddRecent(path)
 	_ = a.store.WriteDraft(doc, string(data))
 	_ = a.store.SaveSnapshot(doc.ID, string(data), "open")
 	_ = a.store.Save(a.sess)

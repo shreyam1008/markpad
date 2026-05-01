@@ -41,11 +41,18 @@ type Preferences struct {
 	SidebarCollapsed bool `json:"sidebar_collapsed"`
 }
 
+type RecentFile struct {
+	Path     string    `json:"path"`
+	Title    string    `json:"title"`
+	OpenedAt time.Time `json:"opened_at"`
+}
+
 type Session struct {
-	ActiveID    string      `json:"active_id"`
-	Documents   []*Document `json:"documents"`
-	Bookmarks   []*Bookmark `json:"bookmarks,omitempty"`
-	Preferences Preferences `json:"preferences"`
+	ActiveID    string        `json:"active_id"`
+	Documents   []*Document   `json:"documents"`
+	Bookmarks   []*Bookmark   `json:"bookmarks,omitempty"`
+	RecentFiles []*RecentFile `json:"recent_files,omitempty"`
+	Preferences Preferences   `json:"preferences"`
 }
 
 type Store struct {
@@ -288,6 +295,30 @@ func (sess *Session) RemoveBookmark(id string) {
 		}
 	}
 	sess.Bookmarks = filtered
+}
+
+func (sess *Session) AddRecent(path string) {
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	// Remove existing entry for this path
+	filtered := make([]*RecentFile, 0, len(sess.RecentFiles))
+	for _, r := range sess.RecentFiles {
+		if !samePath(r.Path, path) {
+			filtered = append(filtered, r)
+		}
+	}
+	// Prepend
+	recent := &RecentFile{
+		Path:     path,
+		Title:    filepath.Base(path),
+		OpenedAt: time.Now(),
+	}
+	sess.RecentFiles = append([]*RecentFile{recent}, filtered...)
+	// Keep max 10
+	if len(sess.RecentFiles) > 10 {
+		sess.RecentFiles = sess.RecentFiles[:10]
+	}
 }
 
 func NewDocument(path string, content string) *Document {

@@ -60,7 +60,7 @@ markpad/
 
 ## Go backend methods (exposed to frontend)
 
-- `GetSession()` — returns all notes, favorites, active ID
+- `GetSession()` — returns all notes, favorites, recents, active ID
 - `GetActiveContent()` / `GetNoteContent(id)` — read draft content
 - `SetActive(id)` — switch active note
 - `NewNote()` — create empty untitled note
@@ -94,12 +94,13 @@ markpad/
 - Keep the app familiar: File, View, Help menus at the top (Wails native menus).
 - Title bar shows "Markpad" when no file, filename when saved.
 - Title should be "Untitled" for new notes until they are saved to a file.
-- Sidebar on the left: Favorites (starred) section above Notes (session) section.
+- Sidebar on the left: Favorites / Open / Recent sections.
 - Star icon beside each note in sidebar to toggle favorite.
 - Drag-and-drop to reorder notes. Right-click context menu to star/delete.
 - Three view modes: Editor, Split (side-by-side with resizable divider), Preview.
-- Ctrl+Shift+E cycles through view modes.
-- Formatting toolbar with SVG icon buttons above the editor.
+- Code files (non-md): only Editor and Code View (syntax-highlighted). No split, no markdown toolbar.
+- Ctrl+Shift+E cycles through view modes (2 modes for code, 3 for markdown).
+- Formatting toolbar with SVG icon buttons above the editor (markdown files only).
 - "not saved" indicator visible when content is dirty.
 - Save button with accent color. Cancel button to revert.
 - Native OS file picker for Open/Save/Save As.
