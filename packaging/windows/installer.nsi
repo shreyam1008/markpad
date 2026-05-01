@@ -1,7 +1,11 @@
 !include "MUI2.nsh"
 
+!ifndef BASEDIR
+  !define BASEDIR "..\.."
+!endif
+
 Name "Markpad"
-OutFile "..\..\dist\markpad-setup.exe"
+OutFile "${BASEDIR}\dist\markpad-setup.exe"
 InstallDir "$PROGRAMFILES\Markpad"
 InstallDirRegKey HKLM "Software\Markpad" "InstallDir"
 RequestExecutionLevel admin
@@ -17,7 +21,7 @@ RequestExecutionLevel admin
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  File "..\..\dist\markpad.exe"
+  File "${BASEDIR}\dist\markpad.exe"
 
   ; Create start menu shortcut
   CreateDirectory "$SMPROGRAMS\Markpad"
