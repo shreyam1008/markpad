@@ -848,10 +848,14 @@ function registerEvents() {
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
-    <p><b>Markpad</b> v0.5.0</p>
-    <p>A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
+    <p><b>Markpad</b> v0.3 <span style="opacity:0.6;font-style:italic;">Aaradhya</span></p>
+    <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
     <p>Syntax highlighting, split view, version history with diffs, session restore, favorites, recently opened, formatting toolbar. Under 10 MB.</p>
-    <p style="margin-top:8px;"><a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot; MIT License &middot; by Shreyam Adhikari</p>
+    <p style="margin-top:8px;">
+      <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
+      <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
+      MIT License &middot; by Shreyam Adhikari
+    </p>
   `));
 }
 

@@ -2,6 +2,8 @@ package main
 
 import (
 	"embed"
+	"fmt"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
@@ -11,10 +13,17 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+const Version = "0.3"
+
 //go:embed all:frontend
 var assets embed.FS
 
 func main() {
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
+
 	app := NewApp()
 
 	appMenu := menu.NewMenu()
