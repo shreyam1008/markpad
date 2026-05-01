@@ -51,7 +51,8 @@ jobs:
           ln -s usr/share/applications/markpad.desktop build/Markpad.AppDir/markpad.desktop
           wget -q -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool build/Markpad.AppDir dist/Markpad.AppImage
+          ./appimagetool --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun build/Markpad.AppDir dist/Markpad.AppImage
       - uses: actions/upload-artifact@v4
         with:
           name: linux
@@ -91,6 +92,8 @@ jobs:
         with:
           go-version: "1.24.x"
       - name: Build app bundle
+        env:
+          CGO_LDFLAGS: "-framework UniformTypeIdentifiers"
         run: |
           mkdir -p "dist/Markpad.app/Contents/MacOS" "dist/Markpad.app/Contents/Resources"
           cp packaging/macos/Info.plist "dist/Markpad.app/Contents/Info.plist"
