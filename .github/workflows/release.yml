@@ -78,7 +78,7 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
           (Get-Content packaging/windows/installer.nsi) -replace '@VERSION@', $version | Set-Content packaging/windows/installer.nsi
-          makensis /DBASEDIR="$($env:GITHUB_WORKSPACE)" packaging/windows/installer.nsi
+          & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DBASEDIR="$($env:GITHUB_WORKSPACE)" packaging\windows\installer.nsi
       - uses: actions/upload-artifact@v4
         with:
           name: windows
