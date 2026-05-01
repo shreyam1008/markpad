@@ -201,12 +201,13 @@ func (a *App) OpenFileDialog() (SessionState, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open File",
 		Filters: []runtime.FileFilter{
+			{DisplayName: "All Files", Pattern: "*"},
 			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
-			{DisplayName: "Text", Pattern: "*.txt;*.log;*.csv;*.tsv"},
-			{DisplayName: "Code", Pattern: "*.json;*.yaml;*.yml;*.xml;*.toml;*.ini;*.cfg;*.conf"},
-			{DisplayName: "Scripts", Pattern: "*.sh;*.bash;*.zsh;*.py;*.js;*.ts;*.go;*.rs;*.rb;*.lua"},
-			{DisplayName: "Web", Pattern: "*.html;*.htm;*.css;*.svg"},
-			{DisplayName: "All Files", Pattern: "*.*"},
+			{DisplayName: "Text & Logs", Pattern: "*.txt;*.log;*.csv;*.tsv;*.env;*.gitignore;*.editorconfig"},
+			{DisplayName: "Data & Config", Pattern: "*.json;*.yaml;*.yml;*.xml;*.toml;*.ini;*.cfg;*.conf;*.properties"},
+			{DisplayName: "Code", Pattern: "*.py;*.js;*.ts;*.jsx;*.tsx;*.go;*.rs;*.rb;*.lua;*.java;*.c;*.cpp;*.h;*.cs;*.php;*.swift;*.kt;*.dart;*.r;*.sql"},
+			{DisplayName: "Shell & Scripts", Pattern: "*.sh;*.bash;*.zsh;*.fish;*.ps1;*.bat;*.cmd"},
+			{DisplayName: "Web", Pattern: "*.html;*.htm;*.css;*.scss;*.less;*.svg;*.vue;*.svelte"},
 		},
 	})
 	if err != nil {
@@ -215,6 +216,11 @@ func (a *App) OpenFileDialog() (SessionState, error) {
 	if path == "" {
 		return a.GetSession(), nil
 	}
+	return a.openPath(path)
+}
+
+// OpenDroppedFile opens a file by path (used for drag-and-drop from OS).
+func (a *App) OpenDroppedFile(path string) (SessionState, error) {
 	return a.openPath(path)
 }
 

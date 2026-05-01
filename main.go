@@ -13,7 +13,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.3"
+const Version = "0.4"
 
 //go:embed all:frontend
 var assets embed.FS
@@ -89,6 +89,10 @@ func main() {
 		Menu:      appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
+		},
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop:     true,
+			DisableWebViewDrop: true,
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,
