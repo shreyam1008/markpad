@@ -112,3 +112,20 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            **Linux (one command):**
+            ```sh
+            curl -sL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh
+            ```
+
+            Or download below:
+            - `markpad` — standalone Linux binary
+            - `markpad_*_amd64.deb` — Debian/Ubuntu package
+            - `Markpad.AppImage` — portable AppImage
+
+            **Windows:** `markpad-setup.exe` — installer with Start Menu + Desktop shortcuts
+
+            **macOS:** `Markpad.dmg` — drag to Applications
