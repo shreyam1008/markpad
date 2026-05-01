@@ -19,6 +19,18 @@ const noteViewModes = {};
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
 
+// Zoom
+const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
+let fontSize = parseInt(localStorage.getItem('markpad-zoom') || ZOOM_DEFAULT, 10);
+function applyZoom(silent) {
+  document.documentElement.style.fontSize = fontSize + 'px';
+  localStorage.setItem('markpad-zoom', fontSize);
+  if (!silent && typeof statusText !== 'undefined' && statusText) statusText.textContent = `Zoom: ${Math.round(fontSize / ZOOM_DEFAULT * 100)}%`;
+}
+function zoomIn()  { fontSize = Math.min(fontSize + ZOOM_STEP, ZOOM_MAX); applyZoom(); }
+function zoomOut() { fontSize = Math.max(fontSize - ZOOM_STEP, ZOOM_MIN); applyZoom(); }
+function zoomReset() { fontSize = ZOOM_DEFAULT; applyZoom(); }
+
 const $ = (id) => document.getElementById(id);
 const sidebar      = $('sidebar');
 const sidebarCol   = $('sidebar-collapsed');
@@ -514,7 +526,11 @@ function historyBackToCurrent() {
   histActions.classList.add('hidden');
   histList.querySelectorAll('.hist-entry').forEach(e => e.classList.remove('active'));
   editor.value = currentContent;
-  if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
+  if (viewMode !== 'markdown') {
+    const active = cachedNotes.find(n => n.id === activeId);
+    const ft = getFileType(active?.path);
+    viewer.innerHTML = ft === 'md' ? renderMd(currentContent) : renderCode(currentContent, active?.path);
+  }
   statusText.textContent = 'Ready';
 }
 
@@ -527,19 +543,36 @@ async function renderHistory() {
   histActions.classList.add('hidden');
   histEmpty.classList.toggle('hidden', entries.length > 0);
   histList.classList.toggle('hidden', entries.length === 0);
-  entries.forEach(entry => {
+
+  // Current marker
+  if (entries.length > 0) {
+    const cur = el('div', 'px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-accent');
+    cur.textContent = 'Current';
+    histList.appendChild(cur);
+  }
+
+  entries.forEach((entry, idx) => {
     const row = el('div', 'hist-entry');
+    if (idx === 0) row.classList.add('first');
+
     const top = el('div', 'flex items-center justify-between gap-2');
     const badge = el('span', `hist-badge ${entry.source}`);
     badge.textContent = entry.source === 'save-as' ? 'save as' : entry.source;
     const ago = el('span', 'text-[10px] text-muted');
     ago.textContent = entry.timeAgo;
     top.append(badge, ago);
+
+    const ts = el('div', 'text-[10px] text-muted/60 mt-0.5');
+    ts.textContent = new Date(entry.timestamp).toLocaleString(undefined, {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
     const meta = el('div', 'text-[11px] text-muted mt-0.5');
-    meta.textContent = `${entry.lines} lines \u00b7 ${formatBytes(entry.bytes)}`;
+    meta.textContent = `${entry.lines} lines · ${formatBytes(entry.bytes)}`;
     const preview = el('div', 'text-[11px] text-[#3d403e] truncate mt-0.5');
     preview.textContent = entry.preview;
-    row.append(top, meta, preview);
+    row.append(top, ts, meta, preview);
+
     row.addEventListener('click', async () => {
       historySelectedTs = entry.timestamp;
       histList.querySelectorAll('.hist-entry').forEach(e => e.classList.remove('active'));
@@ -613,17 +646,19 @@ function showDiff(currentText, snapshotText) {
   const visible = new Set();
   changed.forEach(i => { for (let j = Math.max(0, i - CTX); j <= Math.min(diff.length - 1, i + CTX); j++) visible.add(j); });
 
-  let html = `<div class="diff-view"><div class="diff-hunk">@@ ${delCount} removed, ${addCount} added @@</div>`;
+  let html = `<div class="diff-view"><div class="diff-hunk"><span style="color:#1a5928">+${addCount} added</span> &nbsp; <span style="color:#8b1a1a">−${delCount} removed</span> &nbsp; <span style="opacity:0.5">${diff.filter(d=>d.type==='ctx').length} unchanged</span></div>`;
   let lastShown = -1;
+  let lineNum = 0;
   diff.forEach((d, i) => {
     if (!visible.has(i)) return;
     if (lastShown !== -1 && i - lastShown > 1) {
       const skipped = i - lastShown - 1;
-      html += `<div class="diff-line diff-ctx" style="text-align:center;color:#a3b8b0;font-style:italic;">... ${skipped} unchanged line${skipped > 1 ? 's' : ''} ...</div>`;
+      html += `<div class="diff-line diff-ctx" style="text-align:center;color:#a3b8b0;font-style:italic;">··· ${skipped} unchanged line${skipped > 1 ? 's' : ''} ···</div>`;
     }
+    lineNum++;
     const escaped = d.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const prefix = d.type === 'add' ? '+' : d.type === 'del' ? '-' : ' ';
-    html += `<div class="diff-line diff-${d.type}">${prefix} ${escaped}</div>`;
+    const prefix = d.type === 'add' ? '+' : d.type === 'del' ? '−' : ' ';
+    html += `<div class="diff-line diff-${d.type}"><span class="diff-gutter">${prefix}</span> ${escaped}</div>`;
     lastShown = i;
   });
   html += '</div>';
@@ -748,6 +783,9 @@ document.addEventListener('keydown', async (e) => {
     modalOverlay.classList.add('hidden');
     ctxMenu.classList.add('hidden');
   }
+  else if (ctrl && (key === '=' || key === '+')) { e.preventDefault(); zoomIn(); }
+  else if (ctrl && key === '-') { e.preventDefault(); zoomOut(); }
+  else if (ctrl && key === '0') { e.preventDefault(); zoomReset(); }
   else if (key === 'Delete' && ctrl) {
     e.preventDefault();
     const note = cachedNotes.find(n => n.id === activeId);
@@ -757,6 +795,14 @@ document.addEventListener('keydown', async (e) => {
     }
   }
 });
+
+// Ctrl+scroll zoom
+document.addEventListener('wheel', (e) => {
+  if (e.ctrlKey) {
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn(); else zoomOut();
+  }
+}, { passive: false });
 
 // ── Actions ──────────────────────────────────────────────
 async function doSave() {
@@ -835,6 +881,11 @@ function registerEvents() {
   window.runtime.EventsOn('menu:saveas', doSaveAs);
   window.runtime.EventsOn('menu:toggleview', cycleView);
   window.runtime.EventsOn('menu:togglesidebar', toggleSidebar);
+  window.runtime.EventsOn('menu:find', toggleFind);
+  window.runtime.EventsOn('menu:history', toggleHistory);
+  window.runtime.EventsOn('menu:zoomin', zoomIn);
+  window.runtime.EventsOn('menu:zoomout', zoomOut);
+  window.runtime.EventsOn('menu:zoomreset', zoomReset);
   window.runtime.EventsOn('menu:help', () => showModal('Help', `
     <p><b>Markpad</b> is a native Markdown notepad.</p>
     <p>Open any text file: <code>.md</code>, <code>.txt</code>, <code>.json</code>, <code>.py</code>, <code>.go</code>, and more.</p>
@@ -845,6 +896,7 @@ function registerEvents() {
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
     <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
+    <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
   `));
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
@@ -871,6 +923,7 @@ async function loadApp() {
 
 function boot() {
   if (window.go && window.go.main && window.go.main.App) {
+    applyZoom(true);
     registerEvents();
     interceptLinks(viewer);
     interceptLinks(modalBodyEl);
