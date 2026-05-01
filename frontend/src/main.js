@@ -42,6 +42,9 @@ const findInfo     = $('find-info');
 const histPanel    = $('history-panel');
 const histList     = $('history-list');
 const histEmpty    = $('history-empty');
+const histActions  = $('history-actions');
+const histRestore  = $('history-restore');
+const histBack     = $('history-back');
 const modalOverlay = $('modal-overlay');
 const modalTitle   = $('modal-title');
 const modalBodyEl  = $('modal-body');
@@ -403,12 +406,28 @@ function flashSave() {
 }
 
 // ── History panel ────────────────────────────────────────
+let historyViewingContent = null; // stash content of selected snapshot
+
 async function toggleHistory() {
   historyOpen = !historyOpen;
   histPanel.classList.toggle('hidden', !historyOpen);
   if (historyOpen) histPanel.classList.add('flex');
   else histPanel.classList.remove('flex');
-  if (historyOpen) await renderHistory();
+  if (historyOpen) {
+    await renderHistory();
+  } else {
+    historyBackToCurrent();
+  }
+}
+
+function historyBackToCurrent() {
+  historySelectedTs = null;
+  historyViewingContent = null;
+  histActions.classList.add('hidden');
+  histList.querySelectorAll('.hist-entry').forEach(e => e.classList.remove('active'));
+  editor.value = currentContent;
+  if (viewMode !== 'markdown') viewer.innerHTML = renderMd(currentContent);
+  statusText.textContent = 'Ready';
 }
 
 async function renderHistory() {
@@ -416,17 +435,19 @@ async function renderHistory() {
   const entries = await window.go.main.App.GetHistory(activeId);
   histList.innerHTML = '';
   historySelectedTs = null;
+  historyViewingContent = null;
+  histActions.classList.add('hidden');
   histEmpty.classList.toggle('hidden', entries.length > 0);
   histList.classList.toggle('hidden', entries.length === 0);
   entries.forEach(entry => {
     const row = el('div', 'hist-entry');
-    const top = el('div', 'flex items-center justify-between gap-2 mb-1');
+    const top = el('div', 'flex items-center justify-between gap-2');
     const badge = el('span', `hist-badge ${entry.source}`);
     badge.textContent = entry.source === 'save-as' ? 'save as' : entry.source;
     const ago = el('span', 'text-[10px] text-muted');
     ago.textContent = entry.timeAgo;
     top.append(badge, ago);
-    const meta = el('div', 'text-[11px] text-muted');
+    const meta = el('div', 'text-[11px] text-muted mt-0.5');
     meta.textContent = `${entry.lines} lines \u00b7 ${formatBytes(entry.bytes)}`;
     const preview = el('div', 'text-[11px] text-[#3d403e] truncate mt-0.5');
     preview.textContent = entry.preview;
@@ -435,32 +456,93 @@ async function renderHistory() {
       historySelectedTs = entry.timestamp;
       histList.querySelectorAll('.hist-entry').forEach(e => e.classList.remove('active'));
       row.classList.add('active');
-      const content = await window.go.main.App.GetHistoryContent(activeId, entry.timestamp);
-      if (viewMode === 'markdown' || viewMode === 'split') {
-        editor.value = content;
-        editor.setSelectionRange(0, 0);
-      }
-      if (viewMode === 'viewer' || viewMode === 'split') {
-        viewer.innerHTML = renderMd(content);
-      }
+      histActions.classList.remove('hidden');
+      histActions.classList.add('flex');
+      const snapshotContent = await window.go.main.App.GetHistoryContent(activeId, entry.timestamp);
+      historyViewingContent = snapshotContent;
+      showDiff(currentContent, snapshotContent);
       statusText.textContent = `Viewing: ${entry.timeAgo} (${entry.source})`;
-    });
-    const restoreBtn = el('button', 'mt-1 text-[10px] font-semibold text-accent hover:underline hidden');
-    restoreBtn.textContent = 'Restore this version';
-    row.appendChild(restoreBtn);
-    row.addEventListener('mouseenter', () => restoreBtn.classList.remove('hidden'));
-    row.addEventListener('mouseleave', () => { if (!row.classList.contains('active')) restoreBtn.classList.add('hidden'); });
-    restoreBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      try {
-        renderSession(await window.go.main.App.RestoreVersion(activeId, entry.timestamp));
-        loadContent(await window.go.main.App.GetNoteContent(activeId));
-        statusText.textContent = 'Version restored';
-        await renderHistory();
-      } catch (err) { statusText.textContent = 'Restore failed: ' + err; }
     });
     histList.appendChild(row);
   });
+}
+
+function simpleDiff(oldText, newText) {
+  const a = oldText.split('\n');
+  const b = newText.split('\n');
+  const n = a.length, m = b.length;
+  // LCS via DP (fast enough for <5000 lines)
+  const maxLen = Math.max(n, m);
+  if (maxLen > 5000) {
+    // Fallback for very large files: show full old/new
+    const result = [];
+    a.forEach(l => result.push({ type: 'del', text: l }));
+    b.forEach(l => result.push({ type: 'add', text: l }));
+    return result;
+  }
+  // Build LCS table
+  const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  // Backtrack to produce diff
+  const result = [];
+  let i = n, j = m;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+      result.push({ type: 'ctx', text: a[i - 1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.push({ type: 'add', text: b[j - 1] });
+      j--;
+    } else {
+      result.push({ type: 'del', text: a[i - 1] });
+      i--;
+    }
+  }
+  result.reverse();
+  return result;
+}
+
+function showDiff(currentText, snapshotText) {
+  if (currentText === snapshotText) {
+    viewer.innerHTML = '<div class="p-6 text-muted text-center text-sm">This version is identical to your current content.</div>';
+    viewerCont.classList.remove('hidden');
+    editorCont.classList.add('hidden');
+    toolbar.classList.add('hidden');
+    return;
+  }
+  const diff = simpleDiff(currentText, snapshotText);
+  let addCount = 0, delCount = 0;
+  diff.forEach(d => { if (d.type === 'add') addCount++; if (d.type === 'del') delCount++; });
+
+  // Collapse long unchanged runs — show 3 lines of context around changes
+  const CTX = 3;
+  const changed = new Set();
+  diff.forEach((d, i) => { if (d.type !== 'ctx') changed.add(i); });
+  const visible = new Set();
+  changed.forEach(i => { for (let j = Math.max(0, i - CTX); j <= Math.min(diff.length - 1, i + CTX); j++) visible.add(j); });
+
+  let html = `<div class="diff-view"><div class="diff-hunk">@@ ${delCount} removed, ${addCount} added @@</div>`;
+  let lastShown = -1;
+  diff.forEach((d, i) => {
+    if (!visible.has(i)) return;
+    if (lastShown !== -1 && i - lastShown > 1) {
+      const skipped = i - lastShown - 1;
+      html += `<div class="diff-line diff-ctx" style="text-align:center;color:#a3b8b0;font-style:italic;">... ${skipped} unchanged line${skipped > 1 ? 's' : ''} ...</div>`;
+    }
+    const escaped = d.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const prefix = d.type === 'add' ? '+' : d.type === 'del' ? '-' : ' ';
+    html += `<div class="diff-line diff-${d.type}">${prefix} ${escaped}</div>`;
+    lastShown = i;
+  });
+  html += '</div>';
+  viewer.innerHTML = html;
+  viewerCont.classList.remove('hidden');
+  editorCont.classList.add('hidden');
+  toolbar.classList.add('hidden');
 }
 
 function formatBytes(b) {
@@ -471,6 +553,20 @@ function formatBytes(b) {
 
 $('btn-history').addEventListener('click', toggleHistory);
 $('history-close').addEventListener('click', toggleHistory);
+histBack.addEventListener('click', () => {
+  historyBackToCurrent();
+  setView(viewMode);
+});
+histRestore.addEventListener('click', async () => {
+  if (!historySelectedTs) return;
+  try {
+    renderSession(await window.go.main.App.RestoreVersion(activeId, historySelectedTs));
+    loadContent(await window.go.main.App.GetNoteContent(activeId));
+    statusText.textContent = 'Version restored';
+    setView(viewMode);
+    await renderHistory();
+  } catch (err) { statusText.textContent = 'Restore failed: ' + err; }
+});
 
 // ── Find bar (Ctrl+F) ───────────────────────────────────
 function toggleFind() {

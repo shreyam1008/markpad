@@ -52,7 +52,8 @@ markpad/
       main.js              # All frontend logic: editor, preview, split view, toolbar, sidebar, history panel, find bar, drag-drop, shortcuts, modals
       styles.css           # Minimal custom CSS (toolbar, view buttons, context menu, drag states, history panel, scrollbar, markdown overrides)
   docs/                    # GitHub Pages website (Tailwind CSS, SEO, animations)
-  packaging/               # Linux .desktop, metainfo, SVG app icon
+  packaging/               # Linux .desktop, metainfo, SVG app icon; macOS Info.plist
+  snap/                    # Snap store packaging (snapcraft.yaml)
   tests/                   # Integration tests (session)
   .github/workflows/       # CI: release.yml (Linux deb/AppImage, Windows exe, macOS dmg)
 ```
@@ -106,7 +107,7 @@ markpad/
 - All standard notepad shortcuts: Ctrl+S, Ctrl+Shift+S, Ctrl+N, Ctrl+O, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+Del.
 - Closing and reopening restores documents, drafts, favorites, and active note.
 - Preview renders GitHub-style Markdown with syntax-highlighted code, tables, task lists.
-- History panel (right sidebar): toggles with clock icon button or Ctrl+H. Shows timeline of saved versions with badges, timestamps, line/byte counts, and preview text. Click to view, hover to see Restore button.
+- History panel (right sidebar): toggles with clock icon button or Ctrl+H. Shows timeline of saved versions with badges, timestamps, line/byte counts, and preview text. Click entry to see LCS-based unified diff in main content area (green added, red removed, collapsed context). Action bar appears with Restore and Back to current buttons.
 - Find bar: Ctrl+F toggles inline search above editor. Enter for next match with wrap. Esc to close.
 - Auto-list continuation: Enter in a list (-, *, 1., - [ ]) continues the pattern. Enter on empty prefix ends the list.
 - External links in preview and modals open in the system browser via `OpenURL`.

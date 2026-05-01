@@ -9,7 +9,7 @@ No Electron. System webview. Single binary under 10 MB.
 - **Split View** — Editor, Split (side-by-side with resizable divider), and Preview modes. `Ctrl+Shift+E` to cycle.
 - **Open Anything** — `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.sh`, `.html`, `.css`, `.svg`, code, config, logs, and more.
 - **Session Restore** — Close and reopen. Every note, draft, favorite, and active document comes back exactly as you left it.
-- **Version History** — Every save creates a snapshot. Click the clock icon to browse all versions in a right-side timeline panel. Preview and restore any old version instantly. `Ctrl+H` to toggle.
+- **Version History** — Every save creates a snapshot. Click the clock icon to browse all versions in a right-side timeline panel. Click any entry to see a unified diff (green added, red removed, collapsed context). Restore any old version or go back to current. `Ctrl+H` to toggle.
 - **Favorites & Drag-and-Drop** — Star notes for quick access. Drag to reorder. Right-click context menu.
 - **Formatting Toolbar** — Bold, italic, strikethrough, headings, code, links, images, lists, tables, blockquotes. All with SVG icon buttons and keyboard shortcuts.
 - **Auto-List Continuation** — Press Enter in a list (`-`, `*`, `1.`, `- [ ]`) and the pattern continues. Enter on an empty item ends the list.
