@@ -13,7 +13,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.4"
+const Version = "0.5"
 
 //go:embed all:frontend
 var assets embed.FS
@@ -70,6 +70,11 @@ func main() {
 	})
 	viewMenu.AddText("Reset Zoom", keys.CmdOrCtrl("0"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:zoomreset")
+	})
+
+	settingsMenu := appMenu.AddSubmenu("Settings")
+	settingsMenu.AddText("Preferences", keys.CmdOrCtrl(","), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:preferences")
 	})
 
 	helpMenu := appMenu.AddSubmenu("Help")

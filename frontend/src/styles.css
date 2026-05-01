@@ -91,3 +91,25 @@
 .markdown-body th, .markdown-body td { border: 1px solid #d8d6ce; padding: 8px 12px; }
 .markdown-body blockquote { border-left: 3px solid #2f6f61; padding-left: 16px; color: #3d403e; }
 .markdown-body input[type="checkbox"] { margin-right: 6px; }
+
+/* Sidebar section headers */
+.section-head {
+  width: 100%; border: none; background: transparent; display: flex; align-items: center;
+  gap: 6px; padding: 8px 8px 4px; cursor: pointer; color: #6b6e68;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.section-head:hover { color: #1a1c1b; }
+
+/* Read-only document cards */
+.doc-card {
+  max-width: 560px; margin: 48px auto; padding: 28px; border: 1px solid #e8e6df;
+  border-radius: 18px; background: #fffffc; text-align: center; box-shadow: 0 8px 28px rgba(40,38,32,0.06);
+}
+.doc-icon { font-weight: 800; font-size: 28px; color: #2f6f61; margin-bottom: 8px; }
+.doc-title { font-size: 18px; font-weight: 800; color: #1a1c1b; word-break: break-word; }
+.doc-meta { margin-top: 4px; color: #6b6e68; font-size: 12px; font-weight: 700; }
+.doc-path { margin-top: 12px; padding: 8px 10px; border-radius: 8px; background: #f4f2ed; color: #6b6e68; font-size: 11px; word-break: break-all; }
+.doc-note { margin: 16px 0; color: #3d403e; font-size: 13px; line-height: 1.6; }
+.doc-open { border: none; border-radius: 10px; background: #2f6f61; color: #fffffb; padding: 8px 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
+.doc-open:hover { background: #267058; }
+

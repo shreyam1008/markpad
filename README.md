@@ -1,6 +1,6 @@
 # Markpad
 
-A tiny native Markdown notepad. Opens fast, saves your work, gets out of the way.
+A tiny native Markdown notepad and local file viewer. Opens fast, saves your work, gets out of the way.
 
 No Electron. No cloud. Single binary under 10 MB. Pure local, pure offline.
 
@@ -46,17 +46,30 @@ No other dependencies. The binary is fully self-contained.
 
 ## What It Does
 
-- **Open anything** — `.md`, `.txt`, `.json`, `.yaml`, `.py`, `.go`, `.js`, `.html`, `.css`, code, config, logs
-- **Code files get syntax highlighting** — language-aware via highlight.js, no markdown preview clutter
+- **Open broad file types** — Markdown, text, code, config, logs, PDFs, ebooks, office docs, images, archives
+- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs/ebooks/docs show read-only cards
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
-- **Sidebar** — Favorites / Open / Recent sections. Star, drag-and-drop reorder, right-click context menu
+- **Sidebar** — Favorites / Open / Recent sections. Collapse sections, star files, close open files, drag-and-drop reorder active files
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
 - **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
 - **Find** — `Ctrl+F` with wrap-around
 - **Autosaved drafts** — Unsaved work survives app close
-- **File type icons, word count, reading time, save animation, per-note view memory**
+- **File type icons, missing recent detection, word count, reading time, save animation, per-note view memory**
+
+## File Handling
+
+Markpad stays lightweight by treating file families differently:
+
+| Family | Behavior |
+|--------|----------|
+| Markdown | Editor, Split, Preview, formatting toolbar |
+| Code/config | Fast plain editor plus syntax-highlighted Code View |
+| Text/logs | Direct editor, simple stats |
+| PDF/ebook/office/image/archive | Read-only card with size/path and Open Externally |
+
+PDF rendering is intentionally delegated to the system viewer instead of bundling a heavy PDF engine. This keeps startup fast, memory low, and the binary small.
 
 ## Philosophy
 
