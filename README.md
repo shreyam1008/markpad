@@ -46,17 +46,23 @@ No other dependencies. The binary is fully self-contained.
 
 ## What It Does
 
-- **Open broad file types** — Markdown, text, code, config, logs, PDFs, ebooks, office docs, images, archives
-- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs/ebooks/docs show read-only cards
+- **Single instance** — Only one window. Opening another file adds it to the existing window
+- **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
+- **PDF rendering** — Pages rendered via pdf.js (first 5 immediately, rest on demand). Lightweight, no bundled PDF engine
+- **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
+- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs render in-app, images show inline, others get info cards
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
-- **Sidebar** — Favorites / Open / Recent sections. Collapse sections, star files, close open files, drag-and-drop reorder active files
+- **Sidebar** — Favorites / Open / Recent sections. Star on left, close on right. Collapse sections, drag-and-drop reorder
+- **Rich right-click** — Star, File Info, Open Folder, Copy Path, Close, Delete
+- **File info** — Click (i) in the title bar for name, path, size, type, modified date, and Open Folder
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
 - **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
 - **Find** — `Ctrl+F` with wrap-around
 - **Autosaved drafts** — Unsaved work survives app close
-- **File type icons, missing recent detection, word count, reading time, save animation, per-note view memory**
+- **Status bar** — File type, line/word/char counts, reading time, encoding
+- **In-app changelog** — Help > Changelog shows version history
 
 ## File Handling
 
@@ -67,9 +73,22 @@ Markpad stays lightweight by treating file families differently:
 | Markdown | Editor, Split, Preview, formatting toolbar |
 | Code/config | Fast plain editor plus syntax-highlighted Code View |
 | Text/logs | Direct editor, simple stats |
-| PDF/ebook/office/image/archive | Read-only card with size/path and Open Externally |
+| PDF | Page-by-page rendering via pdf.js CDN (first 5 pages, then load rest) |
+| Image | Inline preview with Open Externally button |
+| Ebook/office/archive | Read-only info card with Open Externally |
 
-PDF rendering is intentionally delegated to the system viewer instead of bundling a heavy PDF engine. This keeps startup fast, memory low, and the binary small.
+PDF pages render via a ~500 KB CDN library (pdf.js) loaded on demand. No PDF engine is bundled in the binary. Images are read via Go and displayed as base64 data URLs.
+
+## Versions
+
+| Version | Name | Highlights |
+|---------|------|------------|
+| 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
+| 0.5 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |
+| 0.4 | Balram | Drag-and-drop file open, per-type view modes, expanded file icons |
+| 0.3 | Aaradhya | Split view, formatting toolbar, drag reorder, syntax highlighting |
+| 0.2 | | Version history, find, zoom, menus |
+| 0.1 | | Initial release |
 
 ## Philosophy
 

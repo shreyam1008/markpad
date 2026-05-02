@@ -41,6 +41,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -91,6 +93,7 @@
       <div class="flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
         <div class="flex items-center gap-2 min-w-0">
           <span id="note-title" class="font-semibold text-sm truncate max-w-[220px]">Untitled</span>
+          <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info">i</button>
           <span id="dirty-indicator" class="hidden text-[13px] font-bold text-unsaved whitespace-nowrap animate-pulse">NOT SAVED</span>
         </div>
         <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
@@ -195,8 +198,13 @@
   </div>
 
   <!-- Context menu -->
-  <div id="ctx-menu" class="hidden fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[160px] text-[13px]">
+  <div id="ctx-menu" class="hidden fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[180px] text-[13px]">
     <button data-ctx="star" class="ctx-item">Star</button>
+    <button data-ctx="info" class="ctx-item">File Info</button>
+    <button data-ctx="folder" class="ctx-item">Open Folder</button>
+    <button data-ctx="copypath" class="ctx-item">Copy Path</button>
+    <div class="mx-2 my-0.5 border-t border-border-soft"></div>
+    <button data-ctx="close" class="ctx-item">Close</button>
     <button data-ctx="delete" class="ctx-item text-danger">Delete</button>
   </div>
 

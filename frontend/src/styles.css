@@ -76,12 +76,12 @@
 
 /* Diff view */
 .diff-view { font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace; font-size: 13px; line-height: 1.6; }
-.diff-line { padding: 0 12px; white-space: pre-wrap; word-break: break-all; border-left: 3px solid transparent; }
-.diff-gutter { display: inline-block; width: 16px; text-align: center; opacity: 0.6; user-select: none; }
-.diff-add { background: #d4edda; color: #1a5928; border-left-color: #1a5928; }
-.diff-del { background: #fde2e2; color: #8b1a1a; border-left-color: #8b1a1a; }
-.diff-ctx { color: #6b6e68; }
-.diff-hunk { color: #5b53a8; font-weight: 600; padding: 6px 12px; background: #f0eff8; margin: 4px 0; border-radius: 4px; }
+.diff-line { padding: 1px 12px; white-space: pre-wrap; word-break: break-all; border-left: 4px solid transparent; }
+.diff-gutter { display: inline-block; width: 18px; text-align: center; font-weight: 700; user-select: none; }
+.diff-add { background: #c6efce; color: #0d4a1a; border-left-color: #1a8c34; }
+.diff-del { background: #fcd4d4; color: #6b1111; border-left-color: #c53030; }
+.diff-ctx { color: #8a8d87; background: transparent; }
+.diff-hunk { color: #5b53a8; font-weight: 700; padding: 6px 12px; background: #eae8f5; margin: 6px 0; border-radius: 6px; font-size: 12px; }
 
 /* Markdown body overrides */
 .markdown-body { background: #fffffc !important; }

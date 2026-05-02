@@ -31,7 +31,7 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.5",
+        "softwareVersion": "0.6",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
@@ -111,6 +111,8 @@
         <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">PDF Rendering</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
@@ -184,6 +186,14 @@
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Version History + Diffs</h3>
             <p class="text-sm text-muted">Every save creates a snapshot. Click any version for a unified diff. Green for added, red for removed. Restore instantly.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">PDF & Image Preview</h3>
+            <p class="text-sm text-muted">PDFs render page-by-page via pdf.js. Images display inline. No heavy engine bundled — stays lightweight.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Single Instance</h3>
+            <p class="text-sm text-muted">Only one window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Smart Lists</h3>

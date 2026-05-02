@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,13 +12,15 @@ import (
 
 	"markpad/internal/session"
 
+	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type App struct {
-	ctx   context.Context
-	store *session.Store
-	sess  *session.Session
+	ctx          context.Context
+	store        *session.Store
+	sess         *session.Session
+	pendingFiles []string
 }
 
 func NewApp() *App {
@@ -38,6 +41,31 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.sess = sess
+
+	// Open any files passed on command line
+	if len(a.pendingFiles) > 0 {
+		for _, f := range a.pendingFiles {
+			a.openPath(f)
+		}
+		a.pendingFiles = nil
+	}
+}
+
+func (a *App) onSecondInstanceLaunch(data options.SecondInstanceData) {
+	// Open files from second instance args
+	for _, arg := range data.Args {
+		if !strings.HasPrefix(arg, "-") && arg != "" {
+			abs, err := filepath.Abs(arg)
+			if err == nil {
+				arg = abs
+			}
+			a.openPath(arg)
+		}
+	}
+	// Bring window to front
+	runtime.WindowUnminimise(a.ctx)
+	runtime.Show(a.ctx)
+	go runtime.EventsEmit(a.ctx, "secondInstance")
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -406,6 +434,99 @@ func (a *App) DeleteNote(id string) SessionState {
 	}
 	_ = a.store.Save(a.sess)
 	return a.GetSession()
+}
+
+// GetFileInfo returns metadata about the active file for the info modal
+type FileInfoResult struct {
+	Name     string `json:"name"`
+	Path     string `json:"path"`
+	Folder   string `json:"folder"`
+	Size     int64  `json:"size"`
+	Kind     string `json:"kind"`
+	Label    string `json:"label"`
+	Modified string `json:"modified"`
+	ReadOnly bool   `json:"readOnly"`
+}
+
+func (a *App) GetFileInfo(id string) FileInfoResult {
+	doc := a.sess.Find(id)
+	if doc == nil || doc.Path == "" {
+		return FileInfoResult{Name: "Untitled", Kind: "markdown", Label: "Markdown"}
+	}
+	kind, size := fileKindAndSize(doc.Path)
+	labels := map[string]string{
+		"markdown": "Markdown", "text": "Text", "code": "Code",
+		"pdf": "PDF", "ebook": "Ebook", "office": "Office document",
+		"image": "Image", "archive": "Archive",
+	}
+	label := labels[kind]
+	if label == "" {
+		label = "File"
+	}
+	modified := ""
+	info, err := os.Stat(doc.Path)
+	if err == nil {
+		modified = info.ModTime().Format("2006-01-02 15:04:05")
+	}
+	return FileInfoResult{
+		Name:     filepath.Base(doc.Path),
+		Path:     doc.Path,
+		Folder:   filepath.Dir(doc.Path),
+		Size:     size,
+		Kind:     kind,
+		Label:    label,
+		Modified: modified,
+		ReadOnly: isReadOnlyPath(doc.Path),
+	}
+}
+
+func (a *App) OpenContainingFolder(path string) {
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	dir := filepath.Dir(path)
+	abs, err := filepath.Abs(dir)
+	if err == nil {
+		dir = abs
+	}
+	runtime.BrowserOpenURL(a.ctx, (&url.URL{Scheme: "file", Path: filepath.ToSlash(dir)}).String())
+}
+
+func (a *App) GetStoragePath() string {
+	if a.store != nil {
+		return a.store.Root()
+	}
+	return ""
+}
+
+// ReadFileBase64 reads file bytes and returns base64 for frontend rendering
+func (a *App) ReadFileBase64(path string) (string, error) {
+	if strings.TrimSpace(path) == "" {
+		return "", fmt.Errorf("empty path")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	// Limit to 50 MB to avoid memory issues
+	if info.Size() > 50*1024*1024 {
+		return "", fmt.Errorf("file too large (%s)", formatSize(info.Size()))
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(data), nil
+}
+
+func formatSize(b int64) string {
+	if b < 1024 {
+		return fmt.Sprintf("%d B", b)
+	}
+	if b < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(b)/1024)
+	}
+	return fmt.Sprintf("%.1f MB", float64(b)/(1024*1024))
 }
 
 func (a *App) OpenURL(url string) {
