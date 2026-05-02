@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1 – v0.6)
+## Completed (v0.1 – v0.7)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider
@@ -29,9 +29,15 @@
 - [x] Auto-list continuation (bullets, numbered, task lists)
 - [x] GitHub Actions CI/CD (Linux deb/AppImage, Windows exe, macOS dmg)
 - [x] GitHub Pages website with SEO
-- [x] agents.md, README.md, docs updated per version
+- [x] Scroll position memory per note (editor + viewer + cursor)
+- [x] Extended syntax highlighting (lua, dart, toml, dockerfile, cmake, elixir, nim, zig + full lang map)
+- [x] Open Folder fix (xdg-open/open/explorer instead of file:// URL)
+- [x] PDF dirty indicator fix (read-only files never show "NOT SAVED")
+- [x] Performance: deferred pdf.js + highlight.js extras for faster cold start
+- [x] BUNDLE_BUDGET.md: size/memory cost tracking for every feature
+- [x] Comprehensive agents.md with guardrails for AI-assisted development
 
-## Next (v0.7+)
+## Next (v0.8+)
 
 - [ ] Dark mode with OS theme detection and manual toggle
 - [ ] Browser-compatible build (same app runs in browser via WASM or static)

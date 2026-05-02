@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"time"
 
@@ -489,7 +490,7 @@ func (a *App) OpenContainingFolder(path string) {
 	if err == nil {
 		dir = abs
 	}
-	runtime.BrowserOpenURL(a.ctx, (&url.URL{Scheme: "file", Path: filepath.ToSlash(dir)}).String())
+	openDir(dir)
 }
 
 func (a *App) GetStoragePath() string {
@@ -536,6 +537,23 @@ func (a *App) OpenURL(url string) {
 	runtime.BrowserOpenURL(a.ctx, url)
 }
 
+func openDir(dir string) {
+	var cmd string
+	var args []string
+	switch goruntime.GOOS {
+	case "darwin":
+		cmd = "open"
+		args = []string{dir}
+	case "windows":
+		cmd = "explorer"
+		args = []string{dir}
+	default:
+		cmd = "xdg-open"
+		args = []string{dir}
+	}
+	_ = exec.Command(cmd, args...).Start()
+}
+
 func (a *App) OpenExternalPath(path string) {
 	if strings.TrimSpace(path) == "" {
 		return
@@ -544,7 +562,7 @@ func (a *App) OpenExternalPath(path string) {
 	if err == nil {
 		path = abs
 	}
-	runtime.BrowserOpenURL(a.ctx, (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String())
+	openDir(path)
 }
 
 func (a *App) ReorderNotes(ids []string) SessionState {

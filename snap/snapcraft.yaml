@@ -1,6 +1,6 @@
 name: markpad
 base: core24
-version: '0.6.0'
+version: '0.7.0'
 summary: Small native Markdown notepad
 description: |
   Markpad is a tiny native Markdown notepad built with Go and the system webview.

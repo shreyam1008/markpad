@@ -83,6 +83,7 @@ PDF pages render via a ~500 KB CDN library (pdf.js) loaded on demand. No PDF eng
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.7 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix, BUNDLE_BUDGET.md |
 | 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
 | 0.5 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |
 | 0.4 | Balram | Drag-and-drop file open, per-type view modes, expanded file icons |
