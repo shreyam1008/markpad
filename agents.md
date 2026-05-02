@@ -84,6 +84,7 @@ Frontend calls these as `window.go.main.App.MethodName()`.
 | `GetActiveContent()` | `string` | Draft content of active note |
 | `GetNoteContent(id)` | `string` | Draft content of specific note |
 | `SetActive(id)` | — | Switch active note |
+| `UpdateReadPosition(id, scrollTop, viewTop, cursor)` | — | Persist editor/viewer scroll + cursor |
 | `NewNote()` | `SessionState` | Create empty untitled note |
 | `UpdateContent(id, content)` | — | Save draft, update title (guards read-only) |
 | `SaveActive(content)` | `SessionState, error` | Save to disk (or triggers Save As if no path) |
@@ -233,7 +234,7 @@ Frontend calls these as `window.go.main.App.MethodName()`.
 | Draft save debounce | 300 ms | `DRAFT_MS` constant |
 | Syntax highlight cap | 5000 lines | `CODE_LINE_CAP` constant |
 | Diff cap | 5000 lines | `simpleDiff` fallback |
-| PDF initial pages | 5 | `MAX_INITIAL` in `renderPdf` |
+| PDF initial pages | 2 | `MAX_INITIAL` in `renderPdf` |
 | ReadFileBase64 cap | 50 MB | Go-side check |
 | History snapshots/note | 50 | `maxSnapshots` constant |
 
