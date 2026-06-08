@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
@@ -14,7 +15,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.7"
+const Version = "0.8"
 
 //go:embed all:frontend
 var assets embed.FS
@@ -24,6 +25,13 @@ func main() {
 		fmt.Println(Version)
 		os.Exit(0)
 	}
+
+	// Optimize WebKit memory consumption on Linux/Unix systems by disabling JIT compiler
+	os.Setenv("JSC_useJIT", "0")
+	os.Setenv("JavaScriptCoreUseJIT", "0")
+
+	// Tune Go garbage collection to be more aggressive for memory savings
+	debug.SetGCPercent(20)
 
 	app := NewApp()
 
@@ -43,9 +51,20 @@ func main() {
 	fileMenu.AddText("Save As...", keys.Combo("s", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:saveas")
 	})
+	fileMenu.AddText("Close File", keys.CmdOrCtrl("w"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:close")
+	})
 	fileMenu.AddSeparator()
 	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(cd *menu.CallbackData) {
 		runtime.Quit(app.ctx)
+	})
+
+	editMenu := appMenu.AddSubmenu("Edit")
+	editMenu.AddText("Undo", keys.CmdOrCtrl("z"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:undo")
+	})
+	editMenu.AddText("Redo", keys.Combo("z", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:redo")
 	})
 
 	viewMenu := appMenu.AddSubmenu("View")
@@ -117,8 +136,9 @@ func main() {
 			UniqueId:               "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single",
 			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
-		OnStartup:  app.startup,
-		OnShutdown: app.shutdown,
+		OnStartup:     app.startup,
+		OnShutdown:    app.shutdown,
+		OnBeforeClose: app.beforeClose,
 		Bind: []interface{}{
 			app,
 		},

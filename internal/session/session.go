@@ -332,7 +332,7 @@ func NewDocument(path string, content string) *Document {
 		Title:     TitleFromContent(content, path),
 		Path:      path,
 		DraftFile: id + ".md",
-		Dirty:     path == "",
+		Dirty:     path == "" && strings.TrimSpace(content) != "",
 		UpdatedAt: now,
 	}
 	return doc

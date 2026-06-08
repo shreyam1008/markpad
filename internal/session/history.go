@@ -116,7 +116,7 @@ func (s *Store) ListHistory(docID string) ([]HistoryEntry, error) {
 
 	for _, fs := range snaps {
 		result = append(result, HistoryEntry{
-			Timestamp: fs.snap.Timestamp.Format(time.RFC3339),
+			Timestamp: fs.snap.Timestamp.Format(time.RFC3339Nano),
 			Source:    fs.snap.Source,
 			Bytes:     fs.snap.Bytes,
 			Lines:     fs.snap.Lines,
@@ -135,7 +135,7 @@ func (s *Store) GetSnapshotContent(docID string, timestamp string) (string, erro
 		return "", err
 	}
 
-	ts, err := time.Parse(time.RFC3339, timestamp)
+	ts, err := time.Parse(time.RFC3339Nano, timestamp)
 	if err != nil {
 		return "", fmt.Errorf("invalid timestamp: %w", err)
 	}

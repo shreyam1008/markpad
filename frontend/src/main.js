@@ -5,6 +5,7 @@ let viewMode = 'viewer'; // 'markdown' | 'split' | 'viewer'
 let sidebarCollapsed = false;
 let currentContent = '';
 let committedContent = '';
+let committedDirty = false;
 let activeId = '';
 let cachedNotes = [];
 let draftTimer = null;
@@ -18,19 +19,25 @@ let saving = false;
 let readPosTimer = null;
 let pdfRenderToken = 0;
 let viewerRenderKey = '';
+let pdfLibPromise = null;
 const noteViewModes = {};
 const noteScrollPos = {};
+const editHistories = new Map();
 const collapsedSections = JSON.parse(localStorage.getItem('markpad-sections') || '{}');
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
+const EDIT_HISTORY_LIMIT = 80;
+const EDIT_HISTORY_CHARS = 1024 * 1024;
+let applyingEditHistory = false;
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
 let fontSize = parseInt(localStorage.getItem('markpad-zoom') || ZOOM_DEFAULT, 10);
 function applyZoom(silent) {
-  document.documentElement.style.fontSize = fontSize + 'px';
+  editor.style.fontSize = fontSize + 'px';
+  viewer.style.fontSize = fontSize + 'px';
   localStorage.setItem('markpad-zoom', fontSize);
-  if (!silent && typeof statusText !== 'undefined' && statusText) statusText.textContent = `Zoom: ${Math.round(fontSize / ZOOM_DEFAULT * 100)}%`;
+  if (!silent && typeof statusText !== 'undefined' && statusText) statusText.textContent = `Editor zoom: ${Math.round(fontSize / ZOOM_DEFAULT * 100)}%`;
 }
 function zoomIn()  { fontSize = Math.min(fontSize + ZOOM_STEP, ZOOM_MAX); applyZoom(); }
 function zoomOut() { fontSize = Math.max(fontSize - ZOOM_STEP, ZOOM_MIN); applyZoom(); }
@@ -38,7 +45,7 @@ function zoomReset() { fontSize = ZOOM_DEFAULT; applyZoom(); }
 
 const $ = (id) => document.getElementById(id);
 const sidebar      = $('sidebar');
-const sidebarCol   = $('sidebar-collapsed');
+const sidebarCol   = $('sidebar-collapsed-content');
 const notesList    = $('notes-list');
 const favsList     = $('favorites-list');
 const favsSection  = $('favorites-section');
@@ -68,23 +75,23 @@ const modalOverlay = $('modal-overlay');
 const modalTitle   = $('modal-title');
 const modalBodyEl  = $('modal-body');
 const saveBtn      = $('btn-save');
+const undoBtn      = $('btn-undo');
+const redoBtn      = $('btn-redo');
+const closeOverlay = $('close-overlay');
+const closeMessage = $('close-message');
 
 // ── File type icons ──────────────────────────────────────
-const FILE_ICONS = {
-  md: '\ud83d\udcdd', markdown: '\ud83d\udcdd', mdx: '\ud83d\udcdd',
-  txt: '\ud83d\udcc4', log: '\ud83d\udcc4', csv: '\ud83d\udcc4', tsv: '\ud83d\udcc4',
-  json: '{ }', yaml: '\u2699', yml: '\u2699', xml: '\u2699', toml: '\u2699', ini: '\u2699', cfg: '\u2699', conf: '\u2699',
-  py: '\ud83d\udc0d', js: 'JS', ts: 'TS', jsx: 'JSX', tsx: 'TSX', go: 'Go', rs: '\ud83e\udda0', rb: '\u2666',
-  java: '\u2615', c: 'C', cpp: 'C+', h: 'H', cs: 'C#', kt: 'Kt', swift: '\ud83d\udc26', dart: '\ud83c\udfaf',
-  sh: '\ud83d\udcbb', bash: '\ud83d\udcbb', zsh: '\ud83d\udcbb', fish: '\ud83d\udcbb', ps1: '\ud83d\udcbb', bat: '\ud83d\udcbb',
-  html: '\ud83c\udf10', htm: '\ud83c\udf10', css: '\ud83c\udfa8', scss: '\ud83c\udfa8', less: '\ud83c\udfa8', svg: '\u25b3',
-  vue: 'V', svelte: 'S', php: 'PHP', sql: 'SQL', r: 'R',
-  lua: '\ud83c\udf19', dockerfile: '\ud83d\udc33', makefile: 'M', env: '\u2699',
-};
 function fileIcon(path) {
-  if (!path) return '\u270f';
+  if (!path) return 'MD';
   const ext = path.split('.').pop().toLowerCase();
-  return FILE_ICONS[ext] || '\ud83d\udcc4';
+  return (ext || 'TXT').slice(0, 3);
+}
+
+function closeIcon() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.innerHTML = '<path d="M18 6 6 18M6 6l12 12"/>';
+  return svg;
 }
 
 const MD_EXTS = new Set(['md', 'markdown', 'mdx']);
@@ -159,13 +166,29 @@ function renderDocumentCard(note) {
 }
 
 // ── PDF rendering (pdf.js) ───────────────────────────────
+function ensurePdfLib() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfLibPromise) return pdfLibPromise;
+  pdfLibPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(pdfjsLib);
+    };
+    script.onerror = () => reject(new Error('PDF renderer could not be loaded'));
+    document.head.appendChild(script);
+  });
+  return pdfLibPromise;
+}
+
 async function renderPdf(note) {
-  if (!window.pdfjsLib) return renderDocumentCard(note);
   const path = note?.path;
   if (!path) return renderDocumentCard(note);
   const token = ++pdfRenderToken;
   viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading PDF...</div>';
   try {
+    await ensurePdfLib();
     let b64 = await window.go.main.App.ReadFileBase64(path);
     let raw = atob(b64);
     b64 = '';
@@ -268,7 +291,13 @@ function renderViewer(content, active) {
 }
 
 // ── Markdown ─────────────────────────────────────────────
+const markedRenderer = new marked.Renderer();
+markedRenderer.heading = function(text, level) {
+  const slug = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
+  return `<h${level} id="${slug}">${text}</h${level}>`;
+};
 marked.setOptions({
+  renderer: markedRenderer,
   gfm: true,
   breaks: true,
   highlight(code, lang) {
@@ -283,6 +312,73 @@ marked.setOptions({
 function renderMd(md) {
   return DOMPurify.sanitize(marked.parse(md || ''), {
     ADD_TAGS: ['input'], ADD_ATTR: ['type', 'checked', 'disabled']
+  });
+}
+
+function updateOutline() {
+  const outlineList = $('outline-list');
+  const outlineSection = $('outline-section');
+  if (!outlineList || !outlineSection) return;
+
+  const active = cachedNotes.find(n => n.id === activeId);
+  const ft = getFileType(active?.path, active?.kind);
+  if (ft !== 'md') {
+    outlineSection.classList.add('hidden');
+    outlineList.innerHTML = '';
+    return;
+  }
+
+  const content = editor.value || '';
+  const lines = content.split('\n');
+  const headings = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const match = line.match(/^(#{1,6})\s+(.+)$/);
+    if (match) {
+      headings.push({
+        level: match[1].length,
+        title: match[2].trim(),
+        lineIndex: i
+      });
+    }
+  }
+
+  if (headings.length === 0) {
+    outlineSection.classList.add('hidden');
+    outlineList.innerHTML = '';
+    return;
+  }
+
+  outlineSection.classList.remove('hidden');
+  outlineList.innerHTML = '';
+
+  headings.forEach(h => {
+    const row = el('button', `w-full text-left px-2 py-0.5 hover:bg-hover rounded transition-colors text-muted hover:text-[#1a1c1b] truncate block text-[11px] font-medium`);
+    row.style.paddingLeft = `${(h.level - 1) * 8 + 6}px`;
+    row.textContent = h.title;
+    row.title = h.title;
+    row.addEventListener('click', () => {
+      // Scroll editor
+      let charOffset = 0;
+      for (let j = 0; j < h.lineIndex; j++) {
+        charOffset += lines[j].length + 1;
+      }
+      editor.focus();
+      editor.setSelectionRange(charOffset, charOffset);
+      const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight) || 20;
+      editor.scrollTop = h.lineIndex * lineHeight - 60;
+
+      // Scroll viewer
+      const slug = h.title.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
+      const target = viewer.querySelector(`[id="${slug}"]`);
+      if (target && viewerCont) {
+        const containerRect = viewerCont.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        viewerCont.scrollTop = targetRect.top - containerRect.top + viewerCont.scrollTop - 20;
+      }
+    });
+    outlineList.appendChild(row);
   });
 }
 
@@ -331,6 +427,7 @@ function renderSession(state) {
   const active = cachedNotes.find(n => n.id === activeId);
   noteTitle.textContent = active ? (active.path ? active.title : 'Untitled') : 'Untitled';
   dirtyInd.classList.toggle('hidden', !(active && active.dirty));
+  updateHistoryButtons();
 
   requestAnimationFrame(() => {
     const activeRow = notesList.querySelector(`[data-note-id="${activeId}"]`);
@@ -356,14 +453,14 @@ function makeFavRow(fav) {
 
 function makeRecentRow(recent) {
   const row = el('div', `group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-hover ${recent.missing ? 'opacity-55' : 'text-muted'}`);
-  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-50');
+  const ico = el('span', 'file-badge opacity-70');
   ico.textContent = fileIcon(recent.path);
   const body = el('div', 'flex-1 min-w-0');
   const t = el('div', 'text-[12px] truncate'); t.textContent = recent.title;
   const sub = el('div', 'text-[10px] truncate text-muted'); sub.textContent = recent.missing ? 'missing' : typeLabel(getFileType(recent.path, recent.kind));
   body.append(t, sub);
-  const rm = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity');
-  rm.textContent = '×';
+  const rm = el('button', 'row-icon opacity-0 group-hover:opacity-100 transition-opacity');
+  rm.appendChild(closeIcon());
   rm.title = 'Remove from recent';
   rm.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -400,7 +497,7 @@ function makeNoteRow(note) {
     row.appendChild(star);
   }
 
-  const ico = el('span', 'text-[11px] flex-shrink-0 w-5 text-center opacity-60');
+  const ico = el('span', 'file-badge');
   ico.textContent = fileIcon(note.path);
   row.appendChild(ico);
 
@@ -413,16 +510,12 @@ function makeNoteRow(note) {
   row.appendChild(content);
 
   // Close on the right
-  const close = el('button', 'text-[11px] border-none cursor-pointer px-1 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition-opacity flex-shrink-0');
-  close.textContent = '\u00d7';
+  const close = el('button', 'row-icon opacity-0 group-hover:opacity-100 transition-opacity');
+  close.appendChild(closeIcon());
   close.title = note.path ? 'Close file' : 'Close draft';
   close.addEventListener('click', async (e) => {
     e.stopPropagation();
-    if (note.dirty) { statusText.textContent = 'Save or cancel changes before closing'; return; }
-    renderSession(await window.go.main.App.CloseNote(note.id));
-    if (note.id === activeId) loadContent(await window.go.main.App.GetActiveContent());
-    restoreNoteView();
-    statusText.textContent = note.path ? 'File closed' : 'Draft closed';
+    await requestCloseNote(note);
   });
   row.appendChild(close);
 
@@ -507,13 +600,33 @@ function loadContent(content) {
   currentContent = content || '';
   committedContent = currentContent;
   editor.value = currentContent;
+  
+  const wrapper = $('content-area');
+  if (wrapper) {
+    wrapper.classList.remove('content-fade-in');
+    void wrapper.offsetWidth;
+    wrapper.classList.add('content-fade-in');
+  }
+
+  const existingHistory = editHistories.get(activeId);
+  if (!existingHistory || existingHistory.states[existingHistory.index]?.content !== currentContent) {
+    editHistories.set(activeId, {
+      states: [{ content: currentContent, start: 0, end: 0 }],
+      index: 0,
+      chars: currentContent.length,
+      lastAt: 0,
+    });
+  }
+  updateHistoryButtons();
   const active = cachedNotes.find(n => n.id === activeId);
+  committedDirty = !!active?.dirty;
   const ft = getFileType(active?.path, active?.kind);
   if (isReadOnlyType(ft)) dirtyInd.classList.add('hidden');
   if (viewMode !== 'markdown') renderViewer(currentContent, active);
   updateStats();
   if (historyOpen) renderHistory();
   restoreScrollPos();
+  updateOutline();
 }
 
 function defaultViewForFileType(path, kind) {
@@ -535,6 +648,57 @@ function restoreNoteView() {
   } else {
     setView(saved || 'viewer');
   }
+}
+
+function askCloseChoice(note) {
+  closeMessage.textContent = `"${note.title || 'Untitled'}" has unsaved changes.`;
+  closeOverlay.classList.remove('hidden');
+  return new Promise(resolve => {
+    const finish = (choice) => {
+      closeOverlay.classList.add('hidden');
+      closeOverlay.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey);
+      resolve(choice);
+    };
+    const onClick = (e) => {
+      const button = e.target.closest('[data-close-choice]');
+      if (button) finish(button.dataset.closeChoice);
+      else if (e.target === closeOverlay) finish('cancel');
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') finish('cancel');
+    };
+    closeOverlay.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+async function requestCloseNote(note) {
+  if (!note) return false;
+  const hasUnsavedEditorChanges = note.id === activeId && currentContent !== committedContent;
+  let choice = 'discard';
+  if (note.dirty || hasUnsavedEditorChanges) choice = await askCloseChoice(note);
+  if (choice === 'cancel') return false;
+  if (choice === 'save') {
+    if (note.id !== activeId) {
+      saveScrollPos();
+      await window.go.main.App.SetActive(note.id);
+      renderSession(await window.go.main.App.GetSession());
+      loadContent(await window.go.main.App.GetNoteContent(note.id));
+      restoreNoteView();
+    }
+    await doSave();
+    const state = await window.go.main.App.GetSession();
+    const saved = (state.notes || []).find(n => n.id === note.id);
+    if (saved?.dirty) return false;
+  }
+  const wasActive = note.id === activeId;
+  renderSession(await window.go.main.App.CloseNote(note.id));
+  editHistories.delete(note.id);
+  if (wasActive) loadContent(await window.go.main.App.GetActiveContent());
+  restoreNoteView();
+  statusText.textContent = choice === 'discard' && (note.dirty || hasUnsavedEditorChanges) ? 'Closed without saving' : 'Closed';
+  return true;
 }
 
 // ── Context menu ─────────────────────────────────────────
@@ -570,11 +734,7 @@ ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', () => {
 ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
-  if (note && note.dirty) { statusText.textContent = 'Save or cancel changes before closing'; return; }
-  renderSession(await window.go.main.App.CloseNote(ctxNoteId));
-  if (ctxNoteId === activeId) loadContent(await window.go.main.App.GetActiveContent());
-  restoreNoteView();
-  statusText.textContent = 'Closed';
+  await requestCloseNote(note);
 });
 ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
@@ -662,10 +822,31 @@ document.addEventListener('mouseup', () => {
 // ── Sidebar ──────────────────────────────────────────────
 function toggleSidebar() {
   sidebarCollapsed = !sidebarCollapsed;
-  sidebar.classList.toggle('hidden', sidebarCollapsed);
-  sidebarCol.classList.toggle('hidden', !sidebarCollapsed);
-  if (sidebarCollapsed) sidebarCol.classList.add('flex');
-  else sidebarCol.classList.remove('flex');
+  const expanded = $('sidebar-expanded-content');
+  const collapsed = $('sidebar-collapsed-content');
+  if (sidebarCollapsed) {
+    sidebar.style.width = '48px';
+    sidebar.style.minWidth = '48px';
+    if (expanded) {
+      expanded.classList.replace('opacity-100', 'opacity-0');
+      expanded.classList.add('pointer-events-none');
+    }
+    if (collapsed) {
+      collapsed.classList.replace('opacity-0', 'opacity-100');
+      collapsed.classList.remove('pointer-events-none');
+    }
+  } else {
+    sidebar.style.width = '256px';
+    sidebar.style.minWidth = '256px';
+    if (expanded) {
+      expanded.classList.replace('opacity-0', 'opacity-100');
+      expanded.classList.remove('pointer-events-none');
+    }
+    if (collapsed) {
+      collapsed.classList.replace('opacity-100', 'opacity-0');
+      collapsed.classList.add('pointer-events-none');
+    }
+  }
 }
 $('btn-collapse').addEventListener('click', toggleSidebar);
 $('btn-expand').addEventListener('click', toggleSidebar);
@@ -676,7 +857,8 @@ function applySectionState() {
     const body = document.querySelector(`[data-section-body="${key}"]`);
     const collapsed = !!collapsedSections[key];
     if (body) body.classList.toggle('hidden', collapsed);
-    btn.querySelector('[data-chevron]').textContent = collapsed ? '▸' : '▾';
+    btn.querySelector('[data-chevron]').textContent = '▾';
+    btn.querySelector('[data-chevron]').classList.toggle('collapsed', collapsed);
   });
 }
 document.querySelectorAll('[data-section-toggle]').forEach(btn => {
@@ -694,17 +876,87 @@ editor.addEventListener('keyup', queueReadPositionSave);
 viewerCont.addEventListener('scroll', queueReadPositionSave);
 window.addEventListener('beforeunload', saveScrollPos);
 
-editor.addEventListener('input', () => {
+function updateHistoryButtons() {
+  const history = editHistories.get(activeId);
+  undoBtn.disabled = !history || history.index <= 0;
+  redoBtn.disabled = !history || history.index >= history.states.length - 1;
+}
+
+function recordEditState(inputType) {
+  if (!activeId || applyingEditHistory) return;
+  let history = editHistories.get(activeId);
+  if (!history) {
+    history = { states: [], index: -1, chars: 0, lastAt: 0 };
+    editHistories.set(activeId, history);
+  }
+  const state = { content: editor.value, start: editor.selectionStart, end: editor.selectionEnd };
+  const current = history.states[history.index];
+  if (current?.content === state.content) return;
+  if (history.index < history.states.length - 1) {
+    history.states.splice(history.index + 1);
+    history.chars = history.states.reduce((sum, item) => sum + item.content.length, 0);
+  }
+  const now = Date.now();
+  const grouped = /^(insertText|deleteContent)/.test(inputType || '') && now - history.lastAt < 550 && history.index > 0;
+  if (grouped) {
+    history.chars += state.content.length - history.states[history.index].content.length;
+    history.states[history.index] = state;
+  } else {
+    history.states.push(state);
+    history.index++;
+    history.chars += state.content.length;
+  }
+  history.lastAt = now;
+  while (history.states.length > EDIT_HISTORY_LIMIT || (history.chars > EDIT_HISTORY_CHARS && history.states.length > 2)) {
+    history.chars -= history.states[0].content.length;
+    history.states.shift();
+    history.index--;
+  }
+  updateHistoryButtons();
+}
+
+let lastHistoryStepAt = 0;
+function stepEditHistory(direction) {
+  const now = Date.now();
+  if (now - lastHistoryStepAt < 50) return;
+  lastHistoryStepAt = now;
+
+  const history = editHistories.get(activeId);
+  if (!history) return;
+  const next = history.index + direction;
+  if (next < 0 || next >= history.states.length) return;
+  history.index = next;
+  const state = history.states[next];
+  applyingEditHistory = true;
+  editor.value = state.content;
+  editor.selectionStart = state.start;
+  editor.selectionEnd = state.end;
+  editor.dispatchEvent(new InputEvent('input', { inputType: direction < 0 ? 'historyUndo' : 'historyRedo' }));
+  applyingEditHistory = false;
+  editor.focus();
+  updateHistoryButtons();
+}
+
+editor.addEventListener('input', (e) => {
   const active = cachedNotes.find(n => n.id === activeId);
   if (isReadOnlyType(getFileType(active?.path, active?.kind))) return;
+  recordEditState(e.inputType);
   currentContent = editor.value;
+  const dirty = committedDirty || currentContent !== committedContent;
+  if (active && dirty && !active.dirty) {
+    active.dirty = true;
+    window.go.main.App.MarkDirty(activeId).catch(() => {});
+  }
+  if (active) active.dirty = dirty;
   updateStats();
-  dirtyInd.classList.remove('hidden');
+  dirtyInd.classList.toggle('hidden', !dirty);
 
   clearTimeout(draftTimer);
+  const editId = activeId;
+  const editContent = currentContent;
   draftTimer = setTimeout(async () => {
-    if (!activeId) return;
-    await window.go.main.App.UpdateContent(activeId, currentContent);
+    if (!editId) return;
+    await window.go.main.App.UpdateContent(editId, editContent, dirty);
     renderSession(await window.go.main.App.GetSession());
   }, DRAFT_MS);
 
@@ -715,6 +967,7 @@ editor.addEventListener('input', () => {
       renderViewer(currentContent, active);
     }, RENDER_MS);
   }
+  updateOutline();
 });
 
 editor.addEventListener('keydown', (e) => {
@@ -863,7 +1116,7 @@ async function renderHistory() {
       histActions.classList.add('flex');
       const snapshotContent = await window.go.main.App.GetHistoryContent(activeId, entry.timestamp);
       historyViewingContent = snapshotContent;
-      showDiff(currentContent, snapshotContent);
+      showDiff(snapshotContent, currentContent);
       statusText.textContent = `Viewing: ${entry.timeAgo} (${entry.source})`;
     });
     histList.appendChild(row);
@@ -873,39 +1126,47 @@ async function renderHistory() {
 function simpleDiff(oldText, newText) {
   const a = oldText.split('\n');
   const b = newText.split('\n');
-  const n = a.length, m = b.length;
-  // LCS via DP (fast enough for <5000 lines)
-  const maxLen = Math.max(n, m);
-  if (maxLen > 5000) {
-    // Fallback for very large files: show full old/new
-    const result = [];
-    a.forEach(l => result.push({ type: 'del', text: l }));
-    b.forEach(l => result.push({ type: 'add', text: l }));
+  let prefix = 0;
+  while (prefix < a.length && prefix < b.length && a[prefix] === b[prefix]) prefix++;
+  let suffix = 0;
+  while (suffix < a.length - prefix && suffix < b.length - prefix &&
+    a[a.length - 1 - suffix] === b[b.length - 1 - suffix]) suffix++;
+
+  const ac = a.slice(prefix, a.length - suffix);
+  const bc = b.slice(prefix, b.length - suffix);
+  const n = ac.length, m = bc.length;
+  const result = a.slice(0, prefix).map(text => ({ type: 'ctx', text }));
+
+  // LCS memory is quadratic. Bound it and use a predictable fallback for large rewrites.
+  if (n * m > 2_000_000) {
+    ac.forEach(text => result.push({ type: 'del', text }));
+    bc.forEach(text => result.push({ type: 'add', text }));
+    b.slice(b.length - suffix).forEach(text => result.push({ type: 'ctx', text }));
     return result;
   }
-  // Build LCS table
   const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      dp[i][j] = ac[i - 1] === bc[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
-  // Backtrack to produce diff
-  const result = [];
+  const core = [];
   let i = n, j = m;
   while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
-      result.push({ type: 'ctx', text: a[i - 1] });
+    if (i > 0 && j > 0 && ac[i - 1] === bc[j - 1]) {
+      core.push({ type: 'ctx', text: ac[i - 1] });
       i--; j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      result.push({ type: 'add', text: b[j - 1] });
+      core.push({ type: 'add', text: bc[j - 1] });
       j--;
     } else {
-      result.push({ type: 'del', text: a[i - 1] });
+      core.push({ type: 'del', text: ac[i - 1] });
       i--;
     }
   }
-  result.reverse();
+  core.reverse();
+  result.push(...core);
+  b.slice(b.length - suffix).forEach(text => result.push({ type: 'ctx', text }));
   return result;
 }
 
@@ -1048,10 +1309,14 @@ function applyFormat(action) {
 // ── Shortcuts ────────────────────────────────────────────
 document.addEventListener('keydown', async (e) => {
   const ctrl = e.ctrlKey || e.metaKey, shift = e.shiftKey, key = e.key;
-  if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
+  if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
+  else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
+  else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
   else if (ctrl && shift && key === 'S') { e.preventDefault(); await doSaveAs(); }
   else if (ctrl && !shift && key === 'n') { e.preventDefault(); await doNew(); }
   else if (ctrl && !shift && key === 'o') { e.preventDefault(); await doOpen(); }
+  else if (ctrl && !shift && key.toLowerCase() === 'w') { e.preventDefault(); await requestCloseNote(cachedNotes.find(n => n.id === activeId)); }
+  else if (ctrl && !shift && key.toLowerCase() === 'q') { e.preventDefault(); if (window.runtime && window.runtime.Quit) window.runtime.Quit(); }
   else if (ctrl && shift && key === 'E') { e.preventDefault(); cycleView(); }
   else if (ctrl && shift && key === 'B') { e.preventDefault(); toggleSidebar(); }
   else if (ctrl && !shift && key === 'h') { e.preventDefault(); toggleHistory(); }
@@ -1080,7 +1345,7 @@ document.addEventListener('keydown', async (e) => {
 
 // Ctrl+scroll zoom
 document.addEventListener('wheel', (e) => {
-  if (e.ctrlKey) {
+  if (e.ctrlKey && (e.target.closest('#editor-container') || e.target.closest('#viewer-container'))) {
     e.preventDefault();
     if (e.deltaY < 0) zoomIn(); else zoomOut();
   }
@@ -1092,8 +1357,15 @@ async function doSave() {
   saving = true;
   statusText.textContent = 'Saving...';
   try {
-    renderSession(await window.go.main.App.SaveActive(currentContent));
+    const state = await window.go.main.App.SaveActive(currentContent);
+    renderSession(state);
+    const active = (state.notes || []).find(n => n.id === state.activeId);
+    if (active?.dirty) {
+      statusText.textContent = 'Save cancelled';
+      return;
+    }
     committedContent = currentContent;
+    committedDirty = false;
     flashSave();
     if (historyOpen) await renderHistory();
   } catch (err) { statusText.textContent = 'Save failed: ' + err; }
@@ -1105,8 +1377,15 @@ async function doSaveAs() {
   if (isReadOnlyType(getFileType(active?.path, active?.kind))) { statusText.textContent = 'Read-only document: open externally to edit'; return; }
   statusText.textContent = 'Save As...';
   try {
-    renderSession(await window.go.main.App.SaveAsDialog(currentContent));
+    const state = await window.go.main.App.SaveAsDialog(currentContent);
+    renderSession(state);
+    const saved = (state.notes || []).find(n => n.id === state.activeId);
+    if (saved?.dirty) {
+      statusText.textContent = 'Save As cancelled';
+      return;
+    }
     committedContent = currentContent;
+    committedDirty = false;
     flashSave();
     if (historyOpen) await renderHistory();
   } catch (err) { statusText.textContent = 'Save As failed: ' + err; }
@@ -1139,6 +1418,8 @@ $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 saveBtn.addEventListener('click', doSave);
+undoBtn.addEventListener('click', () => stepEditHistory(-1));
+redoBtn.addEventListener('click', () => stepEditHistory(1));
 $('btn-cancel').addEventListener('click', async () => {
   editor.value = committedContent; currentContent = committedContent;
   if (viewMode !== 'markdown') {
@@ -1147,8 +1428,7 @@ $('btn-cancel').addEventListener('click', async () => {
   }
   dirtyInd.classList.add('hidden'); updateStats(); statusText.textContent = 'Reverted';
   if (activeId) {
-    await window.go.main.App.UpdateContent(activeId, currentContent);
-    renderSession(await window.go.main.App.GetSession());
+    renderSession(await window.go.main.App.RevertContent(activeId, currentContent, committedDirty));
   }
 });
 
@@ -1212,7 +1492,15 @@ async function showPreferences() {
 function showChangelog() {
   showModal('Changelog', `
     <div style="font-size:12px;line-height:1.7;">
-      <p><b>v0.7 Eklavya</b> <span style="color:#6b6e68;">— Current</span></p>
+      <p><b>v0.8 Falguni</b> <span style="color:#6b6e68;">— Current</span></p>
+      <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
+        <li>Real-Time Sidebar Outline: Parses Markdown headings as you type and scroll-syncs both editor and preview to headings</li>
+        <li>Active Memory Reclamation: Disabled WebKit JIT compiler and tuned Go GCPercent (20) to slash memory footprint</li>
+        <li>UX & Animation Polish: Sleek transitions for sidebar width and workspace content fade-in</li>
+        <li>Bypassed Close Prompt: Empty or welcome drafts no longer trigger dirty states or exit prompts</li>
+        <li>Double Undo Fix: Deduplicated system and browser undo/redo inputs</li>
+      </ul>
+      <p><b>v0.7 Eklavya</b></p>
       <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
         <li>Scroll position memory: remembers where you left off in each note</li>
         <li>Extended syntax highlighting: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more language mappings</li>
@@ -1274,6 +1562,9 @@ function registerEvents() {
   window.runtime.EventsOn('menu:open', doOpen);
   window.runtime.EventsOn('menu:save', doSave);
   window.runtime.EventsOn('menu:saveas', doSaveAs);
+  window.runtime.EventsOn('menu:close', () => requestCloseNote(cachedNotes.find(n => n.id === activeId)));
+  window.runtime.EventsOn('menu:undo', () => stepEditHistory(-1));
+  window.runtime.EventsOn('menu:redo', () => stepEditHistory(1));
   window.runtime.EventsOn('menu:toggleview', cycleView);
   window.runtime.EventsOn('menu:togglesidebar', toggleSidebar);
   window.runtime.EventsOn('menu:find', toggleFind);
@@ -1296,7 +1587,8 @@ function registerEvents() {
     <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
     <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
-    <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
+    <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
+    <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
     <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>

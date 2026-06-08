@@ -5,36 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Markpad</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            surface: '#fafaf7',
-            sidebar: '#eceae4',
-            editor: '#fffffc',
-            border: '#d8d6ce',
-            'border-soft': '#e8e6df',
-            muted: '#6b6e68',
-            accent: '#2f6f61',
-            'accent-hover': '#267058',
-            'accent-text': '#fffffb',
-            selected: '#dde8df',
-            hover: '#e7ece5',
-            unsaved: '#c57933',
-            star: '#d49e2a',
-            'star-off': '#b8b5ad',
-            danger: '#c54b33',
-          },
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-            mono: ['"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
-          },
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="src/tailwind.css" />
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.3.0/github-markdown-light.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
@@ -49,49 +20,51 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/nim.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/zig.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-  <script>document.addEventListener('DOMContentLoaded',()=>{if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';});</script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
   <link rel="stylesheet" href="src/styles.css" />
 </head>
 <body class="h-screen w-screen overflow-hidden bg-[#f4f2ed] text-[#1a1c1b] font-sans text-sm antialiased select-none">
   <div id="app" class="flex h-full w-full">
 
-    <!-- Sidebar expanded -->
-    <aside id="sidebar" class="w-64 min-w-[256px] bg-sidebar border-r border-border flex flex-col">
-      <div class="flex items-center justify-between p-3 gap-2">
-        <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
-        <button id="btn-collapse" class="px-2 py-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Collapse sidebar">&laquo;</button>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-sidebar border-r border-border flex flex-col transition-all duration-200 ease-in-out relative overflow-hidden select-none" style="width: 256px; min-width: 256px;">
+      <!-- Sidebar expanded content -->
+      <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
+        <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
+          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
+          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-2 pb-2">
+          <div id="favorites-section" class="hidden">
+            <button data-section-toggle="favorites" class="section-head"><span data-chevron>▾</span><span>Favorites</span></button>
+            <div id="favorites-list" data-section-body="favorites" class="space-y-0.5 mb-1"></div>
+            <div class="mx-2 border-t border-border-soft"></div>
+          </div>
+
+          <div>
+            <button data-section-toggle="open" class="section-head"><span data-chevron>▾</span><span>Open</span></button>
+            <div id="notes-list" data-section-body="open" class="space-y-0.5 mb-1"></div>
+          </div>
+
+          <div id="outline-section" class="hidden">
+            <div class="mx-2 border-t border-border-soft"></div>
+            <button data-section-toggle="outline" class="section-head"><span data-chevron>▾</span><span>Outline</span></button>
+            <div id="outline-list" data-section-body="outline" class="space-y-0.5 mb-1"></div>
+          </div>
+
+          <div id="recent-section" class="hidden">
+            <div class="mx-2 border-t border-border-soft"></div>
+            <button data-section-toggle="recent" class="section-head"><span data-chevron>▾</span><span>Recent</span></button>
+            <div id="recent-list" data-section-body="recent" class="space-y-0.5"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-2 pb-2">
-        <div id="favorites-section" class="hidden">
-          <button data-section-toggle="favorites" class="section-head"><span data-chevron>▾</span><span>Favorites</span></button>
-          <div id="favorites-list" data-section-body="favorites" class="space-y-0.5 mb-1"></div>
-          <div class="mx-2 border-t border-border-soft"></div>
-        </div>
-
-        <div>
-          <button data-section-toggle="open" class="section-head"><span data-chevron>▾</span><span>Open</span></button>
-          <div id="notes-list" data-section-body="open" class="space-y-0.5 mb-1"></div>
-        </div>
-
-        <div id="recent-section" class="hidden">
-          <div class="mx-2 border-t border-border-soft"></div>
-          <button data-section-toggle="recent" class="section-head"><span data-chevron>▾</span><span>Recent</span></button>
-          <div id="recent-list" data-section-body="recent" class="space-y-0.5"></div>
-        </div>
+      <!-- Sidebar collapsed content -->
+      <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
+        <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note">+</button>
       </div>
-    </aside>
-
-    <!-- Sidebar collapsed -->
-    <aside id="sidebar-collapsed" class="hidden w-12 min-w-[48px] bg-sidebar border-r border-border flex-col items-center py-3 gap-2">
-      <button id="btn-expand" class="p-1.5 rounded-lg bg-hover text-muted text-xs font-semibold hover:bg-border transition-colors" title="Expand sidebar">&raquo;</button>
-      <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors" title="New note">+</button>
     </aside>
 
     <!-- Main -->
@@ -119,6 +92,8 @@
           </button>
         </div>
         <div class="flex gap-1.5">
+          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
+          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
           <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
           <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
@@ -126,6 +101,7 @@
           </button>
         </div>
       </div>
+
 
       <!-- Formatting toolbar -->
       <div id="toolbar" class="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
@@ -224,6 +200,21 @@
         <button id="modal-close" class="text-muted hover:text-[#1a1c1b] text-xl leading-none px-1">&times;</button>
       </div>
       <div id="modal-body" class="px-5 py-4 text-[13px] leading-6 text-[#3d403e] max-h-[50vh] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <div id="close-overlay" class="hidden fixed inset-0 bg-black/25 flex items-center justify-center z-[60]">
+    <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="close-title">
+      <div class="confirm-icon"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.5 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.5a2 2 0 0 0-3.4 0Z"/></svg></div>
+      <div>
+        <h2 id="close-title">Save changes?</h2>
+        <p id="close-message">This file has unsaved changes.</p>
+      </div>
+      <div class="confirm-actions">
+        <button data-close-choice="cancel" class="confirm-btn">Cancel</button>
+        <button data-close-choice="discard" class="confirm-btn danger">Don't Save</button>
+        <button data-close-choice="save" class="confirm-btn primary">Save</button>
+      </div>
     </div>
   </div>
 

@@ -4,6 +4,8 @@ A tiny native Markdown notepad and local file viewer. Opens fast, saves your wor
 
 No Electron. No cloud. Single binary under 10 MB. Pure local, pure offline.
 
+![Markpad Screenshot](photo/image.png)
+
 ## Install
 
 ### Linux (one command)
@@ -55,6 +57,7 @@ No other dependencies. The binary is fully self-contained.
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
 - **Sidebar** — Favorites / Open / Recent sections. Star on left, close on right. Collapse sections, drag-and-drop reorder
+- **Sidebar Outline** — Real-time markdown Table of Contents outline that scroll-syncs the editor and viewer panes
 - **Rich right-click** — Star, File Info, Open Folder, Copy Path, Close, Delete
 - **File info** — Click (i) in the title bar for name, path, size, type, modified date, and Open Folder
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
@@ -83,6 +86,7 @@ PDF pages render via a ~500 KB CDN library (pdf.js) loaded on demand. No PDF eng
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.8 | Falguni | Real-time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, welcome draft close bypass |
 | 0.7 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix, BUNDLE_BUDGET.md |
 | 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
 | 0.5 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |

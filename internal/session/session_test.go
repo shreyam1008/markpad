@@ -89,3 +89,30 @@ func TestSaveAsSetsAbsolutePathAndPreservesExtension(t *testing.T) {
 		t.Fatal("document stayed dirty after save as")
 	}
 }
+
+func TestHistoryTimestampRoundTripPreservesNanoseconds(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument("", "first")
+	if err := store.SaveSnapshot(doc.ID, "first", "save"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveSnapshot(doc.ID, "second", "save"); err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := store.ListHistory(doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("history entries = %d, want 2", len(entries))
+	}
+	for _, entry := range entries {
+		if _, err := store.GetSnapshotContent(doc.ID, entry.Timestamp); err != nil {
+			t.Fatalf("timestamp %q did not round-trip: %v", entry.Timestamp, err)
+		}
+	}
+}
