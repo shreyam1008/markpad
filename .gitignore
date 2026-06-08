@@ -9,3 +9,4 @@ build/
 coverage.out
 .DS_Store
 .codex
+temp_mem_test_files/*

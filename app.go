@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	goruntime "runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -73,6 +74,41 @@ func (a *App) shutdown(ctx context.Context) {
 	if a.store != nil && a.sess != nil {
 		_ = a.store.Save(a.sess)
 	}
+}
+
+func (a *App) beforeClose(ctx context.Context) bool {
+	if a.sess == nil {
+		return false
+	}
+	dirty := 0
+	for _, doc := range a.sess.Documents {
+		if doc.Dirty {
+			// Skip prompting for empty drafts or unmodified default drafts
+			if doc.Path == "" {
+				content, err := a.store.ReadDraft(doc)
+				if err == nil && (strings.TrimSpace(content) == "" || strings.Contains(content, "Start writing. Markpad will keep this draft")) {
+					continue
+				}
+			}
+			dirty++
+		}
+	}
+	if dirty == 0 {
+		return false
+	}
+	label := "file"
+	if dirty != 1 {
+		label = "files"
+	}
+	answer, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
+		Type:          runtime.QuestionDialog,
+		Title:         "Unsaved changes",
+		Message:       fmt.Sprintf("%d %s have unsaved changes. Quit without saving?", dirty, label),
+		Buttons:       []string{"Quit Without Saving", "Cancel"},
+		DefaultButton: "Cancel",
+		CancelButton:  "Cancel",
+	})
+	return err != nil || answer != "Quit Without Saving"
 }
 
 // ---------- Types returned to frontend ----------
@@ -194,7 +230,7 @@ func (a *App) NewNote() SessionState {
 	return a.GetSession()
 }
 
-func (a *App) UpdateContent(id string, content string) {
+func (a *App) UpdateContent(id string, content string, dirty bool) {
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return
@@ -202,13 +238,34 @@ func (a *App) UpdateContent(id string, content string) {
 	if isReadOnlyPath(doc.Path) {
 		return
 	}
-	doc.Dirty = true
+	doc.Dirty = dirty
 	doc.UpdatedAt = time.Now()
 	if doc.Path == "" {
 		doc.Title = session.TitleFromContent(content, "")
 	}
 	_ = a.store.WriteDraft(doc, content)
 	_ = a.store.Save(a.sess)
+}
+
+func (a *App) MarkDirty(id string) {
+	if doc := a.sess.Find(id); doc != nil && !isReadOnlyPath(doc.Path) {
+		doc.Dirty = true
+	}
+}
+
+func (a *App) RevertContent(id string, content string, dirty bool) SessionState {
+	doc := a.sess.Find(id)
+	if doc == nil || isReadOnlyPath(doc.Path) {
+		return a.GetSession()
+	}
+	doc.Dirty = dirty
+	doc.UpdatedAt = time.Now()
+	if doc.Path == "" {
+		doc.Title = session.TitleFromContent(content, "")
+	}
+	_ = a.store.WriteDraft(doc, content)
+	_ = a.store.Save(a.sess)
+	return a.GetSession()
 }
 
 func (a *App) SaveActive(content string) (SessionState, error) {
@@ -416,6 +473,8 @@ func (a *App) CloseNote(id string) SessionState {
 		a.sess.ActiveID = next
 	}
 	_ = a.store.Save(a.sess)
+	goruntime.GC()
+	debug.FreeOSMemory()
 	return a.GetSession()
 }
 
@@ -451,6 +510,8 @@ func (a *App) DeleteNote(id string) SessionState {
 		}
 	}
 	_ = a.store.Save(a.sess)
+	goruntime.GC()
+	debug.FreeOSMemory()
 	return a.GetSession()
 }
 
