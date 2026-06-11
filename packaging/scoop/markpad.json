@@ -1,0 +1,38 @@
+{
+  "version": "0.8.0",
+  "description": "Tiny native Markdown notepad and local file viewer. No Electron, under 10 MB, fast startup.",
+  "homepage": "https://shreyam1008.github.io/markpad/",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/shreyam1008/markpad/releases/download/v0.8.0/markpad-setup.exe",
+      "hash": "TODO_replace_with_sha256_of_markpad-setup.exe"
+    }
+  },
+  "installer": {
+    "script": [
+      "$installer = \"$dir\\markpad-setup.exe\"",
+      "Start-Process -Wait -FilePath $installer -ArgumentList '/S'",
+      "Remove-Item $installer"
+    ]
+  },
+  "shortcuts": [
+    ["C:\\Program Files\\Markpad\\markpad.exe", "Markpad"]
+  ],
+  "uninstaller": {
+    "script": [
+      "$uninstaller = \"C:\\Program Files\\Markpad\\uninstall.exe\"",
+      "if (Test-Path $uninstaller) { Start-Process -Wait $uninstaller -ArgumentList '/S' }"
+    ]
+  },
+  "checkver": {
+    "github": "https://github.com/shreyam1008/markpad"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/shreyam1008/markpad/releases/download/v$version/markpad-setup.exe"
+      }
+    }
+  }
+}
