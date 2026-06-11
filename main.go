@@ -15,7 +15,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.8"
+const Version = "0.9"
 
 //go:embed all:frontend
 var assets embed.FS
