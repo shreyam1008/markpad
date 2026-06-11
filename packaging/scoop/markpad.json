@@ -1,11 +1,11 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Tiny native Markdown notepad and local file viewer. No Electron, under 10 MB, fast startup.",
   "homepage": "https://shreyam1008.github.io/markpad/",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/shreyam1008/markpad/releases/download/v0.8.0/markpad-setup.exe",
+      "url": "https://github.com/shreyam1008/markpad/releases/download/v0.9.0/markpad-setup.exe",
       "hash": "TODO_replace_with_sha256_of_markpad-setup.exe"
     }
   },

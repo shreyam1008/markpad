@@ -45,7 +45,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/shreyam1008/markpad.git
-        tag: v0.8.0
+        tag: v0.9.0
         commit: placeholder-replace-with-actual-commit-sha
       # Go vendor sources for offline Flatpak build.
       # Generate with: python3 flatpak-go-vendor.py go.sum > go-vendor-sources.json
