@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
+PackageIdentifier: ShreyamAdhikari.Markpad
+PackageVersion: 0.8.0
+PackageLocale: en-US
+ManifestType: locale
+ManifestVersion: 1.6.0
+
+PackageName: Markpad
+Publisher: Shreyam Adhikari
+PublisherUrl: https://shreyam1008.com.np/
+PublisherSupportUrl: https://github.com/shreyam1008/markpad/issues
+License: MIT
+LicenseUrl: https://github.com/shreyam1008/markpad/blob/main/LICENSE
+ShortDescription: Tiny native Markdown notepad and local file viewer
+Description: |-
+  Tiny native Markdown notepad built with Go and the system webview.
+  No Electron, under 10 MB, fast startup.
+Tags:
+  - markdown
+  - notepad
+  - editor
+  - text-editor

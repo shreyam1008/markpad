@@ -1,0 +1,71 @@
+app-id: io.github.markpad
+
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+
+command: markpad
+
+finish-args:
+  # Display
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  # Read/write user files (Markdown notes, opened files)
+  - --filesystem=home
+  # XDG portals for open/save dialogs
+  - --filesystem=xdg-documents
+  - --filesystem=xdg-download
+  # Read PDFs and images from anywhere
+  - --filesystem=host:ro
+  # Open containing folder via xdg-open
+  - --filesystem=xdg-run/gvfsd:ro
+
+modules:
+  - name: markpad
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/golang/bin
+      env:
+        GOPATH: /run/build/markpad/gopath
+        GOCACHE: /run/build/markpad/gocache
+        CGO_ENABLED: "1"
+    build-commands:
+      # Wails v2 embeds the frontend at build time. The gnome runtime provides WebKitGTK.
+      - go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o markpad .
+      - install -Dm755 markpad /app/bin/markpad
+      # Desktop file
+      - install -Dm644 packaging/linux/markpad.desktop /app/share/applications/io.github.markpad.desktop
+      # Icon
+      - install -Dm644 packaging/linux/markpad.svg /app/share/icons/hicolor/scalable/apps/io.github.markpad.svg
+      # AppStream metainfo
+      - install -Dm644 packaging/linux/io.github.markpad.metainfo.xml /app/share/metainfo/io.github.markpad.metainfo.xml
+    sources:
+      - type: git
+        url: https://github.com/shreyam1008/markpad.git
+        tag: v0.8.0
+        commit: placeholder-replace-with-actual-commit-sha
+      # Go vendor sources for offline Flatpak build.
+      # Generate with: python3 flatpak-go-vendor.py go.sum > go-vendor-sources.json
+      - go-vendor-sources.json
+
+# NOTE FOR FLATHUB SUBMISSION:
+#
+# 1. Markpad uses Wails v2 with CGO + WebKitGTK.
+#    The GNOME runtime (org.gnome.Platform) includes WebKitGTK, so no extra module needed.
+#
+# 2. The frontend is embedded at build time by Wails — no separate frontend build step.
+#    The go build command above is sufficient.
+#
+# 3. Replace placeholder commit SHA with actual tag SHA.
+#
+# 4. Generate go-vendor-sources.json for offline Go modules.
+#    Tool: https://github.com/flatpak/flatpak-builder-tools/tree/master/go-vendor
+#
+# 5. Update desktop file to use id io.github.markpad (Flathub requires reverse-DNS id).
+#    The current markpad.desktop has Icon=markpad — rename to io.github.markpad.
+#
+# 6. Fork https://github.com/flathub/flathub and submit PR.
+#    Submission guide: https://docs.flathub.org/docs/for-app-authors/submission

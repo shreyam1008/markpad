@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: ShreyamAdhikari.Markpad
+PackageVersion: 0.8.0
+ManifestType: installer
+ManifestVersion: 1.6.0
+
+InstallerLocale: en-US
+InstallerType: nullsoft
+Scope: machine
+InstallModes:
+  - interactive
+  - silent
+UpgradeBehavior: install
+
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/shreyam1008/markpad/releases/download/v0.8.0/markpad-setup.exe
+    # TODO: Replace with actual SHA256 of the installer EXE from GitHub Releases.
+    # Run: sha256sum markpad-setup.exe   (Linux/macOS)
+    # or:  certutil -hashfile markpad-setup.exe SHA256  (Windows)
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
