@@ -68,6 +68,20 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.x"
+      - name: Embed Windows icon resources
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          go run github.com/tc-hib/go-winres@v0.3.3 simply `
+            --arch amd64 `
+            --out rsrc `
+            --manifest gui `
+            --icon packaging/windows/markpad.ico `
+            --product-name "Markpad" `
+            --file-description "Markpad Markdown notepad" `
+            --original-filename "markpad.exe" `
+            --product-version "$version" `
+            --file-version "$version"
       - name: Build exe
         run: go build -tags production -trimpath -ldflags="-s -w -H windowsgui" -o dist/markpad.exe .
       - name: Install NSIS
@@ -97,6 +111,7 @@ jobs:
         run: |
           mkdir -p "dist/Markpad.app/Contents/MacOS" "dist/Markpad.app/Contents/Resources"
           cp packaging/macos/Info.plist "dist/Markpad.app/Contents/Info.plist"
+          cp packaging/macos/markpad.icns "dist/Markpad.app/Contents/Resources/markpad.icns"
           go build -tags production -trimpath -ldflags="-s -w" -o "dist/Markpad.app/Contents/MacOS/markpad" .
       - name: Build dmg
         continue-on-error: true
