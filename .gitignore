@@ -5,6 +5,7 @@ build/
 *.dmg
 *.exe
 *.zip
+rsrc_windows_*.syso
 *.test
 coverage.out
 .DS_Store

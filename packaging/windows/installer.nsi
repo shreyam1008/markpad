@@ -10,6 +10,9 @@ InstallDir "$PROGRAMFILES\Markpad"
 InstallDirRegKey HKLM "Software\Markpad" "InstallDir"
 RequestExecutionLevel admin
 
+!define MUI_ICON "${BASEDIR}\packaging\windows\markpad.ico"
+!define MUI_UNICON "${BASEDIR}\packaging\windows\markpad.ico"
+
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -25,15 +28,16 @@ Section "Install"
 
   ; Create start menu shortcut
   CreateDirectory "$SMPROGRAMS\Markpad"
-  CreateShortcut "$SMPROGRAMS\Markpad\Markpad.lnk" "$INSTDIR\markpad.exe"
-  CreateShortcut "$SMPROGRAMS\Markpad\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+  CreateShortcut "$SMPROGRAMS\Markpad\Markpad.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
+  CreateShortcut "$SMPROGRAMS\Markpad\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
   ; Create desktop shortcut
-  CreateShortcut "$DESKTOP\Markpad.lnk" "$INSTDIR\markpad.exe"
+  CreateShortcut "$DESKTOP\Markpad.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
 
   ; Write uninstall info
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayName" "Markpad"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayIcon" "$INSTDIR\markpad.exe,0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "Publisher" "Shreyam Adhikari"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayVersion" "@VERSION@"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "NoModify" 1

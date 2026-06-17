@@ -35,6 +35,7 @@ make build
 - Run `go test ./internal/markdown ./internal/preview ./internal/session ./tests`.
 - Run the local Linux build and smoke test opening a `.md` and `.txt` file.
 - Confirm `packaging/linux/markpad.svg` and desktop metadata are present.
+- Confirm `packaging/windows/markpad.ico` and `packaging/macos/markpad.icns` are present.
 - Tag the release with `vX.Y.Z`.
 - Upload screenshots to the website and README placeholders.
 
@@ -43,4 +44,4 @@ make build
 - Add signed/notarized macOS releases.
 - Add Windows installer/MSI.
 - Add AppImage smoke tests in CI.
-- Add a generated PNG/icon pipeline if target stores require raster icons.
+- Keep platform raster icons in sync with `python3 packaging/icons/generate_icons.py`.
