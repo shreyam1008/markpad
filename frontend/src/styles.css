@@ -231,6 +231,8 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .command-row:focus-visible,
 .task-filter:focus-visible,
 .task-search-row button:focus-visible,
+.local-actions button:focus-visible,
+.local-row:focus-visible,
 .canvas-tool:focus-visible,
 .canvas-close:focus-visible,
 .tag-chip:focus-visible {
@@ -1162,8 +1164,9 @@ body.markpad-compact #modal-body {
 .task-tab {
   border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px;
   background: var(--editor); color: var(--muted); font-size: 11px; font-weight: 850; cursor: pointer;
+  transition: border-color .14s ease, background .14s ease, color .14s ease, transform .14s ease;
 }
-.task-tab.active, .task-tab:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.task-tab.active, .task-tab:hover { border-color: var(--accent); background: var(--hover); color: var(--text); transform: translateY(-1px); }
 .task-tab.push { margin-left: auto; border-color: var(--accent); color: var(--accent); }
 .task-summary { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
 .task-controls {
@@ -1454,8 +1457,19 @@ body.markpad-compact #modal-body {
 .diag-card {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: var(--editor);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--editor) 92%, var(--accent) 8%), var(--surface));
   padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .035);
+  position: relative;
+  overflow: hidden;
+}
+.diag-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: color-mix(in srgb, var(--accent) 72%, transparent);
 }
 .diag-card strong {
   display: block;
@@ -1542,10 +1556,12 @@ body.markpad-compact #modal-body {
 }
 .local-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; }
 .local-actions button {
-  border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
   color: var(--muted); padding: 5px 8px; font-size: 11px; font-weight: 850; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .025);
+  transition: border-color .14s ease, background .14s ease, color .14s ease, transform .14s ease;
 }
-.local-actions button:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.local-actions button:hover { border-color: var(--accent); background: var(--hover); color: var(--text); transform: translateY(-1px); }
 .local-actions button:disabled { opacity: .45; cursor: default; }
 .local-actions .danger { color: var(--danger); }
 .local-overview {
@@ -1626,8 +1642,9 @@ body.markpad-compact #modal-body {
   width: 100%; display: grid; grid-template-columns: 34px 1fr; gap: 9px; align-items: start;
   border: 1px solid var(--border-soft); border-radius: 13px; background: var(--surface);
   color: var(--text); padding: 8px; text-align: left; cursor: pointer;
+  transition: border-color .14s ease, background .14s ease, transform .14s ease;
 }
-.local-row:hover { border-color: var(--accent); background: var(--hover); }
+.local-row:hover { border-color: var(--accent); background: var(--hover); transform: translateY(-1px); }
 .local-badge {
   width: 30px; height: 27px; border: 1px solid var(--border); border-radius: 8px;
   display: inline-flex; align-items: center; justify-content: center; color: var(--accent);
