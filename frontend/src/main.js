@@ -1637,6 +1637,7 @@ function commandItems() {
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
+    { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
@@ -1679,6 +1680,7 @@ function commandItems() {
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
+    { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
     { id: 'canvas-delete', icon: 'CX', title: 'Delete selected canvas element', hint: 'Remove the currently selected canvas element', run: deleteSelectedCanvasElement },
     { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
@@ -1766,11 +1768,11 @@ function commandCategory(item) {
   if (id.startsWith('canvas') || id === 'new-local-canvas' || id === 'local-links-canvas') return 'Canvas';
   if (id.startsWith('trash')) return 'Trash';
   if (id.startsWith('theme')) return 'Theme';
+  if (id.includes('history')) return 'History';
   if (id.startsWith('local') || id.includes('local') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'split', 'split-balanced', 'split-editor-wide', 'split-preview-wide', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id === 'footprint') return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
-  if (id === 'history') return 'History';
   return 'File';
 }
 
@@ -3606,6 +3608,13 @@ function updateCanvasHistoryButtons() {
   updateCanvasSelectionButtons();
 }
 
+function clearCanvasUndoHistory() {
+  canvasHistory = [];
+  canvasHistoryIndex = -1;
+  updateCanvasHistoryButtons();
+  statusText.textContent = 'Canvas undo history cleared';
+}
+
 function updateCanvasSelectionButtons() {
   const copy = $('canvas-copy');
   const paste = $('canvas-paste');
@@ -5315,6 +5324,12 @@ function recordEditState(inputType) {
     history.index--;
   }
   updateHistoryButtons();
+}
+
+function clearEditorUndoHistory() {
+  editHistories.clear();
+  updateHistoryButtons();
+  statusText.textContent = 'Editor undo history cleared';
 }
 
 let lastHistoryStepAt = 0;
