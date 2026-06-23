@@ -925,6 +925,7 @@ function commandItems() {
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
+    { id: 'local-overview', icon: 'LO', title: 'Local folder overview', hint: 'Show lightweight counts for notes, canvases, tasks, and size', run: () => showLocalFolder() },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
@@ -1363,6 +1364,29 @@ function renderLocalSearchHits(hits) {
     </button>`).join('')}</div>`;
 }
 
+function renderLocalFolderOverview(overview) {
+  if (!overview || !overview.path || overview.missing) return '';
+  const cards = [
+    ['Files', overview.files || 0],
+    ['Notes', overview.notes || 0],
+    ['Canvases', overview.canvases || 0],
+    ['Tasks', `${overview.openTasks || 0}/${overview.tasks || 0} open`],
+    ['Size', formatBytes(overview.totalBytes || 0)],
+    ['Folders', overview.folders || 0],
+  ];
+  return `
+    <div class="local-overview">
+      ${cards.map(([label, value]) => `<div class="local-stat"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`).join('')}
+    </div>
+    <div class="local-summary">
+      ${overview.newestRel ? `Newest: <b>${escapeHtml(overview.newestRel)}</b>${overview.newestModified ? ' · ' + escapeHtml(overview.newestModified) : ''}` : 'No files scanned'}
+      ${overview.largestRel ? ` · Largest: <b>${escapeHtml(overview.largestRel)}</b> ${formatBytes(overview.largestBytes || 0)}` : ''}
+      ${overview.truncated ? ' · Scan capped' : ''}
+      ${overview.skippedFiles ? ` · ${overview.skippedFiles} skipped` : ''}
+    </div>
+  `;
+}
+
 async function showLocalFolder(query = '') {
   if (!window.go?.main?.App?.GetLocalFolder) {
     showModal('Local Folder', '<div class="local-empty">Local folder backend unavailable in this build.</div>');
@@ -1381,6 +1405,10 @@ async function showLocalFolder(query = '') {
     const files = await window.go.main.App.ListLocalFolderFiles(200);
     content = `<div class="local-summary">${files.length} listed file${files.length === 1 ? '' : 's'} · bounded preview</div>${renderLocalFolderFiles(files)}`;
   }
+  let overview = '';
+  if (info.path && !info.missing && window.go?.main?.App?.GetLocalFolderOverview) {
+    overview = renderLocalFolderOverview(await window.go.main.App.GetLocalFolderOverview());
+  }
   showModal('Local Folder', `
     <div class="local-head">
       <div><strong>${escapeHtml(info.path || 'No folder selected')}</strong><span>${info.missing ? 'Missing' : info.path ? 'Default local workspace' : 'Choose a folder to start'}</span></div>
@@ -1394,6 +1422,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
       </div>
     </div>
+    ${overview}
     ${content}
     <p class="local-note">This is a local-first folder layer only. It does not sync and does not build a persistent index.</p>
   `);
