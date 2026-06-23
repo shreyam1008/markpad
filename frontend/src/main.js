@@ -1888,6 +1888,20 @@ function showLayoutGuide() {
   `);
 }
 
+function showThemeGuide() {
+  showModal('Theme Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>Light</strong><span>Paper, Linen, Dawn, Mist, Sand</span><small>Low-glare writing and planning surfaces</small></div>
+      <div class="diag-card"><strong>Dark</strong><span>Ink, Pine, Slate, Ember, Midnight</span><small>Late-session editing without heavy assets</small></div>
+      <div class="diag-card"><strong>Presets</strong><span>Writing, planning, review, night</span><small>Apply theme plus layout choices together</small></div>
+      <div class="diag-card"><strong>Portable</strong><span>UI state JSON</span><small>Copy/export and restore local theme preferences</small></div>
+      <div class="diag-card"><strong>Lightweight</strong><span>CSS variables only</span><small>No icon fonts, image packs, or runtime theme engine</small></div>
+      <div class="diag-card"><strong>Fast switch</strong><span>Command palette</span><small>Cycle all themes or only light/dark groups</small></div>
+    </div>
+    <p class="diag-note">Themes intentionally reuse the same DOM and text icons. This keeps memory and binary size stable while giving each workspace mode a distinct feel.</p>
+  `);
+}
+
 function showSearchSyntaxHelp() {
   showModal('Search Syntax', `
     <div class="diag-grid">
@@ -3260,6 +3274,7 @@ function commandItems() {
     { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
     { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
     { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
+    { id: 'theme-guide', icon: 'TG', title: 'Theme guide', hint: 'Show light, dark, preset, portability, and lightweight theme notes', run: showThemeGuide },
     ...themePresetCommandItems(),
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
