@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -93,6 +94,31 @@ func (a *App) ToggleLocalFolderTask(id string, checked bool) []LocalFolderTask {
 		_ = localFolderAtomicWrite(path, []byte(next), 0o644)
 	}
 	return a.ListLocalFolderTasks(localTaskLimit)
+}
+
+func (a *App) AppendLocalFolderTask(line string) (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return a.GetSession(), errors.New("task line is empty")
+	}
+	path := filepath.Join(root.Path, "Tasks.md")
+	content := "# Tasks\n\n"
+	if data, err := os.ReadFile(path); err == nil {
+		content = string(data)
+	}
+	content = strings.TrimRight(content, " \t\r\n")
+	if content == "" {
+		content = "# Tasks"
+	}
+	content += "\n" + line + "\n"
+	if err := localFolderAtomicWrite(path, []byte(content), 0o644); err != nil {
+		return a.GetSession(), err
+	}
+	return a.openPath(path)
 }
 
 func parseLocalTasks(root string, path string, content string) []LocalFolderTask {

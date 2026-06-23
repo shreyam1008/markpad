@@ -77,7 +77,7 @@ Vault/
 
 ## Phase 5: tasks
 
-- Current frontend slice: quick task capture appends to a loaded `Tasks.md`/`Tasks` draft or creates a plain Markdown Tasks draft.
+- Current frontend/backend slice: quick task capture appends to a loaded `Tasks.md`, otherwise appends to local-folder `Tasks.md` when configured, otherwise creates a plain Markdown Tasks draft.
 - Current backend slice: local-folder Markdown task scanner/toggler derives tasks from plain files, skips fenced code blocks, caps file size, and rewrites only the target checkbox line.
 - Use standard Markdown task lines in a normal file by default.
 - Recognize:

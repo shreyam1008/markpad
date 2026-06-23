@@ -1595,6 +1595,16 @@ async function addQuickTask() {
   if (!line) return;
   let target = findTaskTargetNote();
   if (!target) {
+    if (window.go?.main?.App?.AppendLocalFolderTask) {
+      try {
+        renderSession(await window.go.main.App.AppendLocalFolderTask(line));
+        loadContent(await window.go.main.App.GetActiveContent());
+        setView('markdown');
+        statusText.textContent = 'Task added to local Tasks.md';
+        await showTasksView(taskViewMode);
+        return;
+      } catch {}
+    }
     renderSession(await window.go.main.App.NewNote());
     target = cachedNotes.find(note => note.id === activeId);
     const content = appendTaskToMarkdown('', line);
