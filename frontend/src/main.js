@@ -181,6 +181,8 @@ const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
 const CANVAS_SNAP_SIZE = 24;
+const CANVAS_ZOOM_MIN = 0.12;
+const CANVAS_ZOOM_MAX = 4;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
 const DRAFT_TRASH_DAYS = 30;
 
@@ -1199,6 +1201,9 @@ function commandItems() {
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
+    { id: 'canvas-zoom-in', icon: 'Z+', title: 'Canvas zoom in', hint: 'Increase canvas zoom around the viewport center', run: () => { openCanvas(); zoomCanvasBy(1.16); } },
+    { id: 'canvas-zoom-out', icon: 'Z-', title: 'Canvas zoom out', hint: 'Decrease canvas zoom around the viewport center', run: () => { openCanvas(); zoomCanvasBy(1 / 1.16); } },
+    { id: 'canvas-zoom-reset', icon: 'Z1', title: 'Canvas zoom 100%', hint: 'Reset canvas zoom to 100% without moving content off-canvas', run: () => { openCanvas(); setCanvasZoom(1); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
@@ -2722,6 +2727,38 @@ function fitCanvasToContent() {
   renderCanvas();
 }
 
+function setCanvasZoom(nextScale) {
+  if (!canvasStage) return;
+  const camera = canvasCamera();
+  const rect = canvasStage.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    requestAnimationFrame(() => setCanvasZoom(nextScale));
+    return;
+  }
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const before = canvasScreenToWorld(centerX, centerY);
+  camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, Number(nextScale) || 1));
+  camera.x = rect.width / 2 - before.x * camera.scale;
+  camera.y = rect.height / 2 - before.y * camera.scale;
+  saveCanvasState();
+  renderCanvas();
+  statusText.textContent = `Canvas zoom ${Math.round(camera.scale * 100)}%`;
+}
+
+function zoomCanvasBy(factor) {
+  const camera = canvasCamera();
+  setCanvasZoom((camera.scale || 1) * factor);
+}
+
+function resetCanvasView() {
+  if (!canvasSession) loadCanvasState();
+  canvasSession.camera = { x: 0, y: 0, scale: 1 };
+  saveCanvasState();
+  renderCanvas();
+  statusText.textContent = 'Canvas view reset';
+}
+
 function canvasToSvg(doc) {
   const elements = doc?.elements || [];
   const bounds = elements.map(canvasElementBounds);
@@ -3413,7 +3450,7 @@ canvasStage?.addEventListener('wheel', (e) => {
   const rect = canvasStage.getBoundingClientRect();
   const before = canvasScreenToWorld(e.clientX, e.clientY);
   const factor = e.deltaY < 0 ? 1.08 : 0.925;
-  camera.scale = Math.max(0.12, Math.min(4, camera.scale * factor));
+  camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, camera.scale * factor));
   camera.x = e.clientX - rect.left - before.x * camera.scale;
   camera.y = e.clientY - rect.top - before.y * camera.scale;
   saveCanvasState();
@@ -3434,12 +3471,11 @@ window.addEventListener('resize', resizeCanvasStage);
 $('canvas-close')?.addEventListener('click', closeCanvas);
 $('canvas-undo')?.addEventListener('click', undoCanvas);
 $('canvas-redo')?.addEventListener('click', redoCanvas);
-$('canvas-reset-view')?.addEventListener('click', () => {
-  canvasSession.camera = { x: 0, y: 0, scale: 1 };
-  saveCanvasState();
-  renderCanvas();
-});
+$('canvas-reset-view')?.addEventListener('click', resetCanvasView);
 $('canvas-fit')?.addEventListener('click', fitCanvasToContent);
+$('canvas-zoom-out')?.addEventListener('click', () => zoomCanvasBy(1 / 1.16));
+$('canvas-zoom-reset')?.addEventListener('click', () => setCanvasZoom(1));
+$('canvas-zoom-in')?.addEventListener('click', () => zoomCanvasBy(1.16));
 $('canvas-grid')?.addEventListener('click', toggleCanvasGrid);
 $('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
 $('canvas-minimap-toggle')?.addEventListener('click', toggleCanvasMinimap);
