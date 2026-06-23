@@ -925,6 +925,8 @@ function commandItems() {
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch Paper, Linen, Ink, Pine', run: cycleTheme },
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
+    { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },
+    { id: 'reveal-active-file', icon: 'RF', title: 'Reveal active file', hint: 'Show the active saved file in the OS file manager', run: revealActiveFile },
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
     { id: 'local-overview', icon: 'LO', title: 'Local folder overview', hint: 'Show lightweight counts for notes, canvases, tasks, and size', run: () => showLocalFolder() },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
@@ -1265,6 +1267,38 @@ async function searchLocalFolderPrompt() {
   await showLocalFolder(query.trim());
 }
 
+async function openConfiguredLocalFolder() {
+  try {
+    if (!window.go?.main?.App?.GetLocalFolder || !window.go?.main?.App?.OpenExternalPath) {
+      statusText.textContent = 'Open local folder unavailable';
+      return;
+    }
+    const info = await window.go.main.App.GetLocalFolder();
+    if (!info.path || info.missing) {
+      statusText.textContent = info.missing ? 'Local folder is missing' : 'No local folder set';
+      return;
+    }
+    await window.go.main.App.OpenExternalPath(info.path);
+    statusText.textContent = 'Opened local folder';
+  } catch (err) {
+    statusText.textContent = 'Open local folder failed: ' + err;
+  }
+}
+
+async function revealActiveFile() {
+  try {
+    const note = cachedNotes.find(n => n.id === activeId);
+    if (!note?.path) {
+      statusText.textContent = 'Active note is not saved yet';
+      return;
+    }
+    await window.go.main.App.OpenContainingFolder(note.path);
+    statusText.textContent = 'Revealed active file';
+  } catch (err) {
+    statusText.textContent = 'Reveal file failed: ' + err;
+  }
+}
+
 async function createLocalFolderNote() {
   const title = window.prompt('New local note title');
   if (title === null) return;
@@ -1429,6 +1463,8 @@ async function showLocalFolder(query = '') {
       <div><strong>${escapeHtml(info.path || 'No folder selected')}</strong><span>${info.missing ? 'Missing' : info.path ? 'Default local workspace' : 'Choose a folder to start'}</span></div>
       <div class="local-actions">
         <button data-local-folder-choose>Choose</button>
+        <button data-local-folder-open ${info.path && !info.missing ? '' : 'disabled'}>Open folder</button>
+        <button data-local-folder-reveal ${activeId ? '' : 'disabled'}>Reveal active</button>
         <button data-local-folder-new ${info.path && !info.missing ? '' : 'disabled'}>New note</button>
         <button data-local-folder-daily ${info.path && !info.missing ? '' : 'disabled'}>Daily</button>
         <button data-local-folder-weekly ${info.path && !info.missing ? '' : 'disabled'}>Weekly</button>
@@ -3584,6 +3620,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
   if (localChoose) await chooseLocalFolder();
+  const localFolderOpen = e.target.closest('[data-local-folder-open]');
+  if (localFolderOpen && !localFolderOpen.disabled) await openConfiguredLocalFolder();
+  const localFolderReveal = e.target.closest('[data-local-folder-reveal]');
+  if (localFolderReveal && !localFolderReveal.disabled) await revealActiveFile();
   const localClear = e.target.closest('[data-local-folder-clear]');
   if (localClear && !localClear.disabled && window.go?.main?.App?.ClearLocalFolder) {
     await window.go.main.App.ClearLocalFolder();
