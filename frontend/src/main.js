@@ -1021,6 +1021,30 @@ $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
 themeBtn?.addEventListener('click', cycleTheme);
 
+function showHelpModal() {
+  showModal('Help', `
+    <p><b>Markpad</b> is a native Markdown notepad.</p>
+    <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, office files, JSON, and .canvas files. Session, drafts, trash, history, tasks, search state, and canvas drafts stay local.</p>
+    <h3 style="margin-top:12px;margin-bottom:4px;">Core workflow</h3>
+    <p>Use <b>Local folder</b> to set a default workspace. From there you can create notes, daily/weekly notes, canvases, quick tasks, recent-file lists, tag/link views, backlinks, and a local links canvas map.</p>
+    <p><b>Search</b> supports Loaded, Local folder, and All scopes. Recent search chips are stored locally and can be cleared from the search palette.</p>
+    <p><b>Trash</b> keeps deleted drafts and saved files for 30 days. Restore, permanently delete, or empty trash from the Trash view.</p>
+    <p><b>Tasks</b> are plain Markdown checkboxes. The task view can show List, Calendar, or Kanban, with filters for open, due, overdue, waiting, high priority, and done.</p>
+    <p><b>Canvas</b> uses lightweight local JSON. Select moves elements, color/width edit selected shapes, grid/snap/minimap help alignment, and Write updates the active .canvas/JSON/draft document.</p>
+    <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
+    <p><kbd>Ctrl+P</kbd> Command palette &nbsp; <kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
+    <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
+    <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
+    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search palette &nbsp; <kbd>Ctrl+H</kbd> History</p>
+    <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
+    <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
+    <p><kbd>Ctrl+Del</kbd> Move current draft/file to Trash when safe &nbsp; <kbd>Esc</kbd> Close modal/find/canvas</p>
+    <h3 style="margin-top:12px;margin-bottom:4px;">Canvas shortcuts</h3>
+    <p><kbd>Ctrl+Z</kbd> Undo canvas &nbsp; <kbd>Ctrl+Y</kbd> Redo canvas &nbsp; <kbd>Ctrl+C</kbd>/<kbd>Ctrl+V</kbd> Copy/paste selected element &nbsp; <kbd>Ctrl+D</kbd> Duplicate</p>
+    <p><kbd>Arrow keys</kbd> Nudge selected element &nbsp; <kbd>Shift+Arrow</kbd> Nudge by 10 &nbsp; <kbd>Delete</kbd> Remove selected element</p>
+  `);
+}
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
@@ -1074,27 +1098,7 @@ function commandItems() {
     { id: 'export-local-settings', icon: 'EX', title: 'Export local settings', hint: 'Download a small JSON snapshot of local preferences and UI state', run: exportLocalSettings },
     { id: 'import-local-settings', icon: 'IM', title: 'Import local settings', hint: 'Restore an exported Markpad local settings JSON snapshot', run: importLocalSettings },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
-    { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
-      <p><b>Markpad</b> is a native Markdown notepad.</p>
-      <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, office files, JSON, and .canvas files. Session, drafts, trash, history, tasks, search state, and canvas drafts stay local.</p>
-      <h3 style="margin-top:12px;margin-bottom:4px;">Core workflow</h3>
-      <p>Use <b>Local folder</b> to set a default workspace. From there you can create notes, daily/weekly notes, canvases, quick tasks, recent-file lists, tag/link views, backlinks, and a local links canvas map.</p>
-      <p><b>Search</b> supports Loaded, Local folder, and All scopes. Recent search chips are stored locally and can be cleared from the search palette.</p>
-      <p><b>Trash</b> keeps deleted drafts and saved files for 30 days. Restore, permanently delete, or empty trash from the Trash view.</p>
-      <p><b>Tasks</b> are plain Markdown checkboxes. The task view can show List, Calendar, or Kanban, with filters for open, due, overdue, waiting, high priority, and done.</p>
-      <p><b>Canvas</b> uses lightweight local JSON. Select moves elements, color/width edit selected shapes, grid/snap/minimap help alignment, and Write updates the active .canvas/JSON/draft document.</p>
-      <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
-      <p><kbd>Ctrl+P</kbd> Command palette &nbsp; <kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
-      <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
-      <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-      <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search palette &nbsp; <kbd>Ctrl+H</kbd> History</p>
-      <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
-      <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
-      <p><kbd>Ctrl+Del</kbd> Move current draft/file to Trash when safe &nbsp; <kbd>Esc</kbd> Close modal/find/canvas</p>
-      <h3 style="margin-top:12px;margin-bottom:4px;">Canvas shortcuts</h3>
-      <p><kbd>Ctrl+Z</kbd> Undo canvas &nbsp; <kbd>Ctrl+Y</kbd> Redo canvas &nbsp; <kbd>Ctrl+C</kbd>/<kbd>Ctrl+V</kbd> Copy/paste selected element &nbsp; <kbd>Ctrl+D</kbd> Duplicate</p>
-      <p><kbd>Arrow keys</kbd> Nudge selected element &nbsp; <kbd>Shift+Arrow</kbd> Nudge by 10 &nbsp; <kbd>Delete</kbd> Remove selected element</p>
-    `) },
+    { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: showHelpModal },
   ];
 }
 
@@ -4634,20 +4638,7 @@ function registerEvents() {
     restoreNoteView();
     statusText.textContent = 'File opened from second instance';
   });
-  window.runtime.EventsOn('menu:help', () => showModal('Help', `
-    <p><b>Markpad</b> is a native Markdown notepad.</p>
-    <p>Open Markdown, text, code, config, logs, PDFs, ebooks, and office documents.</p>
-    <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
-    <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
-    <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
-    <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
-    <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
-    <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+P</kbd> Command palette &nbsp; <kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
-    <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
-    <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
-    <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
-  `));
+  window.runtime.EventsOn('menu:help', showHelpModal);
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
     <p><b>Markpad</b> v0.7 <span style="opacity:0.6;font-style:italic;">Eklavya</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
