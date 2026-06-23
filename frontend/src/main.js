@@ -3235,6 +3235,7 @@ function commandItems() {
     { id: 'copy-search-results-csv', icon: 'CCSV', title: 'Copy search results CSV', hint: 'Copy the current search result list as CSV rows', run: copySearchResultsCsv },
     { id: 'export-search-results-csv', icon: 'ECSV', title: 'Export search results CSV', hint: 'Download the current search result list as CSV rows', run: exportSearchResultsCsv },
     { id: 'copy-search-result-paths', icon: 'CP', title: 'Copy search result paths', hint: 'Copy current search result paths and line numbers as plain text', run: copySearchResultPaths },
+    { id: 'search-results-to-canvas', icon: 'S2C', title: 'Send search results to canvas', hint: 'Append the current search results as a lightweight local canvas board', run: insertSearchResultsCanvasBoard },
     { id: 'search-open-active-result', icon: 'OAR', title: 'Open active search result', hint: 'Open the highlighted search result from the latest search palette state', run: openActiveSearchResult },
     { id: 'search-copy-active-path', icon: 'CAP', title: 'Copy active search result path', hint: 'Copy the highlighted search result path and line number', run: copyActiveSearchResultPath },
     { id: 'search-copy-active-result', icon: 'CAR', title: 'Copy active search result', hint: 'Copy the highlighted search result as a Markdown reference', run: copyActiveSearchResultMarkdown },
@@ -6785,6 +6786,62 @@ async function insertVisibleTasksCanvasBoard() {
   renderCanvas();
   updateCanvasSelectionButtons();
   statusText.textContent = `${visible.length} visible task${visible.length === 1 ? '' : 's'} sent to canvas`;
+}
+
+function compactCanvasSearchTitle(result) {
+  const title = String(result?.title || basename(result?.path) || 'Result').replace(/\s+/g, ' ').trim();
+  return title.length > 36 ? `${title.slice(0, 33)}...` : title;
+}
+
+function compactCanvasSearchMeta(result) {
+  const parts = [];
+  parts.push(result?.source === 'local' ? 'local' : 'loaded');
+  if (Number.isFinite(Number(result?.line))) parts.push(`line ${Number(result.line) + 1}`);
+  const path = String(result?.path || '').replace(/\s+/g, ' ').trim();
+  if (path) parts.push(path.length > 38 ? `...${path.slice(-35)}` : path);
+  return parts.join(' · ').slice(0, 58);
+}
+
+function compactCanvasSearchSnippet(result) {
+  const snippet = String(result?.snippet || '').replace(/\s+/g, ' ').trim();
+  if (!snippet) return '';
+  return snippet.length > 52 ? `${snippet.slice(0, 49)}...` : snippet;
+}
+
+function insertSearchResultsCanvasBoard() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = searchLastResults.slice(0, 24);
+  const query = searchLastQuery ? `Search: ${searchLastQuery}` : 'Search results';
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `${query} · ${visible.length}${searchLastResults.length > visible.length ? ` of ${searchLastResults.length}` : ''} result${visible.length === 1 ? '' : 's'}`, 18, '#2f6f61'),
+  ];
+  visible.forEach((result, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    const x = origin.x + col * 260;
+    const y = origin.y + row * 118;
+    const stroke = result.source === 'local' ? '#2563eb' : '#2f6f61';
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 230, h: 92, stroke, width: 2 });
+    elements.push(canvasTemplateText(x + 14, y + 28, compactCanvasSearchTitle(result), 14, stroke));
+    elements.push(canvasTemplateText(x + 14, y + 50, compactCanvasSearchMeta(result), 10, '#6b6e68'));
+    const snippet = compactCanvasSearchSnippet(result);
+    if (snippet) elements.push(canvasTemplateText(x + 14, y + 72, snippet, 10, '#1f2937'));
+  });
+  if (searchLastResults.length > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 970, `${searchLastResults.length - visible.length} additional results omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} search result${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
 function setCanvasZoomPreset(scale) {
