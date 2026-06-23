@@ -3012,6 +3012,16 @@ function normalizeCanvasDoc(input) {
       files: input.files || {},
     };
   }
+  if (input && input.type === 'excalidraw' && Array.isArray(input.elements)) {
+    return {
+      type: 'markpad-canvas',
+      version: 1,
+      source: 'markpad-import-excalidraw',
+      elements: input.elements.map(excalidrawElementToCanvas).filter(Boolean),
+      appState: { viewBackgroundColor: input.appState?.viewBackgroundColor || '#ffffff' },
+      files: {},
+    };
+  }
   if (input && Array.isArray(input.nodes)) {
     const elements = [];
     const byID = new Map();
@@ -3045,6 +3055,53 @@ function normalizeCanvasDoc(input) {
     };
   }
   throw new Error('Unsupported canvas JSON');
+}
+
+function excalidrawElementToCanvas(element) {
+  if (!element || element.isDeleted) return null;
+  const x = Number(element.x || 0);
+  const y = Number(element.y || 0);
+  const w = Number(element.width || 0);
+  const h = Number(element.height || 0);
+  const base = {
+    id: canvasId(),
+    stroke: element.strokeColor || '#1e1e1e',
+    width: Math.max(1, Number(element.strokeWidth || 2)),
+  };
+  if (element.type === 'rectangle' || element.type === 'diamond') {
+    return { ...base, type: 'rect', x, y, w: Math.max(1, w), h: Math.max(1, h) };
+  }
+  if (element.type === 'ellipse') {
+    return { ...base, type: 'ellipse', x, y, w: Math.max(1, w), h: Math.max(1, h) };
+  }
+  if (element.type === 'text') {
+    return {
+      ...base,
+      type: 'text',
+      x,
+      y: y + Number(element.fontSize || 16),
+      text: String(element.text || element.originalText || '').trim(),
+      size: Math.max(8, Number(element.fontSize || 16)),
+    };
+  }
+  if (element.type === 'line' || element.type === 'arrow') {
+    const points = Array.isArray(element.points) && element.points.length >= 2 ? element.points : [[0, 0], [w, h]];
+    const first = excalidrawPointToCanvas(points[0], x, y);
+    const last = excalidrawPointToCanvas(points[points.length - 1], x, y);
+    return { ...base, type: element.type, x: first.x, y: first.y, w: last.x - first.x, h: last.y - first.y };
+  }
+  if (element.type === 'freedraw') {
+    const points = (element.points || []).map(point => excalidrawPointToCanvas(point, x, y));
+    if (points.length < 2) return null;
+    return { ...base, type: 'path', points };
+  }
+  return null;
+}
+
+function excalidrawPointToCanvas(point, x, y) {
+  const px = Array.isArray(point) ? point[0] : point?.x;
+  const py = Array.isArray(point) ? point[1] : point?.y;
+  return { x: x + Number(px || 0), y: y + Number(py || 0) };
 }
 
 function canvasElementBounds(el) {
