@@ -1059,7 +1059,9 @@ function parseSearchQuery(query) {
   const raw = String(query || '').trim();
   const parts = raw.match(/"[^"]+"|\S+/g) || [];
   const filters = { path: [], title: [], type: [], tag: [], task: [] };
+  const excludes = { path: [], title: [], type: [], tag: [], task: [] };
   const textParts = [];
+  const excludeTerms = [];
   const phrases = [];
   parts.forEach((part) => {
     const quoted = /^".*"$/.test(part);
@@ -1069,22 +1071,30 @@ function parseSearchQuery(query) {
       phrases.push(clean.toLowerCase());
       return;
     }
-    const match = clean.match(/^(path|title|type|kind|tag|task):(.+)$/i);
+    const negated = clean.startsWith('-') && clean.length > 1;
+    const token = negated ? clean.slice(1) : clean;
+    const targetFilters = negated ? excludes : filters;
+    const match = token.match(/^(path|title|type|kind|tag|task):(.+)$/i);
     if (match) {
       const key = match[1].toLowerCase() === 'kind' ? 'type' : match[1].toLowerCase();
       const value = match[2].replace(/^#/, '').toLowerCase().trim();
-      if (value) filters[key].push(value);
+      if (value) targetFilters[key].push(value);
       return;
     }
-    if (/^#[A-Za-z0-9_/-]+$/.test(clean)) {
-      filters.tag.push(clean.slice(1).toLowerCase());
+    if (/^#[A-Za-z0-9_/-]+$/.test(token)) {
+      targetFilters.tag.push(token.slice(1).toLowerCase());
       return;
     }
-    textParts.push(clean);
+    if (negated) {
+      excludeTerms.push(token.toLowerCase());
+      return;
+    }
+    textParts.push(token);
   });
   const text = textParts.join(' ').trim();
   const lower = text.toLowerCase();
   const hasFilters = Object.values(filters).some(values => values.length > 0);
+  const hasExcludes = excludeTerms.length > 0 || Object.values(excludes).some(values => values.length > 0);
   return {
     raw,
     text,
@@ -1092,36 +1102,54 @@ function parseSearchQuery(query) {
     terms: lower.split(/\s+/).filter(Boolean).slice(0, 8),
     phrases: phrases.slice(0, 8),
     filters,
+    excludes,
+    excludeTerms: excludeTerms.filter(Boolean).slice(0, 8),
+    backendQuery: [text, ...phrases.map(phrase => `"${phrase}"`)].filter(Boolean).join(' ').trim(),
     hasFilters,
+    hasExcludes,
     hasPhrases: phrases.length > 0,
     needsContentFilter: filters.tag.length > 0 || filters.task.length > 0,
   };
 }
 
 function searchCandidateMatchesPlan(note, content, plan) {
-  if (!plan || !plan.hasFilters) return true;
+  if (!plan || (!plan.hasFilters && !plan.hasExcludes)) return true;
   const title = String(note.path ? (note.title || basename(note.path)) : (note.title || 'Untitled')).toLowerCase();
   const path = String(note.path || 'Draft').toLowerCase();
   const kind = String(getFileType(note.path, note.kind) || '').toLowerCase();
   const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
   const body = String(content || '').toLowerCase();
+  const exclude = plan.excludes || { path: [], title: [], type: [], tag: [], task: [] };
   if (plan.filters.path.some(value => !path.includes(value))) return false;
   if (plan.filters.title.some(value => !title.includes(value))) return false;
   if (plan.filters.type.some(value => !typeText.includes(value))) return false;
   if (plan.filters.tag.some(value => !body.includes(`#${value}`))) return false;
   if (!searchContentMatchesTaskFilters(content, plan.filters.task)) return false;
+  if (exclude.path.some(value => path.includes(value))) return false;
+  if (exclude.title.some(value => title.includes(value))) return false;
+  if (exclude.type.some(value => typeText.includes(value))) return false;
+  if (exclude.tag.some(value => body.includes(`#${value}`))) return false;
+  if (exclude.task.length && searchContentMatchesTaskFilters(content, exclude.task)) return false;
   return true;
 }
 
 function searchResultMatchesPlan(result, plan) {
-  if (!plan || !plan.hasFilters) return true;
+  if (!plan || (!plan.hasFilters && !plan.hasExcludes)) return true;
   const title = String(result.title || basename(result.path) || 'Untitled').toLowerCase();
   const path = String(result.path || '').toLowerCase();
   const kind = String(result.kind || result.type || getFileType(result.path, result.kind) || '').toLowerCase();
   const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
+  const snippet = String(result.snippet || '').toLowerCase();
+  const haystack = `${title}\n${path}\n${snippet}`;
+  const exclude = plan.excludes || { path: [], title: [], type: [], tag: [], task: [] };
   if (plan.filters.path.some(value => !path.includes(value))) return false;
   if (plan.filters.title.some(value => !title.includes(value))) return false;
   if (plan.filters.type.some(value => !typeText.includes(value))) return false;
+  if (exclude.path.some(value => path.includes(value))) return false;
+  if (exclude.title.some(value => title.includes(value))) return false;
+  if (exclude.type.some(value => typeText.includes(value))) return false;
+  if (exclude.tag.some(value => haystack.includes(`#${value}`))) return false;
+  if ((plan.excludeTerms || []).some(value => haystack.includes(value))) return false;
   return true;
 }
 
@@ -1151,6 +1179,7 @@ function scoreSearch(note, content, plan) {
   const bodyLower = body.toLowerCase();
   const haystack = `${titleLower}\n${pathLower}\n${bodyLower}`;
   if (!searchCandidateMatchesPlan(note, body, plan)) return null;
+  if ((plan.excludeTerms || []).some(term => haystack.includes(term))) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
   if (phrases.length && !phrases.every(phrase => haystack.includes(phrase))) return null;
 
@@ -1209,7 +1238,7 @@ async function runLoadedSearch(query) {
 
 async function collectLoadedSearchResults(query, token, limit) {
   const plan = parseSearchQuery(query);
-  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases) {
+  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
       if (token !== searchToken) return [];
@@ -1301,6 +1330,7 @@ async function collectLocalSearchResults(query, token, limit) {
   if (!window.go?.main?.App?.GetLocalFolder) {
     return { results: [], message: 'Local folder backend unavailable.', meta: 'Local folder search unavailable' };
   }
+  const plan = parseSearchQuery(query);
   const info = await window.go.main.App.GetLocalFolder();
   if (token !== searchToken) return { results: [] };
   if (!info.path || info.missing) {
@@ -1310,7 +1340,7 @@ async function collectLocalSearchResults(query, token, limit) {
       meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
     };
   }
-  const q = query.trim();
+  const q = plan.hasExcludes ? plan.backendQuery : query.trim();
   if (!q) {
     const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
     if (token !== searchToken) return { results: [] };
@@ -1324,7 +1354,7 @@ async function collectLocalSearchResults(query, token, limit) {
       matchLength: 0,
       line: 0,
       snippet: `${typeLabel(getFileType(file.path, file.kind))} · ${formatBytes(file.size || 0)}${file.modified ? ' · ' + file.modified : ''}`,
-    }));
+    })).filter(result => searchResultMatchesPlan(result, plan));
     return { results, meta: `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}` };
   }
   let hits = [];
@@ -1348,7 +1378,7 @@ async function collectLocalSearchResults(query, token, limit) {
     matchLength: 0,
     line: hit.line || 0,
     snippet: hit.snippet || '',
-  }));
+  })).filter(result => searchResultMatchesPlan(result, plan));
   const metaParts = [`${results.length} local hit${results.length === 1 ? '' : 's'}`];
   if (diagnostics) {
     metaParts.push(`${Number(diagnostics.searchable || 0)} searched`);
@@ -1827,6 +1857,7 @@ function showSearchSyntaxHelp() {
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">title:plan</td><td style="padding:5px 8px;color:var(--muted);">Match the note title or filename.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">-draft -path:archive</td><td style="padding:5px 8px;color:var(--muted);">Exclude words, paths, titles, types, tags, or task states from the result set.</td></tr>
       </table>
       <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:tomorrow</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
       <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
