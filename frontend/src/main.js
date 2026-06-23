@@ -281,6 +281,13 @@ function rememberCommand(item) {
   localStorage.setItem(COMMAND_RECENTS_KEY, JSON.stringify(commandRecentIds));
 }
 
+function clearCommandRecents() {
+  commandRecentIds = [];
+  localStorage.removeItem(COMMAND_RECENTS_KEY);
+  if (commandOpen) renderCommandPalette();
+  if (statusText) statusText.textContent = 'Command recents cleared';
+}
+
 function commandRecentRank(id) {
   return commandRecentIds.indexOf(id);
 }
@@ -1602,6 +1609,7 @@ function commandItems() {
     { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
     { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
+    { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
