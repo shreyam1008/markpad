@@ -43,6 +43,8 @@ let taskQuery = localStorage.getItem('markpad-task-query') || '';
 let localFolderQuery = '';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
+let canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
+let canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
 let canvasDoc = null;
@@ -135,6 +137,7 @@ const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
+const CANVAS_SNAP_SIZE = 24;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
 const DRAFT_TRASH_DAYS = 30;
 
@@ -956,6 +959,8 @@ function commandItems() {
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
+    { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
+    { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
@@ -2366,6 +2371,14 @@ function canvasScreenToWorld(clientX, clientY) {
   };
 }
 
+function canvasSnapPoint(point) {
+  if (!canvasSnapToGrid) return point;
+  return {
+    x: Math.round(point.x / CANVAS_SNAP_SIZE) * CANVAS_SNAP_SIZE,
+    y: Math.round(point.y / CANVAS_SNAP_SIZE) * CANVAS_SNAP_SIZE,
+  };
+}
+
 function resizeCanvasStage() {
   if (!canvasStage) return;
   const rect = canvasStage.getBoundingClientRect();
@@ -2380,6 +2393,7 @@ function resizeCanvasStage() {
 }
 
 function drawCanvasGrid(ctx, width, height) {
+  if (!canvasGridVisible) return;
   const camera = canvasCamera();
   const step = Math.max(24, 48 * camera.scale);
   const startX = ((camera.x % step) + step) % step;
@@ -2501,11 +2515,32 @@ function setCanvasTool(tool) {
   if (canvasStage) canvasStage.style.cursor = tool === 'select' ? 'default' : tool === 'pan' ? 'grab' : 'crosshair';
 }
 
+function updateCanvasOptionButtons() {
+  $('canvas-grid')?.classList.toggle('active', canvasGridVisible);
+  $('canvas-snap')?.classList.toggle('active', canvasSnapToGrid);
+}
+
+function toggleCanvasGrid() {
+  canvasGridVisible = !canvasGridVisible;
+  localStorage.setItem('markpad-canvas-grid', canvasGridVisible ? '1' : '0');
+  updateCanvasOptionButtons();
+  renderCanvas();
+  statusText.textContent = canvasGridVisible ? 'Canvas grid shown' : 'Canvas grid hidden';
+}
+
+function toggleCanvasSnap() {
+  canvasSnapToGrid = !canvasSnapToGrid;
+  localStorage.setItem('markpad-canvas-snap', canvasSnapToGrid ? '1' : '0');
+  updateCanvasOptionButtons();
+  statusText.textContent = canvasSnapToGrid ? 'Canvas snap enabled' : 'Canvas snap disabled';
+}
+
 function openCanvas() {
   loadCanvasState();
   canvasActive = true;
   canvasOverlay.classList.remove('hidden');
   setCanvasTool(canvasTool);
+  updateCanvasOptionButtons();
   requestAnimationFrame(resizeCanvasStage);
 }
 
@@ -2653,7 +2688,8 @@ function finishCanvasTextEdit() {
 canvasStage?.addEventListener('pointerdown', (e) => {
   if (!canvasActive) return;
   finishCanvasTextEdit();
-  const point = canvasScreenToWorld(e.clientX, e.clientY);
+  const rawPoint = canvasScreenToWorld(e.clientX, e.clientY);
+  const point = ['select', 'pan', 'erase'].includes(canvasTool) ? rawPoint : canvasSnapPoint(rawPoint);
   canvasStage.setPointerCapture(e.pointerId);
   if (canvasTool === 'select') {
     const idx = canvasHitTest(point);
@@ -2717,12 +2753,13 @@ canvasStage?.addEventListener('pointermove', (e) => {
   }
   if (!canvasDrawing) return;
   const point = canvasScreenToWorld(e.clientX, e.clientY);
+  const drawPoint = canvasSnapToGrid && canvasDrawing?.type !== 'path' ? canvasSnapPoint(point) : point;
   if (canvasDrawing.type === 'path') {
     const last = canvasDrawing.points[canvasDrawing.points.length - 1];
     if (Math.hypot(point.x - last.x, point.y - last.y) > 1.5) canvasDrawing.points.push(point);
   } else {
-    canvasDrawing.w = point.x - canvasDrawing.x;
-    canvasDrawing.h = point.y - canvasDrawing.y;
+    canvasDrawing.w = drawPoint.x - canvasDrawing.x;
+    canvasDrawing.h = drawPoint.y - canvasDrawing.y;
   }
   canvasDraftElement = canvasDrawing;
   renderCanvas();
@@ -2790,6 +2827,8 @@ $('canvas-reset-view')?.addEventListener('click', () => {
   renderCanvas();
 });
 $('canvas-fit')?.addEventListener('click', fitCanvasToContent);
+$('canvas-grid')?.addEventListener('click', toggleCanvasGrid);
+$('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
 function exportCanvasJson() {
   const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
   downloadText('markpad-canvas-draft.json', 'application/json', json);
