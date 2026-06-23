@@ -926,6 +926,8 @@ function commandItems() {
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
+    { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
+    { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
     { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .canvas JSON file in the default local folder', run: createLocalFolderCanvas },
     { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
@@ -1297,6 +1299,30 @@ async function createLocalFolderCanvas() {
   }
 }
 
+async function createLocalFolderDailyNote() {
+  await createLocalTemplateNote('CreateLocalFolderDailyNote', 'Daily note opened');
+}
+
+async function createLocalFolderWeeklyNote() {
+  await createLocalTemplateNote('CreateLocalFolderWeeklyNote', 'Weekly note opened');
+}
+
+async function createLocalTemplateNote(method, message) {
+  try {
+    if (!window.go?.main?.App?.[method]) {
+      statusText.textContent = 'Local template backend unavailable';
+      return;
+    }
+    renderSession(await window.go.main.App[method]());
+    loadContent(await window.go.main.App.GetActiveContent());
+    setView('markdown');
+    modalOverlay.classList.add('hidden');
+    statusText.textContent = message;
+  } catch (err) {
+    statusText.textContent = 'Create local template failed: ' + err;
+  }
+}
+
 async function openLocalFolderFile(path) {
   if (!path) return;
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
@@ -1361,6 +1387,8 @@ async function showLocalFolder(query = '') {
       <div class="local-actions">
         <button data-local-folder-choose>Choose</button>
         <button data-local-folder-new ${info.path && !info.missing ? '' : 'disabled'}>New note</button>
+        <button data-local-folder-daily ${info.path && !info.missing ? '' : 'disabled'}>Daily</button>
+        <button data-local-folder-weekly ${info.path && !info.missing ? '' : 'disabled'}>Weekly</button>
         <button data-local-folder-canvas ${info.path && !info.missing ? '' : 'disabled'}>New canvas</button>
         <button data-local-folder-search ${info.path && !info.missing ? '' : 'disabled'}>Search</button>
         <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
@@ -3518,6 +3546,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const localNew = e.target.closest('[data-local-folder-new]');
   if (localNew && !localNew.disabled) await createLocalFolderNote();
+  const localDaily = e.target.closest('[data-local-folder-daily]');
+  if (localDaily && !localDaily.disabled) await createLocalFolderDailyNote();
+  const localWeekly = e.target.closest('[data-local-folder-weekly]');
+  if (localWeekly && !localWeekly.disabled) await createLocalFolderWeeklyNote();
   const localCanvas = e.target.closest('[data-local-folder-canvas]');
   if (localCanvas && !localCanvas.disabled) await createLocalFolderCanvas();
   const localSearch = e.target.closest('[data-local-folder-search]');
