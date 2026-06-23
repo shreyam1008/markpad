@@ -1989,6 +1989,26 @@ function runtimeStatsMarkdown(stats) {
   ].join('\n');
 }
 
+function runtimeStatsCsv(stats) {
+  const rows = [
+    ['metric', 'value'],
+    ['process_rss_available', stats.processRssAvailable ? 'true' : 'false'],
+    ['process_rss_bytes', Number(stats.processRssBytes || 0)],
+    ['executable_size_bytes', Number(stats.executableSizeBytes || 0)],
+    ['uptime_seconds', Number(stats.uptimeSeconds || 0)],
+    ['os', stats.os || 'unknown'],
+    ['arch', stats.arch || 'unknown'],
+    ['go_alloc_bytes', Number(stats.goAllocBytes || 0)],
+    ['go_heap_inuse_bytes', Number(stats.goHeapInuseBytes || 0)],
+    ['go_heap_idle_bytes', Number(stats.goHeapIdleBytes || 0)],
+    ['go_heap_released_bytes', Number(stats.goHeapReleasedBytes || 0)],
+    ['go_sys_bytes', Number(stats.goSysBytes || 0)],
+    ['go_objects', Number(stats.goObjects || 0)],
+    ['goroutines', Number(stats.goroutines || 0)],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function exportRuntimeStatsMarkdown() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -2018,6 +2038,38 @@ async function copyRuntimeStatsMarkdown() {
     statusText.textContent = 'Runtime stats copied as Markdown';
   } catch (err) {
     statusText.textContent = 'Runtime stats Markdown copy failed: ' + err;
+  }
+}
+
+async function copyRuntimeStatsCsv() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(runtimeStatsCsv(await getter()));
+    statusText.textContent = 'Runtime stats copied as CSV';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats CSV copy failed: ' + err;
+  }
+}
+
+async function exportRuntimeStatsCsv() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  try {
+    downloadText('markpad-runtime-stats.csv', 'text/csv', runtimeStatsCsv(await getter()));
+    statusText.textContent = 'Runtime stats exported as CSV';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats CSV export failed: ' + err;
   }
 }
 
@@ -2128,6 +2180,8 @@ function commandItems() {
     { id: 'export-runtime-stats-json', icon: 'ERJ', title: 'Export runtime stats JSON', hint: 'Download memory, binary size, goroutine, and uptime stats as JSON', run: exportRuntimeStatsJson },
     { id: 'copy-runtime-stats-md', icon: 'CRM', title: 'Copy runtime stats Markdown', hint: 'Copy memory, binary size, goroutine, and uptime stats as Markdown', run: copyRuntimeStatsMarkdown },
     { id: 'export-runtime-stats-md', icon: 'ERM', title: 'Export runtime stats Markdown', hint: 'Download memory, binary size, goroutine, and uptime stats as Markdown', run: exportRuntimeStatsMarkdown },
+    { id: 'copy-runtime-stats-csv', icon: 'RCSV', title: 'Copy runtime stats CSV', hint: 'Copy memory, binary size, goroutine, and uptime stats as CSV', run: copyRuntimeStatsCsv },
+    { id: 'export-runtime-stats-csv', icon: 'ERSV', title: 'Export runtime stats CSV', hint: 'Download memory, binary size, goroutine, and uptime stats as CSV', run: exportRuntimeStatsCsv },
     { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
