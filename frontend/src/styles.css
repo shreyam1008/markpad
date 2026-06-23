@@ -219,6 +219,32 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .view-btn:hover { color: #1a1c1b; }
 .view-btn.active { background: #2f6f61; color: #fffffb; }
 
+.split-preset-group {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 2px;
+}
+.split-preset-group.hidden { display: none; }
+.split-preset-group button {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.split-preset-group button:hover,
+.split-preset-group button.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
 .theme-chip {
   border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px;
   background: var(--editor); color: var(--muted); font-size: 11px; font-weight: 800;

@@ -245,6 +245,7 @@ function applySplitRatio() {
   editorCont.style.flex = `0 0 ${splitRatio}%`;
   viewerCont.style.flex = '1 1 0';
   localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+  updateSplitPresetButtons();
 }
 
 function rememberSplitRatio() {
@@ -254,7 +255,28 @@ function rememberSplitRatio() {
   if (total > 0 && width > 0) {
     splitRatio = normalizeSplitRatio((width / total) * 100);
     localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+    updateSplitPresetButtons();
   }
+}
+
+function updateSplitPresetButtons() {
+  const group = $('split-preset-group');
+  if (!group) return;
+  group.querySelectorAll('[data-split-ratio]').forEach((button) => {
+    const ratio = Number(button.dataset.splitRatio || 50);
+    button.classList.toggle('active', Math.abs(normalizeSplitRatio(ratio) - splitRatio) < 3);
+  });
+}
+
+function setSplitPreset(value) {
+  splitRatio = normalizeSplitRatio(Number(value));
+  if (viewMode !== 'split') setView('split');
+  if (viewMode !== 'split') {
+    statusText.textContent = 'Split presets are available for Markdown files';
+    return;
+  }
+  applySplitRatio();
+  statusText.textContent = `Split set to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
 }
 
 // ── File type icons ──────────────────────────────────────
@@ -1177,6 +1199,9 @@ function commandItems() {
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
+    { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
+    { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
+    { id: 'split-preview-wide', icon: '38', title: 'Split preview wide', hint: 'Give the preview more width in split view', run: () => setSplitPreset(38) },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
     { id: 'preview', icon: 'P', title: 'Preview view', hint: 'Show preview/document only', run: () => setView('viewer') },
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
@@ -3948,6 +3973,7 @@ function setView(mode) {
   editorCont.classList.toggle('hidden', !showEditor);
   viewerCont.classList.toggle('hidden', !showViewer);
   divider.classList.toggle('hidden', mode !== 'split');
+  $('split-preset-group')?.classList.toggle('hidden', mode !== 'split' || ft !== 'md');
   // Hide formatting toolbar for non-md files
   toolbar.classList.toggle('hidden', !showEditor || ft !== 'md');
   editor.readOnly = isReadOnlyType(ft);
@@ -3973,9 +3999,7 @@ document.querySelectorAll('.view-btn').forEach(btn => {
   btn.addEventListener('click', () => setView(btn.dataset.mode));
 });
 divider.addEventListener('dblclick', () => {
-  splitRatio = 50;
-  applySplitRatio();
-  statusText.textContent = 'Split reset to 50/50';
+  setSplitPreset(50);
 });
 divider.addEventListener('mouseup', rememberSplitRatio);
 document.addEventListener('mouseup', rememberSplitRatio);
@@ -4001,7 +4025,7 @@ document.addEventListener('mousemove', (e) => {
   const area = $('content-area');
   const rect = area.getBoundingClientRect();
   const pct = ((e.clientX - rect.left) / rect.width) * 100;
-  const clamped = Math.max(20, Math.min(80, pct));
+  const clamped = normalizeSplitRatio(pct);
   editorCont.style.flex = `0 0 ${clamped}%`;
   viewerCont.style.flex = `0 0 ${100 - clamped}%`;
 });
@@ -4010,6 +4034,10 @@ document.addEventListener('mouseup', () => {
   resizing = false;
   document.body.style.cursor = '';
   document.body.style.userSelect = '';
+});
+
+document.querySelectorAll('[data-split-ratio]').forEach((button) => {
+  button.addEventListener('click', () => setSplitPreset(button.dataset.splitRatio));
 });
 
 // ── Sidebar ──────────────────────────────────────────────
