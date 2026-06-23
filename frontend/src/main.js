@@ -2124,6 +2124,8 @@ function commandItems() {
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'copy-footprint-json', icon: 'CFJ', title: 'Copy local footprint JSON', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as JSON', run: copyLocalFootprintJson },
     { id: 'export-footprint-json', icon: 'EFJ', title: 'Export local footprint JSON', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as JSON', run: exportLocalFootprintJson },
+    { id: 'copy-footprint-md', icon: 'CFM', title: 'Copy local footprint Markdown', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as Markdown', run: copyLocalFootprintMarkdown },
+    { id: 'export-footprint-md', icon: 'EFM', title: 'Export local footprint Markdown', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as Markdown', run: exportLocalFootprintMarkdown },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },
     { id: 'reveal-active-file', icon: 'RF', title: 'Reveal active file', hint: 'Show the active saved file in the OS file manager', run: revealActiveFile },
@@ -2635,6 +2637,58 @@ async function copyLocalFootprintJson() {
 async function exportLocalFootprintJson() {
   downloadText('markpad-local-footprint.json', 'application/json', JSON.stringify(await localFootprintSnapshot(), null, 2) + '\n');
   statusText.textContent = 'Local footprint exported as JSON';
+}
+
+function localFootprintSnapshotToMarkdown(snapshot) {
+  const runtime = snapshot.runtime || {};
+  return [
+    '# Markpad Local Footprint',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    '',
+    '## Runtime',
+    '',
+    `- Process RSS: ${runtime.rssAvailable ? formatBytes(runtime.processRss) : 'N/A'} (${runtime.rssSource || 'unavailable'})`,
+    `- Go heap alloc: ${runtime.goAlloc ? formatBytes(runtime.goAlloc) : 'N/A'}`,
+    `- Go sys: ${runtime.goSys ? formatBytes(runtime.goSys) : 'N/A'}`,
+    `- Go GC count: ${Number(runtime.goNumGC || 0)}`,
+    '',
+    '## Loaded Documents',
+    '',
+    `- Editable text: ${formatBytes(snapshot.loadedDocuments.editableBytes || 0)}`,
+    `- Editable count: ${snapshot.loadedDocuments.editableCount || 0}`,
+    `- Read-only count: ${snapshot.loadedDocuments.readOnlyCount || 0}`,
+    '',
+    '## Canvas and Undo',
+    '',
+    `- Canvas draft/session: ${formatBytes(snapshot.canvas.draftSessionBytes || 0)}`,
+    `- Canvas elements: ${snapshot.canvas.elementCount || 0}`,
+    `- Editor undo: ${formatBytes(snapshot.undo.editorBytes || 0)} (${snapshot.undo.editorStates || 0} states)`,
+    `- Canvas undo: ${formatBytes(snapshot.undo.canvasBytes || 0)} (${snapshot.undo.canvasStates || 0} states)`,
+    '',
+    '## Trash and Local Storage',
+    '',
+    `- Draft trash: ${formatBytes(snapshot.trash.draftBytes || 0)} (${snapshot.trash.draftCount || 0} drafts)`,
+    `- Saved file trash: ${formatBytes(snapshot.trash.fileBytes || 0)} (${snapshot.trash.fileCount || 0} files)`,
+    `- Markpad localStorage: ${formatBytes(snapshot.localStorage.markpadBytes || 0)}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+async function copyLocalFootprintMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(localFootprintSnapshotToMarkdown(await localFootprintSnapshot()));
+  statusText.textContent = 'Local footprint copied as Markdown';
+}
+
+async function exportLocalFootprintMarkdown() {
+  downloadText('markpad-local-footprint.md', 'text/markdown', localFootprintSnapshotToMarkdown(await localFootprintSnapshot()));
+  statusText.textContent = 'Local footprint exported as Markdown';
 }
 
 async function showLocalFootprint() {
