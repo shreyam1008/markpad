@@ -933,6 +933,7 @@ function commandItems() {
     { id: 'recent-local-files', icon: 'LR', title: 'Recent local files', hint: 'Show recently modified files from the default local folder', run: showRecentLocalFiles },
     { id: 'local-tags', icon: '#', title: 'Local tags', hint: 'Show Markdown tags found in the default local folder', run: showLocalTags },
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
+    { id: 'local-links-canvas', icon: 'LG', title: 'Local links canvas', hint: 'Generate a lightweight .canvas map from local Markdown links', run: createLocalLinksCanvas },
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
@@ -1511,6 +1512,22 @@ async function showLocalLinks() {
   `, true);
 }
 
+async function createLocalLinksCanvas() {
+  try {
+    if (!window.go?.main?.App?.CreateLocalFolderLinksCanvas) {
+      statusText.textContent = 'Local links canvas backend unavailable';
+      return;
+    }
+    renderSession(await window.go.main.App.CreateLocalFolderLinksCanvas(120));
+    loadContent(await window.go.main.App.GetActiveContent());
+    modalOverlay.classList.add('hidden');
+    loadCurrentDocumentIntoCanvas();
+    statusText.textContent = 'Local links canvas generated';
+  } catch (err) {
+    statusText.textContent = 'Create local links canvas failed: ' + err;
+  }
+}
+
 function renderLocalBacklinks(backlinks) {
   if (!backlinks.length) return '<div class="local-empty">No local backlinks found for the active note.</div>';
   return `<div class="local-list">${backlinks.map(hit => `
@@ -1585,6 +1602,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-canvas ${info.path && !info.missing ? '' : 'disabled'}>New canvas</button>
         <button data-local-folder-tags ${info.path && !info.missing ? '' : 'disabled'}>Tags</button>
         <button data-local-folder-links ${info.path && !info.missing ? '' : 'disabled'}>Links</button>
+        <button data-local-folder-map ${info.path && !info.missing ? '' : 'disabled'}>Map</button>
         <button data-local-folder-backlinks ${activeId && info.path && !info.missing ? '' : 'disabled'}>Backlinks</button>
         <button data-local-folder-search ${info.path && !info.missing ? '' : 'disabled'}>Search</button>
         <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
@@ -3773,6 +3791,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localTagSearch) await showLocalFolder(localTagSearch.dataset.localTagSearch || '');
   const localLinks = e.target.closest('[data-local-folder-links]');
   if (localLinks && !localLinks.disabled) await showLocalLinks();
+  const localMap = e.target.closest('[data-local-folder-map]');
+  if (localMap && !localMap.disabled) await createLocalLinksCanvas();
   const localLinkSearch = e.target.closest('[data-local-link-search]');
   if (localLinkSearch) await showLocalFolder(localLinkSearch.dataset.localLinkSearch || '');
   const localBacklinks = e.target.closest('[data-local-folder-backlinks]');
