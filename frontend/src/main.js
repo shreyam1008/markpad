@@ -6244,6 +6244,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
   const exportSettings = e.target.closest('[data-export-local-settings]');
   if (exportSettings) await exportLocalSettings();
+  const copySettings = e.target.closest('[data-copy-local-settings]');
+  if (copySettings) await copyLocalSettings();
   const importSettings = e.target.closest('[data-import-local-settings]');
   if (importSettings) importLocalSettings();
   const outlineJump = e.target.closest('[data-outline-jump]');
@@ -6630,6 +6632,7 @@ async function showPreferences() {
       <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
       <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
       <button data-export-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export settings</button>
+      <button data-copy-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy settings</button>
       <button data-import-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Import settings</button>
     </div>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
