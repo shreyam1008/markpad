@@ -929,6 +929,7 @@ function commandItems() {
     { id: 'reveal-active-file', icon: 'RF', title: 'Reveal active file', hint: 'Show the active saved file in the OS file manager', run: revealActiveFile },
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
     { id: 'local-overview', icon: 'LO', title: 'Local folder overview', hint: 'Show lightweight counts for notes, canvases, tasks, and size', run: () => showLocalFolder() },
+    { id: 'recent-local-files', icon: 'LR', title: 'Recent local files', hint: 'Show recently modified files from the default local folder', run: showRecentLocalFiles },
     { id: 'local-tags', icon: '#', title: 'Local tags', hint: 'Show Markdown tags found in the default local folder', run: showLocalTags },
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
@@ -1388,6 +1389,23 @@ function renderLocalFolderFiles(files) {
     </button>`).join('')}</div>`;
 }
 
+async function showRecentLocalFiles() {
+  if (!window.go?.main?.App?.GetLocalFolder || !window.go?.main?.App?.ListRecentLocalFolderFiles) {
+    showModal('Recent Local Files', '<div class="local-empty">Recent local files backend unavailable in this build.</div>');
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  if (!info.path || info.missing) {
+    showModal('Recent Local Files', `<div class="local-empty">${info.missing ? 'The saved local folder is missing.' : 'No default local folder set yet.'}</div>`);
+    return;
+  }
+  const files = await window.go.main.App.ListRecentLocalFolderFiles(80);
+  showModal('Recent Local Files', `
+    <div class="local-summary">${files.length} recently modified file${files.length === 1 ? '' : 's'} · bounded local scan · newest first</div>
+    ${renderLocalFolderFiles(files)}
+  `, true);
+}
+
 function renderLocalSearchHits(hits) {
   if (!hits.length) return '<div class="local-empty">No local folder matches.</div>';
   return `<div class="local-list">${hits.map(hit => `
@@ -1523,6 +1541,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-choose>Choose</button>
         <button data-local-folder-open ${info.path && !info.missing ? '' : 'disabled'}>Open folder</button>
         <button data-local-folder-reveal ${activeId ? '' : 'disabled'}>Reveal active</button>
+        <button data-local-folder-recent ${info.path && !info.missing ? '' : 'disabled'}>Recent</button>
         <button data-local-folder-new ${info.path && !info.missing ? '' : 'disabled'}>New note</button>
         <button data-local-folder-daily ${info.path && !info.missing ? '' : 'disabled'}>Daily</button>
         <button data-local-folder-weekly ${info.path && !info.missing ? '' : 'disabled'}>Weekly</button>
@@ -3684,6 +3703,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localFolderOpen && !localFolderOpen.disabled) await openConfiguredLocalFolder();
   const localFolderReveal = e.target.closest('[data-local-folder-reveal]');
   if (localFolderReveal && !localFolderReveal.disabled) await revealActiveFile();
+  const localRecent = e.target.closest('[data-local-folder-recent]');
+  if (localRecent && !localRecent.disabled) await showRecentLocalFiles();
   const localClear = e.target.closest('[data-local-folder-clear]');
   if (localClear && !localClear.disabled && window.go?.main?.App?.ClearLocalFolder) {
     await window.go.main.App.ClearLocalFolder();
