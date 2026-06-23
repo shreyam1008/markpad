@@ -316,6 +316,42 @@ function searchActivePathEverywhere() {
   searchPhraseEverywhere(note.path || basename(note.title || ''), 'No active path to search');
 }
 
+function activeFileContext() {
+  const note = cachedNotes.find(item => item.id === activeId) || {};
+  const title = note.title || sessionTitleFromContent(currentContent) || 'Untitled';
+  const path = note.path || '';
+  return {
+    title,
+    path,
+    type: typeLabel(getFileType(path || title, note.kind)),
+    dirty: !!note.dirty,
+  };
+}
+
+async function copyActiveFilePath() {
+  const context = activeFileContext();
+  if (!context.path) {
+    statusText.textContent = 'Active item is a draft without a saved path';
+    return;
+  }
+  await navigator.clipboard.writeText(`${context.path}\n`);
+  statusText.textContent = 'Active file path copied';
+}
+
+async function copyActiveFileContext() {
+  const context = activeFileContext();
+  await navigator.clipboard.writeText([
+    '# Markpad Active File',
+    '',
+    `- Title: ${context.title}`,
+    `- Path: ${context.path || '(draft)'}`,
+    `- Type: ${context.type}`,
+    `- Dirty: ${context.dirty ? 'yes' : 'no'}`,
+    '',
+  ].join('\n'));
+  statusText.textContent = 'Active file context copied';
+}
+
 function clearSearchRecents() {
   searchRecentQueries = [];
   localStorage.removeItem(SEARCH_RECENTS_KEY);
@@ -1889,6 +1925,8 @@ function commandItems() {
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
     { id: 'local-links-canvas', icon: 'LG', title: 'Local links canvas', hint: 'Generate a lightweight .canvas map from local Markdown links', run: createLocalLinksCanvas },
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
+    { id: 'copy-active-path', icon: 'CAP', title: 'Copy active file path', hint: 'Copy the active saved file path to the clipboard', run: copyActiveFilePath },
+    { id: 'copy-active-context', icon: 'CAC', title: 'Copy active file context', hint: 'Copy active title, path, type, and dirty state as Markdown', run: copyActiveFileContext },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
