@@ -4012,6 +4012,7 @@ function commandItems() {
     { id: 'canvas-pan-right', icon: 'PR', title: 'Canvas pan right', hint: 'Move the canvas viewport right by one step', run: () => { openCanvas(); panCanvasView(-160, 0); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
+    { id: 'canvas-insert-element-md', icon: 'C2M', title: 'Insert selected canvas element into note', hint: 'Insert selected canvas element geometry/text as portable Markdown at the editor cursor', run: insertSelectedCanvasElementMarkdownIntoNote },
     { id: 'canvas-copy-element-json', icon: 'CEJ', title: 'Copy selected canvas element JSON', hint: 'Copy the selected canvas element as portable JSON', run: copySelectedCanvasElementJson },
     { id: 'canvas-copy-element-svg', icon: 'CES', title: 'Copy selected canvas element SVG', hint: 'Copy the selected canvas element as standalone SVG markup', run: copySelectedCanvasElementSvg },
     { id: 'canvas-paste-element-json', icon: 'PEJ', title: 'Paste canvas element JSON', hint: 'Paste one canvas element from clipboard JSON', run: pasteCanvasElementJsonFromClipboard },
@@ -8300,6 +8301,56 @@ async function copySelectedCanvasDetails() {
   }
   await navigator.clipboard.writeText(lines.join('\n') + '\n');
   statusText.textContent = 'Canvas element details copied';
+}
+
+function selectedCanvasElementMarkdownBlock() {
+  if (!hasCanvasSelection()) return '';
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  const title = element.type === 'text'
+    ? String(element.text || 'Text').replace(/\s+/g, ' ').trim().slice(0, 64)
+    : `${element.type || 'element'} ${element.id || ''}`.trim();
+  const lines = [
+    `### Canvas element: ${title || 'Untitled'}`,
+    '',
+    `- Type: ${element.type || 'element'}`,
+    `- Bounds: x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}, w ${Math.round(Number(bounds.w || 0))}, h ${Math.round(Number(bounds.h || 0))}`,
+    `- Stroke: ${element.stroke || 'none'}`,
+  ];
+  if (element.type !== 'text') lines.push(`- Width: ${element.width || 'n/a'}`);
+  if (element.type === 'path') lines.push(`- Points: ${(element.points || []).length}`);
+  if (element.type === 'text') {
+    lines.push('', '```text', String(element.text || ''), '```');
+  }
+  return lines.join('\n') + '\n';
+}
+
+function insertTextAtEditorCursor(text) {
+  const start = Math.max(0, Math.min(editor.selectionStart || 0, editor.value.length));
+  const end = Math.max(start, Math.min(editor.selectionEnd || start, editor.value.length));
+  const prefix = start > 0 && editor.value[start - 1] !== '\n' ? '\n\n' : '';
+  const suffix = end < editor.value.length && editor.value[end] !== '\n' ? '\n\n' : '\n';
+  const insert = prefix + text + suffix;
+  editor.value = editor.value.slice(0, start) + insert + editor.value.slice(end);
+  const next = start + insert.length;
+  editor.focus();
+  editor.setSelectionRange(next, next);
+  editor.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: insert, bubbles: true }));
+}
+
+function insertSelectedCanvasElementMarkdownIntoNote() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return;
+  }
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (!activeId || isReadOnlyType(getFileType(active?.path, active?.kind))) {
+    statusText.textContent = 'Open an editable note before inserting canvas Markdown';
+    return;
+  }
+  insertTextAtEditorCursor(selectedCanvasElementMarkdownBlock());
+  statusText.textContent = 'Canvas element inserted into active note';
 }
 
 function deleteSelectedCanvasElement() {
