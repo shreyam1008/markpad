@@ -1822,6 +1822,7 @@ function commandItems() {
     { id: 'add-task-high', icon: '+H', title: 'Add high priority task', hint: 'Append a Markdown task with !high priority', run: () => addTaskTemplate('!high') },
     { id: 'add-task-waiting', icon: '+W', title: 'Add waiting task', hint: 'Append a Markdown task with @waiting context', run: () => addTaskTemplate('@waiting') },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
+    { id: 'copy-tasks-ics', icon: 'CIC', title: 'Copy visible tasks ICS', hint: 'Copy the current filtered task view as portable calendar text', run: copyVisibleTasksIcs },
     { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
     { id: 'copy-tasks-md', icon: 'CT', title: 'Copy visible tasks Markdown', hint: 'Copy the current filtered task view as Markdown text', run: copyVisibleTasksMarkdown },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
@@ -3424,6 +3425,16 @@ async function exportTasksIcs() {
   }
   downloadText('markpad-tasks.ics', 'text/calendar', tasksToIcs(tasks));
   statusText.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} exported as ICS`;
+}
+
+async function copyVisibleTasksIcs() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No tasks to copy';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToIcs(tasks));
+  statusText.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} copied as ICS`;
 }
 
 function taskMarkdownExportLine(task) {
