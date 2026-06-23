@@ -531,6 +531,12 @@ function clearCommandRecents() {
   if (statusText) statusText.textContent = 'Command recents cleared';
 }
 
+function clearPaletteRecents() {
+  clearSearchRecents();
+  clearCommandRecents();
+  if (statusText) statusText.textContent = 'Search and command recents cleared';
+}
+
 function currentCommandRecents() {
   if (!commandRecentIds.length) commandRecentIds = loadCommandRecentIds();
   return commandRecentIds.slice(0, COMMAND_RECENTS_LIMIT).map((id) => {
@@ -2617,6 +2623,7 @@ function commandItems() {
     { id: 'export-search-recents-json', icon: 'ESJ', title: 'Export search recents JSON', hint: 'Download locally stored search palette recents as JSON', run: exportSearchRecentsJson },
     { id: 'export-search-recents-csv', icon: 'ESV', title: 'Export search recents CSV', hint: 'Download locally stored search palette recents as CSV', run: exportSearchRecentsCsv },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
+    { id: 'clear-palette-recents', icon: 'CPR', title: 'Clear palette recents', hint: 'Remove locally stored search and command palette recents', run: clearPaletteRecents },
     { id: 'copy-command-recents', icon: 'CCR', title: 'Copy command recents', hint: 'Copy locally stored command palette recents as Markdown', run: copyCommandRecentsMarkdown },
     { id: 'copy-command-recents-json', icon: 'CCJ', title: 'Copy command recents JSON', hint: 'Copy locally stored command palette recents as JSON', run: copyCommandRecentsJson },
     { id: 'copy-command-recents-csv', icon: 'CCV', title: 'Copy command recents CSV', hint: 'Copy locally stored command palette recents as CSV', run: copyCommandRecentsCsv },
