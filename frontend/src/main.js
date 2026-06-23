@@ -1477,6 +1477,22 @@ function exportSearchResultsJson() {
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`;
 }
 
+async function copySearchQuerySummary() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText([
+    '# Markpad Search Query',
+    '',
+    `- Query: ${searchLastQuery || '(empty)'}`,
+    `- Scope: ${searchScope}`,
+    `- Results: ${searchLastResults.length}`,
+    '',
+  ].join('\n'));
+  statusText.textContent = 'Search query copied';
+}
+
 function searchResultMatchLabel(result) {
   if (result.source !== 'local') return '';
   switch (result.matchKind) {
@@ -1835,6 +1851,7 @@ function commandItems() {
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'copy-search-results-json', icon: 'CJ', title: 'Copy search results JSON', hint: 'Copy the current search result list as portable JSON', run: copySearchResultsJson },
     { id: 'export-search-results-json', icon: 'EJ', title: 'Export search results JSON', hint: 'Download the current search result list as portable JSON', run: exportSearchResultsJson },
+    { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
     { id: 'find-from-top', icon: 'FT', title: 'Find from top', hint: 'Restart the current inline find from the start of the file', run: findFromTop },
