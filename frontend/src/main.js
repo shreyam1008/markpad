@@ -2332,9 +2332,41 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>path/title</strong><span>path:work title:idea</span><small>Focus a folder or note name</small></div>
       <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send results</span><small>Turn current results into a canvas board</small></div>
+      <div class="diag-card"><strong>inspect</strong><span>Query plan</span><small>Show parsed terms, filters, exclusions, fuzzy, and anchors</small></div>
     </div>
     <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory with a bounded content cache; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
+  `);
+}
+
+function searchInspectorList(values, empty = 'none') {
+  const list = (values || []).filter(Boolean);
+  return list.length ? list.map(value => escapeHtml(value)).join(', ') : empty;
+}
+
+function searchInspectorFilters(filters) {
+  const rows = Object.entries(filters || {})
+    .filter(([, values]) => values?.length)
+    .map(([key, values]) => `${key}:${searchInspectorList(values)}`);
+  return rows.length ? rows.join(' · ') : 'none';
+}
+
+function showSearchQueryInspector() {
+  const query = (searchInput?.value || searchLastQuery || '').trim();
+  const plan = parseSearchQuery(query);
+  showModal('Search Query Inspector', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Scope</span><small>Loaded, local folder, or all local sources</small></div>
+      <div class="diag-card"><strong>${searchLastResults.length}</strong><span>Last results</span><small>From the latest rendered search</small></div>
+      <div class="diag-card"><strong>${plan.terms.length}</strong><span>Terms</span><small>${searchInspectorList(plan.terms)}</small></div>
+      <div class="diag-card"><strong>${plan.phrases.length}</strong><span>Phrases</span><small>${searchInspectorList(plan.phrases)}</small></div>
+      <div class="diag-card"><strong>${plan.wildcards.length}</strong><span>Wildcards</span><small>${searchInspectorList(plan.wildcards)}</small></div>
+      <div class="diag-card"><strong>${plan.fuzzyTerms.length}</strong><span>Fuzzy</span><small>${searchInspectorList(plan.fuzzyTerms)}</small></div>
+      <div class="diag-card"><strong>${plan.hasFilters ? 'yes' : 'no'}</strong><span>Filters</span><small>${escapeHtml(searchInspectorFilters(plan.filters))}</small></div>
+      <div class="diag-card"><strong>${plan.hasExcludes ? 'yes' : 'no'}</strong><span>Exclusions</span><small>${escapeHtml(searchInspectorFilters(plan.excludes))}</small></div>
+    </div>
+    <pre class="diag-code">${escapeHtml(query || '(empty query)')}</pre>
+    <p class="diag-note">Backend anchor query: ${escapeHtml(plan.backendQuery || '(none)')}. Tag and task filters are applied in the UI so local-folder search can stay bounded and dependency-free.</p>
   `);
 }
 
@@ -3601,6 +3633,7 @@ function commandItems() {
     { id: 'search-export-active-result-json', icon: 'EAJ', title: 'Export active search result JSON', hint: 'Download the highlighted search result as JSON', run: exportActiveSearchResultJson },
     { id: 'search-export-active-result-csv', icon: 'EAC', title: 'Export active search result CSV', hint: 'Download the highlighted search result as CSV', run: exportActiveSearchResultCsv },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
+    { id: 'search-query-inspector', icon: 'SQI', title: 'Search query inspector', hint: 'Show parsed search terms, filters, exclusions, wildcards, fuzzy terms, and backend anchor query', run: showSearchQueryInspector },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
     { id: 'find-from-top', icon: 'FT', title: 'Find from top', hint: 'Restart the current inline find from the start of the file', run: findFromTop },
