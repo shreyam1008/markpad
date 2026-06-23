@@ -2347,6 +2347,10 @@ function commandItems() {
     { id: 'canvas-width-normal', icon: 'W3', title: 'Canvas stroke normal', hint: 'Use a 3px stroke for general drawing', run: () => setCanvasStrokeWidthPreset(3) },
     { id: 'canvas-width-bold', icon: 'W6', title: 'Canvas stroke bold', hint: 'Use a 6px stroke for emphasis', run: () => setCanvasStrokeWidthPreset(6) },
     { id: 'canvas-width-heavy', icon: 'W9', title: 'Canvas stroke heavy', hint: 'Use a 9px stroke for strong emphasis', run: () => setCanvasStrokeWidthPreset(9) },
+    { id: 'canvas-preset-sketch', icon: 'SK', title: 'Canvas preset: sketch', hint: 'Pen tool with neutral ink and normal stroke width', run: () => applyCanvasDrawingPreset('pen', '#1f2937', 3, 'sketch') },
+    { id: 'canvas-preset-connector', icon: 'CN', title: 'Canvas preset: connector', hint: 'Arrow tool with blue stroke for linking ideas', run: () => applyCanvasDrawingPreset('arrow', '#2563eb', 3, 'connector') },
+    { id: 'canvas-preset-note', icon: 'NT', title: 'Canvas preset: note text', hint: 'Text tool with amber stroke for annotations', run: () => applyCanvasDrawingPreset('text', '#d97706', 3, 'note') },
+    { id: 'canvas-preset-review', icon: 'RV', title: 'Canvas preset: review mark', hint: 'Rectangle tool with bold red stroke for review callouts', run: () => applyCanvasDrawingPreset('rect', '#dc2626', 6, 'review mark') },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-fit-selection', icon: 'FS', title: 'Fit selected canvas element', hint: 'Zoom and pan to the selected canvas element', run: () => { openCanvas(); fitCanvasToSelection(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
@@ -5241,6 +5245,21 @@ function setCanvasStrokeWidthPreset(value) {
   statusText.textContent = selected
     ? `Selected canvas stroke set to ${value}px`
     : `Canvas stroke width set to ${value}px`;
+}
+
+function applyCanvasDrawingPreset(tool, color, width, label) {
+  openCanvas();
+  if (canvasColor) canvasColor.value = color;
+  if (canvasWidth) canvasWidth.value = String(width);
+  setCanvasTool(tool);
+  const selected = hasCanvasSelection();
+  if (selected) {
+    applySelectedCanvasStyle('stroke');
+    applySelectedCanvasStyle('width');
+  }
+  statusText.textContent = selected
+    ? `Selected canvas element styled for ${label}`
+    : `Canvas ${label} preset ready`;
 }
 
 function updateCanvasOptionButtons() {
