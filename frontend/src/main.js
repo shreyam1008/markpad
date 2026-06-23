@@ -2768,7 +2768,7 @@ function renderTaskRow(task, compact) {
         <div class="task-text">${escapeHtml(task.text)}</div>
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button>`}
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button>`}
     </div>`;
 }
 
@@ -3073,6 +3073,22 @@ async function copyVisibleTasksMarkdown() {
   }
   await navigator.clipboard.writeText(tasksToMarkdown(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as Markdown`;
+}
+
+async function copySingleTaskMarkdown(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const text = [
+    taskMarkdownExportLine(task),
+    `  - Source: ${task.local ? 'Local' : 'Loaded'} · ${task.noteTitle || 'Untitled'} · ${task.path || 'Draft'}:${Number(task.line || 0) + 1}`,
+    '',
+  ].join('\n');
+  await navigator.clipboard.writeText(text);
+  statusText.textContent = 'Task copied as Markdown';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -5729,6 +5745,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
   const taskOpen = e.target.closest('[data-task-open]');
   if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
+  const taskCopy = e.target.closest('[data-task-copy]');
+  if (taskCopy) await copySingleTaskMarkdown(taskCopy.dataset.taskCopy);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
