@@ -1483,7 +1483,7 @@ function showSearchSyntaxHelp() {
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
       </table>
-      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
+      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:tomorrow</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
       <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
     </div>
   `);
@@ -1646,6 +1646,7 @@ function commandItems() {
     { id: 'tasks-source-loaded', icon: 'TSL', title: 'Tasks loaded source', hint: 'Show tasks from currently loaded documents only', run: () => showTasksForSource('loaded') },
     { id: 'tasks-source-local', icon: 'TSF', title: 'Tasks local source', hint: 'Show tasks from the configured local folder only', run: () => showTasksForSource('local') },
     { id: 'tasks-due-today', icon: 'TD', title: 'Tasks due today', hint: 'Filter tasks with due:today', run: () => showTasksForQuery('due:today') },
+    { id: 'tasks-due-tomorrow', icon: 'TT', title: 'Tasks due tomorrow', hint: 'Filter tasks with due:tomorrow', run: () => showTasksForQuery('due:tomorrow') },
     { id: 'tasks-due-week', icon: 'TWK', title: 'Tasks due this week', hint: 'Filter tasks due within the next 7 days', run: () => showTasksForQuery('due:week') },
     { id: 'tasks-high-priority', icon: 'TH', title: 'High priority tasks', hint: 'Filter tasks with !high', run: () => showTasksForQuery('!high') },
     { id: 'tasks-waiting', icon: 'TW', title: 'Waiting tasks', hint: 'Filter tasks tagged with @waiting', run: () => showTasksForQuery('@waiting') },
@@ -2730,6 +2731,12 @@ function parseTaskQuery(query) {
 function taskDueQueryMatches(task, value) {
   const due = String(task.due || '');
   if (value === 'today') return due === todayKey();
+  if (value === 'tomorrow') {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return due === date.toISOString().slice(0, 10);
+  }
   if (value === 'overdue') return !!due && due < todayKey();
   if (['week', 'next7', '7d'].includes(value)) {
     if (!due) return false;
@@ -2842,6 +2849,7 @@ function renderTaskControls(tasks, visibleTasks) {
       <div class="task-query-hints">
         <span>Examples</span>
         <button data-task-query-example="due:today">due:today</button>
+        <button data-task-query-example="due:tomorrow">due:tomorrow</button>
         <button data-task-query-example="due:week">due:week</button>
         <button data-task-query-example="due:overdue">due:overdue</button>
         <button data-task-query-example="!high">!high</button>
