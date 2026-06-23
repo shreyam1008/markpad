@@ -1605,6 +1605,7 @@ function commandItems() {
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
+    { id: 'copy-canvas-summary-md', icon: 'CCM', title: 'Copy canvas Markdown summary', hint: 'Copy a lightweight Markdown inventory of canvas elements', run: copyCanvasMarkdownSummary },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -4379,6 +4380,16 @@ function exportCanvasMarkdownSummary() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-summary.md', 'text/markdown', canvasToMarkdownSummary(canvasDoc));
   statusText.textContent = 'Canvas Markdown summary exported';
+}
+
+async function copyCanvasMarkdownSummary() {
+  if (!canvasDoc) loadCanvasState();
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasToMarkdownSummary(canvasDoc));
+  statusText.textContent = 'Canvas Markdown summary copied';
 }
 
 function obsidianElementBounds(element) {
