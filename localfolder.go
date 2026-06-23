@@ -479,11 +479,19 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	filterLine := -1
 	textSnippet := ""
 	filterSnippet := ""
+	textTerms := make(map[string]bool, len(plan.Terms))
+	textPhrases := make(map[string]bool, len(plan.Phrases))
 	matchedTags := make(map[string]bool, len(plan.TagFilters))
 	matchedTasks := make(map[string]bool, len(plan.TaskFilters))
 	for scanner.Scan() {
 		line := scanner.Text()
 		lower := strings.ToLower(line)
+		if len(plan.Terms) > 0 || len(plan.Phrases) > 0 {
+			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases) && textLine < 0 {
+				textLine = lineNo
+				textSnippet = strings.TrimSpace(line)
+			}
+		}
 		if textLine < 0 && localFolderTextMatches(lower, plan) && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
 			textLine = lineNo
 			textSnippet = strings.TrimSpace(line)
@@ -492,12 +500,12 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 			filterLine = lineNo
 			filterSnippet = strings.TrimSpace(line)
 		}
-		if (metadataTextMatch || textLine >= 0 || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
+		if (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases) || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
 			break
 		}
 		lineNo++
 	}
-	if !metadataTextMatch && textLine < 0 && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
+	if !metadataTextMatch && !localFolderTextFiltersMatched(plan, textTerms, textPhrases) && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
 		return LocalFolderSearchHit{}, false
 	}
 	if !localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
@@ -574,6 +582,37 @@ func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
 	}
 	for _, phrase := range plan.Phrases {
 		if !strings.Contains(value, phrase) {
+			return false
+		}
+	}
+	return true
+}
+
+func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool) bool {
+	matched := false
+	for _, term := range plan.Terms {
+		if strings.Contains(line, term) {
+			terms[term] = true
+			matched = true
+		}
+	}
+	for _, phrase := range plan.Phrases {
+		if strings.Contains(line, phrase) {
+			phrases[phrase] = true
+			matched = true
+		}
+	}
+	return matched
+}
+
+func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool) bool {
+	for _, term := range plan.Terms {
+		if !terms[term] {
+			return false
+		}
+	}
+	for _, phrase := range plan.Phrases {
+		if !phrases[phrase] {
 			return false
 		}
 	}
