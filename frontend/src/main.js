@@ -1890,6 +1890,20 @@ async function copyRuntimeStats() {
   }
 }
 
+async function exportRuntimeStatsText() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  try {
+    downloadText('markpad-runtime-stats.txt', 'text/plain', runtimeStatsText(await getter()) + '\n');
+    statusText.textContent = 'Runtime stats exported as text';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats text export failed: ' + err;
+  }
+}
+
 function runtimeStatsJson(stats) {
   return JSON.stringify({
     type: 'markpad-runtime-stats',
@@ -2109,6 +2123,7 @@ function commandItems() {
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
+    { id: 'export-runtime-stats-text', icon: 'ERT', title: 'Export runtime stats text', hint: 'Download memory, binary size, goroutine, and uptime stats as plain text', run: exportRuntimeStatsText },
     { id: 'copy-runtime-stats-json', icon: 'CRJ', title: 'Copy runtime stats JSON', hint: 'Copy memory, binary size, goroutine, and uptime stats as JSON', run: copyRuntimeStatsJson },
     { id: 'export-runtime-stats-json', icon: 'ERJ', title: 'Export runtime stats JSON', hint: 'Download memory, binary size, goroutine, and uptime stats as JSON', run: exportRuntimeStatsJson },
     { id: 'copy-runtime-stats-md', icon: 'CRM', title: 'Copy runtime stats Markdown', hint: 'Copy memory, binary size, goroutine, and uptime stats as Markdown', run: copyRuntimeStatsMarkdown },
