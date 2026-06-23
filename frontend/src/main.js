@@ -2823,6 +2823,10 @@ function commandItems() {
     { id: 'copy-canvas-elements-csv', icon: 'CEV', title: 'Copy canvas elements CSV', hint: 'Copy a compact CSV inventory of canvas elements', run: copyCanvasElementsCsv },
     { id: 'canvas-inventory-json', icon: 'CIJ', title: 'Export canvas inventory JSON', hint: 'Download a compact JSON inventory of canvas elements', run: exportCanvasInventoryJson },
     { id: 'copy-canvas-inventory-json', icon: 'CIJ', title: 'Copy canvas inventory JSON', hint: 'Copy a compact JSON inventory of canvas elements', run: copyCanvasInventoryJson },
+    { id: 'copy-canvas-view-state', icon: 'CVS', title: 'Copy canvas view state', hint: 'Copy camera, grid, snap, minimap, and element count as Markdown', run: copyCanvasViewStateMarkdown },
+    { id: 'export-canvas-view-state', icon: 'EVS', title: 'Export canvas view state', hint: 'Download camera, grid, snap, minimap, and element count as Markdown', run: exportCanvasViewStateMarkdown },
+    { id: 'copy-canvas-view-state-json', icon: 'CVJ', title: 'Copy canvas view state JSON', hint: 'Copy camera, grid, snap, minimap, and element count as JSON', run: copyCanvasViewStateJson },
+    { id: 'export-canvas-view-state-json', icon: 'EVJ', title: 'Export canvas view state JSON', hint: 'Download camera, grid, snap, minimap, and element count as JSON', run: exportCanvasViewStateJson },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -6981,6 +6985,78 @@ async function copyCanvasInventoryJson() {
   }
   await navigator.clipboard.writeText(canvasInventoryToJson(canvasDoc));
   statusText.textContent = 'Canvas inventory copied as JSON';
+}
+
+function canvasViewStateSnapshot() {
+  if (!canvasDoc || !canvasSession) loadCanvasState();
+  const camera = canvasCamera();
+  return {
+    type: 'markpad-canvas-view-state',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    tool: canvasTool,
+    camera: {
+      x: Math.round(Number(camera.x || 0)),
+      y: Math.round(Number(camera.y || 0)),
+      zoomPercent: Math.round(Number(camera.scale || 1) * 100),
+    },
+    grid: {
+      visible: !!canvasGridVisible,
+      size: canvasGridSize,
+      snap: !!canvasSnapToGrid,
+    },
+    minimapVisible: !!canvasMinimapVisible,
+    background: canvasDoc?.appState?.viewBackgroundColor || '#ffffff',
+    elementCount: (canvasDoc?.elements || []).length,
+  };
+}
+
+function canvasViewStateMarkdown() {
+  const snapshot = canvasViewStateSnapshot();
+  return [
+    '# Markpad Canvas View State',
+    '',
+    `Generated: ${new Date(snapshot.exportedAt).toLocaleString()}`,
+    `Tool: ${snapshot.tool}`,
+    `Camera: ${snapshot.camera.x}, ${snapshot.camera.y} @ ${snapshot.camera.zoomPercent}%`,
+    `Grid: ${snapshot.grid.visible ? `${snapshot.grid.size}px` : 'hidden'} · snap ${snapshot.grid.snap ? 'on' : 'off'}`,
+    `Minimap: ${snapshot.minimapVisible ? 'visible' : 'hidden'}`,
+    `Background: ${snapshot.background}`,
+    `Elements: ${snapshot.elementCount}`,
+    '',
+  ].join('\n');
+}
+
+function canvasViewStateJson() {
+  return JSON.stringify(canvasViewStateSnapshot(), null, 2) + '\n';
+}
+
+async function copyCanvasViewStateMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasViewStateMarkdown());
+  statusText.textContent = 'Canvas view state copied as Markdown';
+}
+
+async function copyCanvasViewStateJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasViewStateJson());
+  statusText.textContent = 'Canvas view state copied as JSON';
+}
+
+function exportCanvasViewStateMarkdown() {
+  downloadText('markpad-canvas-view-state.md', 'text/markdown', canvasViewStateMarkdown());
+  statusText.textContent = 'Canvas view state exported as Markdown';
+}
+
+function exportCanvasViewStateJson() {
+  downloadText('markpad-canvas-view-state.json', 'application/json', canvasViewStateJson());
+  statusText.textContent = 'Canvas view state exported as JSON';
 }
 
 function obsidianElementBounds(element) {
