@@ -3753,7 +3753,7 @@ function renderTaskRow(task, compact) {
         <div class="task-text">${escapeHtml(task.text)}</div>
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button>`}
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button>`}
     </div>`;
 }
 
@@ -4212,6 +4212,17 @@ async function copySingleTaskJson(taskId) {
     },
   }, null, 2) + '\n');
   statusText.textContent = 'Task copied as JSON';
+}
+
+async function copySingleTaskIcs(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToIcs([task]));
+  statusText.textContent = 'Task copied as ICS';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -7391,6 +7402,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopy) await copySingleTaskMarkdown(taskCopy.dataset.taskCopy);
   const taskCopyJson = e.target.closest('[data-task-copy-json]');
   if (taskCopyJson) await copySingleTaskJson(taskCopyJson.dataset.taskCopyJson);
+  const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
+  if (taskCopyIcs) await copySingleTaskIcs(taskCopyIcs.dataset.taskCopyIcs);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
