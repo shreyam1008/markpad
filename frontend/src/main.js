@@ -1760,6 +1760,7 @@ function commandItems() {
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'add-task-today', icon: '+D', title: 'Add task due today', hint: 'Append a Markdown task tagged with today\\'s due date', run: () => addTaskTemplate(`due:${todayKey()}`) },
     { id: 'add-task-tomorrow', icon: '+M', title: 'Add task due tomorrow', hint: 'Append a Markdown task tagged with tomorrow\\'s due date', run: () => addTaskTemplate(`due:${tomorrowKey()}`) },
+    { id: 'add-task-high-today', icon: '+HT', title: 'Add high priority task due today', hint: 'Append a Markdown task tagged !high and due today', run: () => addTaskTemplate(`!high due:${todayKey()}`) },
     { id: 'add-task-high', icon: '+H', title: 'Add high priority task', hint: 'Append a Markdown task with !high priority', run: () => addTaskTemplate('!high') },
     { id: 'add-task-waiting', icon: '+W', title: 'Add waiting task', hint: 'Append a Markdown task with @waiting context', run: () => addTaskTemplate('@waiting') },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
