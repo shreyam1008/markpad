@@ -139,6 +139,23 @@ const THEMES = [
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
 const SEARCH_RECENTS_LIMIT = 8;
+const LOCAL_SETTINGS_KEYS = [
+  'markpad-theme',
+  'markpad-search-scope',
+  'markpad-search-recents-v1',
+  'markpad-task-view',
+  'markpad-task-filter',
+  'markpad-task-query',
+  'markpad-canvas-tool',
+  'markpad-canvas-grid',
+  'markpad-canvas-snap',
+  'markpad-canvas-minimap',
+  'markpad-canvas-session',
+  'markpad-focus',
+  'markpad-split-ratio',
+  'markpad-zoom',
+  'markpad-sections',
+];
 const CANVAS_DOC_KEY = 'markpad-canvas-draft';
 const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
@@ -1055,6 +1072,7 @@ function commandItems() {
     { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .canvas JSON file in the default local folder', run: createLocalFolderCanvas },
     { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
     { id: 'export-local-settings', icon: 'EX', title: 'Export local settings', hint: 'Download a small JSON snapshot of local preferences and UI state', run: exportLocalSettings },
+    { id: 'import-local-settings', icon: 'IM', title: 'Import local settings', hint: 'Restore an exported Markpad local settings JSON snapshot', run: importLocalSettings },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
     { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
       <p><b>Markpad</b> is a native Markdown notepad.</p>
@@ -4182,6 +4200,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
   const exportSettings = e.target.closest('[data-export-local-settings]');
   if (exportSettings) await exportLocalSettings();
+  const importSettings = e.target.closest('[data-import-local-settings]');
+  if (importSettings) importLocalSettings();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
@@ -4384,25 +4404,8 @@ async function showFileInfo() {
 }
 
 async function exportLocalSettings() {
-  const keys = [
-    'markpad-theme',
-    'markpad-search-scope',
-    'markpad-search-recents-v1',
-    'markpad-task-view',
-    'markpad-task-filter',
-    'markpad-task-query',
-    'markpad-canvas-tool',
-    'markpad-canvas-grid',
-    'markpad-canvas-snap',
-    'markpad-canvas-minimap',
-    'markpad-canvas-session',
-    'markpad-focus',
-    'markpad-split-ratio',
-    'markpad-zoom',
-    'markpad-sections',
-  ];
   const settings = {};
-  for (const key of keys) {
+  for (const key of LOCAL_SETTINGS_KEYS) {
     const value = localStorage.getItem(key);
     if (value !== null) settings[key] = value;
   }
@@ -4425,6 +4428,70 @@ async function exportLocalSettings() {
   statusText.textContent = 'Local settings exported';
 }
 
+function importLocalSettings() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.addEventListener('change', async () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    try {
+      const snapshot = JSON.parse(await file.text());
+      if (snapshot?.type !== 'markpad-local-settings' || !snapshot.settings || typeof snapshot.settings !== 'object') {
+        statusText.textContent = 'Invalid Markpad settings file';
+        return;
+      }
+      let count = 0;
+      for (const key of LOCAL_SETTINGS_KEYS) {
+        const value = snapshot.settings[key];
+        if (typeof value !== 'string' || value.length > 20000) continue;
+        localStorage.setItem(key, value);
+        count++;
+      }
+      applyImportedLocalSettings();
+      statusText.textContent = `Imported ${count} local setting${count === 1 ? '' : 's'}`;
+      if (!modalOverlay.classList.contains('hidden')) await showPreferences();
+    } catch (err) {
+      statusText.textContent = 'Settings import failed: ' + (err.message || err);
+    }
+  }, { once: true });
+  input.click();
+}
+
+function applyImportedLocalSettings() {
+  currentTheme = localStorage.getItem('markpad-theme') || currentTheme;
+  searchScope = localStorage.getItem('markpad-search-scope') || searchScope;
+  if (!['loaded', 'local', 'all'].includes(searchScope)) searchScope = 'loaded';
+  localStorage.setItem('markpad-search-scope', searchScope);
+  searchRecentQueries = loadSearchRecentQueries();
+  taskViewMode = localStorage.getItem('markpad-task-view') || taskViewMode;
+  taskFilter = localStorage.getItem('markpad-task-filter') || taskFilter;
+  taskQuery = localStorage.getItem('markpad-task-query') || '';
+  canvasTool = localStorage.getItem('markpad-canvas-tool') || canvasTool;
+  canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
+  canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
+  canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
+  focusMode = localStorage.getItem('markpad-focus') === '1';
+  splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || String(splitRatio));
+  splitRatio = normalizeSplitRatio(splitRatio);
+  localStorage.setItem('markpad-split-ratio', String(splitRatio));
+  fontSize = parseInt(localStorage.getItem('markpad-zoom') || String(fontSize), 10);
+  if (!Number.isFinite(fontSize)) fontSize = ZOOM_DEFAULT;
+  fontSize = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fontSize));
+  localStorage.setItem('markpad-zoom', String(fontSize));
+  applyTheme(currentTheme, true);
+  applyZoom(true);
+  applyFocusMode(true);
+  applySectionState();
+  updateSearchScopeButtons();
+  renderSearchRecents();
+  if (canvasActive) {
+    setCanvasTool(canvasTool);
+    updateCanvasOptionButtons();
+    renderCanvas();
+  }
+}
+
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
   const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
@@ -4443,6 +4510,7 @@ async function showPreferences() {
       <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
       <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
       <button data-export-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export settings</button>
+      <button data-import-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Import settings</button>
     </div>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
