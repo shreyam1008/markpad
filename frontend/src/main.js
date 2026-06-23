@@ -619,6 +619,17 @@ function setSplitPreset(value) {
   statusText.textContent = `Split set to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
 }
 
+function adjustSplitRatio(delta) {
+  if (viewMode !== 'split') setView('split');
+  if (viewMode !== 'split') {
+    statusText.textContent = 'Split sizing is available for Markdown files';
+    return;
+  }
+  splitRatio = normalizeSplitRatio(splitRatio + Number(delta || 0));
+  applySplitRatio();
+  statusText.textContent = `Split adjusted to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
+}
+
 // ── File type icons ──────────────────────────────────────
 function fileIcon(path) {
   if (!path) return 'MD';
@@ -2405,6 +2416,8 @@ function commandItems() {
     { id: 'split-editor-focus', icon: '72', title: 'Split editor focus', hint: 'Use a wide editor with a narrow rendered preview', run: () => setSplitPreset(72) },
     { id: 'split-preview-wide', icon: '38', title: 'Split preview wide', hint: 'Give the preview more width in split view', run: () => setSplitPreset(38) },
     { id: 'split-preview-focus', icon: '28', title: 'Split preview focus', hint: 'Use a narrow editor with a wide rendered preview', run: () => setSplitPreset(28) },
+    { id: 'split-nudge-editor', icon: '+E', title: 'Widen editor split', hint: 'Increase editor width by 5% in split view', run: () => adjustSplitRatio(5) },
+    { id: 'split-nudge-preview', icon: '+P', title: 'Widen preview split', hint: 'Increase preview width by 5% in split view', run: () => adjustSplitRatio(-5) },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
     { id: 'preview', icon: 'P', title: 'Preview view', hint: 'Show preview/document only', run: () => setView('viewer') },
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
@@ -2472,7 +2485,7 @@ function commandCategory(item) {
   if (id.startsWith('theme')) return 'Theme';
   if (id.includes('history')) return 'History';
   if (id.startsWith('local') || id.includes('local') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
-  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'split', 'split-balanced', 'split-editor-wide', 'split-preview-wide', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
+  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id === 'footprint') return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
