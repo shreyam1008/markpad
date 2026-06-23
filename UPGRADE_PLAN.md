@@ -28,6 +28,7 @@ Sources:
 ## Phase 1: polish without backend risk
 
 - Add CSS-variable themes: two light, two dark.
+- Override Markdown and code preview colors locally so external light GitHub/highlight styles do not break dark themes.
 - Add a loaded-file search palette over open documents.
 - Keep search dependency-free and avoid persistent content indexes for now.
 - Improve help/preferences so users can discover new local-first controls.

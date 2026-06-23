@@ -649,3 +649,97 @@ body.markpad-focus #note-title::after {
   opacity: 1;
   background: var(--accent);
 }
+
+/* Theme-aware Markdown/code rendering */
+html[data-theme] .markdown-body {
+  color: var(--text) !important;
+}
+html[data-theme] .markdown-body h1,
+html[data-theme] .markdown-body h2,
+html[data-theme] .markdown-body h3,
+html[data-theme] .markdown-body h4,
+html[data-theme] .markdown-body h5,
+html[data-theme] .markdown-body h6 {
+  color: var(--text) !important;
+  border-bottom-color: var(--border-soft) !important;
+}
+html[data-theme] .markdown-body a {
+  color: var(--accent) !important;
+}
+html[data-theme] .markdown-body hr {
+  background: var(--border-soft) !important;
+}
+html[data-theme] .markdown-body p,
+html[data-theme] .markdown-body li {
+  color: var(--text) !important;
+}
+html[data-theme] .markdown-body blockquote {
+  color: var(--muted) !important;
+  border-left-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--hover) 52%, transparent);
+  border-radius: 0 10px 10px 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+html[data-theme] .markdown-body table tr {
+  background: var(--editor) !important;
+  border-top-color: var(--border-soft) !important;
+}
+html[data-theme] .markdown-body table tr:nth-child(2n) {
+  background: var(--surface) !important;
+}
+html[data-theme] .markdown-body th,
+html[data-theme] .markdown-body td {
+  border-color: var(--border) !important;
+}
+html[data-theme] .markdown-body code {
+  background: var(--hover) !important;
+  color: var(--text) !important;
+}
+html[data-theme] .markdown-body pre,
+html[data-theme] .hljs {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border-soft);
+}
+html[data-theme] .hljs-comment,
+html[data-theme] .hljs-quote {
+  color: var(--muted) !important;
+}
+html[data-theme] .hljs-keyword,
+html[data-theme] .hljs-selector-tag,
+html[data-theme] .hljs-subst {
+  color: var(--accent) !important;
+}
+html[data-theme] .hljs-string,
+html[data-theme] .hljs-title,
+html[data-theme] .hljs-name,
+html[data-theme] .hljs-type,
+html[data-theme] .hljs-attribute,
+html[data-theme] .hljs-symbol,
+html[data-theme] .hljs-bullet,
+html[data-theme] .hljs-addition,
+html[data-theme] .hljs-variable,
+html[data-theme] .hljs-template-tag,
+html[data-theme] .hljs-template-variable {
+  color: color-mix(in srgb, var(--accent) 72%, var(--text)) !important;
+}
+html[data-theme] .hljs-number,
+html[data-theme] .hljs-literal,
+html[data-theme] .hljs-meta,
+html[data-theme] .hljs-built_in,
+html[data-theme] .hljs-builtin-name {
+  color: #c57933 !important;
+}
+html[data-theme="ink"] .hljs-number,
+html[data-theme="ink"] .hljs-literal,
+html[data-theme="ink"] .hljs-meta,
+html[data-theme="ink"] .hljs-built_in,
+html[data-theme="ink"] .hljs-builtin-name,
+html[data-theme="pine"] .hljs-number,
+html[data-theme="pine"] .hljs-literal,
+html[data-theme="pine"] .hljs-meta,
+html[data-theme="pine"] .hljs-built_in,
+html[data-theme="pine"] .hljs-builtin-name {
+  color: #e9b872 !important;
+}
