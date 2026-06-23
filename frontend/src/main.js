@@ -4656,10 +4656,20 @@ function undoHistoryFootprint() {
   return { editorStates, editorBytes, canvasStates, canvasBytes };
 }
 
+function loadedSearchCacheFootprint() {
+  return {
+    bytes: Math.max(0, loadedSearchCacheBytes),
+    entries: loadedSearchCache.size,
+    maxBytes: SEARCH_CACHE_MAX_BYTES,
+    maxEntries: SEARCH_CACHE_MAX_ENTRIES,
+  };
+}
+
 async function localFootprintSnapshot() {
   const docs = await loadedDocumentFootprint();
   const runtimeStats = await runtimeFootprint();
   const undo = undoHistoryFootprint();
+  const searchCache = loadedSearchCacheFootprint();
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
   const trashItems = loadDraftTrash();
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
@@ -4679,6 +4689,7 @@ async function localFootprintSnapshot() {
       goNumGC: Number(runtimeStats.goNumGC || 0),
     } : null,
     loadedDocuments: docs,
+    searchCache,
     canvas: {
       draftSessionBytes: canvasBytes,
       elementCount: (canvasDoc?.elements || []).length,
@@ -4735,6 +4746,7 @@ function localFootprintSnapshotToMarkdown(snapshot) {
     `- Editable text: ${formatBytes(snapshot.loadedDocuments.editableBytes || 0)}`,
     `- Editable count: ${snapshot.loadedDocuments.editableCount || 0}`,
     `- Read-only count: ${snapshot.loadedDocuments.readOnlyCount || 0}`,
+    `- Search cache: ${formatBytes(snapshot.searchCache?.bytes || 0)} (${snapshot.searchCache?.entries || 0}/${snapshot.searchCache?.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries)`,
     '',
     '## Canvas and Undo',
     '',
@@ -4767,6 +4779,10 @@ function localFootprintSnapshotToCsv(snapshot) {
     ['loaded_editable_bytes', Number(snapshot.loadedDocuments.editableBytes || 0)],
     ['loaded_editable_count', Number(snapshot.loadedDocuments.editableCount || 0)],
     ['loaded_readonly_count', Number(snapshot.loadedDocuments.readOnlyCount || 0)],
+    ['search_cache_bytes', Number(snapshot.searchCache?.bytes || 0)],
+    ['search_cache_entries', Number(snapshot.searchCache?.entries || 0)],
+    ['search_cache_max_bytes', Number(snapshot.searchCache?.maxBytes || SEARCH_CACHE_MAX_BYTES)],
+    ['search_cache_max_entries', Number(snapshot.searchCache?.maxEntries || SEARCH_CACHE_MAX_ENTRIES)],
     ['canvas_draft_session_bytes', Number(snapshot.canvas.draftSessionBytes || 0)],
     ['canvas_element_count', Number(snapshot.canvas.elementCount || 0)],
     ['editor_undo_bytes', Number(snapshot.undo.editorBytes || 0)],
@@ -4814,6 +4830,7 @@ async function showLocalFootprint() {
   const docs = await loadedDocumentFootprint();
   const runtimeStats = await runtimeFootprint();
   const undo = undoHistoryFootprint();
+  const searchCache = loadedSearchCacheFootprint();
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
   const trashItems = loadDraftTrash();
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
@@ -4825,6 +4842,7 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${runtimeStats?.rssAvailable ? formatBytes(runtimeStats.processRss) : 'N/A'}</strong><span>Process RSS</span><small>${runtimeStats?.rssSource || 'Backend metric unavailable'}</small></div>
       <div class="diag-card"><strong>${runtimeStats ? formatBytes(runtimeStats.goAlloc) : 'N/A'}</strong><span>Go heap alloc</span><small>${runtimeStats ? `${formatBytes(runtimeStats.goSys)} Go sys · ${runtimeStats.goNumGC} GC` : 'Backend metric unavailable'}</small></div>
       <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
+      <div class="diag-card"><strong>${formatBytes(searchCache.bytes)}</strong><span>Search cache</span><small>${searchCache.entries}/${searchCache.maxEntries} entries · cap ${formatBytes(searchCache.maxBytes)}</small></div>
       <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
       <div class="diag-card"><strong>${formatBytes(undo.editorBytes)}</strong><span>Editor undo history</span><small>${undo.editorStates} text snapshot${undo.editorStates === 1 ? '' : 's'} in memory</small></div>
       <div class="diag-card"><strong>${formatBytes(undo.canvasBytes)}</strong><span>Canvas undo history</span><small>${undo.canvasStates} canvas snapshot${undo.canvasStates === 1 ? '' : 's'} in memory</small></div>
