@@ -3271,9 +3271,10 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
-      <button class="task-tab push" data-task-add>+ Task</button>
-      <button class="task-tab" data-task-export-md>Export MD</button>
-      <button class="task-tab" data-task-export>Export ICS</button>
+        <button class="task-tab push" data-task-add>+ Task</button>
+        <button class="task-tab" data-task-export-md>Export MD</button>
+        <button class="task-tab" data-task-copy-ics>Copy ICS</button>
+        <button class="task-tab" data-task-export>Export ICS</button>
     </div>
     ${renderTaskControls(tasks, visibleTasks)}
     ${body}
@@ -6403,6 +6404,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskAdd) await addQuickTask();
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
+  const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
+  if (taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
   if (taskExport) await exportTasksIcs();
   const taskFilterBtn = e.target.closest('[data-task-filter]');
