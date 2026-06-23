@@ -4550,6 +4550,12 @@ function showTrashGuide() {
       <div class="diag-card"><strong>cleanup</strong><span>Clean Expired</span><small>Only removes items past retention</small></div>
       <div class="diag-card"><strong>empty</strong><span>Empty Trash</span><small>Permanent local cleanup action</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-trash-audit>Audit Retention</button>
+      <button data-trash-copy-report>Copy Report</button>
+      <button data-trash-export-report>Export Report</button>
+      <button data-trash-clean-expired>Clean Expired</button>
+    </div>
     <p class="diag-note">Trash is local-only. Reports include metadata and expiry dates; draft content is only copied from per-item actions to avoid exporting deleted text accidentally.</p>
   `);
 }
