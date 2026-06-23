@@ -1824,6 +1824,7 @@ function commandItems() {
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'copy-obsidian-canvas', icon: 'COC', title: 'Copy Obsidian canvas JSON', hint: 'Copy current canvas as Obsidian-compatible .canvas JSON', run: copyObsidianCanvasJson },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
+    { id: 'copy-excalidraw-canvas', icon: 'CEX', title: 'Copy Excalidraw canvas JSON', hint: 'Copy current canvas as Excalidraw-compatible scene JSON', run: copyExcalidrawCanvasJson },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
     { id: 'copy-canvas-summary-md', icon: 'CCM', title: 'Copy canvas Markdown summary', hint: 'Copy a lightweight Markdown inventory of canvas elements', run: copyCanvasMarkdownSummary },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
@@ -4907,6 +4908,13 @@ function exportExcalidrawCanvas() {
   const json = JSON.stringify(canvasToExcalidraw(canvasDoc), null, 2);
   downloadText('markpad-canvas.excalidraw', 'application/json', json);
   statusText.textContent = 'Excalidraw canvas exported';
+}
+
+async function copyExcalidrawCanvasJson() {
+  if (!canvasDoc) loadCanvasState();
+  const json = JSON.stringify(canvasToExcalidraw(canvasDoc), null, 2);
+  await navigator.clipboard.writeText(`${json}\n`);
+  statusText.textContent = 'Excalidraw canvas JSON copied';
 }
 
 function canvasElementSummary(element, index) {
