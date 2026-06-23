@@ -3753,7 +3753,7 @@ function renderTaskRow(task, compact) {
         <div class="task-text">${escapeHtml(task.text)}</div>
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button>`}
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button><button class="task-open" data-task-copy-todo="${escapeHtml(task.id)}">Todo.txt</button>`}
     </div>`;
 }
 
@@ -4234,6 +4234,52 @@ async function copySingleTaskCsv(taskId) {
   }
   await navigator.clipboard.writeText(tasksToCsv([task]));
   statusText.textContent = 'Task copied as CSV';
+}
+
+function taskTodoTxtToken(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^#/, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^\w.-]/g, '')
+    .slice(0, 48);
+}
+
+function taskTodoTxtPriority(task) {
+  const priority = String(task.priority || '').trim().toLowerCase();
+  if (!priority || task.checked) return '';
+  if (priority === 'high' || priority === 'a' || priority === '1') return 'A';
+  if (priority === 'medium' || priority === 'med' || priority === 'b' || priority === '2') return 'B';
+  if (priority === 'low' || priority === 'c' || priority === '3') return 'C';
+  return '';
+}
+
+function taskToTodoTxtLine(task) {
+  const parts = [];
+  if (task.checked) parts.push('x');
+  const priority = taskTodoTxtPriority(task);
+  if (priority) parts.push(`(${priority})`);
+  parts.push(String(task.text || 'Untitled task').replace(/\s+/g, ' ').trim());
+  if (task.due) parts.push(`due:${String(task.due).slice(0, 10)}`);
+  if (task.waiting) parts.push('@waiting');
+  if (Array.isArray(task.tags)) {
+    task.tags.forEach(tag => {
+      const token = taskTodoTxtToken(tag);
+      if (token) parts.push(`+${token}`);
+    });
+  }
+  return parts.join(' ');
+}
+
+async function copySingleTaskTodoTxt(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(`${taskToTodoTxtLine(task)}\n`);
+  statusText.textContent = 'Task copied as Todo.txt';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -7417,6 +7463,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyIcs) await copySingleTaskIcs(taskCopyIcs.dataset.taskCopyIcs);
   const taskCopyCsv = e.target.closest('[data-task-copy-csv]');
   if (taskCopyCsv) await copySingleTaskCsv(taskCopyCsv.dataset.taskCopyCsv);
+  const taskCopyTodo = e.target.closest('[data-task-copy-todo]');
+  if (taskCopyTodo) await copySingleTaskTodoTxt(taskCopyTodo.dataset.taskCopyTodo);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
