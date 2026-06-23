@@ -70,6 +70,8 @@ let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
 let canvasSaveTimer = null;
+let loadedSearchCacheBytes = 0;
+const loadedSearchCache = new Map();
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -178,6 +180,8 @@ const THEMES = [
 const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
 const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
+const SEARCH_CACHE_MAX_ENTRIES = 24;
+const SEARCH_CACHE_MAX_BYTES = 6 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
 const SEARCH_RECENTS_LIMIT = 8;
 const COMMAND_RECENTS_KEY = 'markpad-command-recents-v1';
@@ -1665,6 +1669,7 @@ function interceptLinks(container) {
 // ── Session ──────────────────────────────────────────────
 function renderSession(state) {
   if (!state) return;
+  clearLoadedSearchCache();
   activeId = state.activeId || '';
   cachedNotes = state.notes || [];
   notesList.innerHTML = '';
@@ -2137,6 +2142,51 @@ async function runLoadedSearch(query) {
   renderSearchResults(results, query);
 }
 
+function clearLoadedSearchCache() {
+  loadedSearchCache.clear();
+  loadedSearchCacheBytes = 0;
+}
+
+function deleteLoadedSearchCache(id) {
+  const existing = loadedSearchCache.get(id);
+  if (!existing) return;
+  loadedSearchCache.delete(id);
+  loadedSearchCacheBytes -= existing.bytes || 0;
+}
+
+function setLoadedSearchCache(id, content) {
+  if (!id) return;
+  const text = String(content || '').slice(0, SEARCH_CONTENT_CAP);
+  const bytes = text.length * 2;
+  const existing = loadedSearchCache.get(id);
+  if (existing) loadedSearchCacheBytes -= existing.bytes;
+  loadedSearchCache.set(id, { content: text, bytes, at: Date.now() });
+  loadedSearchCacheBytes += bytes;
+  while (loadedSearchCache.size > SEARCH_CACHE_MAX_ENTRIES || loadedSearchCacheBytes > SEARCH_CACHE_MAX_BYTES) {
+    const firstKey = loadedSearchCache.keys().next().value;
+    if (!firstKey) break;
+    const removed = loadedSearchCache.get(firstKey);
+    loadedSearchCache.delete(firstKey);
+    loadedSearchCacheBytes -= removed?.bytes || 0;
+  }
+}
+
+async function getLoadedSearchContent(note) {
+  if (!note?.id) return '';
+  if (note.id === activeId) return String(currentContent || '').slice(0, SEARCH_CONTENT_CAP);
+  const cached = loadedSearchCache.get(note.id);
+  if (cached) {
+    cached.at = Date.now();
+    loadedSearchCache.delete(note.id);
+    loadedSearchCache.set(note.id, cached);
+    return cached.content;
+  }
+  const content = await window.go.main.App.GetNoteContent(note.id);
+  const text = String(content || '').slice(0, SEARCH_CONTENT_CAP);
+  setLoadedSearchCache(note.id, text);
+  return text;
+}
+
 async function collectLoadedSearchResults(query, token, limit) {
   const plan = parseSearchQuery(query);
   if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes && !plan.hasWildcards && !plan.hasFuzzy) {
@@ -2151,8 +2201,7 @@ async function collectLoadedSearchResults(query, token, limit) {
     const type = getFileType(note.path, note.kind);
     let content = '';
     if (!isReadOnlyType(type)) {
-      content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
-      if (content.length > SEARCH_CONTENT_CAP) content = content.slice(0, SEARCH_CONTENT_CAP);
+      content = await getLoadedSearchContent(note);
     }
     if (token !== searchToken) return [];
     const result = scoreSearch(note, content, plan);
@@ -2284,7 +2333,7 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send results</span><small>Turn current results into a canvas board</small></div>
     </div>
-    <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
+    <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory with a bounded content cache; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
 }
@@ -9105,6 +9154,7 @@ function queueReadPositionSave() {
 
 function loadContent(content) {
   currentContent = content || '';
+  if (activeId) deleteLoadedSearchCache(activeId);
   committedContent = currentContent;
   editor.value = currentContent;
   
@@ -9487,6 +9537,7 @@ editor.addEventListener('input', (e) => {
   if (isReadOnlyType(getFileType(active?.path, active?.kind))) return;
   recordEditState(e.inputType);
   currentContent = editor.value;
+  if (activeId) deleteLoadedSearchCache(activeId);
   const dirty = committedDirty || currentContent !== committedContent;
   if (active && dirty && !active.dirty) {
     active.dirty = true;
