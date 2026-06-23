@@ -1483,7 +1483,7 @@ function showSearchSyntaxHelp() {
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
       </table>
-      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
+      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
       <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
     </div>
   `);
