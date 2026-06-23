@@ -1266,6 +1266,17 @@ function adjustSplitRatio(delta) {
   statusText.textContent = `Split adjusted to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
 }
 
+function swapSplitRatio() {
+  if (viewMode !== 'split') setView('split');
+  if (viewMode !== 'split') {
+    statusText.textContent = 'Split swap is available for Markdown files';
+    return;
+  }
+  splitRatio = normalizeSplitRatio(100 - splitRatio);
+  applySplitRatio();
+  statusText.textContent = `Split swapped to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
+}
+
 // ── File type icons ──────────────────────────────────────
 function fileIcon(path) {
   if (!path) return 'MD';
@@ -2168,6 +2179,7 @@ function showLayoutGuide() {
     <div class="diag-grid">
       <div class="diag-card"><strong>Editor</strong><span>Write-only lane</span><small>Use for plain text edits and low visual noise</small></div>
       <div class="diag-card"><strong>Split</strong><span>Live Markdown preview</span><small>50/50, editor focus, or preview focus presets</small></div>
+      <div class="diag-card"><strong>Swap</strong><span>Flip the ratio</span><small>Turn editor-wide into preview-wide without dragging</small></div>
       <div class="diag-card"><strong>Preview</strong><span>Read-only review</span><small>Best for proofreading rendered Markdown and documents</small></div>
       <div class="diag-card"><strong>Outline</strong><span>Headings to canvas</span><small>Map active Markdown structure as local canvas cards</small></div>
       <div class="diag-card"><strong>Reading width</strong><span>Constrained text</span><small>Improves long-form editing and preview scanning</small></div>
@@ -3572,6 +3584,7 @@ function commandItems() {
     { id: 'split-editor-focus', icon: '72', title: 'Split editor focus', hint: 'Use a wide editor with a narrow rendered preview', run: () => setSplitPreset(72) },
     { id: 'split-preview-wide', icon: '38', title: 'Split preview wide', hint: 'Give the preview more width in split view', run: () => setSplitPreset(38) },
     { id: 'split-preview-focus', icon: '28', title: 'Split preview focus', hint: 'Use a narrow editor with a wide rendered preview', run: () => setSplitPreset(28) },
+    { id: 'split-swap', icon: 'SW', title: 'Swap split focus', hint: 'Flip the current editor/preview split ratio', run: swapSplitRatio },
     { id: 'split-nudge-editor', icon: '+E', title: 'Widen editor split', hint: 'Increase editor width by 5% in split view', run: () => adjustSplitRatio(5) },
     { id: 'split-nudge-preview', icon: '+P', title: 'Widen preview split', hint: 'Increase preview width by 5% in split view', run: () => adjustSplitRatio(-5) },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
@@ -3666,7 +3679,7 @@ function commandCategory(item) {
   if (id.includes('history')) return 'History';
   if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('active-context') || id.includes('active-path') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
-  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
+  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-swap', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id === 'footprint' || id === 'low-memory-guide' || id === 'memory-cleanup-report' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
@@ -9138,6 +9151,7 @@ document.addEventListener('mouseup', () => {
 document.querySelectorAll('[data-split-ratio]').forEach((button) => {
   button.addEventListener('click', () => setSplitPreset(button.dataset.splitRatio));
 });
+$('split-preset-group')?.querySelector('[data-split-swap]')?.addEventListener('click', swapSplitRatio);
 
 // ── Sidebar ──────────────────────────────────────────────
 function toggleSidebar() {
