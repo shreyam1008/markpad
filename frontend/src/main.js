@@ -743,7 +743,6 @@ function searchCandidateMatchesPlan(note, content, plan) {
 
 function searchResultMatchesPlan(result, plan) {
   if (!plan || !plan.hasFilters) return true;
-  if (plan.needsContentFilter) return false;
   const title = String(result.title || basename(result.path) || 'Untitled').toLowerCase();
   const path = String(result.path || '').toLowerCase();
   const kind = String(result.kind || result.type || getFileType(result.path, result.kind) || '').toLowerCase();
@@ -855,10 +854,9 @@ async function collectLoadedSearchResults(query, token, limit) {
 
 async function runAllSearch(query, token) {
   const plan = parseSearchQuery(query);
-  const localQuery = plan.hasFilters ? plan.text : query;
   const [loaded, localPack] = await Promise.all([
     collectLoadedSearchResults(query, token, 35),
-    collectLocalSearchResults(localQuery, token, 35),
+    collectLocalSearchResults(query, token, 35),
   ]);
   if (token !== searchToken) return;
   const local = (localPack.results || []).filter(result => searchResultMatchesPlan(result, plan));
@@ -881,7 +879,7 @@ function updateSearchScopeButtons() {
   }
   if (searchMeta) {
     searchMeta.textContent = searchScope === 'local'
-      ? 'Local folder search scans file names and text content.'
+      ? 'Local folder search supports type:, path:, title:, tag:, and task: filters.'
       : 'Filters: type:, path:, title:, tag:, task:open/task:done. Ctrl+F searches current file.';
   }
 }
