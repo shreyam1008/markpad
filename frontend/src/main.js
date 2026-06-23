@@ -57,6 +57,7 @@ let canvasDraftElement = null;
 let canvasPanStart = null;
 let canvasMoveStart = null;
 let canvasSelectedIndex = -1;
+let canvasClipboard = null;
 let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
@@ -2761,6 +2762,30 @@ function duplicateSelectedCanvasElement() {
   return true;
 }
 
+function copySelectedCanvasElement() {
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  canvasClipboard = cloneCanvasElement(canvasDoc.elements[canvasSelectedIndex]);
+  statusText.textContent = 'Canvas element copied';
+  return true;
+}
+
+function pasteCanvasElement() {
+  if (!canvasActive || !canvasClipboard || !canvasDoc) return false;
+  const copy = moveCanvasElement(canvasClipboard, 28, 28);
+  copy.id = canvasId();
+  canvasDoc.elements.push(copy);
+  canvasSelectedIndex = canvasDoc.elements.length - 1;
+  canvasClipboard = cloneCanvasElement(copy);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = 'Canvas element pasted';
+  return true;
+}
+
 function nudgeSelectedCanvasElement(dx, dy) {
   if (!hasCanvasSelection()) return false;
   canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(canvasDoc.elements[canvasSelectedIndex], dx, dy);
@@ -2800,11 +2825,20 @@ function moveSelectedCanvasLayer(direction) {
 }
 
 function handleCanvasSelectionShortcut(e) {
-  if (!canvasActive || !hasCanvasSelection()) return false;
+  if (!canvasActive) return false;
   if (canvasTextEditor && !canvasTextEditor.classList.contains('hidden')) return false;
   if (commandOpen || searchOpen || !modalOverlay.classList.contains('hidden')) return false;
   if (document.activeElement === commandInput || document.activeElement === searchInput || document.activeElement === findInput) return false;
   const key = e.key;
+  if (canvasClipboard && (e.ctrlKey || e.metaKey) && !e.shiftKey && key.toLowerCase() === 'v') {
+    e.preventDefault();
+    return pasteCanvasElement();
+  }
+  if (!hasCanvasSelection()) return false;
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key.toLowerCase() === 'c') {
+    e.preventDefault();
+    return copySelectedCanvasElement();
+  }
   if (key === 'Delete' || key === 'Backspace') {
     e.preventDefault();
     return deleteSelectedCanvasElement();
