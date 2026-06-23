@@ -1061,21 +1061,31 @@ function heapFootprintHtml() {
     <span>${formatBytes(mem.jsHeapSizeLimit || 0)} heap limit</span>`;
 }
 
+async function runtimeFootprint() {
+  try {
+    if (window.go?.main?.App?.GetRuntimeStats) return await window.go.main.App.GetRuntimeStats();
+  } catch {}
+  return null;
+}
+
 async function showLocalFootprint() {
   const docs = await loadedDocumentFootprint();
+  const runtimeStats = await runtimeFootprint();
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
   const trashItems = loadDraftTrash();
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
   const markpadLocalBytes = localStorageMarkpadBytes();
   showModal('Local Footprint', `
     <div class="diag-grid">
+      <div class="diag-card"><strong>${runtimeStats?.rssAvailable ? formatBytes(runtimeStats.processRss) : 'N/A'}</strong><span>Process RSS</span><small>${runtimeStats?.rssSource || 'Backend metric unavailable'}</small></div>
+      <div class="diag-card"><strong>${runtimeStats ? formatBytes(runtimeStats.goAlloc) : 'N/A'}</strong><span>Go heap alloc</span><small>${runtimeStats ? `${formatBytes(runtimeStats.goSys)} Go sys · ${runtimeStats.goNumGC} GC` : 'Backend metric unavailable'}</small></div>
       <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
       <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
       <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
       <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
-    <p class="diag-note">Exact process RSS needs a Go backend metric. This frontend view reports currently loaded text and local persisted UI data without scanning the filesystem.</p>
+    <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the filesystem.</p>
   `);
 }
 

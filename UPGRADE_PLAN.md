@@ -33,7 +33,7 @@ Sources:
 - Keep search dependency-free and avoid persistent content indexes for now.
 - Improve help/preferences so users can discover new local-first controls.
 - Add a frontend canvas draft that uses one native `<canvas>`, local JSON autosave, and capped device pixel ratio before backend file persistence.
-- Add Local Footprint diagnostics for loaded text, canvas JSON, draft trash, localStorage, and browser heap when available. Exact process RSS remains a Go backend metric.
+- Add Local Footprint diagnostics for process RSS, Go heap, loaded text, canvas JSON, draft trash, localStorage, and browser heap when available.
 
 ## Phase 2: local vault layer
 
