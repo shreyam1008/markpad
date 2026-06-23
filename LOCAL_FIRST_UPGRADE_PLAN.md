@@ -54,3 +54,25 @@ Markpad stays a lightweight local-first desktop app. The app should feel as refi
 - SQLite FTS5: https://sqlite.org/fts5.html
 - tldraw persistence snapshots: https://tldraw.dev/docs/persistence
 - Excalidraw JSON schema: https://docs.excalidraw.com/docs/codebase/json-schema
+
+## 2026-06-24 implementation checkpoint
+
+Completed local-first increments now include:
+
+- Search: loaded-file search controls, current-file search reports, bounded search cache diagnostics, manual cache release, and current-file/search-result canvas boards.
+- Tasks: Markdown-only task views, agenda, copy/export paths, task-file setup workflow, inbox/project/weekly/review starters, and task agenda/visible-task canvas boards.
+- Canvas: lightweight JSON drawing surface, selection inspector, selected-element Markdown insertion, bounded bridge boards, Obsidian/Excalidraw export discoverability, and low-memory undo cleanup.
+- UI: theme quick actions, split workflow controls, modal action polish, diagnostics cards, and command-palette discoverability.
+- Memory: Local Footprint reports search cache, undo, canvas, Trash, localStorage, and runtime metrics; low-memory preset clears undo histories plus search cache.
+
+Still intentionally deferred:
+
+- Cloud/sync identity, sync conflict resolution, remote storage, and multi-device continuation.
+- Heavy embedded drawing/search runtimes unless measurements prove they are worth the RAM and binary cost.
+- Treating derived indexes or views as the source of truth.
+
+Next local-only candidates:
+
+- Backend streaming workspace search with cancellation and bounded worker count.
+- More canvas import/export compatibility tests around `.canvas` and `.excalidraw` JSON.
+- More refined empty states and command surfaces for first-run local folder setup.
