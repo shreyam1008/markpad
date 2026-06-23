@@ -1687,6 +1687,7 @@ function commandItems() {
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
+    { id: 'find-clear', icon: 'FC', title: 'Clear current find', hint: 'Clear the inline find query without closing the editor', run: clearCurrentFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
@@ -5888,6 +5889,13 @@ function findSelectionInCurrentFile() {
     return;
   }
   doFind();
+}
+
+function clearCurrentFind() {
+  if (!findOpen) toggleFind();
+  findInput.value = '';
+  findInfo.textContent = '';
+  findInput.focus();
 }
 
 function doFind() {
