@@ -51,6 +51,7 @@ let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
 let canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
 let canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
 let canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
+let canvasGridSize = normalizeCanvasGridSize(localStorage.getItem('markpad-canvas-grid-size') || '24');
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let compactMode = localStorage.getItem('markpad-compact') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
@@ -191,6 +192,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-canvas-grid',
   'markpad-canvas-snap',
   'markpad-canvas-minimap',
+  'markpad-canvas-grid-size',
   'markpad-canvas-session',
   'markpad-focus',
   'markpad-compact',
@@ -205,7 +207,6 @@ const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
-const CANVAS_SNAP_SIZE = 24;
 const CANVAS_ZOOM_MIN = 0.12;
 const CANVAS_ZOOM_MAX = 4;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
@@ -1665,6 +1666,11 @@ function commandItems() {
     { id: 'canvas-zoom-reset', icon: 'Z1', title: 'Canvas zoom 100%', hint: 'Reset canvas zoom to 100% without moving content off-canvas', run: () => { openCanvas(); setCanvasZoom(1); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
+    { id: 'canvas-grid-12', icon: 'G12', title: 'Canvas grid 12px', hint: 'Use a fine 12px grid for precise drawing and snap', run: () => { openCanvas(); setCanvasGridSize(12); } },
+    { id: 'canvas-grid-16', icon: 'G16', title: 'Canvas grid 16px', hint: 'Use a compact 16px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(16); } },
+    { id: 'canvas-grid-24', icon: 'G24', title: 'Canvas grid 24px', hint: 'Use the default 24px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(24); } },
+    { id: 'canvas-grid-32', icon: 'G32', title: 'Canvas grid 32px', hint: 'Use a roomy 32px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(32); } },
+    { id: 'canvas-grid-48', icon: 'G48', title: 'Canvas grid 48px', hint: 'Use a broad 48px grid for coarse layout and snap', run: () => { openCanvas(); setCanvasGridSize(48); } },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
@@ -3635,9 +3641,10 @@ function canvasScreenToWorld(clientX, clientY) {
 
 function canvasSnapPoint(point) {
   if (!canvasSnapToGrid) return point;
+  const step = normalizeCanvasGridSize(canvasGridSize);
   return {
-    x: Math.round(point.x / CANVAS_SNAP_SIZE) * CANVAS_SNAP_SIZE,
-    y: Math.round(point.y / CANVAS_SNAP_SIZE) * CANVAS_SNAP_SIZE,
+    x: Math.round(point.x / step) * step,
+    y: Math.round(point.y / step) * step,
   };
 }
 
@@ -3657,7 +3664,7 @@ function resizeCanvasStage() {
 function drawCanvasGrid(ctx, width, height) {
   if (!canvasGridVisible) return;
   const camera = canvasCamera();
-  const step = Math.max(24, 48 * camera.scale);
+  const step = Math.max(canvasGridSize, canvasGridSize * 2 * camera.scale);
   const startX = ((camera.x % step) + step) % step;
   const startY = ((camera.y % step) + step) % step;
   ctx.save();
@@ -3838,6 +3845,19 @@ function toggleCanvasGrid() {
   updateCanvasOptionButtons();
   renderCanvas();
   statusText.textContent = canvasGridVisible ? 'Canvas grid shown' : 'Canvas grid hidden';
+}
+
+function normalizeCanvasGridSize(value) {
+  const size = Number(value);
+  return [12, 16, 24, 32, 48].includes(size) ? size : 24;
+}
+
+function setCanvasGridSize(size) {
+  canvasGridSize = normalizeCanvasGridSize(size);
+  localStorage.setItem('markpad-canvas-grid-size', String(canvasGridSize));
+  renderCanvas();
+  updateCanvasStatus();
+  statusText.textContent = `Canvas grid ${canvasGridSize}px`;
 }
 
 function toggleCanvasSnap() {
@@ -4568,7 +4588,7 @@ function canvasToExcalidraw(doc) {
     elements,
     appState: {
       viewBackgroundColor: source.appState?.viewBackgroundColor || '#ffffff',
-      gridSize: canvasGridVisible ? 24 : null,
+      gridSize: canvasGridVisible ? canvasGridSize : null,
     },
     files: {},
   };
@@ -6170,6 +6190,7 @@ function applyImportedLocalSettings() {
   canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
   canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
   canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
+  canvasGridSize = normalizeCanvasGridSize(localStorage.getItem('markpad-canvas-grid-size') || String(canvasGridSize));
   focusMode = localStorage.getItem('markpad-focus') === '1';
   compactMode = localStorage.getItem('markpad-compact') === '1';
   splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || String(splitRatio));
@@ -6235,8 +6256,8 @@ async function showPreferences() {
     </table>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Canvas</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Grid</td><td style="padding:4px 6px;">${canvasGridVisible ? 'Visible' : 'Hidden'} · stored locally</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Snap</td><td style="padding:4px 6px;">${canvasSnapToGrid ? 'Enabled' : 'Disabled'} · 24-unit grid for new shapes/text</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Grid</td><td style="padding:4px 6px;">${canvasGridVisible ? 'Visible' : 'Hidden'} · ${canvasGridSize}px · stored locally</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Snap</td><td style="padding:4px 6px;">${canvasSnapToGrid ? 'Enabled' : 'Disabled'} · ${canvasGridSize}px grid for new shapes/text</td></tr>
       <tr><td style="padding:4px 6px;font-weight:600;">Minimap</td><td style="padding:4px 6px;">${canvasMinimapVisible ? 'Visible' : 'Hidden'} · simplified bounds only</td></tr>
     </table>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Sidebar</h3>
