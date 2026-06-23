@@ -2973,6 +2973,7 @@ function commandItems() {
     { id: 'commands-local', icon: 'CMD', title: 'Show Local commands', hint: 'Filter the command palette to Local workspace actions', run: () => openCommandPaletteQuery('Local') },
     { id: 'commands-layout', icon: 'CMD', title: 'Show Layout commands', hint: 'Filter the command palette to layout and editor view actions', run: () => openCommandPaletteQuery('Layout') },
     { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
+    { id: 'commands-theme', icon: 'CMD', title: 'Show Theme commands', hint: 'Filter the command palette to lightweight theme and appearance actions', run: () => openCommandPaletteQuery('Theme') },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
@@ -3311,6 +3312,13 @@ function commandScore(item, query) {
 
 function commandCategory(item) {
   const id = String(item?.id || '');
+  if (id === 'commands-search') return 'Search';
+  if (id === 'commands-tasks') return 'Tasks';
+  if (id === 'commands-canvas') return 'Canvas';
+  if (id === 'commands-local') return 'Local';
+  if (id === 'commands-layout') return 'Layout';
+  if (id === 'commands-diagnostics') return 'Diagnostics';
+  if (id === 'commands-theme') return 'Theme';
   if (id.includes('search') || id === 'find' || id.startsWith('find-') || id.includes('outline')) return 'Search';
   if (id.includes('command-recents') || id === 'clear-palette-recents') return 'Search';
   if (id.startsWith('tasks') || id.startsWith('add-task') || id.includes('task')) return 'Tasks';
@@ -3326,6 +3334,15 @@ function commandCategory(item) {
   return 'File';
 }
 
+function commandEmptyHtml(query) {
+  const categories = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
+  const chips = categories
+    .map(category => `<span style="display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;margin:3px;color:var(--text);">${category}</span>`)
+    .join('');
+  const suffix = query ? ` for &quot;${escapeHtml(query)}&quot;` : '';
+  return `<div class="command-empty"><strong>No command matched${suffix}.</strong><br><span>Try a command category:</span><div style="margin-top:10px;">${chips}</div></div>`;
+}
+
 function renderCommandPalette() {
   const query = commandInput.value.trim();
   const items = commandItems()
@@ -3337,7 +3354,7 @@ function renderCommandPalette() {
   commandResults.innerHTML = '';
   commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, items.length - 1));
   if (!items.length) {
-    commandResults.innerHTML = '<div class="command-empty">No command matched.</div>';
+    commandResults.innerHTML = commandEmptyHtml(query);
     return;
   }
   items.forEach((item, index) => {
