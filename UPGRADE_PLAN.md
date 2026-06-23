@@ -87,6 +87,7 @@ Vault/
 
 ## Phase 6: canvas
 
+- Current frontend slices: native `<canvas>` infinite surface, Markpad JSON autosave, Markpad/Obsidian-style JSON import, JSON export, and SVG export.
 - Start with a native `<canvas>` infinite surface, not tldraw/excalidraw bundles.
 - Support pan, zoom, pen, rectangle, ellipse, line, arrow, text, eraser, color, stroke width.
 - Store drawings as small JSON plus optional exported SVG/PNG.

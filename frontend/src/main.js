@@ -112,6 +112,7 @@ const canvasStage  = $('canvas-stage');
 const canvasTextEditor = $('canvas-text-editor');
 const canvasColor  = $('canvas-color');
 const canvasWidth  = $('canvas-width');
+const canvasImportFile = $('canvas-import-file');
 
 const THEMES = [
   { id: 'paper', label: 'Paper' },
@@ -792,6 +793,8 @@ function commandItems() {
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
+    { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
+    { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
@@ -1305,6 +1308,108 @@ function newCanvasDoc() {
   };
 }
 
+function downloadText(filename, mime, text) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function normalizeCanvasDoc(input) {
+  if (input && input.type === 'markpad-canvas' && Array.isArray(input.elements)) {
+    return {
+      type: 'markpad-canvas',
+      version: 1,
+      source: input.source || 'markpad',
+      elements: input.elements.filter(Boolean),
+      appState: input.appState || { viewBackgroundColor: '#ffffff' },
+      files: input.files || {},
+    };
+  }
+  if (input && Array.isArray(input.nodes)) {
+    const elements = [];
+    const byID = new Map();
+    input.nodes.forEach((node) => {
+      const x = Number(node.x || 0);
+      const y = Number(node.y || 0);
+      const w = Number(node.width || 260);
+      const h = Number(node.height || 140);
+      byID.set(node.id, { x, y, w, h });
+      elements.push({ id: canvasId(), type: 'rect', x, y, w, h, stroke: '#6b6e68', width: 2 });
+      const label = node.type === 'file' ? (node.file || 'File') : (node.text || node.label || 'Note');
+      elements.push({ id: canvasId(), type: 'text', x: x + 14, y: y + 30, text: label, stroke: '#2f6f61', size: 16 });
+    });
+    (input.edges || []).forEach((edge) => {
+      const from = byID.get(edge.fromNode);
+      const to = byID.get(edge.toNode);
+      if (!from || !to) return;
+      const x1 = from.x + from.w / 2;
+      const y1 = from.y + from.h / 2;
+      const x2 = to.x + to.w / 2;
+      const y2 = to.y + to.h / 2;
+      elements.push({ id: canvasId(), type: 'line', x: x1, y: y1, w: x2 - x1, h: y2 - y1, stroke: '#2f6f61', width: 2 });
+    });
+    return {
+      type: 'markpad-canvas',
+      version: 1,
+      source: 'markpad-import-obsidian-canvas',
+      elements,
+      appState: { viewBackgroundColor: '#ffffff' },
+      files: {},
+    };
+  }
+  throw new Error('Unsupported canvas JSON');
+}
+
+function canvasElementBounds(el) {
+  if (el.type === 'path' && el.points?.length) {
+    const xs = el.points.map(p => p.x);
+    const ys = el.points.map(p => p.y);
+    return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  }
+  if (el.type === 'text') {
+    const lines = String(el.text || '').split('\n');
+    const size = el.size || 16;
+    return { x: el.x, y: el.y - size, w: Math.max(...lines.map(line => line.length), 1) * size * .62, h: lines.length * size * 1.35 };
+  }
+  return {
+    x: Math.min(el.x || 0, (el.x || 0) + (el.w || 0)),
+    y: Math.min(el.y || 0, (el.y || 0) + (el.h || 0)),
+    w: Math.abs(el.w || 0),
+    h: Math.abs(el.h || 0),
+  };
+}
+
+function canvasToSvg(doc) {
+  const elements = doc?.elements || [];
+  const bounds = elements.map(canvasElementBounds);
+  const minX = bounds.length ? Math.min(...bounds.map(b => b.x)) - 32 : 0;
+  const minY = bounds.length ? Math.min(...bounds.map(b => b.y)) - 32 : 0;
+  const maxX = bounds.length ? Math.max(...bounds.map(b => b.x + b.w)) + 32 : 960;
+  const maxY = bounds.length ? Math.max(...bounds.map(b => b.y + b.h)) + 32 : 540;
+  const esc = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const body = elements.map((el) => {
+    const stroke = esc(el.stroke || '#2f6f61');
+    const width = Number(el.width || 3);
+    if (el.type === 'path' && el.points?.length) {
+      const d = el.points.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ');
+      return `<path d="${esc(d)}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    if (el.type === 'rect') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" fill="none" stroke="${stroke}" stroke-width="${width}" rx="6"/>`;
+    if (el.type === 'ellipse') return `<ellipse cx="${el.x + el.w / 2}" cy="${el.y + el.h / 2}" rx="${Math.abs(el.w / 2)}" ry="${Math.abs(el.h / 2)}" fill="none" stroke="${stroke}" stroke-width="${width}"/>`;
+    if (el.type === 'line') return `<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"/>`;
+    if (el.type === 'text') {
+      const size = Number(el.size || 16);
+      return String(el.text || '').split('\n').map((line, i) => `<text x="${el.x}" y="${el.y + i * size * 1.35}" fill="${stroke}" font-size="${size}" font-family="monospace">${esc(line)}</text>`).join('');
+    }
+    return '';
+  }).join('\n  ');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${maxX - minX} ${maxY - minY}" width="${Math.ceil(maxX - minX)}" height="${Math.ceil(maxY - minY)}">\n  <rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" fill="${esc(doc?.appState?.viewBackgroundColor || '#ffffff')}"/>\n  ${body}\n</svg>\n`;
+}
+
 function loadCanvasState() {
   try { canvasDoc = JSON.parse(localStorage.getItem(CANVAS_DOC_KEY) || ''); } catch { canvasDoc = null; }
   try { canvasSession = JSON.parse(localStorage.getItem(CANVAS_SESSION_KEY) || ''); } catch { canvasSession = null; }
@@ -1606,16 +1711,37 @@ $('canvas-reset-view')?.addEventListener('click', () => {
   saveCanvasState();
   renderCanvas();
 });
-$('canvas-export')?.addEventListener('click', () => {
+function exportCanvasJson() {
   const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'markpad-canvas-draft.json';
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadText('markpad-canvas-draft.json', 'application/json', json);
   statusText.textContent = 'Canvas JSON exported';
+}
+function exportCanvasSvg() {
+  if (!canvasDoc) loadCanvasState();
+  downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
+  statusText.textContent = 'Canvas SVG exported';
+}
+function importCanvasJson() {
+  openCanvas();
+  canvasImportFile?.click();
+}
+$('canvas-import')?.addEventListener('click', importCanvasJson);
+$('canvas-export')?.addEventListener('click', exportCanvasJson);
+$('canvas-export-svg')?.addEventListener('click', exportCanvasSvg);
+canvasImportFile?.addEventListener('change', async () => {
+  const file = canvasImportFile.files && canvasImportFile.files[0];
+  canvasImportFile.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    canvasDoc = normalizeCanvasDoc(JSON.parse(text));
+    canvasSession.camera = { x: 0, y: 0, scale: 1 };
+    saveCanvasState();
+    renderCanvas();
+    statusText.textContent = 'Canvas imported';
+  } catch (err) {
+    statusText.textContent = 'Canvas import failed: ' + (err.message || err);
+  }
 });
 $('canvas-clear')?.addEventListener('click', () => {
   canvasDoc = newCanvasDoc();
