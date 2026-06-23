@@ -46,6 +46,7 @@ let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
 let canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
 let canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
+let canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
 let canvasDoc = null;
@@ -121,6 +122,7 @@ const themeBtn     = $('btn-theme');
 const focusBtn     = $('btn-focus');
 const canvasOverlay = $('canvas-overlay');
 const canvasStage  = $('canvas-stage');
+const canvasMinimap = $('canvas-minimap');
 const canvasTextEditor = $('canvas-text-editor');
 const canvasColor  = $('canvas-color');
 const canvasWidth  = $('canvas-width');
@@ -1018,6 +1020,7 @@ function commandItems() {
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
+    { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
     { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
     { id: 'canvas-layer-backward', icon: 'LB', title: 'Canvas send backward', hint: 'Move the selected canvas element one layer backward', run: () => moveSelectedCanvasLayer('backward') },
     { id: 'canvas-layer-front', icon: 'TF', title: 'Canvas bring to front', hint: 'Move the selected canvas element above all others', run: () => moveSelectedCanvasLayer('front') },
@@ -2524,6 +2527,54 @@ function renderCanvasSelection(ctx) {
   ctx.restore();
 }
 
+function renderCanvasMinimap() {
+  if (!canvasMinimap) return;
+  canvasMinimap.classList.toggle('hidden', !canvasMinimapVisible);
+  if (!canvasMinimapVisible || !canvasDoc || !canvasActive || !canvasStage) return;
+  const rect = canvasMinimap.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, CANVAS_DPR_CAP);
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+  if (canvasMinimap.width !== width || canvasMinimap.height !== height) {
+    canvasMinimap.width = width;
+    canvasMinimap.height = height;
+  }
+  const ctx = canvasMinimap.getContext('2d', { alpha: true });
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  const camera = canvasCamera();
+  const stageRect = canvasStage.getBoundingClientRect();
+  const view = {
+    x: -camera.x / camera.scale,
+    y: -camera.y / camera.scale,
+    w: stageRect.width / camera.scale,
+    h: stageRect.height / camera.scale,
+  };
+  const bounds = (canvasDoc.elements || []).map(canvasElementBounds).filter(b => Number.isFinite(b.x + b.y + b.w + b.h));
+  bounds.push(view);
+  const minX = Math.min(...bounds.map(b => b.x));
+  const minY = Math.min(...bounds.map(b => b.y));
+  const maxX = Math.max(...bounds.map(b => b.x + b.w));
+  const maxY = Math.max(...bounds.map(b => b.y + b.h));
+  const contentW = Math.max(1, maxX - minX);
+  const contentH = Math.max(1, maxY - minY);
+  const scale = Math.min((rect.width - 14) / contentW, (rect.height - 14) / contentH);
+  const tx = (rect.width - contentW * scale) / 2 - minX * scale;
+  const ty = (rect.height - contentH * scale) / 2 - minY * scale;
+  const styles = getComputedStyle(document.documentElement);
+  ctx.fillStyle = styles.getPropertyValue('--surface').trim() || '#ffffff';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = styles.getPropertyValue('--accent').trim() || '#2f6f61';
+  ctx.globalAlpha = 0.45;
+  for (const b of bounds.slice(0, -1)) {
+    ctx.fillRect(tx + b.x * scale, ty + b.y * scale, Math.max(2, b.w * scale), Math.max(2, b.h * scale));
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = styles.getPropertyValue('--danger').trim() || '#c54b33';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(tx + view.x * scale, ty + view.y * scale, Math.max(4, view.w * scale), Math.max(4, view.h * scale));
+}
+
 function arrowHeadPoints(x1, y1, x2, y2, size) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const spread = Math.PI / 7;
@@ -2566,6 +2617,7 @@ function renderCanvas() {
   canvasDoc.elements.filter(visible).forEach(el => renderCanvasElement(ctx, el));
   if (canvasDraftElement) renderCanvasElement(ctx, canvasDraftElement);
   renderCanvasSelection(ctx);
+  renderCanvasMinimap();
 }
 
 function setCanvasTool(tool) {
@@ -2580,6 +2632,7 @@ function setCanvasTool(tool) {
 function updateCanvasOptionButtons() {
   $('canvas-grid')?.classList.toggle('active', canvasGridVisible);
   $('canvas-snap')?.classList.toggle('active', canvasSnapToGrid);
+  $('canvas-minimap-toggle')?.classList.toggle('active', canvasMinimapVisible);
 }
 
 function toggleCanvasGrid() {
@@ -2595,6 +2648,14 @@ function toggleCanvasSnap() {
   localStorage.setItem('markpad-canvas-snap', canvasSnapToGrid ? '1' : '0');
   updateCanvasOptionButtons();
   statusText.textContent = canvasSnapToGrid ? 'Canvas snap enabled' : 'Canvas snap disabled';
+}
+
+function toggleCanvasMinimap() {
+  canvasMinimapVisible = !canvasMinimapVisible;
+  localStorage.setItem('markpad-canvas-minimap', canvasMinimapVisible ? '1' : '0');
+  updateCanvasOptionButtons();
+  renderCanvas();
+  statusText.textContent = canvasMinimapVisible ? 'Canvas minimap shown' : 'Canvas minimap hidden';
 }
 
 function openCanvas() {
@@ -2920,6 +2981,7 @@ $('canvas-reset-view')?.addEventListener('click', () => {
 $('canvas-fit')?.addEventListener('click', fitCanvasToContent);
 $('canvas-grid')?.addEventListener('click', toggleCanvasGrid);
 $('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
+$('canvas-minimap-toggle')?.addEventListener('click', toggleCanvasMinimap);
 $('canvas-layer-front')?.addEventListener('click', () => moveSelectedCanvasLayer('front'));
 $('canvas-layer-back')?.addEventListener('click', () => moveSelectedCanvasLayer('back'));
 function exportCanvasJson() {
