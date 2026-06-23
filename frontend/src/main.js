@@ -2554,6 +2554,13 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-local-workspace-setup>Workspace Setup</button>
+      <button data-task-file-setup>Task File</button>
+      <button data-search-performance-open>Search Performance</button>
+      <button data-open-local-footprint>Local Footprint</button>
+      <button data-trash-guide>Trash Guide</button>
+    </div>
     <p class="diag-note">Sync is intentionally a later layer. The current app should remain useful offline, transparent about where data lives, and easy to export before any cloud account or sync engine exists.</p>
   `);
 }
@@ -5259,9 +5266,13 @@ async function showLocalWorkspaceSetupGuide() {
       <button data-local-folder-new ${ready ? '' : 'disabled'}>New note</button>
       <button data-local-folder-daily ${ready ? '' : 'disabled'}>Daily</button>
       <button data-local-folder-weekly ${ready ? '' : 'disabled'}>Weekly</button>
+      <button data-local-folder-tasks ${ready ? '' : 'disabled'}>Tasks.md</button>
       <button data-local-folder-canvas ${ready ? '' : 'disabled'}>New canvas</button>
       <button data-local-folder-search ${ready ? '' : 'disabled'}>Search</button>
       <button data-local-folder-map ${ready ? '' : 'disabled'}>Links map</button>
+      <button data-task-file-setup>Task setup</button>
+      <button data-search-performance-open>Search guide</button>
+      <button data-open-local-footprint>Footprint</button>
     </div>
     <p class="diag-note">This setup guide is local-only. It prepares the folder model for future sync, but does not create an account, background service, or remote index.</p>
   `);
