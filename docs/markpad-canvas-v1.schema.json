@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://markpad.local/schemas/canvas-v1.json",
+  "title": "Markpad Canvas v1",
+  "description": "Portable local-first Markpad canvas document. Content state only; transient view/session state should be stored separately.",
+  "type": "object",
+  "required": ["type", "version", "schema", "source", "elements", "appState", "files"],
+  "additionalProperties": true,
+  "properties": {
+    "type": {
+      "const": "markpad-canvas"
+    },
+    "version": {
+      "const": 1
+    },
+    "schema": {
+      "const": "https://markpad.local/schemas/canvas-v1.json"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "format": {
+          "const": "markpad-canvas-v1"
+        },
+        "generator": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "exportedAt": {
+          "type": "string"
+        },
+        "importedFrom": {
+          "type": "string"
+        }
+      }
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/element"
+      }
+    },
+    "appState": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "viewBackgroundColor": {
+          "type": "string",
+          "default": "#ffffff"
+        }
+      }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": ["path", "text", "rect", "ellipse", "line", "arrow"]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "fill": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0
+        },
+        "text": {
+          "type": "string"
+        },
+        "size": {
+          "type": "number",
+          "minimum": 1
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["x", "y"],
+            "additionalProperties": true,
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
