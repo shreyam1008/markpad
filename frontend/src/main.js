@@ -1243,6 +1243,7 @@ function searchResultsToMarkdown(results, query) {
     '# Markpad Search Results',
     '',
     `Query: ${query || '(empty)'}`,
+    `Scope: ${searchScope}`,
     `Count: ${results.length}`,
     `Exported: ${new Date().toLocaleString()}`,
     '',
