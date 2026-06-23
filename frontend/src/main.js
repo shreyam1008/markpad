@@ -2736,6 +2736,7 @@ function renderFileTrashRows(items) {
       </div>
       <div class="trash-actions">
         <button data-file-trash-restore="${escapeHtml(item.id)}">Restore</button>
+        <button data-file-trash-copy-path="${escapeHtml(item.id)}">Copy Path</button>
         <button data-file-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
     </div>`;
@@ -2809,6 +2810,17 @@ async function copyTrashReportMarkdown() {
   await navigator.clipboard.writeText(trashReportToMarkdown(draftItems, fileItems));
   const total = draftItems.length + fileItems.length;
   statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as Markdown`;
+}
+
+async function copyFileTrashPath(itemId) {
+  const item = (await loadFileTrash()).find(entry => entry.id === itemId);
+  if (!item) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(item.originalPath || item.path || '');
+  statusText.textContent = 'Trash file path copied';
 }
 
 async function exportTrashReportMarkdown() {
@@ -7669,6 +7681,8 @@ modalBodyEl.addEventListener('click', async (e) => {
     modalOverlay.classList.add('hidden');
     statusText.textContent = 'File restored from Trash';
   }
+  const fileTrashCopyPath = e.target.closest('[data-file-trash-copy-path]');
+  if (fileTrashCopyPath) await copyFileTrashPath(fileTrashCopyPath.dataset.fileTrashCopyPath);
   const fileTrashDelete = e.target.closest('[data-file-trash-delete]');
   if (fileTrashDelete && window.go?.main?.App?.DeleteFileTrash) {
     await window.go.main.App.DeleteFileTrash(fileTrashDelete.dataset.fileTrashDelete);
