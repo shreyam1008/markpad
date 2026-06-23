@@ -6087,6 +6087,13 @@ async function showPreferences() {
     <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
     <p style="margin-top:8px;">Themes are CSS-variable only, so they add polish without images, icon fonts, or runtime dependencies.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;margin-top:8px;">
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Focus</td><td style="padding:4px 6px;">${focusMode ? 'Enabled' : 'Disabled'} · command-driven writing chrome</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Compact</td><td style="padding:4px 6px;">${compactMode ? 'Enabled' : 'Disabled'} · tighter sidebar, toolbar, search, tasks, and canvas controls</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Soft wrap</td><td style="padding:4px 6px;">${editorSoftWrap ? 'Enabled' : 'Disabled'} · visual only</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Reading width</td><td style="padding:4px 6px;">${editorReadingWidth ? 'Enabled' : 'Disabled'} · constrained editor/preview lane</td></tr>
+      <tr><td style="padding:4px 6px;font-weight:600;">Zoom / Split</td><td style="padding:4px 6px;">${Math.round(fontSize / ZOOM_DEFAULT * 100)}% · ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}</td></tr>
+    </table>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Local Workspace</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Default folder</td><td style="padding:4px 6px;word-break:break-all;">${localInfo?.path ? escapeHtml(localInfo.path) : 'Not set'}${localInfo?.missing ? ' <span style="color:#c54b33;font-weight:700;">(missing)</span>' : ''}</td></tr>
