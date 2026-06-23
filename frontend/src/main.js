@@ -2298,6 +2298,8 @@ function commandItems() {
     { id: 'tasks-source-all', icon: 'TSA', title: 'Tasks all sources', hint: 'Show loaded and local Markdown tasks together', run: () => showTasksForSource('all') },
     { id: 'tasks-source-loaded', icon: 'TSL', title: 'Tasks loaded source', hint: 'Show tasks from currently loaded documents only', run: () => showTasksForSource('loaded') },
     { id: 'tasks-source-local', icon: 'TSF', title: 'Tasks local source', hint: 'Show tasks from the configured local folder only', run: () => showTasksForSource('local') },
+    { id: 'tasks-open', icon: 'TOP', title: 'Open tasks', hint: 'Show unchecked Markdown tasks in the current task view', run: () => showTasksForFilter('open') },
+    { id: 'tasks-done-filter', icon: 'TDN', title: 'Completed tasks', hint: 'Show checked Markdown tasks in the current task view', run: () => showTasksForFilter('done') },
     { id: 'tasks-due-today', icon: 'TD', title: 'Tasks due today', hint: 'Filter tasks with due:today', run: () => showTasksForQuery('due:today') },
     { id: 'tasks-due-tomorrow', icon: 'TT', title: 'Tasks due tomorrow', hint: 'Filter tasks with due:tomorrow', run: () => showTasksForQuery('due:tomorrow') },
     { id: 'tasks-due-week', icon: 'TWK', title: 'Tasks due this week', hint: 'Filter tasks due within the next 7 days', run: () => showTasksForQuery('due:week') },
@@ -3734,6 +3736,17 @@ function setTaskSourceFilter(value) {
 
 function showTasksForSource(source) {
   setTaskSourceFilter(source);
+  return showTasksView(taskViewMode);
+}
+
+function setTaskStatusFilter(value) {
+  const allowed = new Set(['all', 'open', 'due', 'overdue', 'waiting', 'high', 'done']);
+  taskFilter = allowed.has(value) ? value : 'all';
+  localStorage.setItem('markpad-task-filter', taskFilter);
+}
+
+function showTasksForFilter(filter) {
+  setTaskStatusFilter(filter);
   return showTasksView(taskViewMode);
 }
 
