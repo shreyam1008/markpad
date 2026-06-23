@@ -810,6 +810,45 @@ body.markpad-compact #modal-body {
   text-transform: uppercase;
 }
 
+.search-row {
+  position: relative;
+  overflow: hidden;
+}
+.search-row::before {
+  content: "";
+  position: absolute;
+  inset: 8px auto 8px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+.search-row:hover::before,
+.search-row.active::before {
+  background: var(--accent);
+}
+.search-badge {
+  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset;
+}
+.search-title-line em {
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+  padding: 1px 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.search-path {
+  color: color-mix(in srgb, var(--muted) 86%, var(--text));
+}
+.search-snippet {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 28%, var(--border-soft));
+  padding-left: 8px;
+}
+
 /* Document outline */
 .outline-summary {
   color: var(--muted);
