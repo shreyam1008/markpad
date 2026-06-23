@@ -34,6 +34,8 @@ let searchTimer = null;
 let searchToken = 0;
 let searchActiveIndex = 0;
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
+let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
+let latestTasks = [];
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -713,6 +715,237 @@ searchInput?.addEventListener('keydown', (e) => {
 $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
 themeBtn?.addEventListener('click', cycleTheme);
+
+const TASK_LINE_RE = /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
+const FENCE_LINE_RE = /^(\s*)(```|~~~)/;
+
+function normalizePriority(raw) {
+  if (!raw) return '';
+  const v = raw.toLowerCase();
+  if (v === 'h' || v === 'high') return 'high';
+  if (v === 'm' || v === 'med' || v === 'medium') return 'med';
+  if (v === 'l' || v === 'low') return 'low';
+  return '';
+}
+
+function extractTaskTokens(text) {
+  const due = (text.match(/\bdue:(\d{4}-\d{2}-\d{2})\b/) || [])[1] || '';
+  const priority = normalizePriority((text.match(/!(high|h|med|medium|m|low|l)\b/i) || [])[1]);
+  const waiting = /(^|\s)@waiting\b/i.test(text);
+  const tags = [...text.matchAll(/(^|\s)#([A-Za-z0-9_/-]+)/g)].map(m => m[2]);
+  const cleaned = text
+    .replace(/\bdue:\d{4}-\d{2}-\d{2}\b/g, '')
+    .replace(/!(high|h|med|medium|m|low|l)\b/ig, '')
+    .replace(/(^|\s)@waiting\b/ig, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { due, priority, waiting, tags, text: cleaned || text.trim() };
+}
+
+function parseTasksFromContent(note, content) {
+  const lines = content.split('\n');
+  const tasks = [];
+  let inFence = false;
+  let fenceMarker = '';
+  let taskIndex = 0;
+  let offset = 0;
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    const line = lines[lineNumber];
+    const fence = line.match(FENCE_LINE_RE);
+    if (fence) {
+      const marker = fence[2];
+      if (!inFence) { inFence = true; fenceMarker = marker; }
+      else if (marker === fenceMarker) { inFence = false; fenceMarker = ''; }
+      offset += line.length + 1;
+      continue;
+    }
+    if (!inFence) {
+      const match = line.match(TASK_LINE_RE);
+      if (match) {
+        const tail = match[3].replace(/^\]\s*/, '');
+        const tokens = extractTaskTokens(tail);
+        tasks.push({
+          id: `${note.id}:${taskIndex}`,
+          noteId: note.id,
+          noteTitle: note.path ? note.title : 'Untitled',
+          path: note.path || 'Draft',
+          index: taskIndex,
+          line: lineNumber,
+          offset,
+          checked: match[2].toLowerCase() === 'x',
+          raw: line,
+          text: tokens.text,
+          due: tokens.due,
+          priority: tokens.priority,
+          waiting: tokens.waiting,
+          tags: tokens.tags,
+        });
+        taskIndex++;
+      }
+    }
+    offset += line.length + 1;
+  }
+  return tasks;
+}
+
+async function collectLoadedTasks() {
+  const tasks = [];
+  for (const note of cachedNotes) {
+    const type = getFileType(note.path, note.kind);
+    if (isReadOnlyType(type)) continue;
+    const content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
+    tasks.push(...parseTasksFromContent(note, content));
+  }
+  latestTasks = tasks;
+  return tasks;
+}
+
+function taskStatus(task) {
+  if (task.checked) return 'done';
+  if (task.waiting) return 'waiting';
+  if (!task.due) return 'today';
+  const today = new Date().toISOString().slice(0, 10);
+  return task.due <= today ? 'today' : 'upcoming';
+}
+
+function taskMeta(task) {
+  const bits = [];
+  bits.push(`<span class="task-pill">${escapeHtml(task.noteTitle)}</span>`);
+  if (task.due) bits.push(`<span class="task-pill">due ${escapeHtml(task.due)}</span>`);
+  if (task.priority) bits.push(`<span class="task-pill">!${escapeHtml(task.priority)}</span>`);
+  if (task.waiting) bits.push('<span class="task-pill">@waiting</span>');
+  task.tags.forEach(tag => bits.push(`<span class="task-pill">#${escapeHtml(tag)}</span>`));
+  return bits.join('');
+}
+
+function renderTaskRow(task, compact) {
+  return `
+    <div class="task-row${task.checked ? ' done' : ''}">
+      <button class="task-check" data-task-toggle="${escapeHtml(task.id)}" title="Toggle task">${task.checked ? '✓' : ''}</button>
+      <div class="task-body">
+        <div class="task-text">${escapeHtml(task.text)}</div>
+        <div class="task-meta">${taskMeta(task)}</div>
+      </div>
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button>`}
+    </div>`;
+}
+
+function renderTaskList(tasks) {
+  if (!tasks.length) return '<div class="task-empty">No Markdown tasks found in loaded files.</div>';
+  return `<div class="task-list">${tasks.map(task => renderTaskRow(task)).join('')}</div>`;
+}
+
+function renderTaskBoard(tasks) {
+  const columns = [
+    ['today', 'Today'],
+    ['upcoming', 'Upcoming'],
+    ['waiting', 'Waiting'],
+    ['done', 'Done'],
+  ];
+  return `<div class="task-board">${columns.map(([id, label]) => {
+    const colTasks = tasks.filter(task => taskStatus(task) === id);
+    return `<section class="task-col"><h4>${label} (${colTasks.length})</h4>${colTasks.length ? colTasks.map(task => renderTaskRow(task, true)).join('') : '<div class="task-empty">Empty</div>'}</section>`;
+  }).join('')}</div>`;
+}
+
+function renderTaskCalendar(tasks) {
+  const groups = new Map();
+  for (const task of tasks) {
+    const key = task.due || 'No due date';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(task);
+  }
+  const keys = [...groups.keys()].sort((a, b) => {
+    if (a === 'No due date') return 1;
+    if (b === 'No due date') return -1;
+    return a.localeCompare(b);
+  });
+  if (!keys.length) return '<div class="task-empty">No scheduled tasks found in loaded files.</div>';
+  return `<div class="task-calendar">${keys.map(key => `<section class="task-day"><h4>${escapeHtml(key)}</h4>${groups.get(key).map(task => renderTaskRow(task)).join('')}</section>`).join('')}</div>`;
+}
+
+async function showTasksView(mode = taskViewMode) {
+  taskViewMode = ['list', 'calendar', 'kanban'].includes(mode) ? mode : 'list';
+  localStorage.setItem('markpad-task-view', taskViewMode);
+  const tasks = await collectLoadedTasks();
+  const openCount = tasks.filter(task => !task.checked).length;
+  const body = taskViewMode === 'calendar' ? renderTaskCalendar(tasks)
+    : taskViewMode === 'kanban' ? renderTaskBoard(tasks)
+    : renderTaskList(tasks);
+  showModal('Tasks', `
+    <div class="task-view-tabs">
+      <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
+      <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
+      <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
+    </div>
+    <div class="task-summary">${tasks.length} task${tasks.length === 1 ? '' : 's'} from loaded files · ${openCount} open · Markdown stays the source of truth.</div>
+    ${body}
+  `, true);
+}
+
+function toggleTaskAtIndex(markdown, taskIndex, checked) {
+  const lines = markdown.split('\n');
+  let current = 0;
+  let inFence = false;
+  let fenceMarker = '';
+  for (let i = 0; i < lines.length; i++) {
+    const fence = lines[i].match(FENCE_LINE_RE);
+    if (fence) {
+      const marker = fence[2];
+      if (!inFence) { inFence = true; fenceMarker = marker; }
+      else if (marker === fenceMarker) { inFence = false; fenceMarker = ''; }
+      continue;
+    }
+    if (inFence) continue;
+    const match = lines[i].match(TASK_LINE_RE);
+    if (!match) continue;
+    if (current === taskIndex) {
+      lines[i] = `${match[1]}${checked ? 'x' : ' '}${match[3]}`;
+      return lines.join('\n');
+    }
+    current++;
+  }
+  return markdown;
+}
+
+async function toggleLoadedTask(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  const content = task.noteId === activeId ? currentContent : await window.go.main.App.GetNoteContent(task.noteId);
+  const next = toggleTaskAtIndex(content, task.index, !task.checked);
+  if (task.noteId === activeId) {
+    currentContent = next;
+    editor.value = next;
+    await window.go.main.App.UpdateContent(activeId, currentContent, true);
+    if (viewMode !== 'markdown') renderViewer(currentContent, cachedNotes.find(n => n.id === activeId));
+    updateStats();
+    updateOutline();
+  } else {
+    await window.go.main.App.UpdateContent(task.noteId, next, true);
+  }
+  renderSession(await window.go.main.App.GetSession());
+  await showTasksView(taskViewMode);
+}
+
+async function openLoadedTask(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+  await window.go.main.App.SetActive(task.noteId);
+  activeId = task.noteId;
+  loadContent(await window.go.main.App.GetNoteContent(task.noteId));
+  renderSession(await window.go.main.App.GetSession());
+  modalOverlay.classList.add('hidden');
+  setView('markdown');
+  requestAnimationFrame(() => {
+    editor.focus();
+    const start = Math.min(task.offset, editor.value.length);
+    const end = Math.min(start + task.raw.length, editor.value.length);
+    editor.setSelectionRange(start, end);
+    const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
+    editor.scrollTop = Math.max(0, task.line * lineHeight - editor.clientHeight * 0.35);
+  });
+}
 function makeNoteRow(note) {
   const isActive = note.id === activeId;
   const canDelete = !note.path;
@@ -1655,6 +1888,7 @@ $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
+$('btn-tasks').addEventListener('click', () => showTasksView());
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
 redoBtn.addEventListener('click', () => stepEditHistory(1));
@@ -1677,10 +1911,15 @@ viewer.addEventListener('click', (e) => {
 });
 
 // ── Modal ────────────────────────────────────────────────
-function showModal(t, html) { modalTitle.textContent = t; modalBodyEl.innerHTML = html; modalOverlay.classList.remove('hidden'); }
+function showModal(t, html, wide) {
+  modalTitle.textContent = t;
+  modalBodyEl.innerHTML = html;
+  modalOverlay.classList.toggle('tasks-modal', !!wide);
+  modalOverlay.classList.remove('hidden');
+}
 $('modal-close').addEventListener('click', () => modalOverlay.classList.add('hidden'));
 modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.add('hidden'); });
-modalBodyEl.addEventListener('click', (e) => {
+modalBodyEl.addEventListener('click', async (e) => {
   const folder = e.target.closest('[data-open-folder]');
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
   const themeChoice = e.target.closest('[data-theme-choice]');
@@ -1688,6 +1927,12 @@ modalBodyEl.addEventListener('click', (e) => {
     applyTheme(themeChoice.dataset.themeChoice);
     showPreferences();
   }
+  const taskView = e.target.closest('[data-task-view]');
+  if (taskView) await showTasksView(taskView.dataset.taskView);
+  const taskToggle = e.target.closest('[data-task-toggle]');
+  if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
+  const taskOpen = e.target.closest('[data-task-open]');
+  if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
 });
 
 
