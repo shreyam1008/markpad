@@ -4946,6 +4946,7 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>tag</strong><span>#project</span><small>Used by task and search filters</small></div>
       <div class="diag-card"><strong>exclude</strong><span>-@waiting -#blocked</span><small>Hide matching task tokens</small></div>
       <div class="diag-card"><strong>starters</strong><span>Project, weekly, review</span><small>Append portable Markdown checklists</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>Send visible tasks</span><small>Turn filtered tasks into a canvas board</small></div>
     </div>
     <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
   `);
@@ -7854,6 +7855,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>infinite view</strong><span>Pan + zoom</span><small>Camera changes do not alter content</small></div>
       <div class="diag-card"><strong>grid</strong><span>12-48px snap</span><small>Stored as local UI preference</small></div>
       <div class="diag-card"><strong>starters</strong><span>Mind map, kanban, timeline</span><small>Insert lightweight JSON templates</small></div>
+      <div class="diag-card"><strong>tasks</strong><span>Visible task board</span><small>Append filtered Markdown tasks as canvas cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
