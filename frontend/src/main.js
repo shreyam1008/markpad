@@ -2905,6 +2905,7 @@ function commandItems() {
     { id: 'export-canvas-view-state-json', icon: 'EVJ', title: 'Export canvas view state JSON', hint: 'Download camera, grid, snap, minimap, and element count as JSON', run: exportCanvasViewStateJson },
     { id: 'copy-canvas-view-state-csv', icon: 'CVC', title: 'Copy canvas view state CSV', hint: 'Copy camera, grid, snap, minimap, and element count as CSV', run: copyCanvasViewStateCsv },
     { id: 'export-canvas-view-state-csv', icon: 'EVC', title: 'Export canvas view state CSV', hint: 'Download camera, grid, snap, minimap, and element count as CSV', run: exportCanvasViewStateCsv },
+    { id: 'canvas-restore-view-state', icon: 'RVJ', title: 'Restore canvas view state JSON', hint: 'Restore camera, grid, snap, minimap, background, and tool from clipboard JSON', run: restoreCanvasViewStateFromClipboard },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -7242,6 +7243,58 @@ function exportCanvasViewStateJson() {
 function exportCanvasViewStateCsv() {
   downloadText('markpad-canvas-view-state.csv', 'text/csv', canvasViewStateCsv());
   statusText.textContent = 'Canvas view state exported as CSV';
+}
+
+async function restoreCanvasViewStateFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    statusText.textContent = 'Clipboard read unavailable';
+    return;
+  }
+  let parsed = null;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch {
+    statusText.textContent = 'Clipboard does not contain canvas view-state JSON';
+    return;
+  }
+  if (!parsed || (parsed.type && parsed.type !== 'markpad-canvas-view-state')) {
+    statusText.textContent = 'Clipboard JSON is not a canvas view state';
+    return;
+  }
+  openCanvas();
+  const camera = canvasCamera();
+  const nextCamera = parsed.camera || {};
+  if (Number.isFinite(Number(nextCamera.x))) camera.x = Number(nextCamera.x);
+  if (Number.isFinite(Number(nextCamera.y))) camera.y = Number(nextCamera.y);
+  const zoom = Number.isFinite(Number(nextCamera.zoomPercent)) ? Number(nextCamera.zoomPercent) / 100 : Number(nextCamera.scale);
+  if (Number.isFinite(zoom)) camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, zoom));
+  const grid = parsed.grid || {};
+  if (typeof grid.visible === 'boolean') {
+    canvasGridVisible = grid.visible;
+    localStorage.setItem('markpad-canvas-grid', canvasGridVisible ? '1' : '0');
+  }
+  if (Number.isFinite(Number(grid.size))) {
+    canvasGridSize = normalizeCanvasGridSize(grid.size);
+    localStorage.setItem('markpad-canvas-grid-size', String(canvasGridSize));
+  }
+  if (typeof grid.snap === 'boolean') {
+    canvasSnapToGrid = grid.snap;
+    localStorage.setItem('markpad-canvas-snap', canvasSnapToGrid ? '1' : '0');
+  }
+  if (typeof parsed.minimapVisible === 'boolean') {
+    canvasMinimapVisible = parsed.minimapVisible;
+    localStorage.setItem('markpad-canvas-minimap', canvasMinimapVisible ? '1' : '0');
+  }
+  if (typeof parsed.background === 'string' && parsed.background.trim()) {
+    canvasDoc.appState = canvasDoc.appState || {};
+    canvasDoc.appState.viewBackgroundColor = parsed.background.trim();
+  }
+  if (typeof parsed.tool === 'string') setCanvasTool(parsed.tool);
+  saveCanvasState();
+  updateCanvasOptionButtons();
+  renderCanvas();
+  updateCanvasStatus();
+  statusText.textContent = 'Canvas view state restored from clipboard';
 }
 
 function obsidianElementBounds(element) {
