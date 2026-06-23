@@ -7638,6 +7638,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>tools</strong><span>Select, pan, pen, text, shape</span><small>Command palette or canvas toolbar</small></div>
       <div class="diag-card"><strong>infinite view</strong><span>Pan + zoom</span><small>Camera changes do not alter content</small></div>
       <div class="diag-card"><strong>grid</strong><span>12-48px snap</span><small>Stored as local UI preference</small></div>
+      <div class="diag-card"><strong>starters</strong><span>Mind map, kanban, timeline</span><small>Insert lightweight JSON templates</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
