@@ -2525,6 +2525,7 @@ function commandItems() {
     { id: 'copy-tasks-csv', icon: 'CCV', title: 'Copy visible tasks CSV', hint: 'Copy the current filtered task view as CSV rows', run: copyVisibleTasksCsv },
     { id: 'export-tasks-todo', icon: 'TTX', title: 'Export visible tasks Todo.txt', hint: 'Download the current filtered task view as portable Todo.txt', run: exportTasksTodoTxt },
     { id: 'copy-tasks-todo', icon: 'CTT', title: 'Copy visible tasks Todo.txt', hint: 'Copy the current filtered task view as portable Todo.txt', run: copyVisibleTasksTodoTxt },
+    { id: 'copy-task-view-summary', icon: 'CTS', title: 'Copy task view summary', hint: 'Copy current task view filters and counts as Markdown', run: copyTaskViewSummary },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -4751,6 +4752,40 @@ async function exportTasksTodoTxt() {
   }
   downloadText('markpad-tasks.todo.txt', 'text/plain', tasksToTodoTxt(tasks));
   statusText.textContent = `Exported ${tasks.length} tasks as Todo.txt`;
+}
+
+async function copyTaskViewSummary() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const open = tasks.filter(task => !task.checked).length;
+  const done = tasks.length - open;
+  const waiting = tasks.filter(task => task.waiting && !task.checked).length;
+  const high = tasks.filter(task => isHighPriorityTask(task) && !task.checked).length;
+  const due = tasks.filter(task => task.due && !task.checked).length;
+  const sources = tasks.reduce((counts, task) => {
+    counts[task.local ? 'local' : 'loaded'] += 1;
+    return counts;
+  }, { loaded: 0, local: 0 });
+  const lines = [
+    '# Markpad Task View',
+    '',
+    `- View: ${taskViewMode}`,
+    `- Source: ${taskSourceFilter}`,
+    `- Filter: ${taskFilter}`,
+    `- Query: ${taskQuery || '(none)'}`,
+    `- Visible: ${tasks.length}`,
+    `- Open: ${open}`,
+    `- Done: ${done}`,
+    `- High priority: ${high}`,
+    `- Waiting: ${waiting}`,
+    `- With due dates: ${due}`,
+    `- Loaded/local: ${sources.loaded}/${sources.local}`,
+  ];
+  await navigator.clipboard.writeText(lines.join('\n') + '\n');
+  statusText.textContent = 'Task view summary copied';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
