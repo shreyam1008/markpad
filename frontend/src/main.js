@@ -1054,6 +1054,7 @@ function commandItems() {
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
     { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .canvas JSON file in the default local folder', run: createLocalFolderCanvas },
     { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
+    { id: 'export-local-settings', icon: 'EX', title: 'Export local settings', hint: 'Download a small JSON snapshot of local preferences and UI state', run: exportLocalSettings },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
     { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
       <p><b>Markpad</b> is a native Markdown notepad.</p>
@@ -4179,6 +4180,8 @@ modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) m
 modalBodyEl.addEventListener('click', async (e) => {
   const folder = e.target.closest('[data-open-folder]');
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
+  const exportSettings = e.target.closest('[data-export-local-settings]');
+  if (exportSettings) await exportLocalSettings();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
@@ -4380,6 +4383,48 @@ async function showFileInfo() {
   `);
 }
 
+async function exportLocalSettings() {
+  const keys = [
+    'markpad-theme',
+    'markpad-search-scope',
+    'markpad-search-recents-v1',
+    'markpad-task-view',
+    'markpad-task-filter',
+    'markpad-task-query',
+    'markpad-canvas-tool',
+    'markpad-canvas-grid',
+    'markpad-canvas-snap',
+    'markpad-canvas-minimap',
+    'markpad-canvas-session',
+    'markpad-focus',
+    'markpad-split-ratio',
+    'markpad-zoom',
+    'markpad-sections',
+  ];
+  const settings = {};
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+    if (value !== null) settings[key] = value;
+  }
+  let localFolder = {};
+  if (window.go?.main?.App?.GetLocalFolder) {
+    try { localFolder = await window.go.main.App.GetLocalFolder(); } catch {}
+  }
+  const snapshot = {
+    type: 'markpad-local-settings',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    localFolder: {
+      path: localFolder?.path || '',
+      missing: !!localFolder?.missing,
+    },
+    settings,
+    omitted: ['draft contents', 'trash contents', 'canvas document body', 'version history'],
+  };
+  downloadText('markpad-local-settings.json', 'application/json', JSON.stringify(snapshot, null, 2) + '\n');
+  statusText.textContent = 'Local settings exported';
+}
+
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
   const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
@@ -4397,6 +4442,7 @@ async function showPreferences() {
     <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
       <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
       <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
+      <button data-export-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export settings</button>
     </div>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
