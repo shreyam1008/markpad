@@ -133,8 +133,10 @@ const canvasStatus = $('canvas-status');
 const THEMES = [
   { id: 'paper', label: 'Paper' },
   { id: 'linen', label: 'Linen' },
+  { id: 'dawn', label: 'Dawn' },
   { id: 'ink', label: 'Ink' },
   { id: 'pine', label: 'Pine' },
+  { id: 'slate', label: 'Slate' },
 ];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
@@ -1079,7 +1081,7 @@ function commandItems() {
     { id: 'preview', icon: 'P', title: 'Preview view', hint: 'Show preview/document only', run: () => setView('viewer') },
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
-    { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch Paper, Linen, Ink, Pine', run: cycleTheme },
+    { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },

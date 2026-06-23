@@ -35,6 +35,24 @@ html[data-theme="linen"] {
   --shadow: rgba(57, 39, 21, .2);
 }
 
+html[data-theme="dawn"] {
+  --bg: #f5ece7;
+  --surface: #fff9f5;
+  --sidebar: #efe1da;
+  --editor: #fffdf9;
+  --text: #271d1b;
+  --muted: #796964;
+  --border: #ddc7bd;
+  --border-soft: #ecdcd4;
+  --hover: #f0ded5;
+  --selected: #ead0c4;
+  --accent: #b34f3f;
+  --accent-hover: #9b4235;
+  --accent-text: #fffaf6;
+  --danger: #a83b2a;
+  --shadow: rgba(68, 38, 29, .18);
+}
+
 html[data-theme="ink"] {
   --bg: #111315;
   --surface: #171a1d;
@@ -69,6 +87,24 @@ html[data-theme="pine"] {
   --accent-text: #101815;
   --danger: #e28c72;
   --shadow: rgba(0, 0, 0, .42);
+}
+
+html[data-theme="slate"] {
+  --bg: #12151c;
+  --surface: #181d26;
+  --sidebar: #141923;
+  --editor: #10141b;
+  --text: #edf1f7;
+  --muted: #9aa5b5;
+  --border: #334052;
+  --border-soft: #273140;
+  --hover: #222b39;
+  --selected: #26374d;
+  --accent: #7db1ff;
+  --accent-hover: #96c0ff;
+  --accent-text: #07111f;
+  --danger: #f08473;
+  --shadow: rgba(0, 0, 0, .46);
 }
 
 html[data-theme] body { background: var(--bg) !important; color: var(--text) !important; }
@@ -178,7 +214,7 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
 #modal-body p { margin-bottom: 6px; }
-.pref-theme-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.pref-theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 6px; }
 .pref-theme {
   border: 1px solid var(--border); border-radius: 10px; background: var(--editor);
   color: var(--muted); padding: 8px 6px; font-size: 11px; font-weight: 800; cursor: pointer;
@@ -1141,6 +1177,11 @@ html[data-theme="pine"] .hljs-number,
 html[data-theme="pine"] .hljs-literal,
 html[data-theme="pine"] .hljs-meta,
 html[data-theme="pine"] .hljs-built_in,
-html[data-theme="pine"] .hljs-builtin-name {
+html[data-theme="pine"] .hljs-builtin-name,
+html[data-theme="slate"] .hljs-number,
+html[data-theme="slate"] .hljs-literal,
+html[data-theme="slate"] .hljs-meta,
+html[data-theme="slate"] .hljs-built_in,
+html[data-theme="slate"] .hljs-builtin-name {
   color: #e9b872 !important;
 }
