@@ -3753,7 +3753,7 @@ function renderTaskRow(task, compact) {
         <div class="task-text">${escapeHtml(task.text)}</div>
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button>`}
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button>`}
     </div>`;
 }
 
@@ -4223,6 +4223,17 @@ async function copySingleTaskIcs(taskId) {
   }
   await navigator.clipboard.writeText(tasksToIcs([task]));
   statusText.textContent = 'Task copied as ICS';
+}
+
+async function copySingleTaskCsv(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToCsv([task]));
+  statusText.textContent = 'Task copied as CSV';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -7404,6 +7415,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyJson) await copySingleTaskJson(taskCopyJson.dataset.taskCopyJson);
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs) await copySingleTaskIcs(taskCopyIcs.dataset.taskCopyIcs);
+  const taskCopyCsv = e.target.closest('[data-task-copy-csv]');
+  if (taskCopyCsv) await copySingleTaskCsv(taskCopyCsv.dataset.taskCopyCsv);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
