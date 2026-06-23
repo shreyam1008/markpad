@@ -3679,7 +3679,8 @@ function commandItems() {
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
-    { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
+  { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
+  { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
@@ -5833,6 +5834,66 @@ function renderTaskAgendaSection(title, tasks) {
       ${list.length ? list.map(task => renderTaskRow(task, true)).join('') : '<div class="task-empty">No tasks in this bucket.</div>'}
       ${tasks.length > list.length ? `<div class="task-summary">${tasks.length - list.length} more hidden to keep the agenda compact.</div>` : ''}
     </section>`;
+}
+
+function taskDisplayTitle(task) {
+  return String(task?.title || task?.text || task?.raw || 'Untitled task').replace(/\s+/g, ' ').trim();
+}
+
+function taskSourceLabel(task) {
+  return String(task?.noteTitle || task?.fileName || task?.path || task?.id || '').trim();
+}
+
+function taskAgendaGroups() {
+  const tasks = collectLoadedTasks();
+  const visibleTasks = tasks.filter(taskSourceMatches);
+  const openTasks = visibleTasks.filter(task => !task.done);
+  const overdue = openTasks.filter(isTaskOverdue);
+  const dueToday = openTasks.filter(task => !isTaskOverdue(task) && isTaskDueNow(task));
+  const waiting = openTasks.filter(task => task.status === 'waiting');
+  const high = openTasks.filter(task => isHighPriorityTask(task) && !overdue.includes(task) && !dueToday.includes(task));
+  return { overdue, dueToday, waiting, high };
+}
+
+function taskAgendaMarkdown() {
+  const groups = taskAgendaGroups();
+  const lines = [
+    '# Markpad Task Agenda',
+    '',
+    `Generated: ${new Date().toISOString()}`,
+    '',
+  ];
+  [
+    ['Overdue', groups.overdue],
+    ['Due today', groups.dueToday],
+    ['Waiting', groups.waiting],
+    ['High priority', groups.high],
+  ].forEach(([title, tasks]) => {
+    lines.push(`## ${title}`, '');
+    if (!tasks.length) {
+      lines.push('- No tasks', '');
+      return;
+    }
+    tasks.forEach((task) => {
+      const meta = [];
+      if (task.due) meta.push(`due:${task.due}`);
+      if (task.priority) meta.push(`priority:${task.priority}`);
+      if (task.status) meta.push(`status:${task.status}`);
+      const source = taskSourceLabel(task);
+      lines.push(`- [ ] ${taskDisplayTitle(task)}${meta.length ? ` (${meta.join(', ')})` : ''}${source ? ` - ${source}` : ''}`);
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+async function copyTaskAgendaMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(taskAgendaMarkdown());
+  statusText.textContent = 'Task agenda copied as Markdown';
 }
 
 async function showTaskAgenda() {
