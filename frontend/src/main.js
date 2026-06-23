@@ -134,9 +134,11 @@ const THEMES = [
   { id: 'paper', label: 'Paper' },
   { id: 'linen', label: 'Linen' },
   { id: 'dawn', label: 'Dawn' },
+  { id: 'mist', label: 'Mist' },
   { id: 'ink', label: 'Ink' },
   { id: 'pine', label: 'Pine' },
   { id: 'slate', label: 'Slate' },
+  { id: 'ember', label: 'Ember' },
 ];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
