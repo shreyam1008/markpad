@@ -3753,7 +3753,7 @@ function renderTaskRow(task, compact) {
         <div class="task-text">${escapeHtml(task.text)}</div>
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button>`}
+      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button>`}
     </div>`;
 }
 
@@ -4184,6 +4184,34 @@ async function copySingleTaskMarkdown(taskId) {
   ].join('\n');
   await navigator.clipboard.writeText(text);
   statusText.textContent = 'Task copied as Markdown';
+}
+
+async function copySingleTaskJson(taskId) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(JSON.stringify({
+    type: 'markpad-task',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    task: {
+      text: String(task.text || ''),
+      checked: !!task.checked,
+      due: task.due || '',
+      priority: task.priority || '',
+      waiting: !!task.waiting,
+      tags: Array.isArray(task.tags) ? task.tags : [],
+      source: task.local ? 'local' : 'loaded',
+      noteTitle: task.noteTitle || '',
+      path: task.path || '',
+      line: Number.isFinite(Number(task.line)) ? Number(task.line) + 1 : null,
+      raw: task.raw || '',
+    },
+  }, null, 2) + '\n');
+  statusText.textContent = 'Task copied as JSON';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -7361,6 +7389,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
   const taskCopy = e.target.closest('[data-task-copy]');
   if (taskCopy) await copySingleTaskMarkdown(taskCopy.dataset.taskCopy);
+  const taskCopyJson = e.target.closest('[data-task-copy-json]');
+  if (taskCopyJson) await copySingleTaskJson(taskCopyJson.dataset.taskCopyJson);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
