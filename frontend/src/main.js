@@ -1461,6 +1461,8 @@ function commandItems() {
     { id: 'canvas-layer-backward', icon: 'LB', title: 'Canvas send backward', hint: 'Move the selected canvas element one layer backward', run: () => moveSelectedCanvasLayer('backward') },
     { id: 'canvas-layer-front', icon: 'TF', title: 'Canvas bring to front', hint: 'Move the selected canvas element above all others', run: () => moveSelectedCanvasLayer('front') },
     { id: 'canvas-layer-back', icon: 'TB', title: 'Canvas send to back', hint: 'Move the selected canvas element behind all others', run: () => moveSelectedCanvasLayer('back') },
+    { id: 'canvas-stroke-up', icon: 'W+', title: 'Canvas stroke thicker', hint: 'Increase the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(1) },
+    { id: 'canvas-stroke-down', icon: 'W-', title: 'Canvas stroke thinner', hint: 'Decrease the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(-1) },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
@@ -3566,6 +3568,28 @@ function applySelectedCanvasStyle(kind) {
   rememberCanvasHistory();
   renderCanvas();
   statusText.textContent = 'Canvas element style updated';
+  return true;
+}
+
+function adjustSelectedCanvasWidth(delta) {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  const el = canvasDoc.elements[canvasSelectedIndex];
+  if (el.type === 'text') {
+    statusText.textContent = 'Text elements do not use stroke width';
+    return false;
+  }
+  const next = Math.max(1, Math.min(18, Number(el.width || 3) + delta));
+  el.width = next;
+  if (canvasWidth) canvasWidth.value = String(next);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasStatus();
+  statusText.textContent = `Canvas stroke width ${next}`;
   return true;
 }
 
