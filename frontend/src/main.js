@@ -1860,6 +1860,7 @@ function commandItems() {
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-copy-element-json', icon: 'CEJ', title: 'Copy selected canvas element JSON', hint: 'Copy the selected canvas element as portable JSON', run: copySelectedCanvasElementJson },
+    { id: 'canvas-copy-element-svg', icon: 'CES', title: 'Copy selected canvas element SVG', hint: 'Copy the selected canvas element as standalone SVG markup', run: copySelectedCanvasElementSvg },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
@@ -4744,6 +4745,16 @@ async function copySelectedCanvasElementJson() {
   }
   await navigator.clipboard.writeText(`${JSON.stringify(canvasDoc.elements[canvasSelectedIndex], null, 2)}\n`);
   statusText.textContent = 'Selected canvas element JSON copied';
+}
+
+async function copySelectedCanvasElementSvg() {
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element to copy SVG';
+    return;
+  }
+  const doc = { elements: [canvasDoc.elements[canvasSelectedIndex]], appState: canvasDoc.appState || { viewBackgroundColor: '#ffffff' } };
+  await navigator.clipboard.writeText(canvasToSvg(doc));
+  statusText.textContent = 'Selected canvas element SVG copied';
 }
 
 function exportCanvasSvg() {
