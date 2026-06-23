@@ -37,6 +37,8 @@ let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
+let focusMode = localStorage.getItem('markpad-focus') === '1';
+let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
 let canvasDoc = null;
 let canvasSession = null;
 let canvasActive = false;
@@ -99,6 +101,7 @@ const searchInput  = $('search-input');
 const searchResults = $('search-results');
 const searchMeta   = $('search-meta');
 const themeBtn     = $('btn-theme');
+const focusBtn     = $('btn-focus');
 const canvasOverlay = $('canvas-overlay');
 const canvasStage  = $('canvas-stage');
 const canvasTextEditor = $('canvas-text-editor');
@@ -129,6 +132,44 @@ function applyTheme(id, silent) {
 function cycleTheme() {
   const index = THEMES.findIndex(t => t.id === currentTheme);
   applyTheme(THEMES[(index + 1) % THEMES.length].id);
+}
+
+function applyFocusMode(silent) {
+  document.body.classList.toggle('markpad-focus', focusMode);
+  if (focusBtn) focusBtn.classList.toggle('active', focusMode);
+  localStorage.setItem('markpad-focus', focusMode ? '1' : '0');
+  if (!silent && statusText) statusText.textContent = focusMode ? 'Focus mode on' : 'Focus mode off';
+  requestAnimationFrame(() => {
+    if (viewMode === 'split') applySplitRatio();
+    if (canvasActive) resizeCanvasStage();
+  });
+}
+
+function toggleFocusMode() {
+  focusMode = !focusMode;
+  applyFocusMode();
+}
+
+function normalizeSplitRatio(value) {
+  return Math.max(28, Math.min(72, Number.isFinite(value) ? value : 50));
+}
+
+function applySplitRatio() {
+  if (viewMode !== 'split') return;
+  splitRatio = normalizeSplitRatio(splitRatio);
+  editorCont.style.flex = `0 0 ${splitRatio}%`;
+  viewerCont.style.flex = '1 1 0';
+  localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+}
+
+function rememberSplitRatio() {
+  if (viewMode !== 'split') return;
+  const total = editorCont.parentElement?.getBoundingClientRect().width || 0;
+  const width = editorCont.getBoundingClientRect().width;
+  if (total > 0 && width > 0) {
+    splitRatio = normalizeSplitRatio((width / total) * 100);
+    localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+  }
 }
 
 // ── File type icons ──────────────────────────────────────
@@ -1591,6 +1632,9 @@ function setView(mode) {
   if (showViewer) {
     renderViewer(currentContent, active);
   }
+  if (mode === 'split') {
+    requestAnimationFrame(applySplitRatio);
+  }
   if (mode !== 'split') {
     editorCont.style.flex = '';
     viewerCont.style.flex = '';
@@ -1601,6 +1645,13 @@ function setView(mode) {
 document.querySelectorAll('.view-btn').forEach(btn => {
   btn.addEventListener('click', () => setView(btn.dataset.mode));
 });
+divider.addEventListener('dblclick', () => {
+  splitRatio = 50;
+  applySplitRatio();
+  statusText.textContent = 'Split reset to 50/50';
+});
+divider.addEventListener('mouseup', rememberSplitRatio);
+document.addEventListener('mouseup', rememberSplitRatio);
 
 function cycleView() {
   const active = cachedNotes.find(n => n.id === activeId);
@@ -2136,6 +2187,7 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key.toLowerCase() === 'q') { e.preventDefault(); if (window.runtime && window.runtime.Quit) window.runtime.Quit(); }
   else if (ctrl && shift && key === 'E') { e.preventDefault(); cycleView(); }
   else if (ctrl && shift && key === 'B') { e.preventDefault(); toggleSidebar(); }
+  else if (ctrl && shift && key.toLowerCase() === 'l') { e.preventDefault(); toggleFocusMode(); }
   else if (ctrl && !shift && key === 'h') { e.preventDefault(); toggleHistory(); }
   else if (ctrl && !shift && key === 'f') { e.preventDefault(); toggleFind(); }
   else if (ctrl && !shift && key.toLowerCase() === 'b' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('bold'); }
@@ -2239,6 +2291,7 @@ $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
 $('btn-canvas').addEventListener('click', openCanvas);
+$('btn-focus').addEventListener('click', toggleFocusMode);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
 redoBtn.addEventListener('click', () => stepEditHistory(1));
@@ -2432,7 +2485,7 @@ function registerEvents() {
     <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
     <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
+    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
     <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
@@ -2464,6 +2517,7 @@ function boot() {
   if (window.go && window.go.main && window.go.main.App) {
     applyZoom(true);
     applyTheme(currentTheme, true);
+    applyFocusMode(true);
     registerEvents();
     interceptLinks(viewer);
 
