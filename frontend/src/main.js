@@ -664,24 +664,35 @@ function scoreSearch(note, content, query, terms) {
 
 async function runLoadedSearch(query) {
   const token = ++searchToken;
-  const q = query.trim().toLowerCase();
-  const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
-  searchResults.innerHTML = '<div class="search-empty">Searching loaded files...</div>';
+  const q = query.trim();
+  const lower = q.toLowerCase();
+  const scopeLabel = searchScope === 'local' ? 'local folder' : searchScope === 'all' ? 'loaded and local files' : 'loaded files';
+  searchResults.innerHTML = `<div class="search-empty">Searching ${scopeLabel}...</div>`;
   updateSearchScopeButtons();
   if (searchScope === 'local') {
     await runLocalFolderSearch(query, token);
     return;
   }
+  if (searchScope === 'all') {
+    await runAllSearch(query, token);
+    return;
+  }
+  const results = await collectLoadedSearchResults(query, token, 40);
+  if (token !== searchToken) return;
+  renderSearchResults(results, lower);
+}
+
+async function collectLoadedSearchResults(query, token, limit) {
+  const q = query.trim().toLowerCase();
+  const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
   if (window.go?.main?.App?.SearchLoadedDocuments) {
     try {
-      const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, 40);
-      if (token !== searchToken) return;
-      renderSearchResults(results || [], q);
-      return;
+      const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
+      if (token !== searchToken) return [];
+      return (results || []).map(result => ({ ...result, source: result.source || 'loaded' }));
     } catch {}
   }
   const results = [];
-
   for (const note of cachedNotes) {
     const type = getFileType(note.path, note.kind);
     let content = '';
@@ -689,13 +700,26 @@ async function runLoadedSearch(query) {
       content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
       if (content.length > SEARCH_CONTENT_CAP) content = content.slice(0, SEARCH_CONTENT_CAP);
     }
-    if (token !== searchToken) return;
+    if (token !== searchToken) return [];
     const result = scoreSearch(note, content, q, terms);
-    if (result) results.push(result);
+    if (result) results.push({ ...result, source: 'loaded' });
   }
-
   results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
-  renderSearchResults(results.slice(0, 40), q);
+  return results.slice(0, limit || 40);
+}
+
+async function runAllSearch(query, token) {
+  const lower = query.trim().toLowerCase();
+  const [loaded, localPack] = await Promise.all([
+    collectLoadedSearchResults(query, token, 35),
+    collectLocalSearchResults(query, token, 35),
+  ]);
+  if (token !== searchToken) return;
+  const local = localPack.results || [];
+  const results = [...loaded, ...local]
+    .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
+    .slice(0, 70);
+  renderSearchResults(results, lower);
 }
 
 function updateSearchScopeButtons() {
@@ -705,27 +729,41 @@ function updateSearchScopeButtons() {
   if (searchInput) {
     searchInput.placeholder = searchScope === 'local'
       ? 'Search the configured local folder...'
-      : 'Search loaded files, titles, paths...';
+      : searchScope === 'all'
+        ? 'Search loaded files and local folder...'
+        : 'Search loaded files, titles, paths...';
   }
 }
 
 async function runLocalFolderSearch(query, token) {
-  if (!window.go?.main?.App?.GetLocalFolder) {
-    searchResults.innerHTML = '<div class="search-empty">Local folder backend unavailable.</div>';
-    searchMeta.textContent = 'Local folder search unavailable';
+  const pack = await collectLocalSearchResults(query, token, 60);
+  if (token !== searchToken) return;
+  if (pack.message) {
+    searchResults.innerHTML = `<div class="search-empty">${escapeHtml(pack.message)}</div>`;
+    searchMeta.textContent = pack.meta || 'Local folder search unavailable';
     return;
   }
+  searchMeta.textContent = pack.meta || `${pack.results.length} local result${pack.results.length === 1 ? '' : 's'}`;
+  renderSearchResults(pack.results, query.trim().toLowerCase());
+}
+
+async function collectLocalSearchResults(query, token, limit) {
+  if (!window.go?.main?.App?.GetLocalFolder) {
+    return { results: [], message: 'Local folder backend unavailable.', meta: 'Local folder search unavailable' };
+  }
   const info = await window.go.main.App.GetLocalFolder();
-  if (token !== searchToken) return;
+  if (token !== searchToken) return { results: [] };
   if (!info.path || info.missing) {
-    searchResults.innerHTML = '<div class="search-empty">Choose a local folder first from the command palette.</div>';
-    searchMeta.textContent = info.missing ? 'Saved local folder is missing' : 'No local folder set';
-    return;
+    return {
+      results: [],
+      message: 'Choose a local folder first from the command palette.',
+      meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
+    };
   }
   const q = query.trim();
   if (!q) {
-    const files = await window.go.main.App.ListLocalFolderFiles(60);
-    if (token !== searchToken) return;
+    const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
+    if (token !== searchToken) return { results: [] };
     const results = (files || []).map(file => ({
       source: 'local',
       path: file.path,
@@ -737,12 +775,10 @@ async function runLocalFolderSearch(query, token) {
       line: 0,
       snippet: `${typeLabel(getFileType(file.path, file.kind))} · ${formatBytes(file.size || 0)}${file.modified ? ' · ' + file.modified : ''}`,
     }));
-    searchMeta.textContent = `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}`;
-    renderSearchResults(results, '');
-    return;
+    return { results, meta: `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}` };
   }
-  const hits = await window.go.main.App.SearchLocalFolder(q, 60);
-  if (token !== searchToken) return;
+  const hits = await window.go.main.App.SearchLocalFolder(q, limit || 60);
+  if (token !== searchToken) return { results: [] };
   const results = (hits || []).map(hit => ({
     source: 'local',
     path: hit.path,
@@ -755,20 +791,23 @@ async function runLocalFolderSearch(query, token) {
     line: hit.line || 0,
     snippet: hit.snippet || '',
   }));
-  searchMeta.textContent = `${results.length} local hit${results.length === 1 ? '' : 's'} from ${info.path}`;
-  renderSearchResults(results, q.toLowerCase());
+  return { results, meta: `${results.length} local hit${results.length === 1 ? '' : 's'} from ${info.path}` };
 }
 
 function renderSearchResults(results, query) {
   searchResults.innerHTML = '';
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
-  if (searchScope !== 'local') {
+  if (searchScope === 'all') {
+    searchMeta.textContent = query
+      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files and local folder`
+      : `${results.length} item${results.length === 1 ? '' : 's'} from loaded files and local folder`;
+  } else if (searchScope !== 'local') {
     searchMeta.textContent = query
       ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!results.length) {
-    searchResults.innerHTML = `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`;
+    searchResults.innerHTML = `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`;
     return;
   }
   results.forEach((result, index) => {
@@ -783,6 +822,7 @@ function renderSearchResults(results, query) {
         <span class="search-title-line">
           <strong>${escapeHtml(result.title)}</strong>
           ${result.dirty ? '<em>Unsaved</em>' : ''}
+          ${result.source === 'local' ? '<em>Local</em>' : searchScope === 'all' ? '<em>Loaded</em>' : ''}
           ${result.matchIndex >= 0 ? `<small>Line ${result.line + 1}</small>` : ''}
         </span>
         <span class="search-path">${escapeHtml(result.path)}</span>
