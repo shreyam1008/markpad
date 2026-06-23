@@ -933,6 +933,7 @@ function commandItems() {
     { id: 'recent-local-files', icon: 'LR', title: 'Recent local files', hint: 'Show recently modified files from the default local folder', run: showRecentLocalFiles },
     { id: 'local-tags', icon: '#', title: 'Local tags', hint: 'Show Markdown tags found in the default local folder', run: showLocalTags },
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
+    { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
@@ -1510,6 +1511,41 @@ async function showLocalLinks() {
   `, true);
 }
 
+function renderLocalBacklinks(backlinks) {
+  if (!backlinks.length) return '<div class="local-empty">No local backlinks found for the active note.</div>';
+  return `<div class="local-list">${backlinks.map(hit => `
+    <button class="local-row" data-local-open="${escapeHtml(hit.path)}">
+      <span class="local-badge">BL</span>
+      <span class="local-body">
+        <strong>${escapeHtml(hit.relPath || hit.title)}</strong>
+        <span>Line ${Number(hit.line || 0) + 1}</span>
+        <small>${escapeHtml(hit.snippet || '')}</small>
+      </span>
+    </button>`).join('')}</div>`;
+}
+
+async function showActiveBacklinks() {
+  const note = cachedNotes.find(n => n.id === activeId);
+  if (!note?.path) {
+    showModal('Backlinks', '<div class="local-empty">Save the active note before searching for local backlinks.</div>');
+    return;
+  }
+  if (!window.go?.main?.App?.GetLocalFolder || !window.go?.main?.App?.ListLocalFolderBacklinks) {
+    showModal('Backlinks', '<div class="local-empty">Backlinks backend unavailable in this build.</div>');
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  if (!info.path || info.missing) {
+    showModal('Backlinks', `<div class="local-empty">${info.missing ? 'The saved local folder is missing.' : 'No default local folder set yet.'}</div>`);
+    return;
+  }
+  const backlinks = await window.go.main.App.ListLocalFolderBacklinks(note.path, note.title || '', 120);
+  showModal('Backlinks', `
+    <div class="local-summary">${backlinks.length} backlink${backlinks.length === 1 ? '' : 's'} for <b>${escapeHtml(note.title || basename(note.path))}</b> · bounded Markdown scan</div>
+    ${renderLocalBacklinks(backlinks)}
+  `, true);
+}
+
 async function showLocalFolder(query = '') {
   query = String(query || '').trim();
   localFolderQuery = query;
@@ -1549,6 +1585,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-canvas ${info.path && !info.missing ? '' : 'disabled'}>New canvas</button>
         <button data-local-folder-tags ${info.path && !info.missing ? '' : 'disabled'}>Tags</button>
         <button data-local-folder-links ${info.path && !info.missing ? '' : 'disabled'}>Links</button>
+        <button data-local-folder-backlinks ${activeId && info.path && !info.missing ? '' : 'disabled'}>Backlinks</button>
         <button data-local-folder-search ${info.path && !info.missing ? '' : 'disabled'}>Search</button>
         <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
       </div>
@@ -3738,6 +3775,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localLinks && !localLinks.disabled) await showLocalLinks();
   const localLinkSearch = e.target.closest('[data-local-link-search]');
   if (localLinkSearch) await showLocalFolder(localLinkSearch.dataset.localLinkSearch || '');
+  const localBacklinks = e.target.closest('[data-local-folder-backlinks]');
+  if (localBacklinks && !localBacklinks.disabled) await showActiveBacklinks();
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
 });
