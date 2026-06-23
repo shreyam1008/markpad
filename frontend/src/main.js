@@ -29,6 +29,11 @@ const RENDER_MS = 120;
 const EDIT_HISTORY_LIMIT = 80;
 const EDIT_HISTORY_CHARS = 1024 * 1024;
 let applyingEditHistory = false;
+let searchOpen = false;
+let searchTimer = null;
+let searchToken = 0;
+let searchActiveIndex = 0;
+let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -79,6 +84,34 @@ const undoBtn      = $('btn-undo');
 const redoBtn      = $('btn-redo');
 const closeOverlay = $('close-overlay');
 const closeMessage = $('close-message');
+const searchOverlay = $('search-overlay');
+const searchInput  = $('search-input');
+const searchResults = $('search-results');
+const searchMeta   = $('search-meta');
+const themeBtn     = $('btn-theme');
+
+const THEMES = [
+  { id: 'paper', label: 'Paper' },
+  { id: 'linen', label: 'Linen' },
+  { id: 'ink', label: 'Ink' },
+  { id: 'pine', label: 'Pine' },
+];
+const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
+
+function applyTheme(id, silent) {
+  if (!THEMES.some(t => t.id === id)) id = 'paper';
+  currentTheme = id;
+  document.documentElement.dataset.theme = id;
+  localStorage.setItem('markpad-theme', id);
+  const theme = THEMES.find(t => t.id === id);
+  if (themeBtn) themeBtn.textContent = theme.label;
+  if (!silent && statusText) statusText.textContent = `Theme: ${theme.label}`;
+}
+
+function cycleTheme() {
+  const index = THEMES.findIndex(t => t.id === currentTheme);
+  applyTheme(THEMES[(index + 1) % THEMES.length].id);
+}
 
 // ── File type icons ──────────────────────────────────────
 function fileIcon(path) {
@@ -479,6 +512,207 @@ function makeRecentRow(recent) {
   });
   return row;
 }
+
+function basename(path) {
+  if (!path) return '';
+  const clean = String(path).replace(/\\/g, '/');
+  return clean.slice(clean.lastIndexOf('/') + 1);
+}
+
+function firstMatchIndex(text, query, terms) {
+  const lower = text.toLowerCase();
+  const direct = query ? lower.indexOf(query) : -1;
+  if (direct >= 0) return { index: direct, length: query.length };
+  for (const term of terms) {
+    const idx = lower.indexOf(term);
+    if (idx >= 0) return { index: idx, length: term.length };
+  }
+  return { index: -1, length: 0 };
+}
+
+function makeSnippet(content, matchIndex, matchLength) {
+  if (matchIndex < 0) return '';
+  const start = Math.max(0, matchIndex - 80);
+  const end = Math.min(content.length, matchIndex + Math.max(matchLength, 1) + 140);
+  let slice = content.slice(start, end).replace(/\s+/g, ' ').trim();
+  if (start > 0) slice = '...' + slice;
+  if (end < content.length) slice += '...';
+  return slice;
+}
+
+function lineForIndex(content, index) {
+  if (index < 0) return 0;
+  let line = 0;
+  for (let i = 0; i < index && i < content.length; i++) {
+    if (content.charCodeAt(i) === 10) line++;
+  }
+  return line;
+}
+
+function scoreSearch(note, content, query, terms) {
+  const title = note.path ? (note.title || basename(note.path)) : 'Untitled';
+  const path = note.path || 'Draft';
+  const titleLower = title.toLowerCase();
+  const pathLower = path.toLowerCase();
+  const body = content || '';
+  const bodyLower = body.toLowerCase();
+  const haystack = `${titleLower}\n${pathLower}\n${bodyLower}`;
+  if (terms.length && !terms.every(term => haystack.includes(term))) return null;
+
+  let score = 0;
+  if (!query) score = note.id === activeId ? 20 : 1;
+  if (query && titleLower.includes(query)) score += 120;
+  if (query && pathLower.includes(query)) score += 70;
+  const match = firstMatchIndex(body, query, terms);
+  if (match.index >= 0) score += 40 + Math.max(0, 30 - Math.floor(match.index / 4000));
+  for (const term of terms) {
+    if (titleLower.includes(term)) score += 18;
+    if (pathLower.includes(term)) score += 10;
+    if (bodyLower.includes(term)) score += 4;
+  }
+  if (score <= 0 && terms.length) return null;
+
+  return {
+    id: note.id,
+    title,
+    path,
+    kind: getFileType(note.path, note.kind),
+    dirty: !!note.dirty,
+    score,
+    matchIndex: match.index,
+    matchLength: match.length,
+    line: lineForIndex(body, match.index),
+    snippet: makeSnippet(body, match.index, match.length),
+  };
+}
+
+async function runLoadedSearch(query) {
+  const token = ++searchToken;
+  const q = query.trim().toLowerCase();
+  const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
+  searchResults.innerHTML = '<div class="search-empty">Searching loaded files...</div>';
+  const results = [];
+
+  for (const note of cachedNotes) {
+    const type = getFileType(note.path, note.kind);
+    let content = '';
+    if (!isReadOnlyType(type)) {
+      content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
+      if (content.length > SEARCH_CONTENT_CAP) content = content.slice(0, SEARCH_CONTENT_CAP);
+    }
+    if (token !== searchToken) return;
+    const result = scoreSearch(note, content, q, terms);
+    if (result) results.push(result);
+  }
+
+  results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+  renderSearchResults(results.slice(0, 40), q);
+}
+
+function renderSearchResults(results, query) {
+  searchResults.innerHTML = '';
+  searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
+  searchMeta.textContent = query
+    ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
+    : 'Type to search content. Empty state lists loaded files.';
+  if (!results.length) {
+    searchResults.innerHTML = '<div class="search-empty">No loaded files matched. Open more files or use exact text from the current document.</div>';
+    return;
+  }
+  results.forEach((result, index) => {
+    const row = el('button', `search-row${index === searchActiveIndex ? ' active' : ''}`);
+    row.type = 'button';
+    row.dataset.searchId = result.id;
+    row.dataset.matchIndex = String(result.matchIndex);
+    row.dataset.matchLength = String(result.matchLength);
+    row.innerHTML = `
+      <span class="search-badge">${escapeHtml(fileIcon(result.path))}</span>
+      <span class="search-body">
+        <span class="search-title-line">
+          <strong>${escapeHtml(result.title)}</strong>
+          ${result.dirty ? '<em>Unsaved</em>' : ''}
+          ${result.matchIndex >= 0 ? `<small>Line ${result.line + 1}</small>` : ''}
+        </span>
+        <span class="search-path">${escapeHtml(result.path)}</span>
+        ${result.snippet ? `<span class="search-snippet">${escapeHtml(result.snippet)}</span>` : ''}
+      </span>`;
+    row.addEventListener('mousemove', () => setSearchActive(index));
+    row.addEventListener('click', () => openSearchResult(result));
+    searchResults.appendChild(row);
+  });
+}
+
+function setSearchActive(index) {
+  searchActiveIndex = index;
+  [...searchResults.querySelectorAll('.search-row')].forEach((row, i) => row.classList.toggle('active', i === index));
+}
+
+function queueLoadedSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => runLoadedSearch(searchInput.value), 80);
+}
+
+function openSearchPalette() {
+  searchOpen = true;
+  searchOverlay.classList.remove('hidden');
+  searchInput.value = '';
+  searchActiveIndex = 0;
+  runLoadedSearch('');
+  requestAnimationFrame(() => searchInput.focus());
+}
+
+function closeSearchPalette() {
+  searchOpen = false;
+  searchOverlay.classList.add('hidden');
+  searchInput.blur();
+}
+
+async function openSearchResult(result) {
+  if (!result) return;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+  await window.go.main.App.SetActive(result.id);
+  activeId = result.id;
+  loadContent(await window.go.main.App.GetNoteContent(result.id));
+  renderSession(await window.go.main.App.GetSession());
+  closeSearchPalette();
+  if (result.matchIndex >= 0) {
+    setView('markdown');
+    requestAnimationFrame(() => {
+      const start = Math.min(result.matchIndex, editor.value.length);
+      const end = Math.min(start + Math.max(result.matchLength, 1), editor.value.length);
+      editor.focus();
+      editor.setSelectionRange(start, end);
+      const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
+      editor.scrollTop = Math.max(0, result.line * lineHeight - editor.clientHeight * 0.35);
+      queueReadPositionSave();
+    });
+  } else {
+    restoreNoteView();
+  }
+}
+
+searchInput?.addEventListener('input', queueLoadedSearch);
+searchInput?.addEventListener('keydown', (e) => {
+  const rows = [...searchResults.querySelectorAll('.search-row')];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 1));
+    rows[searchActiveIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setSearchActive(Math.max(0, searchActiveIndex - 1));
+    rows[searchActiveIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    rows[searchActiveIndex]?.click();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeSearchPalette();
+  }
+});
+$('search-close')?.addEventListener('click', closeSearchPalette);
+searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
+themeBtn?.addEventListener('click', cycleTheme);
 function makeNoteRow(note) {
   const isActive = note.id === activeId;
   const canDelete = !note.path;
@@ -1309,7 +1543,9 @@ function applyFormat(action) {
 // ── Shortcuts ────────────────────────────────────────────
 document.addEventListener('keydown', async (e) => {
   const ctrl = e.ctrlKey || e.metaKey, shift = e.shiftKey, key = e.key;
-  if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
+  const inSearchInput = document.activeElement === searchInput;
+  if (ctrl && shift && key.toLowerCase() === 'f') { e.preventDefault(); openSearchPalette(); }
+  else if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
   else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
   else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
   else if (ctrl && shift && key === 'S') { e.preventDefault(); await doSaveAs(); }
@@ -1321,10 +1557,11 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && shift && key === 'B') { e.preventDefault(); toggleSidebar(); }
   else if (ctrl && !shift && key === 'h') { e.preventDefault(); toggleHistory(); }
   else if (ctrl && !shift && key === 'f') { e.preventDefault(); toggleFind(); }
-  else if (ctrl && !shift && key === 'b' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('bold'); }
-  else if (ctrl && !shift && key === 'i' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('italic'); }
-  else if (ctrl && !shift && key === 'k' && document.activeElement !== findInput) { e.preventDefault(); applyFormat('link'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'b' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('bold'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('italic'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('link'); }
   else if (key === 'Escape') {
+    if (searchOpen) closeSearchPalette();
     if (findOpen) toggleFind();
     if (historyOpen) toggleHistory();
     modalOverlay.classList.add('hidden');
@@ -1417,6 +1654,7 @@ async function doOpen() {
 $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
 $('btn-fileinfo').addEventListener('click', showFileInfo);
+$('btn-search-all').addEventListener('click', openSearchPalette);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
 redoBtn.addEventListener('click', () => stepEditHistory(1));
@@ -1445,6 +1683,11 @@ modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) m
 modalBodyEl.addEventListener('click', (e) => {
   const folder = e.target.closest('[data-open-folder]');
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
+  const themeChoice = e.target.closest('[data-theme-choice]');
+  if (themeChoice) {
+    applyTheme(themeChoice.dataset.themeChoice);
+    showPreferences();
+  }
 });
 
 
@@ -1467,8 +1710,12 @@ async function showFileInfo() {
 
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
+  const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}">${theme.label}</button>`).join('');
   showModal('Preferences', `
-    <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
+    <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
+    <div class="pref-theme-grid">${themeButtons}</div>
+    <p style="margin-top:8px;">Themes are CSS-variable only, so they add polish without images, icon fonts, or runtime dependencies.</p>
+    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + syntax-highlighted Code View</td></tr>
@@ -1590,7 +1837,7 @@ function registerEvents() {
     <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
     <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find &nbsp; <kbd>Ctrl+H</kbd> History</p>
+    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
     <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
@@ -1621,6 +1868,7 @@ async function loadApp() {
 function boot() {
   if (window.go && window.go.main && window.go.main.App) {
     applyZoom(true);
+    applyTheme(currentTheme, true);
     registerEvents();
     interceptLinks(viewer);
 

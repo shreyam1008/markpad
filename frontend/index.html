@@ -92,6 +92,7 @@
           </button>
         </div>
         <div class="flex gap-1.5">
+          <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
           <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
           <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
@@ -99,6 +100,7 @@
           <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           </button>
+          <button id="btn-theme" class="theme-chip" title="Cycle theme">Paper</button>
         </div>
       </div>
 
@@ -215,6 +217,21 @@
         <button data-close-choice="discard" class="confirm-btn danger">Don't Save</button>
         <button data-close-choice="save" class="confirm-btn primary">Save</button>
       </div>
+    </div>
+  </div>
+
+  <div id="search-overlay" class="hidden fixed inset-0 z-[70] search-backdrop">
+    <div class="search-palette" role="dialog" aria-modal="true" aria-labelledby="search-title">
+      <div class="search-head">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search loaded files, titles, paths..." aria-labelledby="search-title" />
+        <button id="search-close" title="Close search" aria-label="Close search">&times;</button>
+      </div>
+      <div class="search-sub">
+        <span id="search-title">Loaded-file search</span>
+        <span id="search-meta">Ctrl+F still searches inside the current file.</span>
+      </div>
+      <div id="search-results" class="search-results"></div>
     </div>
   </div>
 

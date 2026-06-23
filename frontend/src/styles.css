@@ -1,4 +1,112 @@
 /* Minimal custom CSS — Tailwind handles most styling */
+:root {
+  --bg: #f4f2ed;
+  --surface: #fafaf7;
+  --sidebar: #eceae4;
+  --editor: #fffffc;
+  --text: #1a1c1b;
+  --muted: #6b6e68;
+  --border: #d8d6ce;
+  --border-soft: #e8e6df;
+  --hover: #e7ece5;
+  --selected: #dde8df;
+  --accent: #2f6f61;
+  --accent-hover: #267058;
+  --accent-text: #fffffb;
+  --danger: #c54b33;
+  --shadow: rgba(30, 32, 30, .18);
+}
+
+html[data-theme="linen"] {
+  --bg: #efe7d6;
+  --surface: #fbf5ea;
+  --sidebar: #eadfcb;
+  --editor: #fffaf1;
+  --text: #2b2118;
+  --muted: #756858;
+  --border: #d9c9ae;
+  --border-soft: #e8dac4;
+  --hover: #eadbc3;
+  --selected: #dccfb2;
+  --accent: #9a5a2f;
+  --accent-hover: #844a27;
+  --accent-text: #fffaf1;
+  --danger: #a83b2a;
+  --shadow: rgba(57, 39, 21, .2);
+}
+
+html[data-theme="ink"] {
+  --bg: #111315;
+  --surface: #171a1d;
+  --sidebar: #121619;
+  --editor: #0f1214;
+  --text: #e9ece8;
+  --muted: #929a98;
+  --border: #30363a;
+  --border-soft: #252b2f;
+  --hover: #22282c;
+  --selected: #213832;
+  --accent: #51a890;
+  --accent-hover: #64bca3;
+  --accent-text: #071210;
+  --danger: #e0725b;
+  --shadow: rgba(0, 0, 0, .45);
+}
+
+html[data-theme="pine"] {
+  --bg: #101815;
+  --surface: #16211d;
+  --sidebar: #111b17;
+  --editor: #0f1714;
+  --text: #e4efe6;
+  --muted: #9eb0a3;
+  --border: #294138;
+  --border-soft: #22362f;
+  --hover: #20372f;
+  --selected: #294d3f;
+  --accent: #a9d36f;
+  --accent-hover: #bee580;
+  --accent-text: #101815;
+  --danger: #e28c72;
+  --shadow: rgba(0, 0, 0, .42);
+}
+
+html[data-theme] body { background: var(--bg) !important; color: var(--text) !important; }
+html[data-theme] .bg-sidebar { background: var(--sidebar) !important; }
+html[data-theme] .bg-surface { background: var(--surface) !important; }
+html[data-theme] .bg-editor,
+html[data-theme] #editor,
+html[data-theme] #viewer,
+html[data-theme] .markdown-body { background: var(--editor) !important; color: var(--text) !important; }
+html[data-theme] .bg-hover { background: var(--hover) !important; }
+html[data-theme] .bg-selected { background: var(--selected) !important; }
+html[data-theme] .bg-accent { background: var(--accent) !important; }
+html[data-theme] .hover\:bg-accent-hover:hover { background: var(--accent-hover) !important; }
+html[data-theme] .hover\:bg-hover:hover,
+html[data-theme] .ctx-item:hover,
+html[data-theme] .tb:hover,
+html[data-theme] .icon-btn:hover:not(:disabled) { background: var(--hover) !important; }
+html[data-theme] .border-border { border-color: var(--border) !important; }
+html[data-theme] .border-border-soft { border-color: var(--border-soft) !important; }
+html[data-theme] .text-muted { color: var(--muted) !important; }
+html[data-theme] .text-accent { color: var(--accent) !important; }
+html[data-theme] .text-accent-text { color: var(--accent-text) !important; }
+html[data-theme] .text-danger,
+html[data-theme] .confirm-btn.danger { color: var(--danger) !important; }
+html[data-theme] .view-btn.active,
+html[data-theme] .confirm-btn.primary,
+html[data-theme] .doc-open { background: var(--accent) !important; color: var(--accent-text) !important; }
+html[data-theme] .view-btn:hover,
+html[data-theme] .section-head:hover,
+html[data-theme] .hover\:text-\[\#1a1c1b\]:hover { color: var(--text) !important; }
+html[data-theme] .file-badge { border-color: var(--border); background: var(--editor); color: var(--muted); }
+html[data-theme] .doc-card,
+html[data-theme] .confirm-card,
+html[data-theme] #ctx-menu,
+html[data-theme] #modal-overlay > div { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; }
+html[data-theme] .doc-path { background: var(--hover); color: var(--muted); }
+html[data-theme] ::-webkit-scrollbar-thumb { background: var(--border); }
+html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 /* Toolbar icon buttons */
 .icon-btn {
@@ -39,6 +147,13 @@
 .view-btn:hover { color: #1a1c1b; }
 .view-btn.active { background: #2f6f61; color: #fffffb; }
 
+.theme-chip {
+  border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px;
+  background: var(--editor); color: var(--muted); font-size: 11px; font-weight: 800;
+  letter-spacing: .02em; cursor: pointer; transition: all .12s; min-width: 58px;
+}
+.theme-chip:hover { color: var(--text); border-color: var(--accent); background: var(--hover); }
+
 /* Context menu */
 .ctx-item {
   display: block; width: 100%; text-align: left; border: none; background: none;
@@ -63,6 +178,12 @@
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
 #modal-body p { margin-bottom: 6px; }
+.pref-theme-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.pref-theme {
+  border: 1px solid var(--border); border-radius: 10px; background: var(--editor);
+  color: var(--muted); padding: 8px 6px; font-size: 11px; font-weight: 800; cursor: pointer;
+}
+.pref-theme:hover, .pref-theme.active { border-color: var(--accent); color: var(--text); background: var(--hover); }
 
 /* Save flash animation */
 @keyframes saveFlash {
@@ -135,6 +256,63 @@
 .confirm-btn:hover { background: #e7ece5; }
 .confirm-btn.primary { border-color: #2f6f61; background: #2f6f61; color: #fffffb; }
 .confirm-btn.danger { color: #a63c28; }
+
+/* Loaded-file search palette */
+.search-backdrop {
+  display: flex; align-items: flex-start; justify-content: center; padding-top: min(12vh, 96px);
+  background: rgba(8, 10, 10, .32); backdrop-filter: blur(8px);
+}
+.search-backdrop.hidden { display: none; }
+.search-palette {
+  width: min(720px, calc(100vw - 28px)); max-height: min(660px, calc(100vh - 48px));
+  display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border);
+  border-radius: 22px; background: var(--surface); color: var(--text);
+  box-shadow: 0 24px 80px var(--shadow);
+}
+.search-head {
+  display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-soft); background: var(--editor);
+}
+.search-head svg {
+  width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: var(--accent);
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.search-head input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  color: var(--text); font-size: 18px; font-weight: 650;
+}
+.search-head input::placeholder { color: var(--muted); font-weight: 550; }
+.search-head button {
+  width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent;
+  color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer;
+}
+.search-head button:hover { background: var(--hover); color: var(--text); }
+.search-sub {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 16px; color: var(--muted); font-size: 11px; font-weight: 750;
+  text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--border-soft);
+}
+.search-results { overflow-y: auto; padding: 8px; }
+.search-row {
+  width: 100%; border: 1px solid transparent; border-radius: 14px; background: transparent;
+  color: var(--text); display: flex; gap: 10px; padding: 10px; text-align: left; cursor: pointer;
+}
+.search-row:hover, .search-row.active { background: var(--hover); border-color: var(--border); }
+.search-badge {
+  width: 34px; height: 30px; border: 1px solid var(--border); border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  background: var(--editor); color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase;
+}
+.search-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.search-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.search-title-line strong { font-size: 13px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-title-line em {
+  color: #c57933; font-size: 10px; font-style: normal; font-weight: 850; text-transform: uppercase;
+}
+.search-title-line small { color: var(--accent); font-size: 10px; font-weight: 800; }
+.search-path { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-snippet { color: var(--muted); font-size: 12px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.search-empty { color: var(--muted); text-align: center; padding: 28px 16px; font-size: 13px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
