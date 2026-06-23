@@ -2948,6 +2948,14 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+      <button data-copy-footprint-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+      <button data-export-footprint-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+      <button data-copy-footprint-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+      <button data-export-footprint-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+      <button data-copy-footprint-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
+      <button data-export-footprint-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+    </div>
     <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the workspace; saved Trash reads the existing Trash manifest.</p>
   `);
 }
@@ -7042,6 +7050,18 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copySettings) await copyLocalSettings();
   const importSettings = e.target.closest('[data-import-local-settings]');
   if (importSettings) importLocalSettings();
+  const copyFootprintMd = e.target.closest('[data-copy-footprint-md]');
+  if (copyFootprintMd) await copyLocalFootprintMarkdown();
+  const exportFootprintMd = e.target.closest('[data-export-footprint-md]');
+  if (exportFootprintMd) await exportLocalFootprintMarkdown();
+  const copyFootprintJson = e.target.closest('[data-copy-footprint-json]');
+  if (copyFootprintJson) await copyLocalFootprintJson();
+  const exportFootprintJson = e.target.closest('[data-export-footprint-json]');
+  if (exportFootprintJson) await exportLocalFootprintJson();
+  const copyFootprintCsv = e.target.closest('[data-copy-footprint-csv]');
+  if (copyFootprintCsv) await copyLocalFootprintCsv();
+  const exportFootprintCsv = e.target.closest('[data-export-footprint-csv]');
+  if (exportFootprintCsv) await exportLocalFootprintCsv();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
