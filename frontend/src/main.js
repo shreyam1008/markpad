@@ -1676,6 +1676,10 @@ function commandItems() {
     { id: 'canvas-grid-24', icon: 'G24', title: 'Canvas grid 24px', hint: 'Use the default 24px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(24); } },
     { id: 'canvas-grid-32', icon: 'G32', title: 'Canvas grid 32px', hint: 'Use a roomy 32px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(32); } },
     { id: 'canvas-grid-48', icon: 'G48', title: 'Canvas grid 48px', hint: 'Use a broad 48px grid for coarse layout and snap', run: () => { openCanvas(); setCanvasGridSize(48); } },
+    { id: 'canvas-bg-white', icon: 'BW', title: 'Canvas background white', hint: 'Set canvas background to plain white for exports', run: () => setCanvasBackground('#ffffff', 'white') },
+    { id: 'canvas-bg-paper', icon: 'BP', title: 'Canvas background paper', hint: 'Set canvas background to warm paper', run: () => setCanvasBackground('#fffaf1', 'paper') },
+    { id: 'canvas-bg-mist', icon: 'BM', title: 'Canvas background mist', hint: 'Set canvas background to soft mist', run: () => setCanvasBackground('#edf3f1', 'mist') },
+    { id: 'canvas-bg-ink', icon: 'BI', title: 'Canvas background ink', hint: 'Set canvas background to dark ink for contrast', run: () => setCanvasBackground('#10141b', 'ink') },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
@@ -3848,6 +3852,16 @@ function arrowHeadPoints(x1, y1, x2, y2, size) {
   };
 }
 
+function setCanvasBackground(color, label) {
+  if (!canvasDoc) loadCanvasState();
+  canvasDoc.appState = canvasDoc.appState || {};
+  canvasDoc.appState.viewBackgroundColor = color;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = `Canvas background ${label}`;
+}
+
 function renderCanvas() {
   updateCanvasStatus();
   if (!canvasStage || !canvasDoc || !canvasActive) return;
@@ -3858,7 +3872,7 @@ function renderCanvas() {
   const height = canvasStage.height / dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const styles = getComputedStyle(document.documentElement);
-  ctx.fillStyle = styles.getPropertyValue('--editor').trim() || '#fffffc';
+  ctx.fillStyle = canvasDoc.appState?.viewBackgroundColor || styles.getPropertyValue('--editor').trim() || '#fffffc';
   ctx.fillRect(0, 0, width, height);
   drawCanvasGrid(ctx, width, height);
   const camera = canvasCamera();
