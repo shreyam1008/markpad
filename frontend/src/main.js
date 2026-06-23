@@ -1132,6 +1132,7 @@ async function collectLocalSearchResults(query, token, limit) {
   if (diagnostics) {
     metaParts.push(`${Number(diagnostics.searchable || 0)} searched`);
     metaParts.push(`${Number(diagnostics.scanned || 0)} scanned`);
+    if (Number.isFinite(Number(diagnostics.elapsedMs))) metaParts.push(`${Number(diagnostics.elapsedMs || 0)} ms`);
     if (Number(diagnostics.oversize || 0)) metaParts.push(`${Number(diagnostics.oversize || 0)} large skipped`);
     if (Number(diagnostics.skipped || 0)) metaParts.push(`${Number(diagnostics.skipped || 0)} skipped`);
     if (diagnostics.capped) metaParts.push('top matches shown');

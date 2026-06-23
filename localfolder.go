@@ -54,6 +54,7 @@ type LocalFolderSearchResult struct {
 	Candidates int                    `json:"candidates"`
 	Limit      int                    `json:"limit"`
 	Capped     bool                   `json:"capped"`
+	ElapsedMs  int64                  `json:"elapsedMs"`
 }
 
 type localFolderSettings struct {
@@ -149,15 +150,19 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 	return a.SearchLocalFolderWithStats(query, limit).Hits
 }
 
-func (a *App) SearchLocalFolderWithStats(query string, limit int) LocalFolderSearchResult {
-	result := LocalFolderSearchResult{Hits: []LocalFolderSearchHit{}}
+func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalFolderSearchResult) {
+	started := time.Now()
+	result = LocalFolderSearchResult{Hits: []LocalFolderSearchHit{}}
+	defer func() {
+		result.ElapsedMs = time.Since(started).Milliseconds()
+	}()
 	root := a.GetLocalFolder()
 	if root.Path == "" || root.Missing {
-		return result
+		return
 	}
 	plan := parseLocalFolderSearchQuery(query)
 	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && !plan.HasFilters {
-		return result
+		return
 	}
 	if limit <= 0 || limit > 100 {
 		limit = 50
@@ -217,7 +222,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) LocalFolderSea
 		result.Capped = true
 	}
 	result.Hits = hits
-	return result
+	return
 }
 
 func sortLocalFolderSearchHits(hits []LocalFolderSearchHit) {
