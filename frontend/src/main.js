@@ -2296,6 +2296,8 @@ function commandItems() {
     { id: 'copy-canvas-summary-md', icon: 'CCM', title: 'Copy canvas Markdown summary', hint: 'Copy a lightweight Markdown inventory of canvas elements', run: copyCanvasMarkdownSummary },
     { id: 'canvas-elements-csv', icon: 'CCV', title: 'Export canvas elements CSV', hint: 'Download a compact CSV inventory of canvas elements', run: exportCanvasElementsCsv },
     { id: 'copy-canvas-elements-csv', icon: 'CEV', title: 'Copy canvas elements CSV', hint: 'Copy a compact CSV inventory of canvas elements', run: copyCanvasElementsCsv },
+    { id: 'canvas-inventory-json', icon: 'CIJ', title: 'Export canvas inventory JSON', hint: 'Download a compact JSON inventory of canvas elements', run: exportCanvasInventoryJson },
+    { id: 'copy-canvas-inventory-json', icon: 'CIJ', title: 'Copy canvas inventory JSON', hint: 'Copy a compact JSON inventory of canvas elements', run: copyCanvasInventoryJson },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -5826,6 +5828,8 @@ function showCanvasInventory() {
       <button data-export-canvas-summary-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
       <button data-copy-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
       <button data-export-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+      <button data-copy-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+      <button data-export-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
     </div>
     ${renderCanvasInventoryRows(source)}
     <p class="local-note">Inventory is derived from the current local canvas draft. No files are scanned.</p>
@@ -5878,6 +5882,40 @@ function canvasToCsv(doc) {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
+function canvasInventoryToJson(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const counts = source.elements.reduce((acc, element) => {
+    const key = element.type || 'element';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  return JSON.stringify({
+    type: 'markpad-canvas-inventory',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    count: source.elements.length,
+    counts,
+    elements: source.elements.map((element, index) => {
+      const bounds = canvasElementBounds(element);
+      return {
+        index: index + 1,
+        id: element.id || '',
+        type: element.type || '',
+        bounds: {
+          x: Math.round(Number(bounds.x || 0)),
+          y: Math.round(Number(bounds.y || 0)),
+          width: Math.round(Number(bounds.w || 0)),
+          height: Math.round(Number(bounds.h || 0)),
+        },
+        stroke: element.stroke || '',
+        strokeWidth: element.width || '',
+        text: element.text || '',
+        points: Array.isArray(element.points) ? element.points.length : 0,
+      };
+    }),
+  }, null, 2) + '\n';
+}
+
 function exportCanvasMarkdownSummary() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-summary.md', 'text/markdown', canvasToMarkdownSummary(canvasDoc));
@@ -5908,6 +5946,22 @@ async function copyCanvasElementsCsv() {
   }
   await navigator.clipboard.writeText(canvasToCsv(canvasDoc));
   statusText.textContent = 'Canvas elements copied as CSV';
+}
+
+function exportCanvasInventoryJson() {
+  if (!canvasDoc) loadCanvasState();
+  downloadText('markpad-canvas-inventory.json', 'application/json', canvasInventoryToJson(canvasDoc));
+  statusText.textContent = 'Canvas inventory exported as JSON';
+}
+
+async function copyCanvasInventoryJson() {
+  if (!canvasDoc) loadCanvasState();
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasInventoryToJson(canvasDoc));
+  statusText.textContent = 'Canvas inventory copied as JSON';
 }
 
 function obsidianElementBounds(element) {
@@ -7208,6 +7262,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasElementsCsv) await copyCanvasElementsCsv();
   const exportCanvasElementsCsvBtn = e.target.closest('[data-export-canvas-elements-csv]');
   if (exportCanvasElementsCsvBtn) exportCanvasElementsCsv();
+  const copyCanvasInventoryJsonBtn = e.target.closest('[data-copy-canvas-inventory-json]');
+  if (copyCanvasInventoryJsonBtn) await copyCanvasInventoryJson();
+  const exportCanvasInventoryJsonBtn = e.target.closest('[data-export-canvas-inventory-json]');
+  if (exportCanvasInventoryJsonBtn) exportCanvasInventoryJson();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
