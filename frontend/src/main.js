@@ -865,7 +865,7 @@ async function runLoadedSearch(query) {
   }
   const results = await collectLoadedSearchResults(query, token, 40);
   if (token !== searchToken) return;
-  renderSearchResults(results, plan.lower);
+  renderSearchResults(results, query);
 }
 
 async function collectLoadedSearchResults(query, token, limit) {
@@ -904,7 +904,7 @@ async function runAllSearch(query, token) {
   const results = [...loaded, ...local]
     .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
     .slice(0, 70);
-  renderSearchResults(results, plan.lower);
+  renderSearchResults(results, query);
 }
 
 function updateSearchScopeButtons() {
@@ -948,7 +948,7 @@ async function runLocalFolderSearch(query, token) {
     return;
   }
   searchMeta.textContent = pack.meta || `${pack.results.length} local result${pack.results.length === 1 ? '' : 's'}`;
-  renderSearchResults(pack.results, query.trim().toLowerCase());
+  renderSearchResults(pack.results, query);
 }
 
 async function collectLocalSearchResults(query, token, limit) {
@@ -998,15 +998,65 @@ async function collectLocalSearchResults(query, token, limit) {
   return { results, meta: `${results.length} local hit${results.length === 1 ? '' : 's'} from ${info.path}` };
 }
 
+function searchHighlightTerms(query) {
+  const plan = parseSearchQuery(query);
+  const values = [
+    ...plan.terms,
+    ...plan.filters.path,
+    ...plan.filters.title,
+    ...plan.filters.tag,
+    ...plan.filters.task,
+  ];
+  if (!plan.hasFilters && !plan.terms.length) {
+    values.push(...String(query || '').toLowerCase().split(/\s+/));
+  }
+  const seen = new Set();
+  return values
+    .map(value => String(value || '').replace(/^#/, '').trim().toLowerCase())
+    .filter(value => value.length >= 2 && !seen.has(value) && seen.add(value))
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 12);
+}
+
+function highlightSearchText(value, terms) {
+  const text = String(value || '');
+  if (!text || !terms.length) return escapeHtml(text);
+  const lower = text.toLowerCase();
+  const ranges = [];
+  for (const term of terms) {
+    let index = lower.indexOf(term);
+    while (index >= 0) {
+      const end = index + term.length;
+      if (!ranges.some(range => index < range.end && end > range.start)) {
+        ranges.push({ start: index, end });
+      }
+      index = lower.indexOf(term, end);
+    }
+  }
+  if (!ranges.length) return escapeHtml(text);
+  ranges.sort((a, b) => a.start - b.start);
+  let html = '';
+  let offset = 0;
+  for (const range of ranges) {
+    html += escapeHtml(text.slice(offset, range.start));
+    html += `<mark>${escapeHtml(text.slice(range.start, range.end))}</mark>`;
+    offset = range.end;
+  }
+  html += escapeHtml(text.slice(offset));
+  return html;
+}
+
 function renderSearchResults(results, query) {
+  const trimmedQuery = String(query || '').trim();
+  const highlightTerms = searchHighlightTerms(trimmedQuery);
   searchResults.innerHTML = '';
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
   if (searchScope === 'all') {
-    searchMeta.textContent = query
+    searchMeta.textContent = trimmedQuery
       ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files and local folder`
       : `${results.length} item${results.length === 1 ? '' : 's'} from loaded files and local folder`;
   } else if (searchScope !== 'local') {
-    searchMeta.textContent = query
+    searchMeta.textContent = trimmedQuery
       ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
       : 'Type to search content. Empty state lists loaded files.';
   }
@@ -1024,13 +1074,13 @@ function renderSearchResults(results, query) {
       <span class="search-badge">${escapeHtml(fileIcon(result.path))}</span>
       <span class="search-body">
         <span class="search-title-line">
-          <strong>${escapeHtml(result.title)}</strong>
+          <strong>${highlightSearchText(result.title, highlightTerms)}</strong>
           ${result.dirty ? '<em>Unsaved</em>' : ''}
           ${result.source === 'local' ? '<em>Local</em>' : searchScope === 'all' ? '<em>Loaded</em>' : ''}
           ${result.matchIndex >= 0 ? `<small>Line ${result.line + 1}</small>` : ''}
         </span>
-        <span class="search-path">${escapeHtml(result.path)}</span>
-        ${result.snippet ? `<span class="search-snippet">${escapeHtml(result.snippet)}</span>` : ''}
+        <span class="search-path">${highlightSearchText(result.path, highlightTerms)}</span>
+        ${result.snippet ? `<span class="search-snippet">${highlightSearchText(result.snippet, highlightTerms)}</span>` : ''}
       </span>`;
     row.addEventListener('mousemove', () => setSearchActive(index));
     row.addEventListener('click', () => openSearchResult(result));
