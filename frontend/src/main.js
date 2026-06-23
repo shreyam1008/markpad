@@ -1859,6 +1859,7 @@ function commandItems() {
     { id: 'canvas-pan-right', icon: 'PR', title: 'Canvas pan right', hint: 'Move the canvas viewport right by one step', run: () => { openCanvas(); panCanvasView(-160, 0); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
+    { id: 'canvas-copy-element-json', icon: 'CEJ', title: 'Copy selected canvas element JSON', hint: 'Copy the selected canvas element as portable JSON', run: copySelectedCanvasElementJson },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
@@ -4734,6 +4735,15 @@ async function copyCanvasJson() {
   await navigator.clipboard.writeText(`${json}\n`);
   const count = (canvasDoc?.elements || []).length;
   statusText.textContent = `${count} canvas element${count === 1 ? '' : 's'} copied as JSON`;
+}
+
+async function copySelectedCanvasElementJson() {
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element to copy JSON';
+    return;
+  }
+  await navigator.clipboard.writeText(`${JSON.stringify(canvasDoc.elements[canvasSelectedIndex], null, 2)}\n`);
+  statusText.textContent = 'Selected canvas element JSON copied';
 }
 
 function exportCanvasSvg() {
