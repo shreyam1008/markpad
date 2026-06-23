@@ -940,6 +940,39 @@ body.markpad-compact #modal-body {
   color: var(--danger);
 }
 
+.canvas-shell {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, var(--accent)) 0%, var(--surface) 42%, color-mix(in srgb, var(--editor) 94%, var(--accent)) 100%);
+}
+.canvas-tool {
+  position: relative;
+  overflow: hidden;
+}
+.canvas-tool::after {
+  content: "";
+  position: absolute;
+  inset: auto 8px 5px;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+}
+.canvas-tool:hover,
+.canvas-tool.active {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--editor));
+}
+.canvas-tool.active::after {
+  background: var(--accent);
+}
+.canvas-minimap {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--shadow) 65%, transparent);
+}
+.canvas-status {
+  border-top: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--editor) 82%, transparent);
+}
+
 /* Document outline */
 .outline-summary {
   color: var(--muted);
