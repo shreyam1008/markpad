@@ -1729,7 +1729,7 @@ function commandScore(item, query) {
   const recentRank = commandRecentRank(item.id);
   const recentBoost = recentRank >= 0 ? COMMAND_RECENTS_LIMIT - recentRank : 0;
   if (!query) return 1 + recentBoost * 10 + (item.kbd ? 2 : 0);
-  const haystack = `${item.title} ${item.hint} ${item.id}`.toLowerCase();
+  const haystack = `${item.title} ${item.hint} ${item.id} ${commandCategory(item)}`.toLowerCase();
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!terms.every(term => haystack.includes(term))) return 0;
   let score = 10;
@@ -1739,6 +1739,21 @@ function commandScore(item, query) {
     else score += 8;
   }
   return score + recentBoost * 4;
+}
+
+function commandCategory(item) {
+  const id = String(item?.id || '');
+  if (id.startsWith('search') || id === 'find' || id.includes('outline')) return 'Search';
+  if (id.startsWith('tasks') || id.startsWith('add-task') || id.includes('task')) return 'Tasks';
+  if (id.startsWith('canvas') || id === 'new-local-canvas' || id === 'local-links-canvas') return 'Canvas';
+  if (id.startsWith('trash')) return 'Trash';
+  if (id.startsWith('theme')) return 'Theme';
+  if (id.startsWith('local') || id.includes('local') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
+  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'split', 'split-balanced', 'split-editor-wide', 'split-preview-wide', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
+  if (id.includes('runtime') || id === 'footprint') return 'Diagnostics';
+  if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
+  if (id === 'history') return 'History';
+  return 'File';
 }
 
 function renderCommandPalette() {
@@ -1758,11 +1773,12 @@ function renderCommandPalette() {
   items.forEach((item, index) => {
     const row = el('button', `command-row${index === commandActiveIndex ? ' active' : ''}`);
     const recent = isRecentCommand(item.id);
+    const category = commandCategory(item);
     row.type = 'button';
     row.dataset.commandId = item.id;
     row.innerHTML = `
       <span class="command-icon">${escapeHtml(item.icon)}</span>
-      <span class="command-body"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.hint)}</span></span>
+      <span class="command-body"><strong>${escapeHtml(item.title)}</strong><span class="command-hint"><small>${escapeHtml(category)}</small>${escapeHtml(item.hint)}</span></span>
       ${recent ? '<span class="command-recent">Recent</span>' : item.kbd ? `<span class="command-kbd">${escapeHtml(item.kbd)}</span>` : '<span></span>'}`;
     row.addEventListener('mousemove', () => setCommandActive(index));
     row.addEventListener('click', () => runCommand(item));

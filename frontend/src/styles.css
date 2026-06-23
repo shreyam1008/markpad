@@ -740,6 +740,19 @@ body.markpad-compact #modal-body {
 .command-body { min-width: 0; display: flex; flex-direction: column; }
 .command-body strong { font-size: 13px; font-weight: 850; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .command-body span { color: var(--muted); font-size: 11px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.command-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.command-hint small {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 .command-kbd {
   border: 1px solid var(--border); border-radius: 7px; background: var(--editor); color: var(--muted);
   padding: 2px 6px; font-size: 10px; font-weight: 850; white-space: nowrap;
