@@ -7014,6 +7014,7 @@ function showCanvasInventory() {
       <button data-export-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View</button>
       <button data-copy-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View JSON</button>
       <button data-export-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View JSON</button>
+      <button data-restore-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Restore View JSON</button>
       <button data-copy-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View CSV</button>
       <button data-export-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View CSV</button>
     </div>
@@ -8607,6 +8608,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasViewStateJsonBtn) await copyCanvasViewStateJson();
   const exportCanvasViewStateJsonBtn = e.target.closest('[data-export-canvas-view-state-json]');
   if (exportCanvasViewStateJsonBtn) exportCanvasViewStateJson();
+  const restoreCanvasViewStateBtn = e.target.closest('[data-restore-canvas-view-state]');
+  if (restoreCanvasViewStateBtn) await restoreCanvasViewStateFromClipboard();
   const copyCanvasViewStateCsvBtn = e.target.closest('[data-copy-canvas-view-state-csv]');
   if (copyCanvasViewStateCsvBtn) await copyCanvasViewStateCsv();
   const exportCanvasViewStateCsvBtn = e.target.closest('[data-export-canvas-view-state-csv]');
