@@ -2132,6 +2132,34 @@ function renderTaskList(tasks) {
   return `<div class="task-list">${tasks.map(task => renderTaskRow(task)).join('')}</div>`;
 }
 
+function taskPriorityBucket(task) {
+  const priorityClass = taskPriorityClass(task);
+  if (priorityClass === 'urgent' || priorityClass === 'high') return 'high';
+  if (priorityClass === 'medium') return 'medium';
+  if (priorityClass === 'low') return 'low';
+  return 'normal';
+}
+
+function renderTaskBoardGroups(tasks) {
+  if (!tasks.length) return '<div class="task-empty">Empty</div>';
+  const groups = [
+    ['high', 'High priority'],
+    ['medium', 'Medium'],
+    ['normal', 'Normal'],
+    ['low', 'Low'],
+  ];
+  return groups.map(([id, label]) => {
+    const groupTasks = tasks.filter(task => taskPriorityBucket(task) === id);
+    if (!groupTasks.length) return '';
+    return `
+      <div class="task-board-group ${id}">
+        <div class="task-board-group-title">${label} <span>${groupTasks.length}</span></div>
+        ${groupTasks.map(task => renderTaskRow(task, true)).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
 function renderTaskBoard(tasks) {
   const columns = [
     ['today', 'Today'],
@@ -2141,7 +2169,7 @@ function renderTaskBoard(tasks) {
   ];
   return `<div class="task-board">${columns.map(([id, label]) => {
     const colTasks = tasks.filter(task => taskStatus(task) === id);
-    return `<section class="task-col"><h4>${label} (${colTasks.length})</h4>${colTasks.length ? colTasks.map(task => renderTaskRow(task, true)).join('') : '<div class="task-empty">Empty</div>'}</section>`;
+    return `<section class="task-col"><h4>${label} (${colTasks.length})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
   }).join('')}</div>`;
 }
 

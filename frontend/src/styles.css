@@ -691,6 +691,40 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .task-col h4 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .task-col .task-row { grid-template-columns: 24px 1fr; margin-bottom: 7px; }
 .task-col .task-open { display: none; }
+.task-board-group {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 7px;
+  margin-top: 7px;
+}
+.task-board-group:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.task-board-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.task-board-group-title span {
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--editor);
+  color: var(--muted);
+  font-size: 9px;
+}
 .task-calendar { display: flex; flex-direction: column; gap: 10px; }
 .task-day { border: 1px solid var(--border-soft); border-radius: 14px; padding: 8px; background: var(--surface); }
 .task-day h4 { margin: 0 0 8px; font-size: 12px; font-weight: 850; color: var(--text); }
