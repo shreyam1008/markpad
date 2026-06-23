@@ -2171,8 +2171,28 @@ function showSearchPerformanceGuide() {
     <div class="local-actions" style="margin-top:10px;">
       <button data-open-local-footprint>Open Local Footprint</button>
       <button data-clear-loaded-search-cache>Clear Search Cache</button>
+      <button data-workspace-search-plan>Workspace Search Plan</button>
     </div>
     <p class="diag-note">Search should stay local-first and memory-bounded. The current loaded-file path is intentionally small; broader workspace search should stream from disk and expose its cache/index cost in diagnostics.</p>
+  `);
+}
+
+function showWorkspaceSearchPlan() {
+  showModal('Workspace Search Plan', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>bounded</strong><span>Worker pool</span><small>Use a conservative Go worker count instead of unbounded goroutines</small></div>
+      <div class="diag-card"><strong>cancel</strong><span>Query tokens</span><small>Stop older workspace searches when the user keeps typing</small></div>
+      <div class="diag-card"><strong>stream</strong><span>Batch results</span><small>Return normalized hits without holding full file contents in memory</small></div>
+      <div class="diag-card"><strong>skip</strong><span>Safe folders</span><small>Reuse local folder skip rules and file-size caps</small></div>
+      <div class="diag-card"><strong>diagnose</strong><span>Counts + timing</span><small>Expose searched, skipped, elapsed time, and any cache/index cost</small></div>
+      <div class="diag-card"><strong>optional</strong><span>FTS later</span><small>Only add an index after measurements show the standard path is not enough</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-search-performance-open>Search Performance</button>
+      <button data-open-local-footprint>Local Footprint</button>
+      <button data-local-workspace-setup>Workspace Setup</button>
+    </div>
+    <p class="diag-note">Workspace search should remain local, cancellable, measurable, and derived from files. Current-file and loaded-file search stay as zero-index fast paths.</p>
   `);
 }
 
@@ -4043,6 +4063,7 @@ function commandItems() {
   { id: 'tasks-agenda-export-todo', icon: 'EAT', title: 'Export task agenda Todo.txt', hint: 'Download agenda tasks as portable Todo.txt lines', run: exportTaskAgendaTodoTxt },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
+  { id: 'workspace-search-plan', icon: 'WSP', title: 'Workspace search plan', hint: 'Show bounded worker, cancellation, diagnostics, and optional-index design notes', run: showWorkspaceSearchPlan },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
   { id: 'current-file-search-to-canvas', icon: 'F2C', title: 'Send current-file search to canvas', hint: 'Create a lightweight canvas board from active-file search matches', run: () => insertCurrentFileSearchCanvasBoard() },
   { id: 'copy-current-file-search-json', icon: 'CFJ', title: 'Copy current-file search JSON', hint: 'Copy the current active-file search report as structured JSON', run: () => copyCurrentFileSearchJson() },
@@ -11343,6 +11364,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (searchQueryInspectorOpenBtn) showSearchQueryInspector();
   const searchPerformanceOpenBtn = e.target.closest('[data-search-performance-open]');
   if (searchPerformanceOpenBtn) showSearchPerformanceGuide();
+  const workspaceSearchPlanBtn = e.target.closest('[data-workspace-search-plan]');
+  if (workspaceSearchPlanBtn) showWorkspaceSearchPlan();
   const searchResultsCanvasBtn = e.target.closest('[data-search-results-canvas]');
   if (searchResultsCanvasBtn && !searchResultsCanvasBtn.disabled) insertSearchResultsCanvasBoard();
   const currentFileSearchCanvasGuideBtn = e.target.closest('[data-current-file-search-canvas-guide]');
