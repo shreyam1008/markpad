@@ -1308,6 +1308,8 @@ function commandItems() {
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
+    { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
+    { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
     { id: 'canvas-delete', icon: 'CX', title: 'Delete selected canvas element', hint: 'Remove the currently selected canvas element', run: deleteSelectedCanvasElement },
     { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
@@ -2939,9 +2941,13 @@ function updateCanvasHistoryButtons() {
 }
 
 function updateCanvasSelectionButtons() {
+  const copy = $('canvas-copy');
+  const paste = $('canvas-paste');
   const duplicate = $('canvas-duplicate');
   const remove = $('canvas-delete');
   const disabled = !hasCanvasSelection();
+  if (copy) copy.disabled = disabled;
+  if (paste) paste.disabled = !canvasClipboard;
   if (duplicate) duplicate.disabled = disabled;
   if (remove) remove.disabled = disabled;
 }
@@ -3596,6 +3602,8 @@ window.addEventListener('resize', resizeCanvasStage);
 $('canvas-close')?.addEventListener('click', closeCanvas);
 $('canvas-undo')?.addEventListener('click', undoCanvas);
 $('canvas-redo')?.addEventListener('click', redoCanvas);
+$('canvas-copy')?.addEventListener('click', () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); });
+$('canvas-paste')?.addEventListener('click', pasteCanvasElement);
 $('canvas-duplicate')?.addEventListener('click', duplicateSelectedCanvasElement);
 $('canvas-delete')?.addEventListener('click', deleteSelectedCanvasElement);
 $('canvas-reset-view')?.addEventListener('click', resetCanvasView);
