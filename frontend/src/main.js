@@ -2121,6 +2121,16 @@ async function showRuntimeStats() {
         <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
           ${rows.map(([label, value]) => `<tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;color:var(--muted);font-weight:750;">${escapeHtml(label)}</td><td style="padding:5px 8px;text-align:right;font-weight:850;">${escapeHtml(value)}</td></tr>`).join('')}
         </table>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button data-copy-runtime-text style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy Text</button>
+          <button data-export-runtime-text style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export Text</button>
+          <button data-copy-runtime-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+          <button data-export-runtime-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+          <button data-copy-runtime-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+          <button data-export-runtime-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+          <button data-copy-runtime-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
+          <button data-export-runtime-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+        </div>
         <p style="margin:0;color:var(--muted);font-size:11px;line-height:1.55;">RSS is the resident memory reported by the OS for the Markpad process when available. Go heap is runtime memory inside the backend only, so it will be lower than total desktop app memory.</p>
       </div>
     `);
@@ -7062,6 +7072,22 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyFootprintCsv) await copyLocalFootprintCsv();
   const exportFootprintCsv = e.target.closest('[data-export-footprint-csv]');
   if (exportFootprintCsv) await exportLocalFootprintCsv();
+  const copyRuntimeText = e.target.closest('[data-copy-runtime-text]');
+  if (copyRuntimeText) await copyRuntimeStats();
+  const exportRuntimeText = e.target.closest('[data-export-runtime-text]');
+  if (exportRuntimeText) await exportRuntimeStatsText();
+  const copyRuntimeMd = e.target.closest('[data-copy-runtime-md]');
+  if (copyRuntimeMd) await copyRuntimeStatsMarkdown();
+  const exportRuntimeMd = e.target.closest('[data-export-runtime-md]');
+  if (exportRuntimeMd) await exportRuntimeStatsMarkdown();
+  const copyRuntimeJson = e.target.closest('[data-copy-runtime-json]');
+  if (copyRuntimeJson) await copyRuntimeStatsJson();
+  const exportRuntimeJson = e.target.closest('[data-export-runtime-json]');
+  if (exportRuntimeJson) await exportRuntimeStatsJson();
+  const copyRuntimeCsv = e.target.closest('[data-copy-runtime-csv]');
+  if (copyRuntimeCsv) await copyRuntimeStatsCsv();
+  const exportRuntimeCsv = e.target.closest('[data-export-runtime-csv]');
+  if (exportRuntimeCsv) await exportRuntimeStatsCsv();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
