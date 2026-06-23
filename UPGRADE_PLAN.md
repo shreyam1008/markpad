@@ -31,6 +31,7 @@ Sources:
 - Add a loaded-file search palette over open documents.
 - Keep search dependency-free and avoid persistent content indexes for now.
 - Improve help/preferences so users can discover new local-first controls.
+- Add a frontend canvas draft that uses one native `<canvas>`, local JSON autosave, and capped device pixel ratio before backend file persistence.
 
 ## Phase 2: local vault layer
 

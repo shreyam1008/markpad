@@ -357,6 +357,63 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   .task-board { grid-template-columns: 1fr; min-width: 0; }
 }
 
+/* Lightweight local canvas */
+.canvas-backdrop {
+  display: flex; align-items: stretch; justify-content: center; padding: 14px;
+  background: rgba(8, 10, 10, .38); backdrop-filter: blur(8px);
+}
+.canvas-backdrop.hidden { display: none; }
+.canvas-shell {
+  width: min(1180px, 100%); height: min(780px, calc(100vh - 28px)); display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 22px; overflow: hidden; background: var(--surface);
+  box-shadow: 0 24px 80px var(--shadow);
+}
+.canvas-topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-soft); background: var(--editor);
+}
+.canvas-title { display: flex; flex-direction: column; min-width: 160px; }
+.canvas-title strong { color: var(--text); font-size: 13px; font-weight: 900; }
+.canvas-title span { color: var(--muted); font-size: 10px; font-weight: 700; }
+.canvas-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.canvas-tool {
+  border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--muted);
+  padding: 5px 8px; font-size: 11px; font-weight: 850; cursor: pointer;
+}
+.canvas-tool:hover, .canvas-tool.active { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.canvas-tool.danger { color: var(--danger); }
+#canvas-color {
+  width: 31px; height: 29px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); padding: 2px;
+}
+#canvas-width { width: 72px; accent-color: var(--accent); }
+.canvas-close {
+  width: 30px; height: 30px; border: none; border-radius: 9px; background: transparent;
+  color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.canvas-close:hover { background: var(--hover); color: var(--text); }
+.canvas-stage-wrap { position: relative; flex: 1; min-height: 0; background: var(--editor); overflow: hidden; }
+#canvas-stage { width: 100%; height: 100%; display: block; cursor: crosshair; }
+#canvas-text-editor {
+  position: absolute; min-width: 160px; min-height: 42px; resize: both; border: 1px solid var(--accent);
+  border-radius: 10px; background: var(--editor); color: var(--text); padding: 8px; outline: none;
+  font: 15px/1.4 "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+#canvas-text-editor.hidden { display: none; }
+.canvas-hint {
+  position: absolute; left: 12px; bottom: 12px; max-width: min(520px, calc(100% - 24px));
+  border: 1px solid var(--border-soft); border-radius: 999px; padding: 6px 10px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--muted);
+  font-size: 11px; font-weight: 750; pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .canvas-backdrop { padding: 0; }
+  .canvas-shell { height: 100vh; border-radius: 0; }
+  .canvas-topbar { align-items: flex-start; flex-direction: column; }
+  .canvas-actions { justify-content: flex-start; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }

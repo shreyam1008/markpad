@@ -94,6 +94,7 @@
         <div class="flex gap-1.5">
           <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
           <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
+          <button id="btn-canvas" class="icon-btn" title="Canvas draft" aria-label="Canvas draft"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
           <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
           <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
@@ -233,6 +234,37 @@
         <span id="search-meta">Ctrl+F still searches inside the current file.</span>
       </div>
       <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <div id="canvas-overlay" class="hidden fixed inset-0 z-[75] canvas-backdrop">
+    <div class="canvas-shell" role="dialog" aria-modal="true" aria-label="Canvas draft">
+      <div class="canvas-topbar">
+        <div class="canvas-title">
+          <strong>Canvas draft</strong>
+          <span>Local JSON surface. File save comes in the backend slice.</span>
+        </div>
+        <div class="canvas-actions">
+          <button data-canvas-tool="pan" class="canvas-tool active">Pan</button>
+          <button data-canvas-tool="pen" class="canvas-tool">Pen</button>
+          <button data-canvas-tool="rect" class="canvas-tool">Rect</button>
+          <button data-canvas-tool="ellipse" class="canvas-tool">Oval</button>
+          <button data-canvas-tool="line" class="canvas-tool">Line</button>
+          <button data-canvas-tool="text" class="canvas-tool">Text</button>
+          <button data-canvas-tool="erase" class="canvas-tool">Erase</button>
+          <input id="canvas-color" type="color" value="#2f6f61" title="Stroke color" />
+          <input id="canvas-width" type="range" min="1" max="14" value="3" title="Stroke width" />
+          <button id="canvas-reset-view" class="canvas-tool">Reset view</button>
+          <button id="canvas-export" class="canvas-tool">JSON</button>
+          <button id="canvas-clear" class="canvas-tool danger">Clear</button>
+          <button id="canvas-close" class="canvas-close" title="Close canvas">&times;</button>
+        </div>
+      </div>
+      <div class="canvas-stage-wrap">
+        <canvas id="canvas-stage"></canvas>
+        <textarea id="canvas-text-editor" class="hidden" spellcheck="false"></textarea>
+        <div class="canvas-hint">Mouse wheel zooms. Drag in Pan mode moves the viewport. Draft autosaves locally.</div>
+      </div>
     </div>
   </div>
 

@@ -36,6 +36,14 @@ let searchActiveIndex = 0;
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let latestTasks = [];
+let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
+let canvasDoc = null;
+let canvasSession = null;
+let canvasActive = false;
+let canvasDrawing = null;
+let canvasDraftElement = null;
+let canvasPanStart = null;
+let canvasTextTarget = null;
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -91,6 +99,11 @@ const searchInput  = $('search-input');
 const searchResults = $('search-results');
 const searchMeta   = $('search-meta');
 const themeBtn     = $('btn-theme');
+const canvasOverlay = $('canvas-overlay');
+const canvasStage  = $('canvas-stage');
+const canvasTextEditor = $('canvas-text-editor');
+const canvasColor  = $('canvas-color');
+const canvasWidth  = $('canvas-width');
 
 const THEMES = [
   { id: 'paper', label: 'Paper' },
@@ -99,6 +112,9 @@ const THEMES = [
   { id: 'pine', label: 'Pine' },
 ];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
+const CANVAS_DOC_KEY = 'markpad-canvas-draft';
+const CANVAS_SESSION_KEY = 'markpad-canvas-session';
+const CANVAS_DPR_CAP = 1.5;
 
 function applyTheme(id, silent) {
   if (!THEMES.some(t => t.id === id)) id = 'paper';
@@ -946,6 +962,338 @@ async function openLoadedTask(taskId) {
     editor.scrollTop = Math.max(0, task.line * lineHeight - editor.clientHeight * 0.35);
   });
 }
+
+function newCanvasDoc() {
+  return {
+    type: 'markpad-canvas',
+    version: 1,
+    source: 'markpad',
+    elements: [],
+    appState: { viewBackgroundColor: '#ffffff' },
+    files: {},
+  };
+}
+
+function loadCanvasState() {
+  try { canvasDoc = JSON.parse(localStorage.getItem(CANVAS_DOC_KEY) || ''); } catch { canvasDoc = null; }
+  try { canvasSession = JSON.parse(localStorage.getItem(CANVAS_SESSION_KEY) || ''); } catch { canvasSession = null; }
+  if (!canvasDoc || !Array.isArray(canvasDoc.elements)) canvasDoc = newCanvasDoc();
+  if (!canvasSession) canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+}
+
+function saveCanvasState() {
+  if (!canvasDoc || !canvasSession) return;
+  localStorage.setItem(CANVAS_DOC_KEY, JSON.stringify(canvasDoc));
+  localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
+}
+
+function canvasId() {
+  return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function canvasCamera() {
+  if (!canvasSession) loadCanvasState();
+  return canvasSession.camera;
+}
+
+function canvasScreenToWorld(clientX, clientY) {
+  const rect = canvasStage.getBoundingClientRect();
+  const camera = canvasCamera();
+  return {
+    x: (clientX - rect.left - camera.x) / camera.scale,
+    y: (clientY - rect.top - camera.y) / camera.scale,
+  };
+}
+
+function resizeCanvasStage() {
+  if (!canvasStage) return;
+  const rect = canvasStage.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, CANVAS_DPR_CAP);
+  const width = Math.max(1, Math.floor(rect.width * dpr));
+  const height = Math.max(1, Math.floor(rect.height * dpr));
+  if (canvasStage.width !== width || canvasStage.height !== height) {
+    canvasStage.width = width;
+    canvasStage.height = height;
+  }
+  renderCanvas();
+}
+
+function drawCanvasGrid(ctx, width, height) {
+  const camera = canvasCamera();
+  const step = Math.max(24, 48 * camera.scale);
+  const startX = ((camera.x % step) + step) % step;
+  const startY = ((camera.y % step) + step) % step;
+  ctx.save();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border-soft').trim() || '#e8e6df';
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.75;
+  for (let x = startX; x < width; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+  for (let y = startY; y < height; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+  ctx.restore();
+}
+
+function renderCanvasElement(ctx, el) {
+  ctx.save();
+  ctx.strokeStyle = el.stroke || '#2f6f61';
+  ctx.fillStyle = el.fill || 'transparent';
+  ctx.lineWidth = el.width || 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (el.type === 'path') {
+    if (!el.points || el.points.length < 2) { ctx.restore(); return; }
+    ctx.beginPath();
+    ctx.moveTo(el.points[0].x, el.points[0].y);
+    for (const point of el.points.slice(1)) ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  } else if (el.type === 'rect') {
+    ctx.strokeRect(el.x, el.y, el.w, el.h);
+  } else if (el.type === 'ellipse') {
+    ctx.beginPath();
+    ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (el.type === 'line') {
+    ctx.beginPath();
+    ctx.moveTo(el.x, el.y);
+    ctx.lineTo(el.x + el.w, el.y + el.h);
+    ctx.stroke();
+  } else if (el.type === 'text') {
+    ctx.fillStyle = el.stroke || '#2f6f61';
+    ctx.font = `${el.size || 16}px "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace`;
+    const lines = String(el.text || '').split('\n');
+    lines.forEach((line, i) => ctx.fillText(line, el.x, el.y + i * ((el.size || 16) * 1.35)));
+  }
+  ctx.restore();
+}
+
+function renderCanvas() {
+  if (!canvasStage || !canvasDoc || !canvasActive) return;
+  const ctx = canvasStage.getContext('2d', { alpha: false });
+  const rect = canvasStage.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, CANVAS_DPR_CAP);
+  const width = canvasStage.width / dpr;
+  const height = canvasStage.height / dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const styles = getComputedStyle(document.documentElement);
+  ctx.fillStyle = styles.getPropertyValue('--editor').trim() || '#fffffc';
+  ctx.fillRect(0, 0, width, height);
+  drawCanvasGrid(ctx, width, height);
+  const camera = canvasCamera();
+  ctx.translate(camera.x, camera.y);
+  ctx.scale(camera.scale, camera.scale);
+  const view = {
+    x: -camera.x / camera.scale,
+    y: -camera.y / camera.scale,
+    w: rect.width / camera.scale,
+    h: rect.height / camera.scale,
+  };
+  const visible = (el) => {
+    if (el.type === 'path') return true;
+    const x = Math.min(el.x, el.x + (el.w || 0));
+    const y = Math.min(el.y, el.y + (el.h || 0));
+    const w = Math.abs(el.w || 220);
+    const h = Math.abs(el.h || 60);
+    return x + w >= view.x - 100 && y + h >= view.y - 100 && x <= view.x + view.w + 100 && y <= view.y + view.h + 100;
+  };
+  canvasDoc.elements.filter(visible).forEach(el => renderCanvasElement(ctx, el));
+  if (canvasDraftElement) renderCanvasElement(ctx, canvasDraftElement);
+}
+
+function setCanvasTool(tool) {
+  canvasTool = tool;
+  localStorage.setItem('markpad-canvas-tool', tool);
+  document.querySelectorAll('[data-canvas-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.canvasTool === tool));
+}
+
+function openCanvas() {
+  loadCanvasState();
+  canvasActive = true;
+  canvasOverlay.classList.remove('hidden');
+  setCanvasTool(canvasTool);
+  requestAnimationFrame(resizeCanvasStage);
+}
+
+function closeCanvas() {
+  finishCanvasTextEdit();
+  canvasActive = false;
+  canvasOverlay.classList.add('hidden');
+  saveCanvasState();
+}
+
+function canvasHitTest(point) {
+  for (let i = canvasDoc.elements.length - 1; i >= 0; i--) {
+    const el = canvasDoc.elements[i];
+    if (el.type === 'path') {
+      if ((el.points || []).some(p => Math.hypot(p.x - point.x, p.y - point.y) < 12 / canvasCamera().scale)) return i;
+    } else if (el.type === 'text') {
+      const lines = String(el.text || '').split('\n');
+      const w = Math.max(...lines.map(line => line.length), 8) * ((el.size || 16) * .62);
+      const h = lines.length * ((el.size || 16) * 1.35);
+      if (point.x >= el.x && point.x <= el.x + w && point.y >= el.y - 18 && point.y <= el.y + h) return i;
+    } else {
+      const x = Math.min(el.x, el.x + (el.w || 0));
+      const y = Math.min(el.y, el.y + (el.h || 0));
+      const w = Math.abs(el.w || 0);
+      const h = Math.abs(el.h || 0);
+      if (point.x >= x - 6 && point.x <= x + w + 6 && point.y >= y - 6 && point.y <= y + h + 6) return i;
+    }
+  }
+  return -1;
+}
+
+function startCanvasTextEdit(point, existingIndex = -1) {
+  const camera = canvasCamera();
+  canvasTextTarget = existingIndex >= 0 ? existingIndex : null;
+  const existing = existingIndex >= 0 ? canvasDoc.elements[existingIndex] : null;
+  canvasTextEditor.value = existing?.text || '';
+  canvasTextEditor.style.left = `${(existing?.x ?? point.x) * camera.scale + camera.x}px`;
+  canvasTextEditor.style.top = `${((existing?.y ?? point.y) - 18) * camera.scale + camera.y}px`;
+  canvasTextEditor.style.width = existing ? `${Math.max(180, String(existing.text || '').length * 8)}px` : '220px';
+  canvasTextEditor.classList.remove('hidden');
+  requestAnimationFrame(() => canvasTextEditor.focus());
+  canvasTextEditor.dataset.worldX = String(existing?.x ?? point.x);
+  canvasTextEditor.dataset.worldY = String(existing?.y ?? point.y);
+}
+
+function finishCanvasTextEdit() {
+  if (!canvasTextEditor || canvasTextEditor.classList.contains('hidden')) return;
+  const text = canvasTextEditor.value.trim();
+  if (text) {
+    if (canvasTextTarget !== null) {
+      canvasDoc.elements[canvasTextTarget].text = text;
+    } else {
+      canvasDoc.elements.push({
+        id: canvasId(),
+        type: 'text',
+        x: Number(canvasTextEditor.dataset.worldX || 0),
+        y: Number(canvasTextEditor.dataset.worldY || 0),
+        text,
+        stroke: canvasColor.value,
+        size: 16,
+      });
+    }
+    saveCanvasState();
+  }
+  canvasTextTarget = null;
+  canvasTextEditor.classList.add('hidden');
+  renderCanvas();
+}
+
+canvasStage?.addEventListener('pointerdown', (e) => {
+  if (!canvasActive) return;
+  finishCanvasTextEdit();
+  const point = canvasScreenToWorld(e.clientX, e.clientY);
+  canvasStage.setPointerCapture(e.pointerId);
+  if (canvasTool === 'pan') {
+    const camera = canvasCamera();
+    canvasPanStart = { x: e.clientX, y: e.clientY, cameraX: camera.x, cameraY: camera.y };
+    return;
+  }
+  if (canvasTool === 'erase') {
+    const idx = canvasHitTest(point);
+    if (idx >= 0) {
+      canvasDoc.elements.splice(idx, 1);
+      saveCanvasState();
+      renderCanvas();
+    }
+    return;
+  }
+  if (canvasTool === 'text') {
+    const idx = canvasHitTest(point);
+    startCanvasTextEdit(point, idx >= 0 && canvasDoc.elements[idx].type === 'text' ? idx : -1);
+    return;
+  }
+  const base = { id: canvasId(), stroke: canvasColor.value, width: Number(canvasWidth.value || 3) };
+  if (canvasTool === 'pen') canvasDrawing = { ...base, type: 'path', points: [point] };
+  else canvasDrawing = { ...base, type: canvasTool, x: point.x, y: point.y, w: 0, h: 0 };
+});
+
+canvasStage?.addEventListener('pointermove', (e) => {
+  if (!canvasActive) return;
+  if (canvasPanStart) {
+    const camera = canvasCamera();
+    camera.x = canvasPanStart.cameraX + (e.clientX - canvasPanStart.x);
+    camera.y = canvasPanStart.cameraY + (e.clientY - canvasPanStart.y);
+    renderCanvas();
+    return;
+  }
+  if (!canvasDrawing) return;
+  const point = canvasScreenToWorld(e.clientX, e.clientY);
+  if (canvasDrawing.type === 'path') {
+    const last = canvasDrawing.points[canvasDrawing.points.length - 1];
+    if (Math.hypot(point.x - last.x, point.y - last.y) > 1.5) canvasDrawing.points.push(point);
+  } else {
+    canvasDrawing.w = point.x - canvasDrawing.x;
+    canvasDrawing.h = point.y - canvasDrawing.y;
+  }
+  canvasDraftElement = canvasDrawing;
+  renderCanvas();
+});
+
+canvasStage?.addEventListener('pointerup', () => {
+  if (canvasPanStart) {
+    canvasPanStart = null;
+    saveCanvasState();
+  }
+  if (!canvasDrawing) return;
+  if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
+    canvasDoc.elements.push(canvasDrawing);
+    saveCanvasState();
+  }
+  canvasDrawing = null;
+  canvasDraftElement = null;
+  renderCanvas();
+});
+
+canvasStage?.addEventListener('wheel', (e) => {
+  if (!canvasActive) return;
+  e.preventDefault();
+  const camera = canvasCamera();
+  const rect = canvasStage.getBoundingClientRect();
+  const before = canvasScreenToWorld(e.clientX, e.clientY);
+  const factor = e.deltaY < 0 ? 1.08 : 0.925;
+  camera.scale = Math.max(0.12, Math.min(4, camera.scale * factor));
+  camera.x = e.clientX - rect.left - before.x * camera.scale;
+  camera.y = e.clientY - rect.top - before.y * camera.scale;
+  saveCanvasState();
+  renderCanvas();
+}, { passive: false });
+
+canvasTextEditor?.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    canvasTextEditor.classList.add('hidden');
+  } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    finishCanvasTextEdit();
+  }
+});
+canvasTextEditor?.addEventListener('blur', finishCanvasTextEdit);
+window.addEventListener('resize', resizeCanvasStage);
+$('canvas-close')?.addEventListener('click', closeCanvas);
+$('canvas-reset-view')?.addEventListener('click', () => {
+  canvasSession.camera = { x: 0, y: 0, scale: 1 };
+  saveCanvasState();
+  renderCanvas();
+});
+$('canvas-export')?.addEventListener('click', () => {
+  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'markpad-canvas-draft.json';
+  link.click();
+  URL.revokeObjectURL(url);
+  statusText.textContent = 'Canvas JSON exported';
+});
+$('canvas-clear')?.addEventListener('click', () => {
+  canvasDoc = newCanvasDoc();
+  saveCanvasState();
+  renderCanvas();
+});
+document.querySelectorAll('[data-canvas-tool]').forEach(btn => {
+  btn.addEventListener('click', () => setCanvasTool(btn.dataset.canvasTool));
+});
 function makeNoteRow(note) {
   const isActive = note.id === activeId;
   const canDelete = !note.path;
@@ -1794,6 +2142,7 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('italic'); }
   else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('link'); }
   else if (key === 'Escape') {
+    if (canvasActive) closeCanvas();
     if (searchOpen) closeSearchPalette();
     if (findOpen) toggleFind();
     if (historyOpen) toggleHistory();
@@ -1889,6 +2238,7 @@ $('btn-new-mini').addEventListener('click', doNew);
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
+$('btn-canvas').addEventListener('click', openCanvas);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
 redoBtn.addEventListener('click', () => stepEditHistory(1));
