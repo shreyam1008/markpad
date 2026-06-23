@@ -3304,6 +3304,7 @@ function commandItems() {
     { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
     { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
     { id: 'tasks-to-canvas', icon: 'T2C', title: 'Send visible tasks to canvas', hint: 'Append the current filtered task view as a lightweight canvas board', run: insertVisibleTasksCanvasBoard },
+    { id: 'tasks-to-canvas-guide', icon: 'TCG', title: 'Task canvas guide', hint: 'Explain task-to-canvas filters, 24-task cap, local JSON cards, and Markdown source of truth', run: showTaskCanvasGuide },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'copy-tasks-ics', icon: 'CIC', title: 'Copy visible tasks ICS', hint: 'Copy the current filtered task view as portable calendar text', run: copyVisibleTasksIcs },
     { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
@@ -4949,6 +4950,20 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>canvas</strong><span>Send visible tasks</span><small>Turn filtered tasks into a canvas board</small></div>
     </div>
     <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
+  `);
+}
+
+function showTaskCanvasGuide() {
+  showModal('Task Canvas Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>source</strong><span>Current task filters</span><small>Uses source, status, query, tag, due, and priority filters</small></div>
+      <div class="diag-card"><strong>layout</strong><span>Today / Upcoming / Waiting / Done</span><small>Matches the kanban status model</small></div>
+      <div class="diag-card"><strong>cap</strong><span>24 visible tasks</span><small>Keeps canvas inserts bounded and responsive</small></div>
+      <div class="diag-card"><strong>format</strong><span>Canvas JSON cards</span><small>Does not rewrite Markdown task files</small></div>
+      <div class="diag-card"><strong>colors</strong><span>Priority + waiting states</span><small>High, waiting, done, and normal tasks get different strokes</small></div>
+      <div class="diag-card"><strong>workflow</strong><span>Filter first, send second</span><small>Use task filters to choose exactly what becomes a board</small></div>
+    </div>
+    <p class="diag-note">Task-to-canvas is a local visual snapshot. The source of truth remains plain Markdown tasks; the generated board is editable canvas JSON.</p>
   `);
 }
 
