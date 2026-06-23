@@ -232,7 +232,11 @@
         <button id="search-close" title="Close search" aria-label="Close search">&times;</button>
       </div>
       <div class="search-sub">
-        <span id="search-title">Loaded-file search</span>
+        <span id="search-title">Search</span>
+        <span class="search-scope">
+          <button data-search-scope="loaded" class="active">Loaded</button>
+          <button data-search-scope="local">Local folder</button>
+        </span>
         <span id="search-meta">Ctrl+F still searches inside the current file.</span>
       </div>
       <div id="search-results" class="search-results"></div>

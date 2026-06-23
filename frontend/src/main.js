@@ -35,6 +35,7 @@ let searchToken = 0;
 let searchActiveIndex = 0;
 let commandOpen = false;
 let commandActiveIndex = 0;
+let searchScope = localStorage.getItem('markpad-search-scope') || 'loaded';
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let latestTasks = [];
@@ -663,6 +664,11 @@ async function runLoadedSearch(query) {
   const q = query.trim().toLowerCase();
   const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
   searchResults.innerHTML = '<div class="search-empty">Searching loaded files...</div>';
+  updateSearchScopeButtons();
+  if (searchScope === 'local') {
+    await runLocalFolderSearch(query, token);
+    return;
+  }
   if (window.go?.main?.App?.SearchLoadedDocuments) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, 40);
@@ -689,14 +695,77 @@ async function runLoadedSearch(query) {
   renderSearchResults(results.slice(0, 40), q);
 }
 
+function updateSearchScopeButtons() {
+  document.querySelectorAll('[data-search-scope]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.searchScope === searchScope);
+  });
+  if (searchInput) {
+    searchInput.placeholder = searchScope === 'local'
+      ? 'Search the configured local folder...'
+      : 'Search loaded files, titles, paths...';
+  }
+}
+
+async function runLocalFolderSearch(query, token) {
+  if (!window.go?.main?.App?.GetLocalFolder) {
+    searchResults.innerHTML = '<div class="search-empty">Local folder backend unavailable.</div>';
+    searchMeta.textContent = 'Local folder search unavailable';
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  if (token !== searchToken) return;
+  if (!info.path || info.missing) {
+    searchResults.innerHTML = '<div class="search-empty">Choose a local folder first from the command palette.</div>';
+    searchMeta.textContent = info.missing ? 'Saved local folder is missing' : 'No local folder set';
+    return;
+  }
+  const q = query.trim();
+  if (!q) {
+    const files = await window.go.main.App.ListLocalFolderFiles(60);
+    if (token !== searchToken) return;
+    const results = (files || []).map(file => ({
+      source: 'local',
+      path: file.path,
+      title: file.relPath || file.title,
+      kind: file.kind,
+      dirty: false,
+      matchIndex: -1,
+      matchLength: 0,
+      line: 0,
+      snippet: `${typeLabel(getFileType(file.path, file.kind))} · ${formatBytes(file.size || 0)}${file.modified ? ' · ' + file.modified : ''}`,
+    }));
+    searchMeta.textContent = `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}`;
+    renderSearchResults(results, '');
+    return;
+  }
+  const hits = await window.go.main.App.SearchLocalFolder(q, 60);
+  if (token !== searchToken) return;
+  const results = (hits || []).map(hit => ({
+    source: 'local',
+    path: hit.path,
+    title: hit.relPath || hit.title,
+    kind: hit.kind,
+    dirty: false,
+    score: hit.score,
+    matchIndex: -1,
+    matchLength: 0,
+    line: hit.line || 0,
+    snippet: hit.snippet || '',
+  }));
+  searchMeta.textContent = `${results.length} local hit${results.length === 1 ? '' : 's'} from ${info.path}`;
+  renderSearchResults(results, q.toLowerCase());
+}
+
 function renderSearchResults(results, query) {
   searchResults.innerHTML = '';
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
-  searchMeta.textContent = query
-    ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
-    : 'Type to search content. Empty state lists loaded files.';
+  if (searchScope !== 'local') {
+    searchMeta.textContent = query
+      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
+      : 'Type to search content. Empty state lists loaded files.';
+  }
   if (!results.length) {
-    searchResults.innerHTML = '<div class="search-empty">No loaded files matched. Open more files or use exact text from the current document.</div>';
+    searchResults.innerHTML = `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`;
     return;
   }
   results.forEach((result, index) => {
@@ -749,6 +818,31 @@ function closeSearchPalette() {
 
 async function openSearchResult(result) {
   if (!result) return;
+  if (result.source === 'local') {
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+    try {
+      renderSession(await window.go.main.App.OpenDroppedFile(result.path));
+      loadContent(await window.go.main.App.GetActiveContent());
+      const active = cachedNotes.find(n => n.id === activeId);
+      closeSearchPalette();
+      setView(defaultViewForFileType(active?.path, active?.kind));
+      if ((result.line || 0) > 0 && !isReadOnlyType(getFileType(active?.path, active?.kind))) {
+        setView('markdown');
+        requestAnimationFrame(() => {
+          const start = offsetForLine(editor.value, result.line || 0);
+          const end = Math.min(editor.value.length, start + 160);
+          editor.focus();
+          editor.setSelectionRange(start, end);
+          const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
+          editor.scrollTop = Math.max(0, (result.line || 0) * lineHeight - editor.clientHeight * 0.35);
+        });
+      }
+      statusText.textContent = 'Opened local search result';
+    } catch (err) {
+      statusText.textContent = 'Open failed: ' + err;
+    }
+    return;
+  }
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   await window.go.main.App.SetActive(result.id);
   activeId = result.id;
@@ -789,6 +883,14 @@ searchInput?.addEventListener('keydown', (e) => {
     e.preventDefault();
     closeSearchPalette();
   }
+});
+document.querySelectorAll('[data-search-scope]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    searchScope = btn.dataset.searchScope || 'loaded';
+    localStorage.setItem('markpad-search-scope', searchScope);
+    searchActiveIndex = 0;
+    runLoadedSearch(searchInput.value);
+  });
 });
 $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
