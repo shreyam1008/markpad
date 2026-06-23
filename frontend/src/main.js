@@ -2010,6 +2010,15 @@ function taskPriorityRank(task) {
   return 4;
 }
 
+function taskPriorityClass(task) {
+  const priority = String(task.priority || '').toLowerCase();
+  if (['urgent', 'now', 'p1'].includes(priority)) return 'urgent';
+  if (['high', 'h'].includes(priority)) return 'high';
+  if (['medium', 'normal', 'med', 'm', 'p2'].includes(priority)) return 'medium';
+  if (['low', 'l', 'p3'].includes(priority)) return 'low';
+  return '';
+}
+
 function taskFilterMatches(task) {
   switch (taskFilter) {
     case 'open': return !task.checked;
@@ -2096,15 +2105,19 @@ function taskMeta(task) {
   const bits = [];
   bits.push(`<span class="task-pill">${escapeHtml(task.noteTitle)}</span>`);
   if (task.due) bits.push(`<span class="task-pill">due ${escapeHtml(task.due)}</span>`);
-  if (task.priority) bits.push(`<span class="task-pill">!${escapeHtml(task.priority)}</span>`);
+  if (task.priority) {
+    const priorityClass = taskPriorityClass(task);
+    bits.push(`<span class="task-pill task-priority-pill${priorityClass ? ` ${priorityClass}` : ''}">!${escapeHtml(task.priority)}</span>`);
+  }
   if (task.waiting) bits.push('<span class="task-pill">@waiting</span>');
   task.tags.forEach(tag => bits.push(`<span class="task-pill">#${escapeHtml(tag)}</span>`));
   return bits.join('');
 }
 
 function renderTaskRow(task, compact) {
+  const priorityClass = taskPriorityClass(task);
   return `
-    <div class="task-row${task.checked ? ' done' : ''}">
+    <div class="task-row${task.checked ? ' done' : ''}${priorityClass ? ` priority-${priorityClass}` : ''}">
       <button class="task-check" data-task-toggle="${escapeHtml(task.id)}" title="Toggle task">${task.checked ? '✓' : ''}</button>
       <div class="task-body">
         <div class="task-text">${escapeHtml(task.text)}</div>
