@@ -1684,6 +1684,7 @@ function commandItems() {
     { id: 'canvas-zoom-50', icon: 'Z50', title: 'Canvas zoom 50%', hint: 'Set the canvas view to a wider 50% overview', run: () => { openCanvas(); setCanvasZoomPreset(0.5); } },
     { id: 'canvas-zoom-100', icon: 'Z1', title: 'Canvas zoom 100%', hint: 'Return the canvas view to actual size', run: () => { openCanvas(); setCanvasZoomPreset(1); } },
     { id: 'canvas-zoom-200', icon: 'Z2', title: 'Canvas zoom 200%', hint: 'Set the canvas view to a close 200% editing zoom', run: () => { openCanvas(); setCanvasZoomPreset(2); } },
+    { id: 'canvas-reset-view', icon: 'ZR', title: 'Canvas reset view', hint: 'Return the canvas camera to origin at 100%', run: () => { openCanvas(); resetCanvasView(); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
@@ -3872,6 +3873,16 @@ function setCanvasZoomPreset(scale) {
   camera.scale = Math.max(0.2, Math.min(4, scale));
   renderCanvas();
   statusText.textContent = `Canvas zoom ${Math.round(camera.scale * 100)}%`;
+}
+
+function resetCanvasView() {
+  if (!canvasDoc) loadCanvasState();
+  const camera = canvasCamera();
+  camera.x = 0;
+  camera.y = 0;
+  camera.scale = 1;
+  renderCanvas();
+  statusText.textContent = 'Canvas view reset';
 }
 
 function renderCanvas() {
