@@ -509,6 +509,69 @@ function clearCommandRecents() {
   if (statusText) statusText.textContent = 'Command recents cleared';
 }
 
+function currentCommandRecents() {
+  if (!commandRecentIds.length) commandRecentIds = loadCommandRecentIds();
+  return commandRecentIds.slice(0, COMMAND_RECENTS_LIMIT).map((id) => {
+    const item = COMMAND_ITEMS.find(command => command.id === id);
+    return {
+      id,
+      title: item?.title || id,
+      hint: item?.hint || '',
+    };
+  });
+}
+
+function commandRecentsMarkdown() {
+  const recents = currentCommandRecents();
+  return [
+    '# Markpad Command Recents',
+    '',
+    `Generated: ${new Date().toLocaleString()}`,
+    `Count: ${recents.length}`,
+    '',
+    ...recents.map((item, index) => `${index + 1}. **${item.title}** \`${item.id}\`${item.hint ? ` — ${item.hint}` : ''}`),
+  ].join('\n') + '\n';
+}
+
+function commandRecentsJson() {
+  const recents = currentCommandRecents();
+  return JSON.stringify({
+    type: 'markpad-command-recents',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    count: recents.length,
+    commands: recents,
+  }, null, 2) + '\n';
+}
+
+async function copyCommandRecentsMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(commandRecentsMarkdown());
+  statusText.textContent = 'Command recents copied as Markdown';
+}
+
+async function copyCommandRecentsJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(commandRecentsJson());
+  statusText.textContent = 'Command recents copied as JSON';
+}
+
+function exportCommandRecentsMarkdown() {
+  downloadText('markpad-command-recents.md', 'text/markdown', commandRecentsMarkdown());
+  statusText.textContent = 'Command recents exported as Markdown';
+}
+
+function exportCommandRecentsJson() {
+  downloadText('markpad-command-recents.json', 'application/json', commandRecentsJson());
+  statusText.textContent = 'Command recents exported as JSON';
+}
+
 function commandRecentRank(id) {
   return commandRecentIds.indexOf(id);
 }
@@ -2508,6 +2571,10 @@ function commandItems() {
     { id: 'export-search-recents', icon: 'ESR', title: 'Export search recents', hint: 'Download locally stored search palette recents as Markdown', run: exportSearchRecentsMarkdown },
     { id: 'export-search-recents-json', icon: 'ESJ', title: 'Export search recents JSON', hint: 'Download locally stored search palette recents as JSON', run: exportSearchRecentsJson },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
+    { id: 'copy-command-recents', icon: 'CCR', title: 'Copy command recents', hint: 'Copy locally stored command palette recents as Markdown', run: copyCommandRecentsMarkdown },
+    { id: 'copy-command-recents-json', icon: 'CCJ', title: 'Copy command recents JSON', hint: 'Copy locally stored command palette recents as JSON', run: copyCommandRecentsJson },
+    { id: 'export-command-recents', icon: 'ECR', title: 'Export command recents', hint: 'Download locally stored command palette recents as Markdown', run: exportCommandRecentsMarkdown },
+    { id: 'export-command-recents-json', icon: 'ECJ', title: 'Export command recents JSON', hint: 'Download locally stored command palette recents as JSON', run: exportCommandRecentsJson },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'copy-search-results-json', icon: 'CJ', title: 'Copy search results JSON', hint: 'Copy the current search result list as portable JSON', run: copySearchResultsJson },
