@@ -2057,6 +2057,7 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>local now</strong><span>No cloud sync</span><small>Files, drafts, UI state, tasks, canvas, and Trash stay on this computer</small></div>
       <div class="diag-card"><strong>default folder</strong><span>Search + tasks</span><small>Choose one local folder for fast local scans</small></div>
       <div class="diag-card"><strong>portable data</strong><span>Markdown / JSON / CSV / ICS</span><small>Exports avoid vendor lock-in</small></div>
+      <div class="diag-card"><strong>manifests</strong><span>Active file + loaded workspace</span><small>Export metadata without file contents</small></div>
       <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
       <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
