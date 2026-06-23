@@ -41,6 +41,7 @@ let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let taskFilter = localStorage.getItem('markpad-task-filter') || 'all';
 let taskQuery = localStorage.getItem('markpad-task-query') || '';
+let taskSourceFilter = normalizeTaskSourceFilter(localStorage.getItem('markpad-task-source-filter') || 'all');
 let localFolderQuery = '';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
@@ -164,6 +165,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-task-view',
   'markpad-task-filter',
   'markpad-task-query',
+  'markpad-task-source-filter',
   'markpad-canvas-tool',
   'markpad-canvas-grid',
   'markpad-canvas-snap',
@@ -2214,6 +2216,18 @@ function taskFilterMatches(task) {
   }
 }
 
+function normalizeTaskSourceFilter(value) {
+  return ['all', 'loaded', 'local'].includes(value) ? value : 'all';
+}
+
+function taskSourceMatches(task) {
+  switch (taskSourceFilter) {
+    case 'loaded': return !task.local;
+    case 'local': return !!task.local;
+    default: return true;
+  }
+}
+
 function parseTaskQuery(query) {
   const tokens = String(query || '').trim().match(/"[^"]+"|\S+/g) || [];
   const plan = { terms: [], due: [], priority: [], tags: [], waiting: false, hasQuery: false };
@@ -2300,7 +2314,7 @@ function sortTasksForView(tasks) {
 
 function visibleTasksForView(tasks) {
   const queryPlan = parseTaskQuery(taskQuery);
-  return sortTasksForView(tasks.filter(task => taskFilterMatches(task) && taskQueryMatches(task, queryPlan)));
+  return sortTasksForView(tasks.filter(task => taskSourceMatches(task) && taskFilterMatches(task) && taskQueryMatches(task, queryPlan)));
 }
 
 function taskFilterCounts(tasks) {
@@ -2316,11 +2330,22 @@ function taskFilterCounts(tasks) {
 }
 
 function renderTaskControls(tasks, visibleTasks) {
-  const counts = taskFilterCounts(tasks);
+  const sourceTasks = tasks.filter(taskSourceMatches);
+  const counts = taskFilterCounts(sourceTasks);
   const visibleLoaded = visibleTasks.filter(task => !task.local).length;
   const visibleLocal = visibleTasks.length - visibleLoaded;
   const totalLoaded = tasks.filter(task => !task.local).length;
   const totalLocal = tasks.length - totalLoaded;
+  const sourceFilters = [
+    ['all', 'All sources', tasks.length],
+    ['loaded', 'Loaded', totalLoaded],
+    ['local', 'Local', totalLocal],
+  ];
+  const sourceChips = sourceFilters.map(([id, label, count]) => `
+    <button class="task-filter${taskSourceFilter === id ? ' active' : ''}" data-task-source-filter="${id}">
+      ${label} <span>${count || 0}</span>
+    </button>
+  `).join('');
   const filters = [
     ['all', 'All'],
     ['open', 'Open'],
@@ -2337,8 +2362,10 @@ function renderTaskControls(tasks, visibleTasks) {
   `).join('');
   const query = escapeHtml(taskQuery);
   const filterLabel = (filters.find(([id]) => id === taskFilter) || filters[0])[1];
+  const sourceLabel = (sourceFilters.find(([id]) => id === taskSourceFilter) || sourceFilters[0])[1];
   return `
     <div class="task-controls">
+      <div class="task-filter-row">${sourceChips}</div>
       <div class="task-filter-row">${chips}</div>
       <div class="task-search-row">
         <input data-task-search value="${query}" placeholder="Filter text, due:today, !high, @waiting, #tag" />
@@ -2353,7 +2380,7 @@ function renderTaskControls(tasks, visibleTasks) {
         <button data-task-query-example="@waiting">@waiting</button>
         <button data-task-query-example="#idea">#idea</button>
       </div>
-      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${tasks.length} total (${totalLoaded} loaded, ${totalLocal} local) · ${counts.open} open · Markdown stays the source of truth.</div>
+      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} from ${escapeHtml(sourceLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${sourceTasks.length}/${tasks.length} source-matched · ${counts.open} open · Markdown stays the source of truth.</div>
     </div>
   `;
 }
@@ -4913,6 +4940,12 @@ modalBodyEl.addEventListener('click', async (e) => {
     localStorage.setItem('markpad-task-filter', taskFilter);
     await showTasksView(taskViewMode);
   }
+  const taskSourceBtn = e.target.closest('[data-task-source-filter]');
+  if (taskSourceBtn) {
+    taskSourceFilter = normalizeTaskSourceFilter(taskSourceBtn.dataset.taskSourceFilter || 'all');
+    localStorage.setItem('markpad-task-source-filter', taskSourceFilter);
+    await showTasksView(taskViewMode);
+  }
   const taskSearchApply = e.target.closest('[data-task-search-apply]');
   if (taskSearchApply) {
     const input = modalBodyEl.querySelector('[data-task-search]');
@@ -5170,6 +5203,7 @@ function applyImportedLocalSettings() {
   taskViewMode = localStorage.getItem('markpad-task-view') || taskViewMode;
   taskFilter = localStorage.getItem('markpad-task-filter') || taskFilter;
   taskQuery = localStorage.getItem('markpad-task-query') || '';
+  taskSourceFilter = normalizeTaskSourceFilter(localStorage.getItem('markpad-task-source-filter') || 'all');
   canvasTool = localStorage.getItem('markpad-canvas-tool') || canvasTool;
   canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
   canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
