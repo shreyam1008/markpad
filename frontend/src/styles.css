@@ -769,7 +769,36 @@ body.markpad-compact #modal-body {
   text-transform: uppercase;
   white-space: nowrap;
 }
-.command-empty { color: var(--muted); text-align: center; padding: 28px 16px; font-size: 13px; }
+.command-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 28px 16px;
+  font-size: 13px;
+  display: grid;
+  gap: 8px;
+}
+.command-empty strong {
+  color: var(--text);
+  font-size: 14px;
+}
+.command-empty-cats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.command-empty-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--text);
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
 
 /* Document outline */
 .outline-summary {

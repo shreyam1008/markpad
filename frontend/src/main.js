@@ -3337,10 +3337,10 @@ function commandCategory(item) {
 function commandEmptyHtml(query) {
   const categories = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
   const chips = categories
-    .map(category => `<span style="display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;margin:3px;color:var(--text);">${category}</span>`)
+    .map(category => `<span class="command-empty-chip">${category}</span>`)
     .join('');
   const suffix = query ? ` for &quot;${escapeHtml(query)}&quot;` : '';
-  return `<div class="command-empty"><strong>No command matched${suffix}.</strong><br><span>Try a command category:</span><div style="margin-top:10px;">${chips}</div></div>`;
+  return `<div class="command-empty"><strong>No command matched${suffix}.</strong><span>Try a command category:</span><div class="command-empty-cats">${chips}</div></div>`;
 }
 
 function renderCommandPalette() {
