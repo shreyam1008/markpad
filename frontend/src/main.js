@@ -1772,6 +1772,35 @@ async function copyActiveSearchResultJson() {
   statusText.textContent = 'Active search result copied as JSON';
 }
 
+async function copyActiveSearchResultCsv() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const row = [
+    searchLastQuery || '',
+    searchScope,
+    result.title || basename(result.path) || 'Untitled',
+    result.path || '',
+    result.source || '',
+    result.kind || result.type || getFileType(result.path, result.kind) || '',
+    searchResultMatchLabel(result),
+    Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '',
+    Number.isFinite(Number(result.score)) ? Number(result.score) : '',
+    result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+  ];
+  await navigator.clipboard.writeText([
+    ['query', 'scope', 'title', 'path', 'source', 'type', 'match', 'line', 'score', 'snippet'],
+    row,
+  ].map(values => values.map(csvCell).join(',')).join('\n') + '\n');
+  statusText.textContent = 'Active search result copied as CSV';
+}
+
 async function copySearchQuerySummary() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -2367,6 +2396,7 @@ function commandItems() {
     { id: 'copy-search-result-paths', icon: 'CP', title: 'Copy search result paths', hint: 'Copy current search result paths and line numbers as plain text', run: copySearchResultPaths },
     { id: 'search-copy-active-result', icon: 'CAR', title: 'Copy active search result', hint: 'Copy the highlighted search result as a Markdown reference', run: copyActiveSearchResultMarkdown },
     { id: 'search-copy-active-result-json', icon: 'CAJ', title: 'Copy active search result JSON', hint: 'Copy the highlighted search result as portable JSON', run: copyActiveSearchResultJson },
+    { id: 'search-copy-active-result-csv', icon: 'CAC', title: 'Copy active search result CSV', hint: 'Copy the highlighted search result as one CSV row', run: copyActiveSearchResultCsv },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
