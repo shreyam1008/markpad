@@ -1076,9 +1076,11 @@ function renderSearchResults(results, query) {
   searchResults.innerHTML = '';
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
   if (searchScope === 'all') {
+    const loadedCount = results.filter(result => result.source !== 'local').length;
+    const localCount = results.length - loadedCount;
     searchMeta.textContent = trimmedQuery
-      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files and local folder`
-      : `${results.length} item${results.length === 1 ? '' : 's'} from loaded files and local folder`;
+      ? `${results.length} result${results.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local`
+      : `${results.length} item${results.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local`;
   } else if (searchScope !== 'local') {
     searchMeta.textContent = trimmedQuery
       ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
