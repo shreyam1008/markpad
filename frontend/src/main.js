@@ -2317,6 +2317,10 @@ function taskFilterCounts(tasks) {
 
 function renderTaskControls(tasks, visibleTasks) {
   const counts = taskFilterCounts(tasks);
+  const visibleLoaded = visibleTasks.filter(task => !task.local).length;
+  const visibleLocal = visibleTasks.length - visibleLoaded;
+  const totalLoaded = tasks.filter(task => !task.local).length;
+  const totalLocal = tasks.length - totalLoaded;
   const filters = [
     ['all', 'All'],
     ['open', 'Open'],
@@ -2349,7 +2353,7 @@ function renderTaskControls(tasks, visibleTasks) {
         <button data-task-query-example="@waiting">@waiting</button>
         <button data-task-query-example="#idea">#idea</button>
       </div>
-      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} · ${tasks.length} total · ${counts.open} open · Markdown stays the source of truth.</div>
+      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${tasks.length} total (${totalLoaded} loaded, ${totalLocal} local) · ${counts.open} open · Markdown stays the source of truth.</div>
     </div>
   `;
 }
