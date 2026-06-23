@@ -1021,6 +1021,7 @@ function commandItems() {
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
+    { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
@@ -2931,6 +2932,35 @@ async function saveCanvasAsDraft() {
   editor.focus();
   statusText.textContent = 'Canvas JSON draft created. Use Save As for .canvas';
 }
+
+async function saveCanvasToActiveDocument() {
+  finishCanvasTextEdit();
+  if (!canvasDoc) loadCanvasState();
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (!active) {
+    statusText.textContent = 'No active document for canvas write';
+    return;
+  }
+  const ext = fileExt(active.path || '').toLowerCase();
+  if (active.path && ext !== 'canvas' && ext !== 'json') {
+    statusText.textContent = 'Active file is not .canvas or JSON. Use Draft instead.';
+    return;
+  }
+  const type = getFileType(active.path, active.kind);
+  if (isReadOnlyType(type)) {
+    statusText.textContent = 'Active document is read-only';
+    return;
+  }
+  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2) + '\n';
+  await window.go.main.App.UpdateContent(activeId, json, true);
+  currentContent = json;
+  editor.value = json;
+  if (viewMode !== 'markdown') renderViewer(currentContent, active);
+  renderSession(await window.go.main.App.GetSession());
+  updateStats();
+  statusText.textContent = 'Canvas written to active document';
+}
+
 function importCanvasJson() {
   openCanvas();
   canvasImportFile?.click();
@@ -2938,6 +2968,7 @@ function importCanvasJson() {
 $('canvas-import')?.addEventListener('click', importCanvasJson);
 $('canvas-export')?.addEventListener('click', exportCanvasJson);
 $('canvas-export-svg')?.addEventListener('click', exportCanvasSvg);
+$('canvas-save-active')?.addEventListener('click', saveCanvasToActiveDocument);
 $('canvas-save-draft')?.addEventListener('click', saveCanvasAsDraft);
 canvasImportFile?.addEventListener('change', async () => {
   const file = canvasImportFile.files && canvasImportFile.files[0];
