@@ -2988,6 +2988,7 @@ function commandItems() {
     { id: 'commands-layout', icon: 'CMD', title: 'Show Layout commands', hint: 'Filter the command palette to layout and editor view actions', run: () => openCommandPaletteQuery('Layout') },
     { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
     { id: 'commands-theme', icon: 'CMD', title: 'Show Theme commands', hint: 'Filter the command palette to lightweight theme and appearance actions', run: () => openCommandPaletteQuery('Theme') },
+    { id: 'commands-trash', icon: 'CMD', title: 'Show Trash commands', hint: 'Filter the command palette to local Trash, restore, cleanup, and report actions', run: () => openCommandPaletteQuery('Trash') },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
@@ -3334,6 +3335,7 @@ function commandCategory(item) {
   if (id === 'commands-layout') return 'Layout';
   if (id === 'commands-diagnostics') return 'Diagnostics';
   if (id === 'commands-theme') return 'Theme';
+  if (id === 'commands-trash') return 'Trash';
   if (id.includes('search') || id === 'find' || id.startsWith('find-') || id.includes('outline')) return 'Search';
   if (id.includes('command-recents') || id === 'clear-palette-recents') return 'Search';
   if (id.startsWith('tasks') || id.startsWith('add-task') || id.includes('task')) return 'Tasks';
