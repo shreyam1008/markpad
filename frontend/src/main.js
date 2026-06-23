@@ -1300,6 +1300,9 @@ function commandItems() {
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
+    { id: 'tasks-source-all', icon: 'TSA', title: 'Tasks all sources', hint: 'Show loaded and local Markdown tasks together', run: () => showTasksForSource('all') },
+    { id: 'tasks-source-loaded', icon: 'TSL', title: 'Tasks loaded source', hint: 'Show tasks from currently loaded documents only', run: () => showTasksForSource('loaded') },
+    { id: 'tasks-source-local', icon: 'TSF', title: 'Tasks local source', hint: 'Show tasks from the configured local folder only', run: () => showTasksForSource('local') },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
@@ -2218,6 +2221,16 @@ function taskFilterMatches(task) {
 
 function normalizeTaskSourceFilter(value) {
   return ['all', 'loaded', 'local'].includes(value) ? value : 'all';
+}
+
+function setTaskSourceFilter(value) {
+  taskSourceFilter = normalizeTaskSourceFilter(value);
+  localStorage.setItem('markpad-task-source-filter', taskSourceFilter);
+}
+
+function showTasksForSource(source) {
+  setTaskSourceFilter(source);
+  return showTasksView(taskViewMode);
 }
 
 function taskSourceMatches(task) {
@@ -4957,8 +4970,7 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const taskSourceBtn = e.target.closest('[data-task-source-filter]');
   if (taskSourceBtn) {
-    taskSourceFilter = normalizeTaskSourceFilter(taskSourceBtn.dataset.taskSourceFilter || 'all');
-    localStorage.setItem('markpad-task-source-filter', taskSourceFilter);
+    setTaskSourceFilter(taskSourceBtn.dataset.taskSourceFilter || 'all');
     await showTasksView(taskViewMode);
   }
   const taskSearchApply = e.target.closest('[data-task-search-apply]');
