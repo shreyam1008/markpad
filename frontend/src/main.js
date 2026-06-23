@@ -3499,6 +3499,29 @@ async function showRuntimeStats() {
   }
 }
 
+function showCommandWorkflowGuide() {
+  const items = commandItems();
+  const categories = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
+  const counts = categories.map(category => ({
+    category,
+    count: items.filter(item => commandCategory(item) === category).length,
+  }));
+  showModal('Command Workflow Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>Ctrl+P</strong><span>Command palette</span><small>${items.length} local actions, no plugins or cloud calls</small></div>
+      <div class="diag-card"><strong>type category</strong><span>Search, Tasks, Canvas...</span><small>Category names filter the palette directly</small></div>
+      <div class="diag-card"><strong>${currentCommandRecents().length}</strong><span>Recent commands</span><small>Stored locally and exportable as MD / JSON / CSV</small></div>
+      <div class="diag-card"><strong>bridges</strong><span>Search / Tasks / Canvas</span><small>Send results, tasks, outlines, workspace, and backlinks to canvas</small></div>
+      <div class="diag-card"><strong>diagnostics</strong><span>Runtime + footprint</span><small>Inspect memory, asset, and local storage reports</small></div>
+      <div class="diag-card"><strong>keyboard-first</strong><span>Menu without weight</span><small>Detailed actions without adding nested heavy UI panels</small></div>
+    </div>
+    <div class="diag-heap">
+      ${counts.map(item => `<span>${escapeHtml(item.category)} ${item.count}</span>`).join('')}
+    </div>
+    <p class="diag-note">Command categories are generated from the live command list. The palette favors lightweight text icons, local recents, and direct actions over heavyweight nested menus.</p>
+  `);
+}
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
@@ -3513,6 +3536,7 @@ function commandItems() {
     { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
     { id: 'commands-theme', icon: 'CMD', title: 'Show Theme commands', hint: 'Filter the command palette to lightweight theme and appearance actions', run: () => openCommandPaletteQuery('Theme') },
     { id: 'commands-trash', icon: 'CMD', title: 'Show Trash commands', hint: 'Filter the command palette to local Trash, restore, cleanup, and report actions', run: () => openCommandPaletteQuery('Trash') },
+    { id: 'command-guide', icon: 'CG', title: 'Command workflow guide', hint: 'Show categories, recents, bridges, and diagnostics in the command palette', run: showCommandWorkflowGuide },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
@@ -3898,6 +3922,7 @@ function commandCategory(item) {
   if (id === 'commands-diagnostics') return 'Diagnostics';
   if (id === 'commands-theme') return 'Theme';
   if (id === 'commands-trash') return 'Trash';
+  if (id === 'command-guide') return 'Search';
   if (id.includes('search') || id === 'find' || id.startsWith('find-') || id.includes('outline')) return 'Search';
   if (id.includes('command-recents') || id === 'clear-palette-recents') return 'Search';
   if (id.startsWith('tasks') || id.startsWith('add-task') || id.includes('task')) return 'Tasks';
