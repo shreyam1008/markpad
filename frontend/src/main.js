@@ -4049,6 +4049,7 @@ function commandItems() {
   { id: 'copy-current-file-search-csv', icon: 'CFC', title: 'Copy current-file search CSV', hint: 'Copy the current active-file search report as CSV rows', run: () => copyCurrentFileSearchCsv() },
   { id: 'export-current-file-search-md', icon: 'FSM', title: 'Export current-file search Markdown', hint: 'Download the current active-file search report as Markdown', run: () => exportCurrentFileSearchMarkdown() },
   { id: 'export-current-file-search-json', icon: 'FSJ', title: 'Export current-file search JSON', hint: 'Download the current active-file search report as structured JSON', run: () => exportCurrentFileSearchJson() },
+  { id: 'export-current-file-search-csv', icon: 'FSC', title: 'Export current-file search CSV', hint: 'Download the current active-file search report as CSV rows', run: () => exportCurrentFileSearchCsv() },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
