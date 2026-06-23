@@ -364,7 +364,8 @@ async function applyWorkspacePreset(kind) {
   if (kind === 'low-memory') {
     if (!compactMode) toggleCompactMode();
     clearAllUndoHistories();
-    statusText.textContent = 'Low-memory workspace preset applied';
+    clearLoadedSearchCache();
+    statusText.textContent = 'Low-memory workspace preset applied; undo histories and search cache cleared';
     return;
   }
   if (kind === 'default') {
@@ -2509,13 +2510,13 @@ function showLowMemoryGuide() {
     <div class="diag-grid">
       <div class="diag-card"><strong>measure</strong><span>Runtime stats</span><small>Sample RSS, Go heap, goroutines, uptime, and binary size</small></div>
       <div class="diag-card"><strong>inspect</strong><span>Local footprint</span><small>Estimate loaded text, canvas, Trash, localStorage, and undo bytes</small></div>
-      <div class="diag-card"><strong>release</strong><span>Clear undo histories</span><small>Drop editor and canvas undo snapshots when memory matters</small></div>
+      <div class="diag-card"><strong>release</strong><span>Undo + search cache</span><small>Drop editor/canvas undo snapshots and loaded-note search cache when memory matters</small></div>
       <div class="diag-card"><strong>one step</strong><span>Cleanup + footprint</span><small>Apply low-memory preset and immediately sample footprint</small></div>
-      <div class="diag-card"><strong>preset</strong><span>Workspace low memory</span><small>Enable compact mode and release undo snapshots together</small></div>
+      <div class="diag-card"><strong>preset</strong><span>Workspace low memory</span><small>Enable compact mode and release undo snapshots plus search cache together</small></div>
       <div class="diag-card"><strong>canvas</strong><span>bounded bridges</span><small>Task, search, outline, workspace, and backlink maps cap inserted cards</small></div>
       <div class="diag-card"><strong>assets</strong><span>text icons + CSS themes</span><small>No icon font packs, image theme bundles, or heavy drawing runtime</small></div>
     </div>
-    <p class="diag-note">Markpad keeps diagnostics explicit. Use reports before cleanup when you want evidence, then clear undo histories or switch workspace presets when responsiveness matters more than undo depth.</p>
+    <p class="diag-note">Markpad keeps diagnostics explicit. Use reports before cleanup when you want evidence, then clear undo histories/search cache or switch workspace presets when responsiveness matters more than undo depth.</p>
   `);
 }
 
@@ -3904,8 +3905,8 @@ function commandItems() {
     { id: 'find-clear', icon: 'FC', title: 'Clear current find', hint: 'Clear the inline find query without closing the editor', run: clearCurrentFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
-    { id: 'low-memory-guide', icon: 'LM', title: 'Low-memory guide', hint: 'Show runtime, footprint, undo cleanup, compact preset, and bounded canvas map notes', run: showLowMemoryGuide },
-    { id: 'memory-cleanup-report', icon: 'MCR', title: 'Memory cleanup + footprint', hint: 'Apply low-memory preset, release undo snapshots, and open the local footprint report', run: runMemoryCleanupReport },
+    { id: 'low-memory-guide', icon: 'LM', title: 'Low-memory guide', hint: 'Show runtime, footprint, undo/search-cache cleanup, compact preset, and bounded canvas map notes', run: showLowMemoryGuide },
+    { id: 'memory-cleanup-report', icon: 'MCR', title: 'Memory cleanup + footprint', hint: 'Apply low-memory preset, release undo/search cache, and open the local footprint report', run: runMemoryCleanupReport },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'asset-report', icon: 'AS', title: 'Lightweight asset report', hint: 'Show current DOM image, inline SVG, canvas, and theme counts', run: showLightweightAssetReport },
     { id: 'copy-asset-report-json', icon: 'ASJ', title: 'Copy asset report JSON', hint: 'Copy lightweight asset counts and strategy as JSON', run: copyLightweightAssetReportJson },
@@ -4125,7 +4126,7 @@ function commandItems() {
     { id: 'workspace-review', icon: 'WR', title: 'Workspace preset: review', hint: 'Apply Mist, reading width, and balanced split', run: () => applyWorkspacePreset('review') },
     { id: 'workspace-canvas', icon: 'WC', title: 'Workspace preset: canvas planning', hint: 'Apply Sand canvas background and connector drawing defaults', run: () => applyWorkspacePreset('canvas') },
     { id: 'workspace-night', icon: 'WN', title: 'Workspace preset: night reading', hint: 'Apply Midnight, soft wrap, reading width, and preview view', run: () => applyWorkspacePreset('night') },
-    { id: 'workspace-low-memory', icon: 'WM', title: 'Workspace preset: low memory', hint: 'Enable compact mode and release editor/canvas undo snapshots', run: () => applyWorkspacePreset('low-memory') },
+    { id: 'workspace-low-memory', icon: 'WM', title: 'Workspace preset: low memory', hint: 'Enable compact mode and release editor/canvas undo snapshots plus loaded search cache', run: () => applyWorkspacePreset('low-memory') },
     { id: 'workspace-default', icon: 'WD', title: 'Workspace preset: default', hint: 'Return to Paper theme and the default editing layout', run: () => applyWorkspacePreset('default') },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
