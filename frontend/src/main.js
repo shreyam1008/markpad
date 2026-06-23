@@ -9385,11 +9385,18 @@ function showCanvasMapGuide() {
   showModal('Canvas Map Guide', `
     <div class="diag-grid">
       <div class="diag-card"><strong>tasks</strong><span>24 visible tasks</span><small>Uses current task filters and keeps Markdown as source of truth</small></div>
+      <div class="diag-card"><strong>agenda</strong><span>24 agenda tasks</span><small>Maps overdue, today, waiting, and high-priority tasks</small></div>
       <div class="diag-card"><strong>search</strong><span>24 current results</span><small>Creates a local research board from result metadata and snippets</small></div>
+      <div class="diag-card"><strong>current file</strong><span>24 matches</span><small>Maps active-file search positions without scanning the workspace</small></div>
       <div class="diag-card"><strong>outline</strong><span>40 headings</span><small>Maps active Markdown structure without changing the file</small></div>
       <div class="diag-card"><strong>workspace</strong><span>24 open items</span><small>Maps loaded files and drafts from metadata only</small></div>
       <div class="diag-card"><strong>backlinks</strong><span>24 references</span><small>Maps local backlinks for the saved active note</small></div>
       <div class="diag-card"><strong>memory</strong><span>bounded cards</span><small>Every bridge caps inserts before writing canvas JSON</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-task-agenda-canvas>Agenda to Canvas</button>
+      <button data-search-results-canvas ${searchLastResults.length ? '' : 'disabled'}>Search to Canvas</button>
+      <button data-current-file-search-canvas-guide>Current File to Canvas</button>
     </div>
     <p class="diag-note">Canvas maps are snapshots. They help plan and review local work, but they do not replace Markdown files, task lines, search results, or workspace metadata manifests.</p>
   `);
@@ -11061,6 +11068,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (searchPerformanceOpenBtn) showSearchPerformanceGuide();
   const searchResultsCanvasBtn = e.target.closest('[data-search-results-canvas]');
   if (searchResultsCanvasBtn && !searchResultsCanvasBtn.disabled) insertSearchResultsCanvasBoard();
+  const currentFileSearchCanvasGuideBtn = e.target.closest('[data-current-file-search-canvas-guide]');
+  if (currentFileSearchCanvasGuideBtn) insertCurrentFileSearchCanvasBoard();
   const currentFileSearchApply = e.target.closest('[data-current-file-search-apply]');
   if (currentFileSearchApply) showCurrentFileSearch(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchClear = e.target.closest('[data-current-file-search-clear]');
