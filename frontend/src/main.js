@@ -499,9 +499,69 @@ function uiStateSummaryMarkdown() {
   ].join('\n');
 }
 
+function uiStateSummaryJson() {
+  const theme = THEMES.find(item => item.id === currentTheme)?.label || currentTheme;
+  return JSON.stringify({
+    type: 'markpad-ui-state',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    theme: {
+      id: currentTheme,
+      label: theme,
+    },
+    layout: {
+      viewMode,
+      splitRatio: Math.round(splitRatio * 10) / 10,
+      focusMode,
+      compactMode,
+      sidebarCollapsed,
+    },
+    editor: {
+      softWrap: editorSoftWrap,
+      readingWidth: editorReadingWidth,
+      zoomPercent: Math.round(fontSize / ZOOM_DEFAULT * 100),
+    },
+    search: {
+      scope: searchScope,
+      lastQuery: searchLastQuery || '',
+      resultCount: searchLastResults.length,
+    },
+    tasks: {
+      viewMode: taskViewMode,
+      sourceFilter: taskSourceFilter,
+      filter: taskFilter,
+      query: taskQuery,
+    },
+    canvas: {
+      tool: canvasTool,
+      zoomPercent: canvasSession?.camera?.scale ? Math.round(canvasSession.camera.scale * 100) : 100,
+      gridVisible: canvasGridVisible,
+      gridSize: canvasGridSize,
+      snapToGrid: canvasSnapToGrid,
+      minimapVisible: canvasMinimapVisible,
+      background: canvasDoc?.appState?.viewBackgroundColor || '#ffffff',
+      elementCount: (canvasDoc?.elements || []).length,
+    },
+  }, null, 2) + '\n';
+}
+
 async function copyUiStateSummary() {
   await navigator.clipboard.writeText(uiStateSummaryMarkdown());
   statusText.textContent = 'UI state copied as Markdown';
+}
+
+async function copyUiStateJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(uiStateSummaryJson());
+  statusText.textContent = 'UI state copied as JSON';
+}
+
+function exportUiStateJson() {
+  downloadText('markpad-ui-state.json', 'application/json', uiStateSummaryJson());
+  statusText.textContent = 'UI state exported as JSON';
 }
 
 function normalizeSplitRatio(value) {
@@ -2036,6 +2096,8 @@ function commandItems() {
     { id: 'default-editing-preset', icon: 'DE', title: 'Default editing preset', hint: 'Full chrome + plain editor + balanced split', run: applyDefaultEditingPreset },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
+    { id: 'copy-ui-state-json', icon: 'CUJ', title: 'Copy UI state JSON', hint: 'Copy current theme, layout, search, task, and canvas preferences as JSON', run: copyUiStateJson },
+    { id: 'export-ui-state-json', icon: 'EUJ', title: 'Export UI state JSON', hint: 'Download current theme, layout, search, task, and canvas preferences as JSON', run: exportUiStateJson },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
