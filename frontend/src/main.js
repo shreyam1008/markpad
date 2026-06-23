@@ -1681,6 +1681,9 @@ function commandItems() {
     { id: 'canvas-bg-mist', icon: 'BM', title: 'Canvas background mist', hint: 'Set canvas background to soft mist', run: () => setCanvasBackground('#edf3f1', 'mist') },
     { id: 'canvas-bg-ink', icon: 'BI', title: 'Canvas background ink', hint: 'Set canvas background to dark ink for contrast', run: () => setCanvasBackground('#10141b', 'ink') },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
+    { id: 'canvas-zoom-50', icon: 'Z50', title: 'Canvas zoom 50%', hint: 'Set the canvas view to a wider 50% overview', run: () => { openCanvas(); setCanvasZoomPreset(0.5); } },
+    { id: 'canvas-zoom-100', icon: 'Z1', title: 'Canvas zoom 100%', hint: 'Return the canvas view to actual size', run: () => { openCanvas(); setCanvasZoomPreset(1); } },
+    { id: 'canvas-zoom-200', icon: 'Z2', title: 'Canvas zoom 200%', hint: 'Set the canvas view to a close 200% editing zoom', run: () => { openCanvas(); setCanvasZoomPreset(2); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
@@ -3861,6 +3864,14 @@ function setCanvasBackground(color, label) {
   rememberCanvasHistory();
   renderCanvas();
   statusText.textContent = `Canvas background ${label}`;
+}
+
+function setCanvasZoomPreset(scale) {
+  if (!canvasDoc) loadCanvasState();
+  const camera = canvasCamera();
+  camera.scale = Math.max(0.2, Math.min(4, scale));
+  renderCanvas();
+  statusText.textContent = `Canvas zoom ${Math.round(camera.scale * 100)}%`;
 }
 
 function renderCanvas() {
