@@ -8861,12 +8861,17 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>workspace</strong><span>Loaded item map</span><small>Append open files and drafts as cards</small></div>
       <div class="diag-card"><strong>backlinks</strong><span>Reference map</span><small>Append active-note backlinks as cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
+      <div class="diag-card"><strong>interchange</strong><span>Obsidian + Excalidraw</span><small>Export scenes without bundling their runtimes</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>shortcuts</strong><span>Copy, nudge, undo</span><small>Open the focused shortcut guide</small></div>
       <div class="diag-card"><strong>autosave</strong><span>Debounced viewport</span><small>Wheel zoom writes after idle instead of every tick</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;"><button data-canvas-shortcuts-guide>Canvas shortcuts</button></div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-canvas-shortcuts-guide>Canvas shortcuts</button>
+      <button data-export-excalidraw-canvas>Export .excalidraw</button>
+      <button data-copy-excalidraw-canvas>Copy Excalidraw JSON</button>
+    </div>
     <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
   `);
 }
@@ -10545,6 +10550,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasViewStateCsvBtn) await copyCanvasViewStateCsv();
   const exportCanvasViewStateCsvBtn = e.target.closest('[data-export-canvas-view-state-csv]');
   if (exportCanvasViewStateCsvBtn) exportCanvasViewStateCsv();
+  const exportExcalidrawCanvasBtn = e.target.closest('[data-export-excalidraw-canvas]');
+  if (exportExcalidrawCanvasBtn) exportExcalidrawCanvas();
+  const copyExcalidrawCanvasBtn = e.target.closest('[data-copy-excalidraw-canvas]');
+  if (copyExcalidrawCanvasBtn) await copyExcalidrawCanvasJson();
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
