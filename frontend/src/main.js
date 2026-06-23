@@ -2058,6 +2058,7 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>default folder</strong><span>Search + tasks</span><small>Choose one local folder for fast local scans</small></div>
       <div class="diag-card"><strong>portable data</strong><span>Markdown / JSON / CSV / ICS</span><small>Exports avoid vendor lock-in</small></div>
       <div class="diag-card"><strong>manifests</strong><span>Active file + loaded workspace</span><small>Export metadata without file contents</small></div>
+      <div class="diag-card"><strong>workspace map</strong><span>Loaded items to canvas</span><small>Visualize open files and drafts locally</small></div>
       <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
       <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
@@ -3507,6 +3508,7 @@ function commandItems() {
     { id: 'copy-active-context-csv', icon: 'CAV', title: 'Copy active file context CSV', hint: 'Copy active file metadata as CSV rows', run: copyActiveFileContextCsv },
     { id: 'export-active-context-csv', icon: 'EAV', title: 'Export active file context CSV', hint: 'Download active file metadata as CSV rows', run: exportActiveFileContextCsv },
     { id: 'loaded-workspace', icon: 'LW', title: 'Loaded workspace inventory', hint: 'Show open files, drafts, dirty state, types, paths, and export shortcuts', run: showLoadedWorkspaceInventory },
+    { id: 'loaded-workspace-to-canvas', icon: 'L2C', title: 'Send loaded workspace to canvas', hint: 'Append open files and drafts as a lightweight local canvas map', run: insertLoadedWorkspaceCanvasMap },
     { id: 'copy-loaded-workspace', icon: 'CLW', title: 'Copy loaded workspace Markdown', hint: 'Copy open files, drafts, dirty state, types, and paths as Markdown', run: copyLoadedWorkspaceMarkdown },
     { id: 'export-loaded-workspace', icon: 'ELW', title: 'Export loaded workspace Markdown', hint: 'Download open files, drafts, dirty state, types, and paths as Markdown', run: exportLoadedWorkspaceMarkdown },
     { id: 'copy-loaded-workspace-json', icon: 'LWJ', title: 'Copy loaded workspace JSON', hint: 'Copy open workspace metadata as portable JSON', run: copyLoadedWorkspaceJson },
@@ -6901,6 +6903,63 @@ function insertDocumentOutlineCanvasMap() {
   statusText.textContent = `${visible.length} outline heading${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
+function compactCanvasWorkspaceTitle(note) {
+  const title = String(note?.title || 'Untitled').replace(/\s+/g, ' ').trim();
+  return title.length > 38 ? `${title.slice(0, 35)}...` : title;
+}
+
+function compactCanvasWorkspaceMeta(note) {
+  const parts = [];
+  if (note?.active) parts.push('active');
+  parts.push(note?.draft ? 'draft' : 'file');
+  if (note?.dirty) parts.push('unsaved');
+  if (note?.type) parts.push(note.type);
+  const path = String(note?.path || '').replace(/\s+/g, ' ').trim();
+  if (path) parts.push(path.length > 38 ? `...${path.slice(-35)}` : path);
+  return parts.join(' · ').slice(0, 62);
+}
+
+function canvasWorkspaceStroke(note) {
+  if (note?.active) return '#2563eb';
+  if (note?.dirty) return '#dc2626';
+  if (note?.draft) return '#d97706';
+  return '#2f6f61';
+}
+
+function insertLoadedWorkspaceCanvasMap() {
+  const snapshot = loadedWorkspaceSnapshot();
+  if (!snapshot.notes.length) {
+    statusText.textContent = 'No loaded workspace items to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = snapshot.notes.slice(0, 24);
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `Loaded workspace · ${visible.length}${snapshot.notes.length > visible.length ? ` of ${snapshot.notes.length}` : ''} item${visible.length === 1 ? '' : 's'}`, 18, '#2f6f61'),
+  ];
+  visible.forEach((note, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    const x = origin.x + col * 270;
+    const y = origin.y + row * 104;
+    const stroke = canvasWorkspaceStroke(note);
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 240, h: 78, stroke, width: note.active ? 4 : 2 });
+    elements.push(canvasTemplateText(x + 14, y + 29, compactCanvasWorkspaceTitle(note), 14, stroke));
+    elements.push(canvasTemplateText(x + 14, y + 54, compactCanvasWorkspaceMeta(note), 10, '#6b6e68'));
+  });
+  if (snapshot.notes.length > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 850, `${snapshot.notes.length - visible.length} additional workspace items omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} workspace item${visible.length === 1 ? '' : 's'} sent to canvas`;
+}
+
 function setCanvasZoomPreset(scale) {
   if (!canvasDoc) loadCanvasState();
   const camera = canvasCamera();
@@ -7987,6 +8046,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>tasks</strong><span>Visible task board</span><small>Append filtered Markdown tasks as canvas cards</small></div>
       <div class="diag-card"><strong>search</strong><span>Result board</span><small>Append current search results as canvas cards</small></div>
       <div class="diag-card"><strong>outline</strong><span>Heading map</span><small>Append active Markdown headings as a hierarchy</small></div>
+      <div class="diag-card"><strong>workspace</strong><span>Loaded item map</span><small>Append open files and drafts as cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
