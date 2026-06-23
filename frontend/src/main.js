@@ -9606,6 +9606,10 @@ function showCanvasHelp() {
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-canvas-shortcuts-guide>Canvas shortcuts</button>
+      <button data-canvas-inventory-open>Inventory</button>
+      <button data-canvas-element-inspector-open>Selected Inspector</button>
+      <button data-canvas-fit-content>Fit Content</button>
+      <button data-canvas-clear-undo>Clear Undo</button>
       <button data-export-excalidraw-canvas>Export .excalidraw</button>
       <button data-copy-excalidraw-canvas>Copy Excalidraw JSON</button>
     </div>
@@ -11390,6 +11394,17 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (insertSelectedCanvasMdBtn) insertSelectedCanvasElementMarkdownIntoNote();
   const fitSelectedCanvasElementBtn = e.target.closest('[data-fit-selected-canvas-element]');
   if (fitSelectedCanvasElementBtn) fitCanvasToSelection();
+  const canvasInventoryOpenBtn = e.target.closest('[data-canvas-inventory-open]');
+  if (canvasInventoryOpenBtn) showCanvasInventory();
+  const canvasElementInspectorOpenBtn = e.target.closest('[data-canvas-element-inspector-open]');
+  if (canvasElementInspectorOpenBtn) showSelectedCanvasElementInspector();
+  const canvasFitContentBtn = e.target.closest('[data-canvas-fit-content]');
+  if (canvasFitContentBtn) {
+    openCanvas();
+    fitCanvasToContent();
+  }
+  const canvasClearUndoBtn = e.target.closest('[data-canvas-clear-undo]');
+  if (canvasClearUndoBtn) clearCanvasUndoHistory();
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
