@@ -2031,14 +2031,75 @@ function taskFilterMatches(task) {
   }
 }
 
-function taskQueryMatches(task) {
-  const terms = String(taskQuery || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!terms.length) return true;
+function parseTaskQuery(query) {
+  const tokens = String(query || '').trim().match(/"[^"]+"|\S+/g) || [];
+  const plan = { terms: [], due: [], priority: [], tags: [], waiting: false, hasQuery: false };
+  tokens.forEach((token) => {
+    const clean = token.replace(/^"|"$/g, '').trim().toLowerCase();
+    if (!clean) return;
+    plan.hasQuery = true;
+    if (clean === '@waiting') {
+      plan.waiting = true;
+      return;
+    }
+    if (clean.startsWith('#') && clean.length > 1) {
+      plan.tags.push(clean.slice(1));
+      return;
+    }
+    if (clean.startsWith('!') && clean.length > 1) {
+      plan.priority.push(clean.slice(1));
+      return;
+    }
+    const parts = clean.split(':');
+    if (parts.length > 1) {
+      const key = parts.shift();
+      const value = parts.join(':').trim();
+      if (value && key === 'due') {
+        plan.due.push(value);
+        return;
+      }
+      if (value && ['priority', 'prio', 'p'].includes(key)) {
+        plan.priority.push(value);
+        return;
+      }
+      if (value && key === 'tag') {
+        plan.tags.push(value.replace(/^#/, ''));
+        return;
+      }
+    }
+    plan.terms.push(clean);
+  });
+  return plan;
+}
+
+function taskDueQueryMatches(task, value) {
+  const due = String(task.due || '');
+  if (value === 'today') return due === todayKey();
+  if (value === 'overdue') return !!due && due < todayKey();
+  if (['none', 'unset', 'unscheduled'].includes(value)) return !due;
+  return due.includes(value);
+}
+
+function taskPriorityQueryMatches(task, value) {
+  const priority = String(task.priority || '').toLowerCase();
+  const priorityClass = taskPriorityClass(task);
+  if (value === 'p1') return ['urgent', 'high'].includes(priorityClass) || priority === 'p1';
+  return priority.includes(value) || priorityClass === value;
+}
+
+function taskQueryMatches(task, plan) {
+  const queryPlan = plan || parseTaskQuery(taskQuery);
+  if (!queryPlan.hasQuery) return true;
+  if (queryPlan.waiting && !task.waiting) return false;
+  if (queryPlan.due.some(value => !taskDueQueryMatches(task, value))) return false;
+  if (queryPlan.priority.some(value => !taskPriorityQueryMatches(task, value))) return false;
+  const tags = (task.tags || []).map(tag => String(tag).toLowerCase());
+  if (queryPlan.tags.some(tag => !tags.includes(tag) && !String(task.text || '').toLowerCase().includes(`#${tag}`))) return false;
   const haystack = [
     task.text, task.noteTitle, task.path, task.due, task.priority,
     task.waiting ? 'waiting' : '', ...(task.tags || []),
   ].join(' ').toLowerCase();
-  return terms.every(term => haystack.includes(term));
+  return queryPlan.terms.every(term => haystack.includes(term));
 }
 
 function sortTasksForView(tasks) {
@@ -2055,7 +2116,8 @@ function sortTasksForView(tasks) {
 }
 
 function visibleTasksForView(tasks) {
-  return sortTasksForView(tasks.filter(task => taskFilterMatches(task) && taskQueryMatches(task)));
+  const queryPlan = parseTaskQuery(taskQuery);
+  return sortTasksForView(tasks.filter(task => taskFilterMatches(task) && taskQueryMatches(task, queryPlan)));
 }
 
 function taskFilterCounts(tasks) {
@@ -2092,9 +2154,17 @@ function renderTaskControls(tasks, visibleTasks) {
     <div class="task-controls">
       <div class="task-filter-row">${chips}</div>
       <div class="task-search-row">
-        <input data-task-search value="${query}" placeholder="Filter text, file, due date, tag, priority" />
+        <input data-task-search value="${query}" placeholder="Filter text, due:today, !high, @waiting, #tag" />
         <button data-task-search-apply>Apply</button>
         <button data-task-search-clear ${taskQuery ? '' : 'disabled'}>Clear</button>
+      </div>
+      <div class="task-query-hints">
+        <span>Examples</span>
+        <button data-task-query-example="due:today">due:today</button>
+        <button data-task-query-example="due:overdue">due:overdue</button>
+        <button data-task-query-example="!high">!high</button>
+        <button data-task-query-example="@waiting">@waiting</button>
+        <button data-task-query-example="#idea">#idea</button>
       </div>
       <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} · ${tasks.length} total · ${counts.open} open · Markdown stays the source of truth.</div>
     </div>
@@ -4606,6 +4676,15 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskSearchClear && !taskSearchClear.disabled) {
     taskQuery = '';
     localStorage.removeItem('markpad-task-query');
+    await showTasksView(taskViewMode);
+  }
+  const taskQueryExample = e.target.closest('[data-task-query-example]');
+  if (taskQueryExample) {
+    const input = modalBodyEl.querySelector('[data-task-search]');
+    const example = taskQueryExample.dataset.taskQueryExample || '';
+    const current = String(input?.value || '').trim();
+    taskQuery = current ? `${current} ${example}` : example;
+    localStorage.setItem('markpad-task-query', taskQuery);
     await showTasksView(taskViewMode);
   }
   const taskToggle = e.target.closest('[data-task-toggle]');

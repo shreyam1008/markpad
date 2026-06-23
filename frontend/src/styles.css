@@ -656,6 +656,35 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   opacity: .5;
   cursor: default;
 }
+.task-query-hints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.task-query-hints span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.task-query-hints button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.task-query-hints button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
 .task-list { display: flex; flex-direction: column; gap: 7px; }
 .task-row {
   display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: start;
