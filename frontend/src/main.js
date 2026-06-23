@@ -2291,6 +2291,7 @@ function commandItems() {
     { id: 'copy-obsidian-canvas', icon: 'COC', title: 'Copy Obsidian canvas JSON', hint: 'Copy current canvas as Obsidian-compatible .canvas JSON', run: copyObsidianCanvasJson },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
     { id: 'copy-excalidraw-canvas', icon: 'CEX', title: 'Copy Excalidraw canvas JSON', hint: 'Copy current canvas as Excalidraw-compatible scene JSON', run: copyExcalidrawCanvasJson },
+    { id: 'canvas-inventory', icon: 'CI', title: 'Canvas inventory', hint: 'Show element counts, bounds, text, and export shortcuts', run: showCanvasInventory },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
     { id: 'copy-canvas-summary-md', icon: 'CCM', title: 'Copy canvas Markdown summary', hint: 'Copy a lightweight Markdown inventory of canvas elements', run: copyCanvasMarkdownSummary },
     { id: 'canvas-elements-csv', icon: 'CCV', title: 'Export canvas elements CSV', hint: 'Download a compact CSV inventory of canvas elements', run: exportCanvasElementsCsv },
@@ -5788,6 +5789,49 @@ function canvasElementSummary(element, index) {
   return `- ${index + 1}. ${element.type || 'element'} · x:${Math.round(Number(bounds.x || 0))}, y:${Math.round(Number(bounds.y || 0))}, w:${Math.round(Number(bounds.w || 0))}, h:${Math.round(Number(bounds.h || 0))}${label ? ` · ${label}` : ''}`;
 }
 
+function renderCanvasInventoryRows(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  if (!source.elements.length) return '<div class="canvas-empty">Canvas is empty.</div>';
+  return `<div class="local-list">${source.elements.map((element, index) => {
+    const bounds = canvasElementBounds(element);
+    const label = element.type === 'text'
+      ? String(element.text || '').replace(/\s+/g, ' ').trim().slice(0, 120)
+      : element.type === 'path'
+        ? `${(element.points || []).length} point${(element.points || []).length === 1 ? '' : 's'}`
+        : `${Math.round(Number(bounds.w || 0))}x${Math.round(Number(bounds.h || 0))}`;
+    return `
+    <div class="local-row" style="cursor:default;">
+      <span class="local-badge">${escapeHtml(String(index + 1))}</span>
+      <span class="local-body">
+        <strong>${escapeHtml(element.type || 'element')} ${escapeHtml(element.id || '')}</strong>
+        <span>x:${Math.round(Number(bounds.x || 0))} · y:${Math.round(Number(bounds.y || 0))} · w:${Math.round(Number(bounds.w || 0))} · h:${Math.round(Number(bounds.h || 0))} · ${escapeHtml(element.stroke || '#1f2937')}</span>
+        <small>${escapeHtml(label || 'No label')}</small>
+      </span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function showCanvasInventory() {
+  if (!canvasDoc) loadCanvasState();
+  const source = normalizeCanvasDoc(canvasDoc || newCanvasDoc());
+  const counts = source.elements.reduce((acc, element) => {
+    const key = element.type || 'element';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  showModal('Canvas Inventory', `
+    <div class="local-summary">${source.elements.length} element${source.elements.length === 1 ? '' : 's'} · ${Object.entries(counts).map(([type, count]) => `${escapeHtml(type)} ${count}`).join(' · ') || 'empty canvas'}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;">
+      <button data-copy-canvas-summary-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+      <button data-export-canvas-summary-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+      <button data-copy-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
+      <button data-export-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+    </div>
+    ${renderCanvasInventoryRows(source)}
+    <p class="local-note">Inventory is derived from the current local canvas draft. No files are scanned.</p>
+  `, true);
+}
+
 function canvasToMarkdownSummary(doc) {
   const source = normalizeCanvasDoc(doc || newCanvasDoc());
   const counts = source.elements.reduce((acc, element) => {
@@ -7156,6 +7200,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyRuntimeCsv) await copyRuntimeStatsCsv();
   const exportRuntimeCsv = e.target.closest('[data-export-runtime-csv]');
   if (exportRuntimeCsv) await exportRuntimeStatsCsv();
+  const copyCanvasSummaryMd = e.target.closest('[data-copy-canvas-summary-md]');
+  if (copyCanvasSummaryMd) await copyCanvasMarkdownSummary();
+  const exportCanvasSummaryMd = e.target.closest('[data-export-canvas-summary-md]');
+  if (exportCanvasSummaryMd) exportCanvasMarkdownSummary();
+  const copyCanvasElementsCsv = e.target.closest('[data-copy-canvas-elements-csv]');
+  if (copyCanvasElementsCsv) await copyCanvasElementsCsv();
+  const exportCanvasElementsCsvBtn = e.target.closest('[data-export-canvas-elements-csv]');
+  if (exportCanvasElementsCsvBtn) exportCanvasElementsCsv();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
