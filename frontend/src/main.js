@@ -1776,6 +1776,7 @@ function commandItems() {
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
     { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
     { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
+    { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
