@@ -1419,6 +1419,7 @@ function commandItems() {
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
+    { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -3866,6 +3867,111 @@ function exportObsidianCanvas() {
   const json = JSON.stringify(canvasToObsidianCanvas(canvasDoc), null, 2);
   downloadText('markpad-canvas.canvas', 'application/json', json);
   statusText.textContent = 'Obsidian canvas exported';
+}
+
+function excalidrawBaseElement(element, index, type) {
+  const bounds = canvasElementBounds(element);
+  return {
+    id: String(element.id || `markpad-${index + 1}`),
+    type,
+    x: Number.isFinite(bounds.x) ? bounds.x : 0,
+    y: Number.isFinite(bounds.y) ? bounds.y : 0,
+    width: Math.max(1, Math.abs(Number(bounds.w) || 1)),
+    height: Math.max(1, Math.abs(Number(bounds.h) || 1)),
+    angle: 0,
+    strokeColor: element.stroke || '#1e1e1e',
+    backgroundColor: 'transparent',
+    fillStyle: 'hachure',
+    strokeWidth: Math.max(1, Number(element.width || 2)),
+    strokeStyle: 'solid',
+    roughness: 1,
+    opacity: 100,
+    groupIds: [],
+    frameId: null,
+    roundness: null,
+    seed: Math.max(1, index + 1),
+    version: 1,
+    versionNonce: Math.floor(Math.random() * 2147483647),
+    isDeleted: false,
+    boundElements: null,
+    updated: Date.now(),
+    link: null,
+    locked: false,
+  };
+}
+
+function canvasToExcalidraw(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const elements = source.elements.map((element, index) => {
+    if (element.type === 'rect') {
+      return excalidrawBaseElement(element, index, 'rectangle');
+    }
+    if (element.type === 'ellipse') {
+      return excalidrawBaseElement(element, index, 'ellipse');
+    }
+    if (element.type === 'line' || element.type === 'arrow') {
+      const base = excalidrawBaseElement(element, index, element.type);
+      const start = { x: Number(element.x || 0), y: Number(element.y || 0) };
+      const end = { x: start.x + Number(element.w || 0), y: start.y + Number(element.h || 0) };
+      return {
+        ...base,
+        points: [[start.x - base.x, start.y - base.y], [end.x - base.x, end.y - base.y]],
+        startBinding: null,
+        endBinding: null,
+        lastCommittedPoint: null,
+        startArrowhead: null,
+        endArrowhead: element.type === 'arrow' ? 'arrow' : null,
+      };
+    }
+    if (element.type === 'path') {
+      const base = excalidrawBaseElement(element, index, 'freedraw');
+      const points = (element.points || []).map(point => [Number(point.x || 0) - base.x, Number(point.y || 0) - base.y]);
+      return {
+        ...base,
+        points,
+        pressures: points.map(() => 0.5),
+        simulatePressure: true,
+        lastCommittedPoint: null,
+      };
+    }
+    if (element.type === 'text') {
+      const base = excalidrawBaseElement(element, index, 'text');
+      const text = String(element.text || '');
+      const fontSize = Math.max(8, Number(element.size || 16));
+      return {
+        ...base,
+        text,
+        originalText: text,
+        fontSize,
+        fontFamily: 3,
+        textAlign: 'left',
+        verticalAlign: 'top',
+        baseline: Math.round(fontSize * 1.25),
+        lineHeight: 1.25,
+        containerId: null,
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  return {
+    type: 'excalidraw',
+    version: 2,
+    source: 'markpad',
+    elements,
+    appState: {
+      viewBackgroundColor: source.appState?.viewBackgroundColor || '#ffffff',
+      gridSize: canvasGridVisible ? 24 : null,
+    },
+    files: {},
+  };
+}
+
+function exportExcalidrawCanvas() {
+  if (!canvasDoc) loadCanvasState();
+  const json = JSON.stringify(canvasToExcalidraw(canvasDoc), null, 2);
+  downloadText('markpad-canvas.excalidraw', 'application/json', json);
+  statusText.textContent = 'Excalidraw canvas exported';
 }
 
 function obsidianElementBounds(element) {
