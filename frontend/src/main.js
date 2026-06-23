@@ -2749,8 +2749,16 @@ function updateCanvasStatus() {
   if (!canvasStatus || !canvasSession) return;
   const count = (canvasDoc?.elements || []).length;
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
-  const selected = canvasSelectedIndex >= 0 && canvasSelectedIndex < count ? ' · selected' : '';
-  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%${selected}`;
+  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%${canvasSelectionStatus(count)}`;
+}
+
+function canvasSelectionStatus(count) {
+  if (!canvasDoc || canvasSelectedIndex < 0 || canvasSelectedIndex >= count) return '';
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  const type = String(element?.type || 'item');
+  const size = `${Math.round(bounds.w)}x${Math.round(bounds.h)}`;
+  return ` · ${type} · ${size}`;
 }
 
 function fitCanvasToContent() {
