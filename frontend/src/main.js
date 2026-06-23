@@ -4011,6 +4011,7 @@ function commandItems() {
     { id: 'canvas-pan-left', icon: 'PL', title: 'Canvas pan left', hint: 'Move the canvas viewport left by one step', run: () => { openCanvas(); panCanvasView(160, 0); } },
     { id: 'canvas-pan-right', icon: 'PR', title: 'Canvas pan right', hint: 'Move the canvas viewport right by one step', run: () => { openCanvas(); panCanvasView(-160, 0); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
+    { id: 'canvas-element-inspector', icon: 'CEI', title: 'Canvas selected element inspector', hint: 'Inspect selected element geometry, style, and lightweight export actions', run: showSelectedCanvasElementInspector },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-insert-element-md', icon: 'C2M', title: 'Insert selected canvas element into note', hint: 'Insert selected canvas element geometry/text as portable Markdown at the editor cursor', run: insertSelectedCanvasElementMarkdownIntoNote },
     { id: 'canvas-copy-element-json', icon: 'CEJ', title: 'Copy selected canvas element JSON', hint: 'Copy the selected canvas element as portable JSON', run: copySelectedCanvasElementJson },
@@ -8353,6 +8354,35 @@ function insertSelectedCanvasElementMarkdownIntoNote() {
   statusText.textContent = 'Canvas element inserted into active note';
 }
 
+function showSelectedCanvasElementInspector() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    showModal('Canvas Element Inspector', '<div class="local-empty">Select a canvas element first.</div>');
+    return;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  const label = element.type === 'text'
+    ? String(element.text || 'Text').replace(/\s+/g, ' ').trim().slice(0, 80)
+    : `${element.type || 'element'} ${element.id || ''}`.trim();
+  showModal('Canvas Element Inspector', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${escapeHtml(element.type || 'element')}</strong><span>Type</span><small>${escapeHtml(label || 'Selected element')}</small></div>
+      <div class="diag-card"><strong>${Math.round(Number(bounds.w || 0))}x${Math.round(Number(bounds.h || 0))}</strong><span>Size</span><small>x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(element.stroke || 'none')}</strong><span>Stroke</span><small>Width ${escapeHtml(String(element.width || 'n/a'))}</small></div>
+      <div class="diag-card"><strong>${element.type === 'path' ? (element.points || []).length : canvasSelectedIndex + 1}</strong><span>${element.type === 'path' ? 'Points' : 'Layer'}</span><small>Lightweight JSON element</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-selected-canvas-details>Copy Markdown</button>
+      <button data-copy-selected-canvas-json>Copy JSON</button>
+      <button data-copy-selected-canvas-svg>Copy SVG</button>
+      <button data-insert-selected-canvas-md>Insert into Note</button>
+      <button data-fit-selected-canvas-element>Fit Selection</button>
+    </div>
+    <p class="diag-note">Inspector reads the selected element already held in the canvas document. It does not export the whole canvas or create new persistent state.</p>
+  `);
+}
+
 function deleteSelectedCanvasElement() {
   if (!hasCanvasSelection()) return false;
   canvasDoc.elements.splice(canvasSelectedIndex, 1);
@@ -10843,6 +10873,16 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (splitSwapGuideButton) swapSplitRatio();
   const splitNudgeButton = e.target.closest('[data-split-nudge]');
   if (splitNudgeButton) adjustSplitRatio(Number(splitNudgeButton.dataset.splitNudge || 0));
+  const copySelectedCanvasDetailsBtn = e.target.closest('[data-copy-selected-canvas-details]');
+  if (copySelectedCanvasDetailsBtn) await copySelectedCanvasDetails();
+  const copySelectedCanvasJsonBtn = e.target.closest('[data-copy-selected-canvas-json]');
+  if (copySelectedCanvasJsonBtn) await copySelectedCanvasElementJson();
+  const copySelectedCanvasSvgBtn = e.target.closest('[data-copy-selected-canvas-svg]');
+  if (copySelectedCanvasSvgBtn) await copySelectedCanvasElementSvg();
+  const insertSelectedCanvasMdBtn = e.target.closest('[data-insert-selected-canvas-md]');
+  if (insertSelectedCanvasMdBtn) insertSelectedCanvasElementMarkdownIntoNote();
+  const fitSelectedCanvasElementBtn = e.target.closest('[data-fit-selected-canvas-element]');
+  if (fitSelectedCanvasElementBtn) fitCanvasToSelection();
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
