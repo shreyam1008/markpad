@@ -2338,6 +2338,11 @@ function commandItems() {
     { id: 'canvas-line-tool', icon: 'LIN', title: 'Canvas line tool', hint: 'Draw straight line connectors', run: () => { openCanvas(); setCanvasTool('line'); } },
     { id: 'canvas-arrow-tool', icon: 'ARR', title: 'Canvas arrow tool', hint: 'Draw arrow connectors', run: () => { openCanvas(); setCanvasTool('arrow'); } },
     { id: 'canvas-erase-tool', icon: 'ERS', title: 'Canvas erase tool', hint: 'Remove clicked canvas elements', run: () => { openCanvas(); setCanvasTool('erase'); } },
+    { id: 'canvas-color-ink', icon: 'CIK', title: 'Canvas stroke ink', hint: 'Use a neutral ink stroke for new or selected canvas elements', run: () => setCanvasStrokePreset('#1f2937', 'ink') },
+    { id: 'canvas-color-red', icon: 'CRD', title: 'Canvas stroke red', hint: 'Use a clear red stroke for emphasis', run: () => setCanvasStrokePreset('#dc2626', 'red') },
+    { id: 'canvas-color-blue', icon: 'CBL', title: 'Canvas stroke blue', hint: 'Use a blue stroke for structure and links', run: () => setCanvasStrokePreset('#2563eb', 'blue') },
+    { id: 'canvas-color-green', icon: 'CGR', title: 'Canvas stroke green', hint: 'Use a green stroke for done or positive states', run: () => setCanvasStrokePreset('#16a34a', 'green') },
+    { id: 'canvas-color-amber', icon: 'CAM', title: 'Canvas stroke amber', hint: 'Use an amber stroke for warnings and active ideas', run: () => setCanvasStrokePreset('#d97706', 'amber') },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-fit-selection', icon: 'FS', title: 'Fit selected canvas element', hint: 'Zoom and pan to the selected canvas element', run: () => { openCanvas(); fitCanvasToSelection(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
@@ -5212,6 +5217,16 @@ function setCanvasTool(tool) {
   localStorage.setItem('markpad-canvas-tool', tool);
   document.querySelectorAll('[data-canvas-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.canvasTool === tool));
   if (canvasStage) canvasStage.style.cursor = tool === 'select' ? 'default' : tool === 'pan' ? 'grab' : 'crosshair';
+}
+
+function setCanvasStrokePreset(value, label) {
+  openCanvas();
+  if (canvasColor) canvasColor.value = value;
+  const selected = hasCanvasSelection();
+  if (selected) applySelectedCanvasStyle('stroke');
+  statusText.textContent = selected
+    ? `Selected canvas stroke set to ${label}`
+    : `Canvas stroke preset set to ${label}`;
 }
 
 function updateCanvasOptionButtons() {
