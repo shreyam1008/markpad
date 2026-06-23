@@ -1018,6 +1018,10 @@ function commandItems() {
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
+    { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
+    { id: 'canvas-layer-backward', icon: 'LB', title: 'Canvas send backward', hint: 'Move the selected canvas element one layer backward', run: () => moveSelectedCanvasLayer('backward') },
+    { id: 'canvas-layer-front', icon: 'TF', title: 'Canvas bring to front', hint: 'Move the selected canvas element above all others', run: () => moveSelectedCanvasLayer('front') },
+    { id: 'canvas-layer-back', icon: 'TB', title: 'Canvas send to back', hint: 'Move the selected canvas element behind all others', run: () => moveSelectedCanvasLayer('back') },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
@@ -2682,6 +2686,35 @@ function nudgeSelectedCanvasElement(dx, dy) {
   return true;
 }
 
+function moveSelectedCanvasLayer(direction) {
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  const from = canvasSelectedIndex;
+  const last = canvasDoc.elements.length - 1;
+  let to = from;
+  if (direction === 'front') to = last;
+  else if (direction === 'back') to = 0;
+  else if (direction === 'forward') to = Math.min(last, from + 1);
+  else if (direction === 'backward') to = Math.max(0, from - 1);
+  if (to === from) {
+    statusText.textContent = 'Canvas element already at that layer';
+    return false;
+  }
+  const [element] = canvasDoc.elements.splice(from, 1);
+  canvasDoc.elements.splice(to, 0, element);
+  canvasSelectedIndex = to;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = direction === 'front' ? 'Canvas element brought to front'
+    : direction === 'back' ? 'Canvas element sent to back'
+    : direction === 'forward' ? 'Canvas element brought forward'
+    : 'Canvas element sent backward';
+  return true;
+}
+
 function handleCanvasSelectionShortcut(e) {
   if (!canvasActive || !hasCanvasSelection()) return false;
   if (canvasTextEditor && !canvasTextEditor.classList.contains('hidden')) return false;
@@ -2887,6 +2920,8 @@ $('canvas-reset-view')?.addEventListener('click', () => {
 $('canvas-fit')?.addEventListener('click', fitCanvasToContent);
 $('canvas-grid')?.addEventListener('click', toggleCanvasGrid);
 $('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
+$('canvas-layer-front')?.addEventListener('click', () => moveSelectedCanvasLayer('front'));
+$('canvas-layer-back')?.addEventListener('click', () => moveSelectedCanvasLayer('back'));
 function exportCanvasJson() {
   const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
   downloadText('markpad-canvas-draft.json', 'application/json', json);
