@@ -5912,6 +5912,8 @@ function showTaskSyntaxHelp() {
       <button data-task-agenda>Agenda</button>
       <button data-copy-task-agenda-json>Copy Agenda JSON</button>
       <button data-export-task-agenda-csv>Export Agenda CSV</button>
+      <button data-copy-task-agenda-ics>Copy Agenda ICS</button>
+      <button data-export-task-agenda-todo>Export Agenda Todo.txt</button>
     </div>
     <pre class="diag-code">- [ ] Draft launch note !high due:2026-06-24 #release
 - [ ] Wait for design review @waiting #design
