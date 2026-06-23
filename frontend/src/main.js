@@ -3858,6 +3858,7 @@ function commandItems() {
     { id: 'copy-footprint-csv', icon: 'CFC', title: 'Copy local footprint CSV', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as CSV', run: copyLocalFootprintCsv },
     { id: 'export-footprint-csv', icon: 'EFC', title: 'Export local footprint CSV', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as CSV', run: exportLocalFootprintCsv },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
+    { id: 'local-workspace-setup', icon: 'LWS', title: 'Local workspace setup', hint: 'Choose and understand the default local folder workflow', run: showLocalWorkspaceSetupGuide },
     { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },
     { id: 'reveal-active-file', icon: 'RF', title: 'Reveal active file', hint: 'Show the active saved file in the OS file manager', run: revealActiveFile },
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
@@ -4830,6 +4831,35 @@ async function openConfiguredLocalFolder() {
   }
 }
 
+async function showLocalWorkspaceSetupGuide() {
+  let info = {};
+  if (window.go?.main?.App?.GetLocalFolder) {
+    try { info = await window.go.main.App.GetLocalFolder(); } catch {}
+  }
+  const ready = !!info.path && !info.missing;
+  showModal('Local Workspace Setup', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${ready ? 'ready' : info.missing ? 'missing' : 'not set'}</strong><span>Default folder</span><small>${info.path ? escapeHtml(info.path) : 'Choose one local workspace folder'}</small></div>
+      <div class="diag-card"><strong>local</strong><span>No sync in phase 1</span><small>Files, tasks, canvases, search, tags, and links stay on this computer</small></div>
+      <div class="diag-card"><strong>notes</strong><span>Markdown first</span><small>Daily, weekly, and quick notes are plain files</small></div>
+      <div class="diag-card"><strong>tasks</strong><span>Checkbox source</span><small>List, calendar, and kanban read Markdown tasks from this folder</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>Portable JSON</span><small>Local .canvas files use inspectable JSON</small></div>
+      <div class="diag-card"><strong>search</strong><span>Bounded scans</span><small>Local search avoids eager full-workspace loading</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-local-folder-choose>Choose folder</button>
+      <button data-local-folder-open ${ready ? '' : 'disabled'}>Open folder</button>
+      <button data-local-folder-new ${ready ? '' : 'disabled'}>New note</button>
+      <button data-local-folder-daily ${ready ? '' : 'disabled'}>Daily</button>
+      <button data-local-folder-weekly ${ready ? '' : 'disabled'}>Weekly</button>
+      <button data-local-folder-canvas ${ready ? '' : 'disabled'}>New canvas</button>
+      <button data-local-folder-search ${ready ? '' : 'disabled'}>Search</button>
+      <button data-local-folder-map ${ready ? '' : 'disabled'}>Links map</button>
+    </div>
+    <p class="diag-note">This setup guide is local-only. It prepares the folder model for future sync, but does not create an account, background service, or remote index.</p>
+  `);
+}
+
 async function revealActiveFile() {
   try {
     const note = cachedNotes.find(n => n.id === activeId);
@@ -5196,6 +5226,7 @@ async function showLocalFolder(query = '') {
       <div><strong>${escapeHtml(info.path || 'No folder selected')}</strong><span>${info.missing ? 'Missing' : info.path ? 'Default local workspace' : 'Choose a folder to start'}</span></div>
       <div class="local-actions">
         <button data-local-folder-choose>Choose</button>
+        <button data-local-workspace-setup>Setup</button>
         <button data-local-folder-open ${info.path && !info.missing ? '' : 'disabled'}>Open folder</button>
         <button data-local-folder-reveal ${activeId ? '' : 'disabled'}>Reveal active</button>
         <button data-local-folder-recent ${info.path && !info.missing ? '' : 'disabled'}>Recent</button>
@@ -10464,6 +10495,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
   if (localChoose) await chooseLocalFolder();
+  const localWorkspaceSetup = e.target.closest('[data-local-workspace-setup]');
+  if (localWorkspaceSetup) await showLocalWorkspaceSetupGuide();
   const localFolderOpen = e.target.closest('[data-local-folder-open]');
   if (localFolderOpen && !localFolderOpen.disabled) await openConfiguredLocalFolder();
   const localFolderReveal = e.target.closest('[data-local-folder-reveal]');
@@ -10769,6 +10802,7 @@ async function showPreferences() {
     </table>
     <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
       <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
+      <button data-local-workspace-setup style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Setup guide</button>
       <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
       <button data-export-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export settings</button>
       <button data-copy-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy settings</button>
