@@ -3207,6 +3207,17 @@ async function copyDraftTrashItem(itemId) {
   statusText.textContent = 'Trash draft copied';
 }
 
+async function copyDraftTrashItemJson(itemId) {
+  const item = loadDraftTrash().find(entry => entry.id === itemId);
+  if (!item) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(JSON.stringify(trashItemJson('Draft', item), null, 2) + '\n');
+  statusText.textContent = 'Trash draft metadata copied as JSON';
+}
+
 async function emptyDraftTrash() {
   saveDraftTrash([]);
   await showTrashView();
@@ -3226,6 +3237,7 @@ function renderTrashRows(items) {
       <div class="trash-actions">
         <button data-trash-restore="${escapeHtml(item.id)}">Restore</button>
         <button data-trash-copy="${escapeHtml(item.id)}">Copy</button>
+        <button data-trash-copy-json="${escapeHtml(item.id)}">JSON</button>
         <button data-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
     </div>`;
@@ -3253,6 +3265,7 @@ function renderFileTrashRows(items) {
       <div class="trash-actions">
         <button data-file-trash-restore="${escapeHtml(item.id)}">Restore</button>
         <button data-file-trash-copy-path="${escapeHtml(item.id)}">Copy Path</button>
+        <button data-file-trash-copy-json="${escapeHtml(item.id)}">JSON</button>
         <button data-file-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
     </div>`;
@@ -3389,6 +3402,17 @@ async function copyFileTrashPath(itemId) {
   }
   await navigator.clipboard.writeText(item.originalPath || item.path || '');
   statusText.textContent = 'Trash file path copied';
+}
+
+async function copyFileTrashItemJson(itemId) {
+  const item = (await loadFileTrash()).find(entry => entry.id === itemId);
+  if (!item) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(JSON.stringify(trashItemJson('File', item), null, 2) + '\n');
+  statusText.textContent = 'Trash file metadata copied as JSON';
 }
 
 async function exportTrashReportMarkdown() {
@@ -8636,6 +8660,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashCopy = e.target.closest('[data-trash-copy]');
   if (trashCopy) await copyDraftTrashItem(trashCopy.dataset.trashCopy);
+  const trashCopyJson = e.target.closest('[data-trash-copy-json]');
+  if (trashCopyJson) await copyDraftTrashItemJson(trashCopyJson.dataset.trashCopyJson);
   const trashDelete = e.target.closest('[data-trash-delete]');
   if (trashDelete) await deleteDraftTrashItem(trashDelete.dataset.trashDelete);
   const fileTrashRestore = e.target.closest('[data-file-trash-restore]');
@@ -8647,6 +8673,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const fileTrashCopyPath = e.target.closest('[data-file-trash-copy-path]');
   if (fileTrashCopyPath) await copyFileTrashPath(fileTrashCopyPath.dataset.fileTrashCopyPath);
+  const fileTrashCopyJson = e.target.closest('[data-file-trash-copy-json]');
+  if (fileTrashCopyJson) await copyFileTrashItemJson(fileTrashCopyJson.dataset.fileTrashCopyJson);
   const fileTrashDelete = e.target.closest('[data-file-trash-delete]');
   if (fileTrashDelete && window.go?.main?.App?.DeleteFileTrash) {
     await window.go.main.App.DeleteFileTrash(fileTrashDelete.dataset.fileTrashDelete);
