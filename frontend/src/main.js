@@ -3296,6 +3296,9 @@ function commandItems() {
     { id: 'canvas-preset-connector', icon: 'CN', title: 'Canvas preset: connector', hint: 'Arrow tool with blue stroke for linking ideas', run: () => applyCanvasDrawingPreset('arrow', '#2563eb', 3, 'connector') },
     { id: 'canvas-preset-note', icon: 'NT', title: 'Canvas preset: note text', hint: 'Text tool with amber stroke for annotations', run: () => applyCanvasDrawingPreset('text', '#d97706', 3, 'note') },
     { id: 'canvas-preset-review', icon: 'RV', title: 'Canvas preset: review mark', hint: 'Rectangle tool with bold red stroke for review callouts', run: () => applyCanvasDrawingPreset('rect', '#dc2626', 6, 'review mark') },
+    { id: 'canvas-template-mindmap', icon: 'MM', title: 'Canvas starter: mind map', hint: 'Insert a lightweight local JSON mind map template near the current view', run: () => insertCanvasStarterTemplate('mindmap', 'Mind map') },
+    { id: 'canvas-template-kanban', icon: 'KB', title: 'Canvas starter: kanban board', hint: 'Insert a three-column local JSON kanban board template', run: () => insertCanvasStarterTemplate('kanban', 'Kanban') },
+    { id: 'canvas-template-timeline', icon: 'TL', title: 'Canvas starter: timeline', hint: 'Insert a lightweight milestone timeline template', run: () => insertCanvasStarterTemplate('timeline', 'Timeline') },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-fit-selection', icon: 'FS', title: 'Fit selected canvas element', hint: 'Zoom and pan to the selected canvas element', run: () => { openCanvas(); fitCanvasToSelection(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
@@ -6464,6 +6467,93 @@ function setCanvasBackground(color, label) {
   rememberCanvasHistory();
   renderCanvas();
   statusText.textContent = `Canvas background ${label}`;
+}
+
+function canvasTemplateOrigin() {
+  const camera = canvasCamera();
+  const rect = canvasStage?.getBoundingClientRect?.();
+  const width = rect?.width || 960;
+  const height = rect?.height || 640;
+  return {
+    x: Math.round((width / 2 - camera.x) / camera.scale - 360),
+    y: Math.round((height / 2 - camera.y) / camera.scale - 220),
+  };
+}
+
+function canvasTemplateText(x, y, text, size = 16, stroke = '#1f2937') {
+  return { id: canvasId(), type: 'text', x, y, text, size, stroke, width: 2 };
+}
+
+function canvasTemplateCard(x, y, w, h, title, stroke = '#2f6f61') {
+  return [
+    { id: canvasId(), type: 'rect', x, y, w, h, stroke, width: 2 },
+    canvasTemplateText(x + 16, y + 34, title, 16, stroke),
+  ];
+}
+
+function canvasTemplateArrow(x1, y1, x2, y2, stroke = '#2563eb') {
+  return { id: canvasId(), type: 'arrow', x: x1, y: y1, w: x2 - x1, h: y2 - y1, stroke, width: 3 };
+}
+
+function canvasStarterTemplateElements(kind, x, y) {
+  if (kind === 'kanban') {
+    const columns = [
+      { title: 'Backlog', x: x, stroke: '#6f6230' },
+      { title: 'Doing', x: x + 260, stroke: '#2563eb' },
+      { title: 'Done', x: x + 520, stroke: '#16a34a' },
+    ];
+    return columns.flatMap((col) => [
+      { id: canvasId(), type: 'rect', x: col.x, y, w: 220, h: 340, stroke: col.stroke, width: 3 },
+      canvasTemplateText(col.x + 16, y + 34, col.title, 18, col.stroke),
+      ...canvasTemplateCard(col.x + 18, y + 70, 184, 74, 'Task card', col.stroke),
+      ...canvasTemplateCard(col.x + 18, y + 160, 184, 74, 'Note / idea', col.stroke),
+    ]);
+  }
+  if (kind === 'timeline') {
+    const baseY = y + 180;
+    const points = [
+      { title: 'Now', x: x + 40, stroke: '#2f6f61' },
+      { title: 'Next', x: x + 280, stroke: '#2563eb' },
+      { title: 'Later', x: x + 520, stroke: '#d97706' },
+      { title: 'Ship', x: x + 760, stroke: '#16a34a' },
+    ];
+    return [
+      { id: canvasId(), type: 'line', x: x + 40, y: baseY, w: 720, h: 0, stroke: '#6b6e68', width: 3 },
+      ...points.flatMap(point => [
+        { id: canvasId(), type: 'ellipse', x: point.x - 14, y: baseY - 14, w: 28, h: 28, stroke: point.stroke, width: 4 },
+        canvasTemplateText(point.x - 30, baseY - 42, point.title, 16, point.stroke),
+        ...canvasTemplateCard(point.x - 80, baseY + 34, 160, 72, 'Milestone', point.stroke),
+      ]),
+    ];
+  }
+  const center = { x: x + 320, y: y + 180 };
+  const nodes = [
+    { title: 'Idea', x: x + 40, y: y + 40, stroke: '#2563eb' },
+    { title: 'Research', x: x + 600, y: y + 40, stroke: '#d97706' },
+    { title: 'Tasks', x: x + 40, y: y + 300, stroke: '#16a34a' },
+    { title: 'Risks', x: x + 600, y: y + 300, stroke: '#dc2626' },
+  ];
+  return [
+    ...canvasTemplateCard(center.x - 100, center.y - 42, 200, 84, 'Core topic', '#2f6f61'),
+    ...nodes.flatMap(node => [
+      canvasTemplateArrow(center.x, center.y, node.x + 80, node.y + 36, node.stroke),
+      ...canvasTemplateCard(node.x, node.y, 160, 72, node.title, node.stroke),
+    ]),
+  ];
+}
+
+function insertCanvasStarterTemplate(kind, label) {
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const elements = canvasStarterTemplateElements(kind, origin.x, origin.y);
+  if (!elements.length) return;
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${label} canvas starter inserted`;
 }
 
 function setCanvasZoomPreset(scale) {
