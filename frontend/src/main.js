@@ -691,7 +691,86 @@ function lineForIndex(content, index) {
   return line;
 }
 
-function scoreSearch(note, content, query, terms) {
+function parseSearchQuery(query) {
+  const raw = String(query || '').trim();
+  const parts = raw.match(/"[^"]+"|\S+/g) || [];
+  const filters = { path: [], title: [], type: [], tag: [], task: [] };
+  const textParts = [];
+  parts.forEach((part) => {
+    const clean = part.replace(/^"|"$/g, '').trim();
+    if (!clean) return;
+    const match = clean.match(/^(path|title|type|kind|tag|task):(.+)$/i);
+    if (match) {
+      const key = match[1].toLowerCase() === 'kind' ? 'type' : match[1].toLowerCase();
+      const value = match[2].replace(/^#/, '').toLowerCase().trim();
+      if (value) filters[key].push(value);
+      return;
+    }
+    if (/^#[A-Za-z0-9_/-]+$/.test(clean)) {
+      filters.tag.push(clean.slice(1).toLowerCase());
+      return;
+    }
+    textParts.push(clean);
+  });
+  const text = textParts.join(' ').trim();
+  const lower = text.toLowerCase();
+  const hasFilters = Object.values(filters).some(values => values.length > 0);
+  return {
+    raw,
+    text,
+    lower,
+    terms: lower.split(/\s+/).filter(Boolean).slice(0, 8),
+    filters,
+    hasFilters,
+    needsContentFilter: filters.tag.length > 0 || filters.task.length > 0,
+  };
+}
+
+function searchCandidateMatchesPlan(note, content, plan) {
+  if (!plan || !plan.hasFilters) return true;
+  const title = String(note.path ? (note.title || basename(note.path)) : (note.title || 'Untitled')).toLowerCase();
+  const path = String(note.path || 'Draft').toLowerCase();
+  const kind = String(getFileType(note.path, note.kind) || '').toLowerCase();
+  const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
+  const body = String(content || '').toLowerCase();
+  if (plan.filters.path.some(value => !path.includes(value))) return false;
+  if (plan.filters.title.some(value => !title.includes(value))) return false;
+  if (plan.filters.type.some(value => !typeText.includes(value))) return false;
+  if (plan.filters.tag.some(value => !body.includes(`#${value}`))) return false;
+  if (!searchContentMatchesTaskFilters(content, plan.filters.task)) return false;
+  return true;
+}
+
+function searchResultMatchesPlan(result, plan) {
+  if (!plan || !plan.hasFilters) return true;
+  if (plan.needsContentFilter) return false;
+  const title = String(result.title || basename(result.path) || 'Untitled').toLowerCase();
+  const path = String(result.path || '').toLowerCase();
+  const kind = String(result.kind || result.type || getFileType(result.path, result.kind) || '').toLowerCase();
+  const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
+  if (plan.filters.path.some(value => !path.includes(value))) return false;
+  if (plan.filters.title.some(value => !title.includes(value))) return false;
+  if (plan.filters.type.some(value => !typeText.includes(value))) return false;
+  return true;
+}
+
+function searchContentMatchesTaskFilters(content, filters) {
+  if (!filters.length) return true;
+  const lines = String(content || '').split('\n');
+  return filters.every((filter) => {
+    if (['open', 'todo', 'unchecked'].includes(filter)) {
+      return lines.some(line => /^\s*[-*+]\s+\[\s\]\s+/.test(line));
+    }
+    if (['done', 'closed', 'checked'].includes(filter)) {
+      return lines.some(line => /^\s*[-*+]\s+\[[xX]\]\s+/.test(line));
+    }
+    return lines.some(line => /^\s*[-*+]\s+\[[ xX]\]\s+/.test(line) && line.toLowerCase().includes(filter));
+  });
+}
+
+function scoreSearch(note, content, plan) {
+  const query = plan.lower;
+  const terms = plan.terms;
   const title = note.path ? (note.title || basename(note.path)) : 'Untitled';
   const path = note.path || 'Draft';
   const titleLower = title.toLowerCase();
@@ -699,10 +778,12 @@ function scoreSearch(note, content, query, terms) {
   const body = content || '';
   const bodyLower = body.toLowerCase();
   const haystack = `${titleLower}\n${pathLower}\n${bodyLower}`;
+  if (!searchCandidateMatchesPlan(note, body, plan)) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
 
   let score = 0;
   if (!query) score = note.id === activeId ? 20 : 1;
+  if (plan.hasFilters) score += 25;
   if (query && titleLower.includes(query)) score += 120;
   if (query && pathLower.includes(query)) score += 70;
   const match = firstMatchIndex(body, query, terms);
@@ -730,8 +811,7 @@ function scoreSearch(note, content, query, terms) {
 
 async function runLoadedSearch(query) {
   const token = ++searchToken;
-  const q = query.trim();
-  const lower = q.toLowerCase();
+  const plan = parseSearchQuery(query);
   const scopeLabel = searchScope === 'local' ? 'local folder' : searchScope === 'all' ? 'loaded and local files' : 'loaded files';
   searchResults.innerHTML = `<div class="search-empty">Searching ${scopeLabel}...</div>`;
   updateSearchScopeButtons();
@@ -745,13 +825,12 @@ async function runLoadedSearch(query) {
   }
   const results = await collectLoadedSearchResults(query, token, 40);
   if (token !== searchToken) return;
-  renderSearchResults(results, lower);
+  renderSearchResults(results, plan.lower);
 }
 
 async function collectLoadedSearchResults(query, token, limit) {
-  const q = query.trim().toLowerCase();
-  const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
-  if (window.go?.main?.App?.SearchLoadedDocuments) {
+  const plan = parseSearchQuery(query);
+  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
       if (token !== searchToken) return [];
@@ -767,7 +846,7 @@ async function collectLoadedSearchResults(query, token, limit) {
       if (content.length > SEARCH_CONTENT_CAP) content = content.slice(0, SEARCH_CONTENT_CAP);
     }
     if (token !== searchToken) return [];
-    const result = scoreSearch(note, content, q, terms);
+    const result = scoreSearch(note, content, plan);
     if (result) results.push({ ...result, source: 'loaded' });
   }
   results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
@@ -775,17 +854,18 @@ async function collectLoadedSearchResults(query, token, limit) {
 }
 
 async function runAllSearch(query, token) {
-  const lower = query.trim().toLowerCase();
+  const plan = parseSearchQuery(query);
+  const localQuery = plan.hasFilters ? plan.text : query;
   const [loaded, localPack] = await Promise.all([
     collectLoadedSearchResults(query, token, 35),
-    collectLocalSearchResults(query, token, 35),
+    collectLocalSearchResults(localQuery, token, 35),
   ]);
   if (token !== searchToken) return;
-  const local = localPack.results || [];
+  const local = (localPack.results || []).filter(result => searchResultMatchesPlan(result, plan));
   const results = [...loaded, ...local]
     .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
     .slice(0, 70);
-  renderSearchResults(results, lower);
+  renderSearchResults(results, plan.lower);
 }
 
 function updateSearchScopeButtons() {
@@ -796,8 +876,13 @@ function updateSearchScopeButtons() {
     searchInput.placeholder = searchScope === 'local'
       ? 'Search the configured local folder...'
       : searchScope === 'all'
-        ? 'Search loaded files and local folder...'
-        : 'Search loaded files, titles, paths...';
+        ? 'Search all, or filter loaded files with type:md tag:idea...'
+        : 'Search loaded files, or use type:md path:notes tag:idea task:open...';
+  }
+  if (searchMeta) {
+    searchMeta.textContent = searchScope === 'local'
+      ? 'Local folder search scans file names and text content.'
+      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Ctrl+F searches current file.';
   }
 }
 
