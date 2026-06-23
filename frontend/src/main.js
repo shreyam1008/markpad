@@ -907,6 +907,7 @@ function commandItems() {
     { id: 'saveas', icon: 'A', title: 'Save as', hint: 'Choose a save path', kbd: 'Ctrl+Shift+S', run: doSaveAs },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
+    { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
@@ -3647,6 +3648,8 @@ modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) m
 modalBodyEl.addEventListener('click', async (e) => {
   const folder = e.target.closest('[data-open-folder]');
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
+  const outlineJump = e.target.closest('[data-outline-jump]');
+  if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
   if (themeChoice) {
     applyTheme(themeChoice.dataset.themeChoice);
@@ -3753,6 +3756,76 @@ modalBodyEl.addEventListener('keydown', async (e) => {
     await showLocalFolder(String(e.target.value || '').trim());
   }
 });
+
+function parseDocumentOutline(content) {
+  const outline = [];
+  const lines = String(content || '').split('\n');
+  let offset = 0;
+  let inFence = false;
+  let fenceMarker = '';
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    const line = lines[lineNumber];
+    const fence = line.match(/^(\s*)(```|~~~)/);
+    if (fence) {
+      const marker = fence[2];
+      if (!inFence) { inFence = true; fenceMarker = marker; }
+      else if (marker === fenceMarker) { inFence = false; fenceMarker = ''; }
+      offset += line.length + 1;
+      continue;
+    }
+    if (!inFence) {
+      const match = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/);
+      if (match) {
+        const text = match[2].replace(/\s+#*$/, '').trim();
+        if (text) {
+          outline.push({
+            level: match[1].length,
+            text,
+            line: lineNumber,
+            offset,
+          });
+        }
+      }
+    }
+    offset += line.length + 1;
+  }
+  return outline;
+}
+
+function renderDocumentOutlineRows(outline) {
+  if (!outline.length) return '<div class="outline-empty">No Markdown headings found in the active document.</div>';
+  return `<div class="outline-list">${outline.map(item => `
+    <button class="outline-row" style="--outline-depth:${Math.max(0, item.level - 1)}" data-outline-jump="${item.offset}">
+      <span class="outline-level">H${item.level}</span>
+      <span class="outline-text">${escapeHtml(item.text)}</span>
+      <span class="outline-line">Line ${item.line + 1}</span>
+    </button>
+  `).join('')}</div>`;
+}
+
+function showDocumentOutline() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  if (isReadOnlyType(type)) {
+    showModal('Document Outline', '<div class="outline-empty">The active file is read-only, so no editable Markdown outline is available.</div>');
+    return;
+  }
+  const outline = parseDocumentOutline(currentContent);
+  showModal('Document Outline', `
+    <div class="outline-summary">${outline.length} heading${outline.length === 1 ? '' : 's'} - parsed locally from the active editor buffer.</div>
+    ${renderDocumentOutlineRows(outline)}
+  `, true);
+}
+
+function jumpToOutlineOffset(offset) {
+  if (!Number.isFinite(offset)) return;
+  if (viewMode === 'viewer') setView('split');
+  modalOverlay.classList.add('hidden');
+  editor.focus();
+  const pos = Math.max(0, Math.min(currentContent.length, offset));
+  editor.selectionStart = editor.selectionEnd = pos;
+  statusText.textContent = 'Jumped to heading';
+}
 
 
 async function showFileInfo() {
