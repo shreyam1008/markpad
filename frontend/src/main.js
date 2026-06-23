@@ -651,6 +651,33 @@ function exportCommandRecentsCsv() {
   statusText.textContent = 'Command recents exported as CSV';
 }
 
+async function restoreCommandRecentsFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    statusText.textContent = 'Clipboard read unavailable';
+    return;
+  }
+  let parsed = null;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch {
+    statusText.textContent = 'Clipboard does not contain command recents JSON';
+    return;
+  }
+  if (!parsed || parsed.type !== 'markpad-command-recents' || !Array.isArray(parsed.commands)) {
+    statusText.textContent = 'Clipboard JSON is not command recents';
+    return;
+  }
+  const known = new Set(COMMAND_ITEMS.map(item => item.id));
+  commandRecentIds = parsed.commands
+    .map(item => String(item?.id || '').trim())
+    .filter(id => id && known.has(id))
+    .filter((id, index, list) => list.indexOf(id) === index)
+    .slice(0, COMMAND_RECENTS_LIMIT);
+  localStorage.setItem(COMMAND_RECENTS_KEY, JSON.stringify(commandRecentIds));
+  if (commandOpen) renderCommandPalette();
+  statusText.textContent = `${commandRecentIds.length} command recent${commandRecentIds.length === 1 ? '' : 's'} restored`;
+}
+
 function commandRecentRank(id) {
   return commandRecentIds.indexOf(id);
 }
@@ -2743,6 +2770,7 @@ function commandItems() {
     { id: 'export-command-recents', icon: 'ECR', title: 'Export command recents', hint: 'Download locally stored command palette recents as Markdown', run: exportCommandRecentsMarkdown },
     { id: 'export-command-recents-json', icon: 'ECJ', title: 'Export command recents JSON', hint: 'Download locally stored command palette recents as JSON', run: exportCommandRecentsJson },
     { id: 'export-command-recents-csv', icon: 'ECV', title: 'Export command recents CSV', hint: 'Download locally stored command palette recents as CSV', run: exportCommandRecentsCsv },
+    { id: 'restore-command-recents-json', icon: 'RCJ', title: 'Restore command recents JSON', hint: 'Restore locally stored command palette recents from clipboard JSON', run: restoreCommandRecentsFromClipboard },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'copy-search-results-json', icon: 'CJ', title: 'Copy search results JSON', hint: 'Copy the current search result list as portable JSON', run: copySearchResultsJson },
