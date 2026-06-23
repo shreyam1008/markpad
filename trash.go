@@ -36,6 +36,11 @@ type fileTrashState struct {
 	Items   []FileTrashItem `json:"items"`
 }
 
+type FileTrashCleanupResult struct {
+	Removed   int             `json:"removed"`
+	Remaining []FileTrashItem `json:"remaining"`
+}
+
 func (a *App) ListFileTrash() []FileTrashItem {
 	if a == nil || a.store == nil {
 		return []FileTrashItem{}
@@ -170,6 +175,38 @@ func (a *App) EmptyFileTrash() []FileTrashItem {
 	state.Items = nil
 	_ = a.writeFileTrashState(state)
 	return []FileTrashItem{}
+}
+
+func (a *App) CleanupExpiredFileTrash() FileTrashCleanupResult {
+	if a == nil || a.store == nil {
+		return FileTrashCleanupResult{Remaining: []FileTrashItem{}}
+	}
+	state, err := a.readFileTrashState()
+	if err != nil {
+		return FileTrashCleanupResult{Remaining: []FileTrashItem{}}
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -fileTrashDays)
+	filtered := state.Items[:0]
+	removed := 0
+	for _, item := range state.Items {
+		if item.DeletedAt.Before(cutoff) {
+			_ = os.Remove(item.TrashPath)
+			removed++
+			continue
+		}
+		if _, err := os.Stat(item.TrashPath); err != nil {
+			removed++
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+
+	state.Items = filtered
+	if removed > 0 {
+		_ = a.writeFileTrashState(state)
+	}
+	return FileTrashCleanupResult{Removed: removed, Remaining: state.Items}
 }
 
 func (a *App) pruneFileTrash() ([]FileTrashItem, error) {

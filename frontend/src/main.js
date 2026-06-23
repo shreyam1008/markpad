@@ -1392,6 +1392,7 @@ function commandItems() {
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
+    { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
@@ -1543,16 +1544,25 @@ $('command-close')?.addEventListener('click', closeCommandPalette);
 commandOverlay?.addEventListener('click', (e) => { if (e.target === commandOverlay) closeCommandPalette(); });
 
 function loadDraftTrash() {
+  const items = readDraftTrashRaw();
+  const pruned = activeTrashItems(items);
+  if (pruned.length !== items.length) localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(pruned));
+  return pruned;
+}
+
+function readDraftTrashRaw() {
   let items = [];
   try {
     items = JSON.parse(localStorage.getItem(DRAFT_TRASH_KEY) || '[]');
   } catch {
     items = [];
   }
+  return Array.isArray(items) ? items : [];
+}
+
+function activeTrashItems(items) {
   const cutoff = Date.now() - DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
-  const pruned = items.filter(item => item && item.deletedAt && new Date(item.deletedAt).getTime() >= cutoff);
-  if (pruned.length !== items.length) localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(pruned));
-  return pruned;
+  return items.filter(item => item && item.deletedAt && new Date(item.deletedAt).getTime() >= cutoff);
 }
 
 function saveDraftTrash(items) {
@@ -1685,6 +1695,27 @@ async function emptyAllTrash() {
   await showTrashView();
 }
 
+async function cleanupExpiredTrash() {
+  const draftItems = readDraftTrashRaw();
+  const activeDrafts = activeTrashItems(draftItems);
+  const draftRemoved = Math.max(0, draftItems.length - activeDrafts.length);
+  if (draftRemoved > 0) saveDraftTrash(activeDrafts);
+
+  let fileRemoved = 0;
+  try {
+    if (window.go?.main?.App?.CleanupExpiredFileTrash) {
+      const result = await window.go.main.App.CleanupExpiredFileTrash();
+      fileRemoved = Number(result?.removed || 0);
+    }
+  } catch {}
+
+  const total = draftRemoved + fileRemoved;
+  statusText.textContent = total
+    ? `Cleaned ${total} expired Trash item${total === 1 ? '' : 's'}`
+    : 'No expired Trash items';
+  await showTrashView();
+}
+
 async function showTrashView() {
   const items = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -1692,6 +1723,7 @@ async function showTrashView() {
   showModal('Trash', `
     <div class="trash-head">
       <span>${total} item${total === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
+      <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
     <h3 style="margin:8px 0 6px;font-size:12px;font-weight:900;">Saved files</h3>
@@ -5120,6 +5152,8 @@ modalBodyEl.addEventListener('click', async (e) => {
     await window.go.main.App.DeleteFileTrash(fileTrashDelete.dataset.fileTrashDelete);
     await showTrashView();
   }
+  const trashCleanExpired = e.target.closest('[data-trash-clean-expired]');
+  if (trashCleanExpired) await cleanupExpiredTrash();
   const trashEmpty = e.target.closest('[data-trash-empty]');
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
