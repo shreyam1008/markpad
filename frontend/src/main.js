@@ -242,6 +242,12 @@ function cycleDarkTheme() {
   cycleThemeGroup(DARK_THEMES);
 }
 
+function clearAllUndoHistories() {
+  clearEditorUndoHistory();
+  clearCanvasUndoHistory();
+  statusText.textContent = 'Editor and canvas undo histories cleared';
+}
+
 function loadSearchRecentQueries() {
   try {
     const values = JSON.parse(localStorage.getItem(SEARCH_RECENTS_KEY) || '[]');
@@ -2289,6 +2295,7 @@ function commandItems() {
     { id: 'copy-runtime-stats-csv', icon: 'RCSV', title: 'Copy runtime stats CSV', hint: 'Copy memory, binary size, goroutine, and uptime stats as CSV', run: copyRuntimeStatsCsv },
     { id: 'export-runtime-stats-csv', icon: 'ERSV', title: 'Export runtime stats CSV', hint: 'Download memory, binary size, goroutine, and uptime stats as CSV', run: exportRuntimeStatsCsv },
     { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
+    { id: 'clear-all-undo-history', icon: 'AU', title: 'Clear all undo histories', hint: 'Release editor and canvas undo snapshots to reduce memory pressure', run: clearAllUndoHistories },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
