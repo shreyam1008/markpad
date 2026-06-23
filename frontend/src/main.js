@@ -248,6 +248,39 @@ function clearAllUndoHistories() {
   statusText.textContent = 'Editor and canvas undo histories cleared';
 }
 
+async function applyWorkspacePreset(kind) {
+  if (kind === 'writing') {
+    applyTheme('linen', true);
+    if (!editorSoftWrap) toggleEditorWrap();
+    if (!editorReadingWidth) toggleEditorReadingWidth();
+    setView('split');
+    setSplitPreset(62);
+    statusText.textContent = 'Writing workspace preset applied';
+    return;
+  }
+  if (kind === 'planning') {
+    applyTheme('sand', true);
+    await showTasksPreset({ view: 'kanban', source: 'all', filter: 'open', query: '' });
+    statusText.textContent = 'Planning workspace preset applied';
+    return;
+  }
+  if (kind === 'review') {
+    applyTheme('mist', true);
+    if (!editorReadingWidth) toggleEditorReadingWidth();
+    setView('split');
+    setSplitPreset(50);
+    statusText.textContent = 'Review workspace preset applied';
+    return;
+  }
+  if (kind === 'canvas') {
+    applyTheme('sand', true);
+    openCanvas();
+    setCanvasBackground('#f7ecd8', 'sand');
+    applyCanvasDrawingPreset('arrow', '#2563eb', 3, 'connector');
+    statusText.textContent = 'Canvas planning workspace preset applied';
+  }
+}
+
 function loadSearchRecentQueries() {
   try {
     const values = JSON.parse(localStorage.getItem(SEARCH_RECENTS_KEY) || '[]');
@@ -2444,6 +2477,10 @@ function commandItems() {
     { id: 'writing-focus-preset', icon: 'WF', title: 'Writing focus preset', hint: 'Focus + compact + soft wrap + reading width + editor-wide split', run: applyWritingFocusPreset },
     { id: 'review-split-preset', icon: 'RV', title: 'Review split preset', hint: 'Balanced split with soft wrap and full review chrome', run: applyReviewSplitPreset },
     { id: 'default-editing-preset', icon: 'DE', title: 'Default editing preset', hint: 'Full chrome + plain editor + balanced split', run: applyDefaultEditingPreset },
+    { id: 'workspace-writing', icon: 'WW', title: 'Workspace preset: writing', hint: 'Apply Linen, soft wrap, reading width, and editor-wide split', run: () => applyWorkspacePreset('writing') },
+    { id: 'workspace-planning', icon: 'WP', title: 'Workspace preset: planning', hint: 'Apply Sand and open open tasks as a kanban board', run: () => applyWorkspacePreset('planning') },
+    { id: 'workspace-review', icon: 'WR', title: 'Workspace preset: review', hint: 'Apply Mist, reading width, and balanced split', run: () => applyWorkspacePreset('review') },
+    { id: 'workspace-canvas', icon: 'WC', title: 'Workspace preset: canvas planning', hint: 'Apply Sand canvas background and connector drawing defaults', run: () => applyWorkspacePreset('canvas') },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
     { id: 'export-ui-state-summary', icon: 'EU', title: 'Export UI state Markdown', hint: 'Download current theme, layout, search, task, and canvas preferences as Markdown', run: exportUiStateSummary },
@@ -2525,6 +2562,7 @@ function commandCategory(item) {
   if (id.startsWith('trash')) return 'Trash';
   if (id.startsWith('theme')) return 'Theme';
   if (id.includes('history')) return 'History';
+  if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id === 'footprint' || id.includes('undo-history')) return 'Diagnostics';
