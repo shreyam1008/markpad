@@ -2325,6 +2325,8 @@ function commandItems() {
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
+    { id: 'copy-trash-report-csv', icon: 'CTC', title: 'Copy Trash report CSV', hint: 'Copy retained Trash items and expiry dates as CSV rows', run: copyTrashReportCsv },
+    { id: 'export-trash-report-csv', icon: 'ETC', title: 'Export Trash report CSV', hint: 'Download retained Trash items and expiry dates as CSV rows', run: exportTrashReportCsv },
     { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
@@ -2762,6 +2764,33 @@ function trashReportToMarkdown(draftItems, fileItems) {
   return `${lines.join('\n')}\n`;
 }
 
+function trashItemCsvRow(kind, item) {
+  const title = kind === 'File' ? (item.title || basename(item.originalPath) || 'File') : (item.title || 'Untitled');
+  const detail = kind === 'File'
+    ? (item.originalPath || '')
+    : (item.content || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+  return [
+    kind,
+    title,
+    item.deletedAt || '',
+    trashExpiryDate(item.deletedAt),
+    daysLeft(item.deletedAt),
+    trashRetentionState(item.deletedAt).label,
+    kind === 'File' ? (item.kind || getFileType(item.originalPath, item.kind)) : 'draft',
+    kind === 'File' ? Number(item.size || 0) : byteSize(item.content || ''),
+    detail || '',
+  ];
+}
+
+function trashReportToCsv(draftItems, fileItems) {
+  const rows = [
+    ['type', 'title', 'deletedAt', 'expires', 'daysLeft', 'retention', 'kind', 'bytes', 'detail'],
+    ...fileItems.map(item => trashItemCsvRow('File', item)),
+    ...draftItems.map(item => trashItemCsvRow('Draft', item)),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copyTrashReportMarkdown() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -2776,6 +2805,22 @@ async function exportTrashReportMarkdown() {
   downloadText('markpad-trash-report.md', 'text/markdown', trashReportToMarkdown(draftItems, fileItems));
   const total = draftItems.length + fileItems.length;
   statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as Markdown`;
+}
+
+async function copyTrashReportCsv() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  await navigator.clipboard.writeText(trashReportToCsv(draftItems, fileItems));
+  const total = draftItems.length + fileItems.length;
+  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as CSV`;
+}
+
+async function exportTrashReportCsv() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  downloadText('markpad-trash-report.csv', 'text/csv', trashReportToCsv(draftItems, fileItems));
+  const total = draftItems.length + fileItems.length;
+  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as CSV`;
 }
 
 async function emptyAllTrash() {
@@ -2816,6 +2861,8 @@ async function showTrashView() {
       <span>${total} item${total === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
       <button data-trash-copy-report ${total ? '' : 'disabled'}>Copy Report</button>
       <button data-trash-export-report ${total ? '' : 'disabled'}>Export Report</button>
+      <button data-trash-copy-csv ${total ? '' : 'disabled'}>Copy CSV</button>
+      <button data-trash-export-csv ${total ? '' : 'disabled'}>Export CSV</button>
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
@@ -7619,6 +7666,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashCopyReport && !trashCopyReport.disabled) await copyTrashReportMarkdown();
   const trashExportReport = e.target.closest('[data-trash-export-report]');
   if (trashExportReport && !trashExportReport.disabled) await exportTrashReportMarkdown();
+  const trashCopyCsv = e.target.closest('[data-trash-copy-csv]');
+  if (trashCopyCsv && !trashCopyCsv.disabled) await copyTrashReportCsv();
+  const trashExportCsv = e.target.closest('[data-trash-export-csv]');
+  if (trashExportCsv && !trashExportCsv.disabled) await exportTrashReportCsv();
   const trashEmpty = e.target.closest('[data-trash-empty]');
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
