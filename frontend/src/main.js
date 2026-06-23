@@ -4901,6 +4901,10 @@ function showTrashGuide() {
       <button data-trash-audit>Audit Retention</button>
       <button data-trash-copy-report>Copy Report</button>
       <button data-trash-export-report>Export Report</button>
+      <button data-trash-copy-json>Copy JSON</button>
+      <button data-trash-export-json>Export JSON</button>
+      <button data-trash-copy-csv>Copy CSV</button>
+      <button data-trash-export-csv>Export CSV</button>
       <button data-trash-clean-expired>Clean Expired</button>
     </div>
     <p class="diag-note">Trash is local-only. Reports include metadata and expiry dates; draft content is only copied from per-item actions to avoid exporting deleted text accidentally.</p>
