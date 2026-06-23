@@ -2498,6 +2498,18 @@ function showSplitWorkflowGuide() {
       <div class="diag-card"><strong>Swap</strong><span>Flip current ratio</span><small>Switch editor/preview emphasis without dragging</small></div>
       <div class="diag-card"><strong>Nudge</strong><span>5% steps</span><small>Fine tune from the command palette</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-view-mode="markdown">Editor</button>
+      <button data-view-mode="split">Split</button>
+      <button data-view-mode="viewer">Preview</button>
+      <button data-split-preset="50">50/50</button>
+      <button data-split-preset="62">62/38</button>
+      <button data-split-preset="72">72/28</button>
+      <button data-split-preset="38">38/62</button>
+      <button data-split-swap-guide>Swap</button>
+      <button data-split-nudge="5">+ Editor</button>
+      <button data-split-nudge="-5">+ Preview</button>
+    </div>
     <p class="diag-note">Split ratio is local UI state. It is saved per machine, exported through UI state JSON, and never written into Markdown files.</p>
   `);
 }
@@ -10763,6 +10775,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportCurrentFileSearchCsvBtn && !exportCurrentFileSearchCsvBtn.disabled) exportCurrentFileSearchCsv(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchJump = e.target.closest('[data-current-file-search-jump]');
   if (currentFileSearchJump) jumpToCurrentFileSearchMatch(currentFileSearchJump.dataset.currentFileSearchJump, currentFileSearchJump.dataset.currentFileSearchLength);
+  const viewModeButton = e.target.closest('[data-view-mode]');
+  if (viewModeButton) setView(viewModeButton.dataset.viewMode);
+  const splitPresetButton = e.target.closest('[data-split-preset]');
+  if (splitPresetButton) setSplitPreset(splitPresetButton.dataset.splitPreset);
+  const splitSwapGuideButton = e.target.closest('[data-split-swap-guide]');
+  if (splitSwapGuideButton) swapSplitRatio();
+  const splitNudgeButton = e.target.closest('[data-split-nudge]');
+  if (splitNudgeButton) adjustSplitRatio(Number(splitNudgeButton.dataset.splitNudge || 0));
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
