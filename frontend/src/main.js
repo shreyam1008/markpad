@@ -2492,6 +2492,8 @@ function commandItems() {
     { id: 'tasks-due-week', icon: 'TWK', title: 'Tasks due this week', hint: 'Filter tasks due within the next 7 days', run: () => showTasksForQuery('due:week') },
     { id: 'tasks-overdue', icon: 'TO', title: 'Overdue tasks', hint: 'Filter tasks with due:overdue', run: () => showTasksForQuery('due:overdue') },
     { id: 'tasks-high-priority', icon: 'TH', title: 'High priority tasks', hint: 'Filter tasks with !high', run: () => showTasksForQuery('!high') },
+    { id: 'tasks-medium-priority', icon: 'TM', title: 'Medium priority tasks', hint: 'Filter tasks with !medium', run: () => showTasksForQuery('!medium') },
+    { id: 'tasks-low-priority', icon: 'TLW', title: 'Low priority tasks', hint: 'Filter tasks with !low', run: () => showTasksForQuery('!low') },
     { id: 'tasks-waiting', icon: 'TW', title: 'Waiting tasks', hint: 'Filter tasks tagged with @waiting', run: () => showTasksForQuery('@waiting') },
     { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
     { id: 'tasks-reset-filters', icon: 'TRF', title: 'Reset task filters', hint: 'Show all task sources, filters, and queries again', run: resetTaskViewFilters },
