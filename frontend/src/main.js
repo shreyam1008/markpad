@@ -3792,9 +3792,22 @@ async function restoreDraftTrash(itemId) {
   statusText.textContent = 'Draft restored from Trash';
 }
 
+function confirmPermanentTrashAction(message) {
+  return window.confirm(message);
+}
+
 async function deleteDraftTrashItem(itemId) {
-  saveDraftTrash(loadDraftTrash().filter(entry => entry.id !== itemId));
+  const items = loadDraftTrash();
+  const item = items.find(entry => entry.id === itemId);
+  if (!item) return;
+  const label = item.title || 'Untitled draft';
+  if (!confirmPermanentTrashAction(`Permanently delete "${label}" from Trash? This cannot be undone.`)) {
+    statusText.textContent = 'Permanent delete cancelled';
+    return;
+  }
+  saveDraftTrash(items.filter(entry => entry.id !== itemId));
   await showTrashView();
+  statusText.textContent = 'Trash draft permanently deleted';
 }
 
 async function copyDraftTrashItem(itemId) {
@@ -4071,11 +4084,24 @@ function showTrashGuide() {
 }
 
 async function emptyAllTrash() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  const total = draftItems.length + fileItems.length;
+  if (!total) {
+    statusText.textContent = 'Trash is empty';
+    await showTrashView();
+    return;
+  }
+  if (!confirmPermanentTrashAction(`Permanently delete ${total} Trash item${total === 1 ? '' : 's'}? This cannot be undone.`)) {
+    statusText.textContent = 'Empty Trash cancelled';
+    return;
+  }
   saveDraftTrash([]);
   try {
     if (window.go?.main?.App?.EmptyFileTrash) await window.go.main.App.EmptyFileTrash();
   } catch {}
   await showTrashView();
+  statusText.textContent = 'Trash emptied permanently';
 }
 
 async function cleanupExpiredTrash() {
@@ -9914,8 +9940,16 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (fileTrashCopyJson) await copyFileTrashItemJson(fileTrashCopyJson.dataset.fileTrashCopyJson);
   const fileTrashDelete = e.target.closest('[data-file-trash-delete]');
   if (fileTrashDelete && window.go?.main?.App?.DeleteFileTrash) {
-    await window.go.main.App.DeleteFileTrash(fileTrashDelete.dataset.fileTrashDelete);
+    const itemId = fileTrashDelete.dataset.fileTrashDelete;
+    const item = (await loadFileTrash()).find(entry => entry.id === itemId);
+    const label = item?.title || item?.name || item?.originalPath || 'file';
+    if (!confirmPermanentTrashAction(`Permanently delete "${label}" from Trash? This cannot be undone.`)) {
+      statusText.textContent = 'Permanent delete cancelled';
+      return;
+    }
+    await window.go.main.App.DeleteFileTrash(itemId);
     await showTrashView();
+    statusText.textContent = 'Trash file permanently deleted';
   }
   const trashCleanExpired = e.target.closest('[data-trash-clean-expired]');
   if (trashCleanExpired) await cleanupExpiredTrash();
