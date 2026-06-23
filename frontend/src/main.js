@@ -7410,15 +7410,15 @@ modalBodyEl.addEventListener('click', async (e) => {
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
   const taskCopyJson = e.target.closest('[data-task-copy-json]');
-  if (taskCopyJson) await copyVisibleTasksJson();
+  if (taskCopyJson && !taskCopyJson.dataset.taskCopyJson) await copyVisibleTasksJson();
   const taskExportJson = e.target.closest('[data-task-export-json]');
   if (taskExportJson) await exportTasksJson();
   const taskCopyCsv = e.target.closest('[data-task-copy-csv]');
-  if (taskCopyCsv) await copyVisibleTasksCsv();
+  if (taskCopyCsv && !taskCopyCsv.dataset.taskCopyCsv) await copyVisibleTasksCsv();
   const taskExportCsv = e.target.closest('[data-task-export-csv]');
   if (taskExportCsv) await exportTasksCsv();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
-  if (taskCopyIcs) await copyVisibleTasksIcs();
+  if (taskCopyIcs && !taskCopyIcs.dataset.taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
   if (taskExport) await exportTasksIcs();
   const taskFilterBtn = e.target.closest('[data-task-filter]');
