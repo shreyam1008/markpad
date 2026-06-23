@@ -1301,14 +1301,45 @@ function parseTasksFromContent(note, content) {
 
 async function collectLoadedTasks() {
   const tasks = [];
+  const openPaths = new Set(cachedNotes.filter(note => note.path).map(note => note.path));
   for (const note of cachedNotes) {
     const type = getFileType(note.path, note.kind);
     if (isReadOnlyType(type)) continue;
     const content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
     tasks.push(...parseTasksFromContent(note, content));
   }
+  if (window.go?.main?.App?.ListLocalFolderTasks) {
+    try {
+      const localTasks = await window.go.main.App.ListLocalFolderTasks(1000);
+      for (const task of localTasks || []) {
+        if (task.sourcePath && openPaths.has(task.sourcePath)) continue;
+        tasks.push(normalizeLocalFolderTask(task));
+      }
+    } catch {}
+  }
   latestTasks = tasks;
   return tasks;
+}
+
+function normalizeLocalFolderTask(task) {
+  return {
+    id: `local:${task.id}`,
+    local: true,
+    localId: task.id,
+    noteId: '',
+    noteTitle: task.relPath || task.title || 'Local task',
+    path: task.sourcePath,
+    index: task.index,
+    line: task.line,
+    offset: 0,
+    checked: !!task.checked,
+    raw: task.rawText,
+    text: task.text,
+    due: task.due,
+    priority: task.priority,
+    waiting: !!task.waiting,
+    tags: task.tags || [],
+  };
 }
 
 function taskStatus(task) {
@@ -1476,6 +1507,11 @@ function toggleTaskAtIndex(markdown, taskIndex, checked) {
 async function toggleLoadedTask(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
+  if (task.local && window.go?.main?.App?.ToggleLocalFolderTask) {
+    await window.go.main.App.ToggleLocalFolderTask(task.localId, !task.checked);
+    await showTasksView(taskViewMode);
+    return;
+  }
   const content = task.noteId === activeId ? currentContent : await window.go.main.App.GetNoteContent(task.noteId);
   const next = toggleTaskAtIndex(content, task.index, !task.checked);
   if (task.noteId === activeId) {
@@ -1495,6 +1531,26 @@ async function toggleLoadedTask(taskId) {
 async function openLoadedTask(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
+  if (task.local) {
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+    try {
+      renderSession(await window.go.main.App.OpenDroppedFile(task.path));
+      loadContent(await window.go.main.App.GetActiveContent());
+      modalOverlay.classList.add('hidden');
+      setView('markdown');
+      requestAnimationFrame(() => {
+        editor.focus();
+        const start = offsetForLine(editor.value, task.line);
+        const end = Math.min(start + String(task.raw || '').length, editor.value.length);
+        editor.setSelectionRange(start, end);
+        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
+        editor.scrollTop = Math.max(0, task.line * lineHeight - editor.clientHeight * 0.35);
+      });
+    } catch (err) {
+      statusText.textContent = 'Open task failed: ' + err;
+    }
+    return;
+  }
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   await window.go.main.App.SetActive(task.noteId);
   activeId = task.noteId;
@@ -1510,6 +1566,16 @@ async function openLoadedTask(taskId) {
     const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
     editor.scrollTop = Math.max(0, task.line * lineHeight - editor.clientHeight * 0.35);
   });
+}
+
+function offsetForLine(content, lineNumber) {
+  if (lineNumber <= 0) return 0;
+  let line = 0;
+  for (let i = 0; i < content.length; i++) {
+    if (line === lineNumber) return i;
+    if (content.charCodeAt(i) === 10) line++;
+  }
+  return content.length;
 }
 
 function newCanvasDoc() {
