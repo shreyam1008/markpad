@@ -849,6 +849,47 @@ body.markpad-compact #modal-body {
   padding-left: 8px;
 }
 
+.task-row {
+  position: relative;
+  overflow: hidden;
+}
+.task-row::before {
+  content: "";
+  position: absolute;
+  inset: 8px auto 8px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+.task-row.priority-urgent::before,
+.task-row.priority-high::before {
+  background: var(--danger);
+}
+.task-row.priority-medium::before {
+  background: var(--accent);
+}
+.task-row.priority-low::before {
+  background: color-mix(in srgb, var(--accent) 42%, var(--muted));
+}
+.task-row.done {
+  opacity: .68;
+}
+.task-pill {
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--editor) 72%, var(--surface));
+}
+.task-priority-pill.urgent,
+.task-priority-pill.high {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, var(--editor));
+  color: var(--danger);
+}
+.task-priority-pill.medium {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--editor));
+  color: var(--accent);
+}
+
 /* Document outline */
 .outline-summary {
   color: var(--muted);
