@@ -332,6 +332,7 @@ function renderSearchRecents() {
     ${searchRecentQueries.map(query => `<button data-search-recent="${escapeHtml(query)}">${escapeHtml(query)}</button>`).join('')}
     <button data-search-recents-copy>Copy</button>
     <button data-search-recents-export>Export</button>
+    <button data-search-recents-restore>Restore JSON</button>
     <button data-search-recents-clear>Clear</button>
   `;
 }
@@ -411,6 +412,32 @@ function exportSearchRecentsJson() {
 function exportSearchRecentsCsv() {
   downloadText('markpad-search-recents.csv', 'text/csv', searchRecentsCsv());
   statusText.textContent = 'Search recents exported as CSV';
+}
+
+async function restoreSearchRecentsFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    statusText.textContent = 'Clipboard read unavailable';
+    return;
+  }
+  let parsed = null;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch {
+    statusText.textContent = 'Clipboard does not contain search recents JSON';
+    return;
+  }
+  if (!parsed || parsed.type !== 'markpad-search-recents' || !Array.isArray(parsed.queries)) {
+    statusText.textContent = 'Clipboard JSON is not search recents';
+    return;
+  }
+  searchRecentQueries = parsed.queries
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .filter((value, index, list) => list.findIndex(item => item.toLowerCase() === value.toLowerCase()) === index)
+    .slice(0, SEARCH_RECENTS_LIMIT);
+  localStorage.setItem(SEARCH_RECENTS_KEY, JSON.stringify(searchRecentQueries));
+  renderSearchRecents();
+  statusText.textContent = `${searchRecentQueries.length} search recent${searchRecentQueries.length === 1 ? '' : 's'} restored`;
 }
 
 function getSelectedSearchText() {
@@ -2273,6 +2300,10 @@ searchRecents?.addEventListener('click', (e) => {
   if (exportBtn) {
     exportSearchRecentsMarkdown();
   }
+  const restore = e.target.closest('[data-search-recents-restore]');
+  if (restore) {
+    restoreSearchRecentsFromClipboard();
+  }
 });
 $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
@@ -2703,6 +2734,7 @@ function commandItems() {
     { id: 'export-search-recents', icon: 'ESR', title: 'Export search recents', hint: 'Download locally stored search palette recents as Markdown', run: exportSearchRecentsMarkdown },
     { id: 'export-search-recents-json', icon: 'ESJ', title: 'Export search recents JSON', hint: 'Download locally stored search palette recents as JSON', run: exportSearchRecentsJson },
     { id: 'export-search-recents-csv', icon: 'ESV', title: 'Export search recents CSV', hint: 'Download locally stored search palette recents as CSV', run: exportSearchRecentsCsv },
+    { id: 'restore-search-recents-json', icon: 'RSJ', title: 'Restore search recents JSON', hint: 'Restore locally stored search palette recents from clipboard JSON', run: restoreSearchRecentsFromClipboard },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'clear-palette-recents', icon: 'CPR', title: 'Clear palette recents', hint: 'Remove locally stored search and command palette recents', run: clearPaletteRecents },
     { id: 'copy-command-recents', icon: 'CCR', title: 'Copy command recents', hint: 'Copy locally stored command palette recents as Markdown', run: copyCommandRecentsMarkdown },
