@@ -161,9 +161,6 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 			}
 			return nil
 		}
-		if len(hits) >= candidateLimit {
-			return filepath.SkipAll
-		}
 		kind := fileKind(path)
 		if isReadOnlyPath(path) || kind == "archive" {
 			return nil
@@ -175,19 +172,27 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 			hit, ok := searchLocalFile(root.Path, path, kind, plan)
 			if ok {
 				hits = append(hits, hit)
+				if len(hits) > candidateLimit {
+					sortLocalFolderSearchHits(hits)
+					hits = hits[:candidateLimit]
+				}
 			}
 		return nil
 	})
+	sortLocalFolderSearchHits(hits)
+	if len(hits) > limit {
+		return hits[:limit]
+	}
+	return hits
+}
+
+func sortLocalFolderSearchHits(hits []LocalFolderSearchHit) {
 	sort.SliceStable(hits, func(i, j int) bool {
 		if hits[i].Score == hits[j].Score {
 			return strings.ToLower(hits[i].RelPath) < strings.ToLower(hits[j].RelPath)
 		}
 		return hits[i].Score > hits[j].Score
 	})
-	if len(hits) > limit {
-		return hits[:limit]
-	}
-	return hits
 }
 
 func (a *App) CreateLocalFolderNote(title string) (SessionState, error) {
