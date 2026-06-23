@@ -292,6 +292,12 @@ async function applyWorkspacePreset(kind) {
     if (!compactMode) toggleCompactMode();
     clearAllUndoHistories();
     statusText.textContent = 'Low-memory workspace preset applied';
+    return;
+  }
+  if (kind === 'default') {
+    applyTheme('paper', true);
+    applyDefaultEditingPreset();
+    statusText.textContent = 'Default workspace preset applied';
   }
 }
 
@@ -2630,6 +2636,7 @@ function commandItems() {
     { id: 'workspace-canvas', icon: 'WC', title: 'Workspace preset: canvas planning', hint: 'Apply Sand canvas background and connector drawing defaults', run: () => applyWorkspacePreset('canvas') },
     { id: 'workspace-night', icon: 'WN', title: 'Workspace preset: night reading', hint: 'Apply Midnight, soft wrap, reading width, and preview view', run: () => applyWorkspacePreset('night') },
     { id: 'workspace-low-memory', icon: 'WM', title: 'Workspace preset: low memory', hint: 'Enable compact mode and release editor/canvas undo snapshots', run: () => applyWorkspacePreset('low-memory') },
+    { id: 'workspace-default', icon: 'WD', title: 'Workspace preset: default', hint: 'Return to Paper theme and the default editing layout', run: () => applyWorkspacePreset('default') },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
     { id: 'export-ui-state-summary', icon: 'EU', title: 'Export UI state Markdown', hint: 'Download current theme, layout, search, task, and canvas preferences as Markdown', run: exportUiStateSummary },
