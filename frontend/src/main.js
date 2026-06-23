@@ -2293,6 +2293,8 @@ function commandItems() {
     { id: 'copy-excalidraw-canvas', icon: 'CEX', title: 'Copy Excalidraw canvas JSON', hint: 'Copy current canvas as Excalidraw-compatible scene JSON', run: copyExcalidrawCanvasJson },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
     { id: 'copy-canvas-summary-md', icon: 'CCM', title: 'Copy canvas Markdown summary', hint: 'Copy a lightweight Markdown inventory of canvas elements', run: copyCanvasMarkdownSummary },
+    { id: 'canvas-elements-csv', icon: 'CCV', title: 'Export canvas elements CSV', hint: 'Download a compact CSV inventory of canvas elements', run: exportCanvasElementsCsv },
+    { id: 'copy-canvas-elements-csv', icon: 'CEV', title: 'Copy canvas elements CSV', hint: 'Copy a compact CSV inventory of canvas elements', run: copyCanvasElementsCsv },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -5808,6 +5810,30 @@ function canvasToMarkdownSummary(doc) {
   return lines.join('\n');
 }
 
+function canvasToCsv(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const rows = [
+    ['index', 'id', 'type', 'x', 'y', 'width', 'height', 'stroke', 'strokeWidth', 'text', 'points'],
+    ...source.elements.map((element, index) => {
+      const bounds = canvasElementBounds(element);
+      return [
+        index + 1,
+        element.id || '',
+        element.type || '',
+        Math.round(Number(bounds.x || 0)),
+        Math.round(Number(bounds.y || 0)),
+        Math.round(Number(bounds.w || 0)),
+        Math.round(Number(bounds.h || 0)),
+        element.stroke || '',
+        element.width || '',
+        element.text || '',
+        Array.isArray(element.points) ? element.points.length : '',
+      ];
+    }),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 function exportCanvasMarkdownSummary() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-summary.md', 'text/markdown', canvasToMarkdownSummary(canvasDoc));
@@ -5822,6 +5848,22 @@ async function copyCanvasMarkdownSummary() {
   }
   await navigator.clipboard.writeText(canvasToMarkdownSummary(canvasDoc));
   statusText.textContent = 'Canvas Markdown summary copied';
+}
+
+function exportCanvasElementsCsv() {
+  if (!canvasDoc) loadCanvasState();
+  downloadText('markpad-canvas-elements.csv', 'text/csv', canvasToCsv(canvasDoc));
+  statusText.textContent = 'Canvas elements exported as CSV';
+}
+
+async function copyCanvasElementsCsv() {
+  if (!canvasDoc) loadCanvasState();
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasToCsv(canvasDoc));
+  statusText.textContent = 'Canvas elements copied as CSV';
 }
 
 function obsidianElementBounds(element) {
