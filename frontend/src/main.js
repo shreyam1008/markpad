@@ -1756,6 +1756,7 @@ function commandItems() {
     { id: 'tasks-high-priority', icon: 'TH', title: 'High priority tasks', hint: 'Filter tasks with !high', run: () => showTasksForQuery('!high') },
     { id: 'tasks-waiting', icon: 'TW', title: 'Waiting tasks', hint: 'Filter tasks tagged with @waiting', run: () => showTasksForQuery('@waiting') },
     { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
+    { id: 'tasks-reset-filters', icon: 'TRF', title: 'Reset task filters', hint: 'Show all task sources, filters, and queries again', run: resetTaskViewFilters },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'add-task-today', icon: '+D', title: 'Add task due today', hint: 'Append a Markdown task tagged with today\\'s due date', run: () => addTaskTemplate(`due:${todayKey()}`) },
     { id: 'add-task-tomorrow', icon: '+M', title: 'Add task due tomorrow', hint: 'Append a Markdown task tagged with tomorrow\\'s due date', run: () => addTaskTemplate(`due:${tomorrowKey()}`) },
@@ -2886,6 +2887,16 @@ function showTasksForSource(source) {
 
 function showTasksForQuery(query) {
   taskQuery = String(query || '').trim();
+  return showTasksView(taskViewMode);
+}
+
+function resetTaskViewFilters() {
+  taskSourceFilter = 'all';
+  taskFilter = 'all';
+  taskQuery = '';
+  localStorage.setItem('markpad-task-source-filter', taskSourceFilter);
+  localStorage.setItem('markpad-task-filter', taskFilter);
+  localStorage.setItem('markpad-task-query', taskQuery);
   return showTasksView(taskViewMode);
 }
 
