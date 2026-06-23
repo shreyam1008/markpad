@@ -2525,6 +2525,15 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Fast switch</strong><span>Command palette</span><small>Cycle all themes or only light/dark groups</small></div>
       <div class="diag-card"><strong>Theme Lab</strong><span>Compare + export</span><small>Apply themes and copy a small local JSON catalog</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-theme-choice="paper">Paper</button>
+      <button data-theme-choice="linen">Linen</button>
+      <button data-theme-choice="mist">Mist</button>
+      <button data-theme-choice="ink">Ink</button>
+      <button data-theme-choice="pine">Pine</button>
+      <button data-theme-choice="midnight">Midnight</button>
+      <button data-theme-lab-open>Theme Lab</button>
+    </div>
     <p class="diag-note">Themes intentionally reuse the same DOM and text icons. This keeps memory and binary size stable while giving each workspace mode a distinct feel.</p>
   `);
 }
