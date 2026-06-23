@@ -174,6 +174,8 @@ const THEMES = [
   { id: 'ember', label: 'Ember' },
   { id: 'midnight', label: 'Midnight' },
 ];
+const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
+const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
 const SEARCH_RECENTS_LIMIT = 8;
@@ -225,6 +227,19 @@ function applyTheme(id, silent) {
 function cycleTheme() {
   const index = THEMES.findIndex(t => t.id === currentTheme);
   applyTheme(THEMES[(index + 1) % THEMES.length].id);
+}
+
+function cycleThemeGroup(ids) {
+  const index = ids.indexOf(currentTheme);
+  applyTheme(ids[(index + 1) % ids.length]);
+}
+
+function cycleLightTheme() {
+  cycleThemeGroup(LIGHT_THEMES);
+}
+
+function cycleDarkTheme() {
+  cycleThemeGroup(DARK_THEMES);
 }
 
 function loadSearchRecentQueries() {
@@ -1759,6 +1774,8 @@ function commandItems() {
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
+    { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
+    { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
