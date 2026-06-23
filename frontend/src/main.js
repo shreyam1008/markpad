@@ -1441,6 +1441,7 @@ function commandItems() {
     { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
+    { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
@@ -2696,6 +2697,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
       <button class="task-tab push" data-task-add>+ Task</button>
+      <button class="task-tab" data-task-export-md>Export MD</button>
       <button class="task-tab" data-task-export>Export ICS</button>
     </div>
     ${renderTaskControls(tasks, visibleTasks)}
@@ -2828,13 +2830,50 @@ function tasksToIcs(tasks) {
 }
 
 async function exportTasksIcs() {
-  const tasks = await collectLoadedTasks();
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
   if (!tasks.length) {
     statusText.textContent = 'No tasks to export';
     return;
   }
   downloadText('markpad-tasks.ics', 'text/calendar', tasksToIcs(tasks));
   statusText.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} exported as ICS`;
+}
+
+function taskMarkdownExportLine(task) {
+  const extras = [];
+  if (task.due) extras.push(`due:${task.due}`);
+  if (task.priority) extras.push(`!${task.priority}`);
+  if (task.waiting) extras.push('@waiting');
+  (task.tags || []).forEach(tag => extras.push(`#${tag}`));
+  const body = [String(task.text || '').trim(), ...extras].filter(Boolean).join(' ');
+  return `- [${task.checked ? 'x' : ' '}] ${body || 'Task'}`;
+}
+
+function tasksToMarkdown(tasks) {
+  const filterLabel = `${taskSourceFilter}/${taskFilter}${taskQuery ? `/${taskQuery}` : ''}`;
+  const lines = [
+    '# Markpad Tasks Export',
+    '',
+    `Exported: ${new Date().toLocaleString()}`,
+    `Filter: ${filterLabel}`,
+    `Count: ${tasks.length}`,
+    '',
+  ];
+  for (const task of tasks) {
+    lines.push(taskMarkdownExportLine(task));
+    lines.push(`  - Source: ${task.local ? 'Local' : 'Loaded'} · ${task.noteTitle || 'Untitled'} · ${task.path || 'Draft'}:${Number(task.line || 0) + 1}`);
+  }
+  return lines.join('\n') + '\n';
+}
+
+async function exportTasksMarkdown() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to export';
+    return;
+  }
+  downloadText('markpad-tasks.md', 'text/markdown', tasksToMarkdown(tasks));
+  statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} exported as Markdown`;
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -5254,6 +5293,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAdd = e.target.closest('[data-task-add]');
   if (taskAdd) await addQuickTask();
+  const taskExportMd = e.target.closest('[data-task-export-md]');
+  if (taskExportMd) await exportTasksMarkdown();
   const taskExport = e.target.closest('[data-task-export]');
   if (taskExport) await exportTasksIcs();
   const taskFilterBtn = e.target.closest('[data-task-filter]');
