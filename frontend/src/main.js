@@ -1788,6 +1788,7 @@ function commandItems() {
     { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
     { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
     { id: 'split-preview-wide', icon: '38', title: 'Split preview wide', hint: 'Give the preview more width in split view', run: () => setSplitPreset(38) },
+    { id: 'split-preview-focus', icon: '28', title: 'Split preview focus', hint: 'Use a narrow editor with a wide rendered preview', run: () => setSplitPreset(28) },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
     { id: 'preview', icon: 'P', title: 'Preview view', hint: 'Show preview/document only', run: () => setView('viewer') },
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
