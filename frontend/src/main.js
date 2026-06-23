@@ -3279,6 +3279,108 @@ async function exportRuntimeStatsCsv() {
   }
 }
 
+function lightweightAssetSnapshot() {
+  const images = [...document.images].map(img => ({
+    src: img.currentSrc || img.src || '',
+    width: img.naturalWidth || 0,
+    height: img.naturalHeight || 0,
+    loading: img.loading || '',
+  }));
+  return {
+    type: 'markpad-lightweight-assets',
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    strategy: {
+      icons: 'text glyphs and inline SVG',
+      themes: 'CSS variables',
+      imageThemes: false,
+      iconFonts: false,
+      runtimeThemeEngine: false,
+    },
+    counts: {
+      themes: THEMES.length,
+      lightThemes: LIGHT_THEMES.length,
+      darkThemes: DARK_THEMES.length,
+      domImages: images.length,
+      inlineSvg: document.querySelectorAll('svg').length,
+      canvasElements: document.querySelectorAll('canvas').length,
+      stylesheets: document.styleSheets.length,
+    },
+    images: images.slice(0, 20),
+    notes: [
+      'DOM image count reflects the current rendered view only.',
+      'Inline SVG count reflects visible toolbar/document icons in the current view.',
+      'Themes are built-in CSS-variable themes and do not load image packs.',
+    ],
+  };
+}
+
+function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
+  return [
+    '# Markpad Lightweight Asset Report',
+    '',
+    `- Generated: ${snapshot.generatedAt}`,
+    `- Themes: ${snapshot.counts.themes} (${snapshot.counts.lightThemes} light, ${snapshot.counts.darkThemes} dark)`,
+    `- DOM images: ${snapshot.counts.domImages}`,
+    `- Inline SVG elements: ${snapshot.counts.inlineSvg}`,
+    `- Canvas elements: ${snapshot.counts.canvasElements}`,
+    `- Stylesheets: ${snapshot.counts.stylesheets}`,
+    '',
+    '## Strategy',
+    '',
+    `- Icons: ${snapshot.strategy.icons}`,
+    `- Themes: ${snapshot.strategy.themes}`,
+    `- Icon fonts: ${snapshot.strategy.iconFonts ? 'yes' : 'no'}`,
+    `- Image theme packs: ${snapshot.strategy.imageThemes ? 'yes' : 'no'}`,
+    `- Runtime theme engine: ${snapshot.strategy.runtimeThemeEngine ? 'yes' : 'no'}`,
+    '',
+    '## Notes',
+    '',
+    ...snapshot.notes.map(note => `- ${note}`),
+  ].join('\n') + '\n';
+}
+
+async function copyLightweightAssetReportJson() {
+  await navigator.clipboard.writeText(JSON.stringify(lightweightAssetSnapshot(), null, 2) + '\n');
+  statusText.textContent = 'Lightweight asset report copied as JSON';
+}
+
+function exportLightweightAssetReportJson() {
+  downloadText('markpad-lightweight-assets.json', 'application/json', JSON.stringify(lightweightAssetSnapshot(), null, 2) + '\n');
+  statusText.textContent = 'Lightweight asset report exported as JSON';
+}
+
+async function copyLightweightAssetReportMarkdown() {
+  await navigator.clipboard.writeText(lightweightAssetMarkdown());
+  statusText.textContent = 'Lightweight asset report copied as Markdown';
+}
+
+function exportLightweightAssetReportMarkdown() {
+  downloadText('markpad-lightweight-assets.md', 'text/markdown', lightweightAssetMarkdown());
+  statusText.textContent = 'Lightweight asset report exported as Markdown';
+}
+
+function showLightweightAssetReport() {
+  const snapshot = lightweightAssetSnapshot();
+  showModal('Lightweight Assets', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${snapshot.counts.themes}</strong><span>CSS themes</span><small>${snapshot.counts.lightThemes} light · ${snapshot.counts.darkThemes} dark</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>Current rendered view only</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.inlineSvg}</strong><span>Inline SVG</span><small>Current toolbar/document DOM</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview, PDF, or drawing surfaces</small></div>
+      <div class="diag-card"><strong>no</strong><span>Icon fonts</span><small>Text glyphs and inline SVG instead</small></div>
+      <div class="diag-card"><strong>no</strong><span>Image theme packs</span><small>CSS variables only</small></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+      <button data-copy-asset-report-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+      <button data-export-asset-report-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+      <button data-copy-asset-report-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+      <button data-export-asset-report-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+    </div>
+    <p class="diag-note">This report is local and current-view only. It is meant to keep UI polish honest: avoid icon fonts, large raster assets, image theme packs, and heavy runtime theme engines.</p>
+  `);
+}
+
 async function showRuntimeStats() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -3433,6 +3535,11 @@ function commandItems() {
     { id: 'low-memory-guide', icon: 'LM', title: 'Low-memory guide', hint: 'Show runtime, footprint, undo cleanup, compact preset, and bounded canvas map notes', run: showLowMemoryGuide },
     { id: 'memory-cleanup-report', icon: 'MCR', title: 'Memory cleanup + footprint', hint: 'Apply low-memory preset, release undo snapshots, and open the local footprint report', run: runMemoryCleanupReport },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
+    { id: 'asset-report', icon: 'AS', title: 'Lightweight asset report', hint: 'Show current DOM image, inline SVG, canvas, and theme counts', run: showLightweightAssetReport },
+    { id: 'copy-asset-report-json', icon: 'ASJ', title: 'Copy asset report JSON', hint: 'Copy lightweight asset counts and strategy as JSON', run: copyLightweightAssetReportJson },
+    { id: 'export-asset-report-json', icon: 'AEJ', title: 'Export asset report JSON', hint: 'Download lightweight asset counts and strategy as JSON', run: exportLightweightAssetReportJson },
+    { id: 'copy-asset-report-md', icon: 'ASM', title: 'Copy asset report Markdown', hint: 'Copy lightweight asset counts and strategy as Markdown', run: copyLightweightAssetReportMarkdown },
+    { id: 'export-asset-report-md', icon: 'AEM', title: 'Export asset report Markdown', hint: 'Download lightweight asset counts and strategy as Markdown', run: exportLightweightAssetReportMarkdown },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'export-runtime-stats-text', icon: 'ERT', title: 'Export runtime stats text', hint: 'Download memory, binary size, goroutine, and uptime stats as plain text', run: exportRuntimeStatsText },
     { id: 'copy-runtime-stats-json', icon: 'CRJ', title: 'Copy runtime stats JSON', hint: 'Copy memory, binary size, goroutine, and uptime stats as JSON', run: copyRuntimeStatsJson },
@@ -3749,7 +3856,7 @@ function commandCategory(item) {
   if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('active-context') || id.includes('active-path') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-swap', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
-  if (id.includes('runtime') || id === 'footprint' || id === 'low-memory-guide' || id === 'memory-cleanup-report' || id.includes('undo-history')) return 'Diagnostics';
+  if (id.includes('runtime') || id.includes('asset-report') || id === 'footprint' || id === 'low-memory-guide' || id === 'memory-cleanup-report' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
 }
@@ -9991,6 +10098,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyRuntimeCsv) await copyRuntimeStatsCsv();
   const exportRuntimeCsv = e.target.closest('[data-export-runtime-csv]');
   if (exportRuntimeCsv) await exportRuntimeStatsCsv();
+  const copyAssetReportMd = e.target.closest('[data-copy-asset-report-md]');
+  if (copyAssetReportMd) await copyLightweightAssetReportMarkdown();
+  const exportAssetReportMd = e.target.closest('[data-export-asset-report-md]');
+  if (exportAssetReportMd) exportLightweightAssetReportMarkdown();
+  const copyAssetReportJson = e.target.closest('[data-copy-asset-report-json]');
+  if (copyAssetReportJson) await copyLightweightAssetReportJson();
+  const exportAssetReportJson = e.target.closest('[data-export-asset-report-json]');
+  if (exportAssetReportJson) exportLightweightAssetReportJson();
   const copyCanvasSummaryMd = e.target.closest('[data-copy-canvas-summary-md]');
   if (copyCanvasSummaryMd) await copyCanvasMarkdownSummary();
   const exportCanvasSummaryMd = e.target.closest('[data-export-canvas-summary-md]');
