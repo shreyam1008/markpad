@@ -2173,6 +2173,23 @@ function renderTaskBoard(tasks) {
   }).join('')}</div>`;
 }
 
+function taskCalendarState(key) {
+  if (key === 'No due date') return { className: 'none', label: 'Unscheduled' };
+  const today = todayKey();
+  if (key < today) return { className: 'overdue', label: 'Overdue' };
+  if (key === today) return { className: 'today', label: 'Today' };
+  return { className: 'upcoming', label: 'Upcoming' };
+}
+
+function renderTaskCalendarHeading(key, count) {
+  const state = taskCalendarState(key);
+  return `
+    <span>${escapeHtml(key)}</span>
+    <span class="task-day-state ${state.className}">${escapeHtml(state.label)}</span>
+    <small>${count}</small>
+  `;
+}
+
 function renderTaskCalendar(tasks) {
   const groups = new Map();
   for (const task of tasks) {
@@ -2186,7 +2203,11 @@ function renderTaskCalendar(tasks) {
     return a.localeCompare(b);
   });
   if (!keys.length) return '<div class="task-empty">No scheduled tasks found in loaded files.</div>';
-  return `<div class="task-calendar">${keys.map(key => `<section class="task-day"><h4>${escapeHtml(key)}</h4>${groups.get(key).map(task => renderTaskRow(task)).join('')}</section>`).join('')}</div>`;
+  return `<div class="task-calendar">${keys.map(key => {
+    const groupTasks = groups.get(key);
+    const state = taskCalendarState(key);
+    return `<section class="task-day ${state.className}"><h4>${renderTaskCalendarHeading(key, groupTasks.length)}</h4>${groupTasks.map(task => renderTaskRow(task)).join('')}</section>`;
+  }).join('')}</div>`;
 }
 
 async function showTasksView(mode = taskViewMode) {

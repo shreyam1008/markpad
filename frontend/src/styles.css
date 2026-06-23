@@ -727,7 +727,36 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 }
 .task-calendar { display: flex; flex-direction: column; gap: 10px; }
 .task-day { border: 1px solid var(--border-soft); border-radius: 14px; padding: 8px; background: var(--surface); }
-.task-day h4 { margin: 0 0 8px; font-size: 12px; font-weight: 850; color: var(--text); }
+.task-day.overdue { border-color: color-mix(in srgb, #c54b33 44%, var(--border-soft)); }
+.task-day.today { border-color: color-mix(in srgb, var(--accent) 46%, var(--border-soft)); }
+.task-day h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 850;
+  color: var(--text);
+}
+.task-day h4 small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+.task-day-state {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: var(--editor);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.task-day-state.overdue { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 9%, var(--surface)); }
+.task-day-state.today { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
 .task-empty { padding: 24px 10px; text-align: center; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 760px) {
