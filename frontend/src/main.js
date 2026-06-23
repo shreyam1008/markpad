@@ -1686,6 +1686,7 @@ function commandItems() {
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
+    { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
@@ -5875,6 +5876,18 @@ function toggleFind() {
   findOpen = !findOpen;
   findBar.classList.toggle('hidden', !findOpen);
   if (findOpen) { findInput.value = ''; findInput.focus(); findInfo.textContent = ''; }
+}
+
+function findSelectionInCurrentFile() {
+  const selected = getSelectedSearchText().replace(/\s+/g, ' ').trim();
+  if (!findOpen) toggleFind();
+  findInput.value = selected;
+  findInput.focus();
+  if (!selected) {
+    findInfo.textContent = 'Select text to find';
+    return;
+  }
+  doFind();
 }
 
 function doFind() {
