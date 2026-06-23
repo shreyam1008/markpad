@@ -3352,7 +3352,7 @@ function commandCategory(item) {
 function commandEmptyHtml(query) {
   const categories = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
   const chips = categories
-    .map(category => `<span class="command-empty-chip">${category}</span>`)
+    .map(category => `<button class="command-empty-chip" data-command-empty-category="${category}" type="button">${category}</button>`)
     .join('');
   const suffix = query ? ` for &quot;${escapeHtml(query)}&quot;` : '';
   return `<div class="command-empty"><strong>No command matched${suffix}.</strong><span>Try a command category:</span><div class="command-empty-cats">${chips}</div></div>`;
@@ -3429,6 +3429,12 @@ async function runCommand(item) {
 commandInput?.addEventListener('input', () => {
   commandActiveIndex = 0;
   renderCommandPalette();
+});
+
+commandResults?.addEventListener('click', (event) => {
+  const category = event.target.closest('[data-command-empty-category]');
+  if (!category) return;
+  openCommandPaletteQuery(category.dataset.commandEmptyCategory || '');
 });
 commandInput?.addEventListener('keydown', (e) => {
   const rows = [...commandResults.querySelectorAll('.command-row')];

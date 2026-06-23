@@ -227,6 +227,7 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .search-recents button:focus-visible,
 .search-head button:focus-visible,
 .command-head button:focus-visible,
+.command-empty-chip:focus-visible,
 .command-row:focus-visible,
 .task-filter:focus-visible,
 .task-search-row button:focus-visible,
@@ -808,6 +809,12 @@ body.markpad-compact #modal-body {
   font-weight: 850;
   letter-spacing: .06em;
   text-transform: uppercase;
+  cursor: pointer;
+}
+.command-empty-chip:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--editor));
+  color: var(--accent);
 }
 
 .search-row {
