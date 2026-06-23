@@ -11268,6 +11268,11 @@ modalBodyEl.addEventListener('keydown', async (e) => {
     await showTasksView(taskViewMode);
     return;
   }
+  if (e.target.closest('[data-current-file-search-input]')) {
+    e.preventDefault();
+    showCurrentFileSearch(String(e.target.value || '').trim());
+    return;
+  }
   if (e.target.closest('[data-local-folder-query]')) {
     e.preventDefault();
     await showLocalFolder(String(e.target.value || '').trim());
