@@ -251,6 +251,13 @@ function renderSearchRecents() {
   `;
 }
 
+function clearSearchRecents() {
+  searchRecentQueries = [];
+  localStorage.removeItem(SEARCH_RECENTS_KEY);
+  renderSearchRecents();
+  if (statusText) statusText.textContent = 'Search recents cleared';
+}
+
 searchRecentQueries = loadSearchRecentQueries();
 
 function applyFocusMode(silent) {
@@ -1296,9 +1303,7 @@ searchRecents?.addEventListener('click', (e) => {
   }
   const clear = e.target.closest('[data-search-recents-clear]');
   if (clear) {
-    searchRecentQueries = [];
-    localStorage.removeItem(SEARCH_RECENTS_KEY);
-    renderSearchRecents();
+    clearSearchRecents();
   }
 });
 $('search-close')?.addEventListener('click', closeSearchPalette);
@@ -1437,6 +1442,7 @@ function commandItems() {
     { id: 'search-markdown', icon: 'SM', title: 'Search Markdown files', hint: 'Open all-source search with type:md prefilled', run: () => openSearchPaletteQuery('all', 'type:md ') },
     { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
     { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
+    { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
