@@ -2306,6 +2306,20 @@ function showLayoutGuide() {
   `);
 }
 
+function showSplitWorkflowGuide() {
+  showModal('Split Workflow Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>50/50</strong><span>Balanced review</span><small>Equal editor and preview lanes</small></div>
+      <div class="diag-card"><strong>62/38</strong><span>Editor wide</span><small>More room for writing with live preview visible</small></div>
+      <div class="diag-card"><strong>72/28</strong><span>Editor focus</span><small>Minimal rendered preview while drafting</small></div>
+      <div class="diag-card"><strong>38/62</strong><span>Preview wide</span><small>Review rendered Markdown without leaving edit mode</small></div>
+      <div class="diag-card"><strong>Swap</strong><span>Flip current ratio</span><small>Switch editor/preview emphasis without dragging</small></div>
+      <div class="diag-card"><strong>Nudge</strong><span>5% steps</span><small>Fine tune from the command palette</small></div>
+    </div>
+    <p class="diag-note">Split ratio is local UI state. It is saved per machine, exported through UI state JSON, and never written into Markdown files.</p>
+  `);
+}
+
 function showThemeGuide() {
   showModal('Theme Guide', `
     <div class="diag-grid">
@@ -3862,6 +3876,7 @@ function commandItems() {
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'layout-guide', icon: 'LG', title: 'Layout guide', hint: 'Show editor, split, preview, reading width, focus, and low-memory layout notes', run: showLayoutGuide },
+    { id: 'split-workflow-guide', icon: 'SWG', title: 'Split workflow guide', hint: 'Show split presets, swap, nudges, and local split-state behavior', run: showSplitWorkflowGuide },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
     { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
@@ -3968,7 +3983,7 @@ function commandCategory(item) {
   if (id.includes('history')) return 'History';
   if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('active-context') || id.includes('active-path') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
-  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-swap', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
+  if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split-workflow-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-swap', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id.includes('asset-report') || id === 'footprint' || id === 'low-memory-guide' || id === 'memory-cleanup-report' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
