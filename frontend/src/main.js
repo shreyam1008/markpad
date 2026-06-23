@@ -301,6 +301,12 @@ async function applyWorkspacePreset(kind) {
   }
 }
 
+async function runMemoryCleanupReport() {
+  await applyWorkspacePreset('low-memory');
+  await showLocalFootprint();
+  statusText.textContent = 'Low-memory cleanup applied; footprint sampled';
+}
+
 function loadSearchRecentQueries() {
   try {
     const values = JSON.parse(localStorage.getItem(SEARCH_RECENTS_KEY) || '[]');
@@ -3270,6 +3276,7 @@ function commandItems() {
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'low-memory-guide', icon: 'LM', title: 'Low-memory guide', hint: 'Show runtime, footprint, undo cleanup, compact preset, and bounded canvas map notes', run: showLowMemoryGuide },
+    { id: 'memory-cleanup-report', icon: 'MCR', title: 'Memory cleanup + footprint', hint: 'Apply low-memory preset, release undo snapshots, and open the local footprint report', run: runMemoryCleanupReport },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'export-runtime-stats-text', icon: 'ERT', title: 'Export runtime stats text', hint: 'Download memory, binary size, goroutine, and uptime stats as plain text', run: exportRuntimeStatsText },
@@ -3582,7 +3589,7 @@ function commandCategory(item) {
   if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('active-context') || id.includes('active-path') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
-  if (id.includes('runtime') || id === 'footprint' || id === 'low-memory-guide' || id.includes('undo-history')) return 'Diagnostics';
+  if (id.includes('runtime') || id === 'footprint' || id === 'low-memory-guide' || id === 'memory-cleanup-report' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
 }
