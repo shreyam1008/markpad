@@ -1270,6 +1270,16 @@ function showHelpModal() {
   `);
 }
 
+function themeCommandItems() {
+  return THEMES.map(theme => ({
+    id: `theme-${theme.id}`,
+    icon: 'TH',
+    title: `Theme: ${theme.label}`,
+    hint: `Apply the ${theme.label} CSS-variable theme`,
+    run: () => applyTheme(theme.id),
+  }));
+}
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
@@ -1321,6 +1331,7 @@ function commandItems() {
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
+    ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },
