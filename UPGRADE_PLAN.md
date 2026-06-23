@@ -71,6 +71,7 @@ Vault/
 
 ## Phase 5: tasks
 
+- Current frontend slice: quick task capture appends to a loaded `Tasks.md`/`Tasks` draft or creates a plain Markdown Tasks draft.
 - Use standard Markdown task lines in a normal file by default.
 - Recognize:
 

@@ -789,6 +789,7 @@ function commandItems() {
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
+    { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -1169,10 +1170,64 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
+      <button class="task-tab push" data-task-add>+ Task</button>
     </div>
     <div class="task-summary">${tasks.length} task${tasks.length === 1 ? '' : 's'} from loaded files · ${openCount} open · Markdown stays the source of truth.</div>
     ${body}
   `, true);
+}
+
+function findTaskTargetNote() {
+  return cachedNotes.find(note => {
+    const title = String(note.title || '').trim().toLowerCase();
+    const name = basename(note.path || '').toLowerCase();
+    return title === 'tasks' || title === 'task list' || name === 'tasks.md' || name === 'tasks.markdown';
+  });
+}
+
+function formatTaskLine(raw) {
+  const text = String(raw || '').trim().replace(/\s+/g, ' ');
+  if (!text) return '';
+  if (/^[-+*]\s+\[[ xX]\]/.test(text) || /^\d+[.)]\s+\[[ xX]\]/.test(text)) return text;
+  return `- [ ] ${text}`;
+}
+
+function appendTaskToMarkdown(content, line) {
+  const body = String(content || '');
+  const prefix = body.trim() ? body.replace(/\s*$/, '\n') : '# Tasks\n\n';
+  return `${prefix}${line}\n`;
+}
+
+async function addQuickTask() {
+  const raw = window.prompt('New task. You can add due:YYYY-MM-DD, !high, @waiting, #tag');
+  const line = formatTaskLine(raw);
+  if (!line) return;
+  let target = findTaskTargetNote();
+  if (!target) {
+    renderSession(await window.go.main.App.NewNote());
+    target = cachedNotes.find(note => note.id === activeId);
+    const content = appendTaskToMarkdown('', line);
+    await window.go.main.App.UpdateContent(activeId, content, true);
+    loadContent(content);
+    renderSession(await window.go.main.App.GetSession());
+    setView('markdown');
+    statusText.textContent = 'Created Tasks draft';
+    await showTasksView(taskViewMode);
+    return;
+  }
+  const content = target.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(target.id);
+  const next = appendTaskToMarkdown(content, line);
+  await window.go.main.App.UpdateContent(target.id, next, true);
+  if (target.id === activeId) {
+    currentContent = next;
+    editor.value = next;
+    if (viewMode !== 'markdown') renderViewer(currentContent, cachedNotes.find(n => n.id === activeId));
+    updateStats();
+    updateOutline();
+  }
+  renderSession(await window.go.main.App.GetSession());
+  statusText.textContent = 'Task added to Tasks';
+  await showTasksView(taskViewMode);
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -2568,6 +2623,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const taskView = e.target.closest('[data-task-view]');
   if (taskView) await showTasksView(taskView.dataset.taskView);
+  const taskAdd = e.target.closest('[data-task-add]');
+  if (taskAdd) await addQuickTask();
   const taskToggle = e.target.closest('[data-task-toggle]');
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
   const taskOpen = e.target.closest('[data-task-open]');

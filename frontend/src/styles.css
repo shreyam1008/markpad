@@ -378,6 +378,7 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   background: var(--editor); color: var(--muted); font-size: 11px; font-weight: 850; cursor: pointer;
 }
 .task-tab.active, .task-tab:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.task-tab.push { margin-left: auto; border-color: var(--accent); color: var(--accent); }
 .task-summary { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
 .task-list { display: flex; flex-direction: column; gap: 7px; }
 .task-row {
