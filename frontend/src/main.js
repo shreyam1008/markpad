@@ -2230,6 +2230,8 @@ function commandItems() {
     { id: 'copy-tasks-json', icon: 'CJ', title: 'Copy visible tasks JSON', hint: 'Copy the current filtered task view as portable JSON', run: copyVisibleTasksJson },
     { id: 'export-tasks-csv', icon: 'TCV', title: 'Export visible tasks CSV', hint: 'Download the current filtered task view as CSV rows', run: exportTasksCsv },
     { id: 'copy-tasks-csv', icon: 'CCV', title: 'Copy visible tasks CSV', hint: 'Copy the current filtered task view as CSV rows', run: copyVisibleTasksCsv },
+    { id: 'export-tasks-todo', icon: 'TTX', title: 'Export visible tasks Todo.txt', hint: 'Download the current filtered task view as portable Todo.txt', run: exportTasksTodoTxt },
+    { id: 'copy-tasks-todo', icon: 'CTT', title: 'Copy visible tasks Todo.txt', hint: 'Copy the current filtered task view as portable Todo.txt', run: copyVisibleTasksTodoTxt },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -3859,6 +3861,8 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab" data-task-export-json>Export JSON</button>
         <button class="task-tab" data-task-copy-csv>Copy CSV</button>
         <button class="task-tab" data-task-export-csv>Export CSV</button>
+        <button class="task-tab" data-task-copy-todo>Copy Todo.txt</button>
+        <button class="task-tab" data-task-export-todo>Export Todo.txt</button>
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
@@ -4283,6 +4287,34 @@ async function copySingleTaskTodoTxt(taskId) {
   }
   await navigator.clipboard.writeText(`${taskToTodoTxtLine(task)}\n`);
   statusText.textContent = 'Task copied as Todo.txt';
+}
+
+function tasksToTodoTxt(tasks) {
+  return tasks.map(taskToTodoTxtLine).join('\n') + (tasks.length ? '\n' : '');
+}
+
+async function copyVisibleTasksTodoTxt() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToTodoTxt(tasks));
+  statusText.textContent = `Copied ${tasks.length} tasks as Todo.txt`;
+}
+
+async function exportTasksTodoTxt() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to export';
+    return;
+  }
+  downloadText('markpad-tasks.todo.txt', 'text/plain', tasksToTodoTxt(tasks));
+  statusText.textContent = `Exported ${tasks.length} tasks as Todo.txt`;
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -7417,6 +7449,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyCsv && !taskCopyCsv.dataset.taskCopyCsv) await copyVisibleTasksCsv();
   const taskExportCsv = e.target.closest('[data-task-export-csv]');
   if (taskExportCsv) await exportTasksCsv();
+  const taskCopyTodo = e.target.closest('[data-task-copy-todo]');
+  if (taskCopyTodo && !taskCopyTodo.dataset.taskCopyTodo) await copyVisibleTasksTodoTxt();
+  const taskExportTodo = e.target.closest('[data-task-export-todo]');
+  if (taskExportTodo) await exportTasksTodoTxt();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs && !taskCopyIcs.dataset.taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
