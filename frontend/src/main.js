@@ -1523,6 +1523,24 @@ function exportSearchResultsCsv() {
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as CSV`;
 }
 
+async function copySearchResultPaths() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search result paths to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const lines = searchLastResults.map((result) => {
+    const path = result.path || 'Draft';
+    const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : 0;
+    return line > 0 ? `${path}:${line}` : path;
+  });
+  await navigator.clipboard.writeText(lines.join('\n') + '\n');
+  statusText.textContent = `${lines.length} search result path${lines.length === 1 ? '' : 's'} copied`;
+}
+
 async function copySearchQuerySummary() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -1899,6 +1917,7 @@ function commandItems() {
     { id: 'export-search-results-json', icon: 'EJ', title: 'Export search results JSON', hint: 'Download the current search result list as portable JSON', run: exportSearchResultsJson },
     { id: 'copy-search-results-csv', icon: 'CCSV', title: 'Copy search results CSV', hint: 'Copy the current search result list as CSV rows', run: copySearchResultsCsv },
     { id: 'export-search-results-csv', icon: 'ECSV', title: 'Export search results CSV', hint: 'Download the current search result list as CSV rows', run: exportSearchResultsCsv },
+    { id: 'copy-search-result-paths', icon: 'CP', title: 'Copy search result paths', hint: 'Copy current search result paths and line numbers as plain text', run: copySearchResultPaths },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
