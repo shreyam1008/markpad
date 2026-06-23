@@ -361,6 +361,14 @@ function searchRecentsJson() {
   }, null, 2) + '\n';
 }
 
+function searchRecentsCsv() {
+  const rows = [
+    ['rank', 'query'],
+    ...currentSearchRecents().map((query, index) => [index + 1, query]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copySearchRecentsMarkdown() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -379,6 +387,15 @@ async function copySearchRecentsJson() {
   statusText.textContent = 'Search recents copied as JSON';
 }
 
+async function copySearchRecentsCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchRecentsCsv());
+  statusText.textContent = 'Search recents copied as CSV';
+}
+
 function exportSearchRecentsMarkdown() {
   downloadText('markpad-search-recents.md', 'text/markdown', searchRecentsMarkdown());
   statusText.textContent = 'Search recents exported as Markdown';
@@ -387,6 +404,11 @@ function exportSearchRecentsMarkdown() {
 function exportSearchRecentsJson() {
   downloadText('markpad-search-recents.json', 'application/json', searchRecentsJson());
   statusText.textContent = 'Search recents exported as JSON';
+}
+
+function exportSearchRecentsCsv() {
+  downloadText('markpad-search-recents.csv', 'text/csv', searchRecentsCsv());
+  statusText.textContent = 'Search recents exported as CSV';
 }
 
 function getSelectedSearchText() {
@@ -2568,8 +2590,10 @@ function commandItems() {
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'copy-search-recents', icon: 'CSR', title: 'Copy search recents', hint: 'Copy locally stored search palette recents as Markdown', run: copySearchRecentsMarkdown },
     { id: 'copy-search-recents-json', icon: 'CSJ', title: 'Copy search recents JSON', hint: 'Copy locally stored search palette recents as JSON', run: copySearchRecentsJson },
+    { id: 'copy-search-recents-csv', icon: 'CSV', title: 'Copy search recents CSV', hint: 'Copy locally stored search palette recents as CSV', run: copySearchRecentsCsv },
     { id: 'export-search-recents', icon: 'ESR', title: 'Export search recents', hint: 'Download locally stored search palette recents as Markdown', run: exportSearchRecentsMarkdown },
     { id: 'export-search-recents-json', icon: 'ESJ', title: 'Export search recents JSON', hint: 'Download locally stored search palette recents as JSON', run: exportSearchRecentsJson },
+    { id: 'export-search-recents-csv', icon: 'ESV', title: 'Export search recents CSV', hint: 'Download locally stored search palette recents as CSV', run: exportSearchRecentsCsv },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-command-recents', icon: 'CCR', title: 'Copy command recents', hint: 'Copy locally stored command palette recents as Markdown', run: copyCommandRecentsMarkdown },
     { id: 'copy-command-recents-json', icon: 'CCJ', title: 'Copy command recents JSON', hint: 'Copy locally stored command palette recents as JSON', run: copyCommandRecentsJson },
