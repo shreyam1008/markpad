@@ -550,6 +550,11 @@ async function copyUiStateSummary() {
   statusText.textContent = 'UI state copied as Markdown';
 }
 
+function exportUiStateSummary() {
+  downloadText('markpad-ui-state.md', 'text/markdown', uiStateSummaryMarkdown());
+  statusText.textContent = 'UI state exported as Markdown';
+}
+
 async function copyUiStateJson() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -2096,6 +2101,7 @@ function commandItems() {
     { id: 'default-editing-preset', icon: 'DE', title: 'Default editing preset', hint: 'Full chrome + plain editor + balanced split', run: applyDefaultEditingPreset },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
+    { id: 'export-ui-state-summary', icon: 'EU', title: 'Export UI state Markdown', hint: 'Download current theme, layout, search, task, and canvas preferences as Markdown', run: exportUiStateSummary },
     { id: 'copy-ui-state-json', icon: 'CUJ', title: 'Copy UI state JSON', hint: 'Copy current theme, layout, search, task, and canvas preferences as JSON', run: copyUiStateJson },
     { id: 'export-ui-state-json', icon: 'EUJ', title: 'Export UI state JSON', hint: 'Download current theme, layout, search, task, and canvas preferences as JSON', run: exportUiStateJson },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
