@@ -1860,6 +1860,20 @@ function setSearchScope(scope) {
   updateSearchScopeButtons();
 }
 
+function showSearchSyntaxHelp() {
+  showModal('Search Syntax', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>phrase</strong><span>"release notes"</span><small>Find exact words together</small></div>
+      <div class="diag-card"><strong>wildcard</strong><span>plan*</span><small>Prefix, suffix, or middle matching</small></div>
+      <div class="diag-card"><strong>exclude</strong><span>-archive -"old draft"</span><small>Hide noisy matches</small></div>
+      <div class="diag-card"><strong>type</strong><span>type:md type:canvas</span><small>Limit results by file kind</small></div>
+      <div class="diag-card"><strong>path/title</strong><span>path:work title:idea</span><small>Focus a folder or note name</small></div>
+      <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
+    </div>
+    <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, and wildcards.</p>
+  `);
+}
+
 $('search-filter-hints')?.addEventListener('click', (event) => {
   const btn = event.target.closest('[data-search-example]');
   if (!btn) return;
@@ -2974,6 +2988,7 @@ function commandItems() {
     { id: 'search-done-tasks', icon: 'SD', title: 'Search completed tasks', hint: 'Open all-source search with task:done prefilled', run: () => openSearchPaletteQuery('all', 'task:done ') },
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
     { id: 'search-clipboard-all', icon: 'SCB', title: 'Search clipboard everywhere', hint: 'Search loaded files and the local folder for clipboard text as an exact phrase', run: searchClipboardEverywhere },
+    { id: 'search-syntax-help', icon: 'SH', title: 'Search syntax help', hint: 'Show phrases, wildcards, exclusions, and filter examples', run: showSearchSyntaxHelp },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'copy-search-recents', icon: 'CSR', title: 'Copy search recents', hint: 'Copy locally stored search palette recents as Markdown', run: copySearchRecentsMarkdown },
     { id: 'copy-search-recents-json', icon: 'CSJ', title: 'Copy search recents JSON', hint: 'Copy locally stored search palette recents as JSON', run: copySearchRecentsJson },
