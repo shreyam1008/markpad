@@ -1302,6 +1302,68 @@ function showSearchSyntaxHelp() {
   `);
 }
 
+function formatRuntimeDuration(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours) return `${hours}h ${minutes}m`;
+  if (minutes) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}
+
+async function showRuntimeStats() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+
+  try {
+    const stats = await getter();
+    const rssAvailable = Boolean(stats.processRssAvailable);
+    const rss = rssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable on this OS';
+    const rows = [
+      ['Process RSS', rss],
+      ['Go heap alloc', formatBytes(Number(stats.goAllocBytes || 0))],
+      ['Go heap in use', formatBytes(Number(stats.goHeapInuseBytes || 0))],
+      ['Go heap idle', formatBytes(Number(stats.goHeapIdleBytes || 0))],
+      ['Go heap released', formatBytes(Number(stats.goHeapReleasedBytes || 0))],
+      ['Go runtime sys', formatBytes(Number(stats.goSysBytes || 0))],
+      ['Go objects', Number(stats.goObjects || 0).toLocaleString()],
+      ['Goroutines', Number(stats.goroutines || 0).toLocaleString()],
+      ['Uptime', formatRuntimeDuration(stats.uptimeSeconds)],
+      ['Platform', `${escapeHtml(stats.os || 'unknown')}/${escapeHtml(stats.arch || 'unknown')}`],
+    ];
+
+    showModal('Runtime Stats', `
+      <div style="display:grid;gap:12px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
+          <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Process RSS</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${escapeHtml(rss)}</div>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Go heap</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${formatBytes(Number(stats.goAllocBytes || 0))}</div>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Goroutines</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${Number(stats.goroutines || 0).toLocaleString()}</div>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
+          ${rows.map(([label, value]) => `<tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;color:var(--muted);font-weight:750;">${escapeHtml(label)}</td><td style="padding:5px 8px;text-align:right;font-weight:850;">${escapeHtml(value)}</td></tr>`).join('')}
+        </table>
+        <p style="margin:0;color:var(--muted);font-size:11px;line-height:1.55;">RSS is the resident memory reported by the OS for the Markpad process when available. Go heap is runtime memory inside the backend only, so it will be lower than total desktop app memory.</p>
+      </div>
+    `);
+    statusText.textContent = 'Runtime stats updated';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats failed: ' + err;
+  }
+}
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
@@ -1314,6 +1376,7 @@ function commandItems() {
     { id: 'search-all', icon: 'SA', title: 'Search all scope', hint: 'Open search across loaded files and the local folder', run: () => openSearchPaletteScope('all') },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
+    { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
