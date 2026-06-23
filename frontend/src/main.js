@@ -2343,6 +2343,10 @@ function commandItems() {
     { id: 'canvas-color-blue', icon: 'CBL', title: 'Canvas stroke blue', hint: 'Use a blue stroke for structure and links', run: () => setCanvasStrokePreset('#2563eb', 'blue') },
     { id: 'canvas-color-green', icon: 'CGR', title: 'Canvas stroke green', hint: 'Use a green stroke for done or positive states', run: () => setCanvasStrokePreset('#16a34a', 'green') },
     { id: 'canvas-color-amber', icon: 'CAM', title: 'Canvas stroke amber', hint: 'Use an amber stroke for warnings and active ideas', run: () => setCanvasStrokePreset('#d97706', 'amber') },
+    { id: 'canvas-width-fine', icon: 'W1', title: 'Canvas stroke fine', hint: 'Use a 1px stroke for details and connectors', run: () => setCanvasStrokeWidthPreset(1) },
+    { id: 'canvas-width-normal', icon: 'W3', title: 'Canvas stroke normal', hint: 'Use a 3px stroke for general drawing', run: () => setCanvasStrokeWidthPreset(3) },
+    { id: 'canvas-width-bold', icon: 'W6', title: 'Canvas stroke bold', hint: 'Use a 6px stroke for emphasis', run: () => setCanvasStrokeWidthPreset(6) },
+    { id: 'canvas-width-heavy', icon: 'W9', title: 'Canvas stroke heavy', hint: 'Use a 9px stroke for strong emphasis', run: () => setCanvasStrokeWidthPreset(9) },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-fit-selection', icon: 'FS', title: 'Fit selected canvas element', hint: 'Zoom and pan to the selected canvas element', run: () => { openCanvas(); fitCanvasToSelection(); } },
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
@@ -5227,6 +5231,16 @@ function setCanvasStrokePreset(value, label) {
   statusText.textContent = selected
     ? `Selected canvas stroke set to ${label}`
     : `Canvas stroke preset set to ${label}`;
+}
+
+function setCanvasStrokeWidthPreset(value) {
+  openCanvas();
+  if (canvasWidth) canvasWidth.value = String(value);
+  const selected = hasCanvasSelection();
+  if (selected) applySelectedCanvasStyle('width');
+  statusText.textContent = selected
+    ? `Selected canvas stroke set to ${value}px`
+    : `Canvas stroke width set to ${value}px`;
 }
 
 function updateCanvasOptionButtons() {
