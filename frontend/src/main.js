@@ -9624,6 +9624,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>tools</strong><span>Select, pan, pen, text, shape</span><small>Command palette or canvas toolbar</small></div>
       <div class="diag-card"><strong>infinite view</strong><span>Pan + zoom</span><small>Camera changes do not alter content</small></div>
       <div class="diag-card"><strong>grid</strong><span>12-48px snap</span><small>Stored as local UI preference</small></div>
+      <div class="diag-card"><strong>selected</strong><span>Inspect + style</span><small>Open selected inspector for geometry, exports, colors, width, duplicate, and fit</small></div>
       <div class="diag-card"><strong>snap selected</strong><span>Align existing items</span><small>Move selected element to the current grid</small></div>
       <div class="diag-card"><strong>starters</strong><span>Mind map, kanban, timeline</span><small>Insert lightweight JSON templates</small></div>
       <div class="diag-card"><strong>tasks</strong><span>Visible task board</span><small>Append filtered Markdown tasks as canvas cards</small></div>
