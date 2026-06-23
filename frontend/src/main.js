@@ -3679,6 +3679,7 @@ function commandItems() {
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
+    { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
@@ -5806,6 +5807,37 @@ function renderTaskList(tasks) {
   return `<div class="task-list">${tasks.map(task => renderTaskRow(task)).join('')}</div>`;
 }
 
+function renderTaskAgendaSection(title, tasks) {
+  const list = sortTasksForView(tasks).slice(0, 12);
+  return `
+    <section class="task-day">
+      <h4>${escapeHtml(title)} (${tasks.length})</h4>
+      ${list.length ? list.map(task => renderTaskRow(task, true)).join('') : '<div class="task-empty">No tasks in this bucket.</div>'}
+      ${tasks.length > list.length ? `<div class="task-summary">${tasks.length - list.length} more hidden to keep the agenda compact.</div>` : ''}
+    </section>`;
+}
+
+async function showTaskAgenda() {
+  const tasks = await collectLoadedTasks();
+  const sourceTasks = tasks.filter(taskSourceMatches);
+  const open = sourceTasks.filter(task => !task.checked);
+  const today = todayKey();
+  const overdue = open.filter(isTaskOverdue);
+  const dueToday = open.filter(task => task.due === today);
+  const waiting = open.filter(task => task.waiting);
+  const high = open.filter(isHighPriorityTask);
+  showModal('Task Agenda', `
+    <div class="task-summary">${open.length} open task${open.length === 1 ? '' : 's'} from ${escapeHtml(taskSourceFilter)} sources · Markdown stays the source of truth.</div>
+    <div class="task-calendar">
+      ${renderTaskAgendaSection('Overdue', overdue)}
+      ${renderTaskAgendaSection('Due today', dueToday)}
+      ${renderTaskAgendaSection('Waiting', waiting)}
+      ${renderTaskAgendaSection('High priority', high)}
+    </div>
+    <p class="diag-note">Agenda is a derived local view over Markdown checkbox lines. It does not create a task database or rewrite task files.</p>
+  `, true);
+}
+
 function taskPriorityBucket(task) {
   const priorityClass = taskPriorityClass(task);
   if (priorityClass === 'urgent' || priorityClass === 'high') return 'high';
@@ -5897,6 +5929,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
+      <button class="task-tab" data-task-agenda>Agenda</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
         <button class="task-tab" data-task-export-md>Export MD</button>
@@ -10463,6 +10496,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportThemeCatalogBtn) exportThemeCatalogJson();
   const taskView = e.target.closest('[data-task-view]');
   if (taskView) await showTasksView(taskView.dataset.taskView);
+  const taskAgenda = e.target.closest('[data-task-agenda]');
+  if (taskAgenda) await showTaskAgenda();
   const taskAdd = e.target.closest('[data-task-add]');
   if (taskAdd) await addQuickTask();
   const taskFormat = e.target.closest('[data-task-format]');
