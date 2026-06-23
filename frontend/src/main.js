@@ -1702,6 +1702,8 @@ function commandItems() {
     { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
     { id: 'copy-tasks-md', icon: 'CT', title: 'Copy visible tasks Markdown', hint: 'Copy the current filtered task view as Markdown text', run: copyVisibleTasksMarkdown },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
+    { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
+    { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
     { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
@@ -2071,6 +2073,56 @@ function renderFileTrashRows(items) {
   }).join('')}</div>`;
 }
 
+function markdownTableCell(value) {
+  return String(value || '').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+}
+
+function trashItemMarkdownRow(kind, item) {
+  const title = kind === 'File' ? (item.title || basename(item.originalPath) || 'File') : (item.title || 'Untitled');
+  const detail = kind === 'File'
+    ? `${item.originalPath || ''} ${formatBytes(item.size || 0)}`
+    : (item.content || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+  const deleted = item.deletedAt ? new Date(item.deletedAt).toLocaleString() : 'Unknown';
+  return `| ${kind} | ${markdownTableCell(title)} | ${markdownTableCell(deleted)} | ${markdownTableCell(trashExpiryDate(item.deletedAt))} | ${markdownTableCell(trashRetentionState(item.deletedAt).label)} | ${markdownTableCell(detail || '-')} |`;
+}
+
+function trashReportToMarkdown(draftItems, fileItems) {
+  const total = draftItems.length + fileItems.length;
+  const lines = [
+    '# Markpad Trash Report',
+    '',
+    `Generated: ${new Date().toLocaleString()}`,
+    `Retention: ${DRAFT_TRASH_DAYS} days`,
+    `Items: ${total} (${fileItems.length} saved file${fileItems.length === 1 ? '' : 's'}, ${draftItems.length} draft${draftItems.length === 1 ? '' : 's'})`,
+    '',
+  ];
+  if (!total) {
+    lines.push('Trash is empty.');
+    return `${lines.join('\n')}\n`;
+  }
+  lines.push('| Type | Title | Deleted | Expires | Retention | Detail |');
+  lines.push('| --- | --- | --- | --- | --- | --- |');
+  fileItems.forEach(item => lines.push(trashItemMarkdownRow('File', item)));
+  draftItems.forEach(item => lines.push(trashItemMarkdownRow('Draft', item)));
+  return `${lines.join('\n')}\n`;
+}
+
+async function copyTrashReportMarkdown() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  await navigator.clipboard.writeText(trashReportToMarkdown(draftItems, fileItems));
+  const total = draftItems.length + fileItems.length;
+  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as Markdown`;
+}
+
+async function exportTrashReportMarkdown() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  downloadText('markpad-trash-report.md', 'text/markdown', trashReportToMarkdown(draftItems, fileItems));
+  const total = draftItems.length + fileItems.length;
+  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as Markdown`;
+}
+
 async function emptyAllTrash() {
   saveDraftTrash([]);
   try {
@@ -2107,6 +2159,8 @@ async function showTrashView() {
   showModal('Trash', `
     <div class="trash-head">
       <span>${total} item${total === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
+      <button data-trash-copy-report ${total ? '' : 'disabled'}>Copy Report</button>
+      <button data-trash-export-report ${total ? '' : 'disabled'}>Export Report</button>
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
@@ -6118,6 +6172,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const trashCleanExpired = e.target.closest('[data-trash-clean-expired]');
   if (trashCleanExpired) await cleanupExpiredTrash();
+  const trashCopyReport = e.target.closest('[data-trash-copy-report]');
+  if (trashCopyReport && !trashCopyReport.disabled) await copyTrashReportMarkdown();
+  const trashExportReport = e.target.closest('[data-trash-export-report]');
+  if (trashExportReport && !trashExportReport.disabled) await exportTrashReportMarkdown();
   const trashEmpty = e.target.closest('[data-trash-empty]');
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
