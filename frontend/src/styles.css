@@ -547,6 +547,16 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   width: 31px; height: 29px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); padding: 2px;
 }
 #canvas-width { width: 72px; accent-color: var(--accent); }
+.canvas-status {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
 .canvas-close {
   width: 30px; height: 30px; border: none; border-radius: 9px; background: transparent;
   color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer;

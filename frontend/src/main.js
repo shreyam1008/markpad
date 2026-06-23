@@ -115,6 +115,7 @@ const canvasTextEditor = $('canvas-text-editor');
 const canvasColor  = $('canvas-color');
 const canvasWidth  = $('canvas-width');
 const canvasImportFile = $('canvas-import-file');
+const canvasStatus = $('canvas-status');
 
 const THEMES = [
   { id: 'paper', label: 'Paper' },
@@ -797,6 +798,7 @@ function commandItems() {
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
+    { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
@@ -1447,6 +1449,40 @@ function canvasElementBounds(el) {
   };
 }
 
+function updateCanvasStatus() {
+  if (!canvasStatus || !canvasSession) return;
+  const count = (canvasDoc?.elements || []).length;
+  const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
+  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%`;
+}
+
+function fitCanvasToContent() {
+  if (!canvasDoc || !canvasStage) return;
+  const elements = canvasDoc.elements || [];
+  if (!elements.length) {
+    canvasSession.camera = { x: 0, y: 0, scale: 1 };
+    saveCanvasState();
+    renderCanvas();
+    return;
+  }
+  const bounds = elements.map(canvasElementBounds);
+  const minX = Math.min(...bounds.map(b => b.x));
+  const minY = Math.min(...bounds.map(b => b.y));
+  const maxX = Math.max(...bounds.map(b => b.x + b.w));
+  const maxY = Math.max(...bounds.map(b => b.y + b.h));
+  const rect = canvasStage.getBoundingClientRect();
+  const contentW = Math.max(1, maxX - minX);
+  const contentH = Math.max(1, maxY - minY);
+  const scale = Math.max(0.12, Math.min(2.5, Math.min((rect.width - 96) / contentW, (rect.height - 96) / contentH)));
+  canvasSession.camera = {
+    x: rect.width / 2 - (minX + contentW / 2) * scale,
+    y: rect.height / 2 - (minY + contentH / 2) * scale,
+    scale,
+  };
+  saveCanvasState();
+  renderCanvas();
+}
+
 function canvasToSvg(doc) {
   const elements = doc?.elements || [];
   const bounds = elements.map(canvasElementBounds);
@@ -1639,6 +1675,7 @@ function arrowHeadPoints(x1, y1, x2, y2, size) {
 }
 
 function renderCanvas() {
+  updateCanvasStatus();
   if (!canvasStage || !canvasDoc || !canvasActive) return;
   const ctx = canvasStage.getContext('2d', { alpha: false });
   const rect = canvasStage.getBoundingClientRect();
@@ -1853,6 +1890,7 @@ $('canvas-reset-view')?.addEventListener('click', () => {
   saveCanvasState();
   renderCanvas();
 });
+$('canvas-fit')?.addEventListener('click', fitCanvasToContent);
 function exportCanvasJson() {
   const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
   downloadText('markpad-canvas-draft.json', 'application/json', json);
