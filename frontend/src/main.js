@@ -2170,6 +2170,165 @@ function showSearchPerformanceGuide() {
   `);
 }
 
+function currentFileSearchDefaultQuery() {
+  return getSelectedSearchText().replace(/\s+/g, ' ').trim()
+    || (findInput?.value || '').trim()
+    || (searchInput?.value || '').trim()
+    || (searchLastQuery || '').trim();
+}
+
+function currentFileSearchMatches(query, limit = 120) {
+  const text = String(currentContent || '');
+  const needle = String(query || '').trim();
+  if (!needle) return { matches: [], total: 0, truncated: false };
+  const haystack = text.toLowerCase();
+  const target = needle.toLowerCase();
+  const lineStarts = [0];
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '\n') lineStarts.push(i + 1);
+  }
+  const matches = [];
+  let total = 0;
+  let lineCursor = 0;
+  let index = haystack.indexOf(target);
+  while (index !== -1) {
+    total += 1;
+    if (matches.length < limit) {
+      while (lineCursor + 1 < lineStarts.length && lineStarts[lineCursor + 1] <= index) lineCursor += 1;
+      const lineStart = lineStarts[lineCursor];
+      const nextLineStart = lineStarts[lineCursor + 1] ?? text.length + 1;
+      const lineEnd = Math.max(lineStart, nextLineStart - 1);
+      const lineText = text.slice(lineStart, lineEnd).replace(/\r$/, '');
+      matches.push({
+        offset: index,
+        length: needle.length,
+        line: lineCursor + 1,
+        column: index - lineStart + 1,
+        text: lineText.length > 260 ? `${lineText.slice(0, 257)}...` : lineText,
+      });
+    }
+    index = haystack.indexOf(target, index + Math.max(1, target.length));
+  }
+  return { matches, total, truncated: total > matches.length };
+}
+
+function activeFileSearchTitle() {
+  const note = cachedNotes.find(item => item.id === activeId) || {};
+  return note.title || basename(note.path || '') || sessionTitleFromContent(currentContent) || 'Active file';
+}
+
+function currentFileSearchMarkdown(query) {
+  const pack = currentFileSearchMatches(query, 500);
+  const lines = [
+    '# Markpad Current File Search',
+    '',
+    `File: ${activeFileSearchTitle()}`,
+    `Query: ${query}`,
+    `Matches: ${pack.total}${pack.truncated ? ` (${pack.matches.length} listed)` : ''}`,
+    '',
+  ];
+  if (!pack.matches.length) {
+    lines.push('No matches.', '');
+    return lines.join('\n');
+  }
+  pack.matches.forEach(match => {
+    lines.push(`- L${match.line}:C${match.column} ${match.text.replace(/\s+/g, ' ').trim()}`);
+  });
+  lines.push('');
+  return lines.join('\n');
+}
+
+function currentFileSearchCsv(query) {
+  const pack = currentFileSearchMatches(query, 500);
+  const rows = [
+    ['file', 'query', 'line', 'column', 'offset', 'text'],
+    ...pack.matches.map(match => [activeFileSearchTitle(), query, match.line, match.column, match.offset, match.text]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function renderCurrentFileSearchRows(matches) {
+  if (!matches.length) return '<div class="local-empty">No matches in the active file.</div>';
+  return `<div class="local-list">${matches.map(match => `
+    <button class="local-row" data-current-file-search-jump="${match.offset}" data-current-file-search-length="${match.length}">
+      <strong>L${match.line}:C${match.column}</strong>
+      <span>${escapeHtml(match.text || '')}</span>
+    </button>
+  `).join('')}</div>`;
+}
+
+function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
+  if (!activeId) {
+    showModal('Current File Search', '<div class="local-empty">Open an editable file before searching the current file.</div>');
+    return;
+  }
+  const q = String(query || '').trim();
+  const pack = q ? currentFileSearchMatches(q) : { matches: [], total: 0, truncated: false };
+  showModal('Current File Search', `
+    <div class="task-search-row">
+      <input data-current-file-search-input value="${escapeHtml(q)}" placeholder="Find literal text in the active file..." />
+      <button data-current-file-search-apply>Search</button>
+      <button data-current-file-search-clear ${q ? '' : 'disabled'}>Clear</button>
+    </div>
+    <div class="local-summary">${q ? `${pack.total} match${pack.total === 1 ? '' : 'es'} in ${escapeHtml(activeFileSearchTitle())}${pack.truncated ? ` · first ${pack.matches.length} shown` : ''}` : `Search ${escapeHtml(activeFileSearchTitle())} without scanning other files.`}</div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-current-file-search-md ${q ? '' : 'disabled'}>Copy MD</button>
+      <button data-export-current-file-search-md ${q ? '' : 'disabled'}>Export MD</button>
+      <button data-export-current-file-search-csv ${q ? '' : 'disabled'}>Export CSV</button>
+    </div>
+    ${q ? renderCurrentFileSearchRows(pack.matches) : '<div class="local-empty">Enter text and press Search.</div>'}
+    <p class="diag-note">Current-file search reads the active editor buffer only. It is exact, case-insensitive, and does not allocate an index or touch the workspace.</p>
+  `, true);
+  requestAnimationFrame(() => modalBodyEl.querySelector('[data-current-file-search-input]')?.focus());
+}
+
+async function copyCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()) {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text to copy current-file search results';
+    return;
+  }
+  await navigator.clipboard.writeText(currentFileSearchMarkdown(q));
+  statusText.textContent = 'Current-file search copied as Markdown';
+}
+
+function exportCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()) {
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text to export current-file search results';
+    return;
+  }
+  downloadText('markpad-current-file-search.md', 'text/markdown', currentFileSearchMarkdown(q));
+  statusText.textContent = 'Current-file search exported as Markdown';
+}
+
+function exportCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text to export current-file search results';
+    return;
+  }
+  downloadText('markpad-current-file-search.csv', 'text/csv', currentFileSearchCsv(q));
+  statusText.textContent = 'Current-file search exported as CSV';
+}
+
+function jumpToCurrentFileSearchMatch(offset, length) {
+  const start = Math.max(0, Math.min(Number(offset || 0), currentContent.length));
+  const end = Math.max(start, Math.min(start + Math.max(1, Number(length || 1)), currentContent.length));
+  if (typeof closeModal === 'function') closeModal();
+  else modalOverlay?.classList.add('hidden');
+  editor.focus();
+  editor.setSelectionRange(start, end);
+  const before = currentContent.slice(0, start);
+  const line = before.split('\n').length - 1;
+  const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 18;
+  editor.scrollTop = Math.max(0, line * lineHeight - editor.clientHeight * 0.35);
+}
+
 function deleteLoadedSearchCache(id) {
   const existing = loadedSearchCache.get(id);
   if (!existing) return;
@@ -3707,6 +3866,8 @@ function commandItems() {
   { id: 'tasks-agenda-export', icon: 'TMD', title: 'Export task agenda as Markdown', hint: 'Download the current Markdown-derived agenda as a portable file', run: exportTaskAgendaMarkdown },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
+  { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
+  { id: 'export-current-file-search-md', icon: 'FSM', title: 'Export current-file search Markdown', hint: 'Download the current active-file search report as Markdown', run: () => exportCurrentFileSearchMarkdown() },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
@@ -10590,6 +10751,18 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (openLocalFootprintBtn) await showLocalFootprint();
   const clearLoadedSearchCacheBtn = e.target.closest('[data-clear-loaded-search-cache]');
   if (clearLoadedSearchCacheBtn) clearLoadedSearchCacheAction();
+  const currentFileSearchApply = e.target.closest('[data-current-file-search-apply]');
+  if (currentFileSearchApply) showCurrentFileSearch(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const currentFileSearchClear = e.target.closest('[data-current-file-search-clear]');
+  if (currentFileSearchClear && !currentFileSearchClear.disabled) showCurrentFileSearch('');
+  const copyCurrentFileSearchMdBtn = e.target.closest('[data-copy-current-file-search-md]');
+  if (copyCurrentFileSearchMdBtn && !copyCurrentFileSearchMdBtn.disabled) await copyCurrentFileSearchMarkdown(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const exportCurrentFileSearchMdBtn = e.target.closest('[data-export-current-file-search-md]');
+  if (exportCurrentFileSearchMdBtn && !exportCurrentFileSearchMdBtn.disabled) exportCurrentFileSearchMarkdown(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const exportCurrentFileSearchCsvBtn = e.target.closest('[data-export-current-file-search-csv]');
+  if (exportCurrentFileSearchCsvBtn && !exportCurrentFileSearchCsvBtn.disabled) exportCurrentFileSearchCsv(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const currentFileSearchJump = e.target.closest('[data-current-file-search-jump]');
+  if (currentFileSearchJump) jumpToCurrentFileSearchMatch(currentFileSearchJump.dataset.currentFileSearchJump, currentFileSearchJump.dataset.currentFileSearchLength);
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
