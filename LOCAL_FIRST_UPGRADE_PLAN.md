@@ -76,3 +76,15 @@ Next local-only candidates:
 - Backend streaming workspace search with cancellation and bounded worker count.
 - More canvas import/export compatibility tests around `.canvas` and `.excalidraw` JSON.
 - More refined empty states and command surfaces for first-run local folder setup.
+
+## 2026-06-24 export and control surface checkpoint
+
+Recent local-first refinements added:
+
+- Task Agenda export parity: Markdown, JSON, CSV, ICS, and Todo.txt.
+- Current-file search report parity: Markdown, JSON, CSV, plus canvas board snapshots.
+- Trash report discoverability: Markdown, JSON, CSV, retention audit, clean-expired, and empty-trash controls are surfaced from guide/view commands.
+- Low-memory controls: footprint, cleanup report, undo release, search-cache release, and low-memory preset are available from the guide surface.
+- Canvas guide actions: inventory, selected-element inspector, fit content, clear undo, and Excalidraw interchange are reachable without memorizing command names.
+
+These remain UI/control-surface changes over existing local state. They do not introduce cloud sync, bundled icon packs, heavyweight search engines, or a drawing runtime dependency.
