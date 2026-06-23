@@ -1362,6 +1362,22 @@ function showSearchSyntaxHelp() {
   `);
 }
 
+function showLocalSearchLimits() {
+  showModal('Local Search Limits', `
+    <div style="display:grid;gap:12px;font-size:12px;line-height:1.65;color:var(--text);">
+      <p style="margin:0;color:var(--muted);">Local folder search is intentionally bounded so Markpad stays responsive and light on RAM.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">Source</td><td style="padding:5px 8px;color:var(--muted);">Files are read directly from the configured local folder. No cloud service is contacted.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">Large files</td><td style="padding:5px 8px;color:var(--muted);">Very large files are skipped during scan to avoid loading heavy content into memory.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">Binary files</td><td style="padding:5px 8px;color:var(--muted);">Archives and read-only binary previews are excluded from text search.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">Vendor folders</td><td style="padding:5px 8px;color:var(--muted);">Hidden, cache, build, dist, vendor, node_modules, and VCS folders are skipped.</td></tr>
+        <tr><td style="padding:5px 8px;font-weight:800;">Ranking</td><td style="padding:5px 8px;color:var(--muted);">The scan keeps a bounded top-match pool, then sorts by score so late high-quality matches can still win.</td></tr>
+      </table>
+      <p style="margin:0;color:var(--muted);">The search footer reports scanned, searched, skipped, and capped counts when the backend provides diagnostics.</p>
+    </div>
+  `);
+}
+
 function formatRuntimeDuration(seconds) {
   const total = Math.max(0, Math.floor(Number(seconds) || 0));
   const hours = Math.floor(total / 3600);
@@ -1445,6 +1461,7 @@ function commandItems() {
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
+    { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
