@@ -1503,6 +1503,55 @@ function lineForIndex(content, index) {
   return line;
 }
 
+function escapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function wildcardAnchorTerm(value) {
+  return String(value || '')
+    .split('*')
+    .map(part => part.trim().toLowerCase())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)[0] || '';
+}
+
+function wildcardRegex(value) {
+  const pattern = String(value || '').toLowerCase();
+  if (!pattern.includes('*')) return null;
+  const body = pattern.split('*').map(escapeRegex).join('[^\\s]*');
+  try {
+    return new RegExp(body, 'i');
+  } catch (_) {
+    return null;
+  }
+}
+
+function wildcardMatch(text, value) {
+  const pattern = String(value || '').toLowerCase();
+  if (!pattern) return false;
+  if (!pattern.includes('*')) return String(text || '').toLowerCase().includes(pattern);
+  const re = wildcardRegex(pattern);
+  return re ? re.test(String(text || '')) : false;
+}
+
+function firstWildcardMatchIndex(text, values) {
+  const source = String(text || '');
+  for (const value of values || []) {
+    const pattern = String(value || '').toLowerCase();
+    if (!pattern) continue;
+    if (!pattern.includes('*')) {
+      const idx = source.toLowerCase().indexOf(pattern);
+      if (idx >= 0) return { index: idx, length: pattern.length };
+      continue;
+    }
+    const re = wildcardRegex(pattern);
+    if (!re) continue;
+    const match = re.exec(source);
+    if (match) return { index: match.index, length: match[0].length };
+  }
+  return { index: -1, length: 0 };
+}
+
 function parseSearchQuery(query) {
   const raw = String(query || '').trim();
   const parts = raw.match(/-?"[^"]+"|\S+/g) || [];
@@ -1512,6 +1561,8 @@ function parseSearchQuery(query) {
   const excludeTerms = [];
   const phrases = [];
   const excludePhrases = [];
+  const wildcards = [];
+  const excludeWildcards = [];
   parts.forEach((part) => {
     const negated = part.startsWith('-') && part.length > 1;
     const rawToken = negated ? part.slice(1) : part;
@@ -1532,6 +1583,15 @@ function parseSearchQuery(query) {
       if (value) targetFilters[key].push(value);
       return;
     }
+    if (token.includes('*') && wildcardAnchorTerm(token).length >= 2) {
+      const wildcard = token.toLowerCase();
+      if (negated) excludeWildcards.push(wildcard);
+      else {
+        wildcards.push(wildcard);
+        textParts.push(wildcardAnchorTerm(wildcard));
+      }
+      return;
+    }
     if (/^#[A-Za-z0-9_/-]+$/.test(token)) {
       targetFilters.tag.push(token.slice(1).toLowerCase());
       return;
@@ -1545,21 +1605,24 @@ function parseSearchQuery(query) {
   const text = textParts.join(' ').trim();
   const lower = text.toLowerCase();
   const hasFilters = Object.values(filters).some(values => values.length > 0);
-  const hasExcludes = excludeTerms.length > 0 || excludePhrases.length > 0 || Object.values(excludes).some(values => values.length > 0);
+  const hasExcludes = excludeTerms.length > 0 || excludePhrases.length > 0 || excludeWildcards.length > 0 || Object.values(excludes).some(values => values.length > 0);
   return {
     raw,
     text,
     lower,
     terms: lower.split(/\s+/).filter(Boolean).slice(0, 8),
     phrases: phrases.slice(0, 8),
+    wildcards: wildcards.slice(0, 6),
     filters,
     excludes,
     excludeTerms: excludeTerms.filter(Boolean).slice(0, 8),
     excludePhrases: excludePhrases.slice(0, 8),
+    excludeWildcards: excludeWildcards.slice(0, 6),
     backendQuery: [text, ...phrases.map(phrase => `"${phrase}"`)].filter(Boolean).join(' ').trim(),
     hasFilters,
     hasExcludes,
     hasPhrases: phrases.length > 0,
+    hasWildcards: wildcards.length > 0 || excludeWildcards.length > 0,
     needsContentFilter: filters.tag.length > 0 || filters.task.length > 0,
   };
 }
@@ -1571,6 +1634,7 @@ function searchCandidateMatchesPlan(note, content, plan) {
   const kind = String(getFileType(note.path, note.kind) || '').toLowerCase();
   const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
   const body = String(content || '').toLowerCase();
+  const haystack = `${title}\n${path}\n${body}`;
   const exclude = plan.excludes || { path: [], title: [], type: [], tag: [], task: [] };
   if (plan.filters.path.some(value => !path.includes(value))) return false;
   if (plan.filters.title.some(value => !title.includes(value))) return false;
@@ -1582,6 +1646,8 @@ function searchCandidateMatchesPlan(note, content, plan) {
   if (exclude.type.some(value => typeText.includes(value))) return false;
   if (exclude.tag.some(value => body.includes(`#${value}`))) return false;
   if (exclude.task.length && searchContentMatchesTaskFilters(content, exclude.task)) return false;
+  if ((plan.wildcards || []).some(value => !wildcardMatch(haystack, value))) return false;
+  if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return false;
   return true;
 }
 
@@ -1603,6 +1669,8 @@ function searchResultMatchesPlan(result, plan) {
   if (exclude.tag.some(value => haystack.includes(`#${value}`))) return false;
   if ((plan.excludeTerms || []).some(value => haystack.includes(value))) return false;
   if ((plan.excludePhrases || []).some(value => haystack.includes(value))) return false;
+  if ((plan.wildcards || []).some(value => !wildcardMatch(haystack, value))) return false;
+  if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return false;
   return true;
 }
 
@@ -1616,8 +1684,10 @@ function searchPlanMetaSuffix(query) {
   Object.entries(plan.excludes).forEach(([key, values]) => {
     values.forEach(value => excludeParts.push(`-${key}:${value}`));
   });
+  (plan.wildcards || []).forEach(value => includeParts.push(`wildcard:${value}`));
   (plan.excludeTerms || []).forEach(value => excludeParts.push(`-${value}`));
   (plan.excludePhrases || []).forEach(value => excludeParts.push(`-"${value}"`));
+  (plan.excludeWildcards || []).forEach(value => excludeParts.push(`-${value}`));
   const compact = (items) => items.length > 3 ? `${items.slice(0, 3).join(', ')} +${items.length - 3}` : items.join(', ');
   const parts = [];
   if (includeParts.length) parts.push(`including ${compact(includeParts)}`);
@@ -1653,13 +1723,16 @@ function scoreSearch(note, content, plan) {
   if (!searchCandidateMatchesPlan(note, body, plan)) return null;
   if ((plan.excludeTerms || []).some(term => haystack.includes(term))) return null;
   if ((plan.excludePhrases || []).some(phrase => haystack.includes(phrase))) return null;
+  if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
   if (phrases.length && !phrases.every(phrase => haystack.includes(phrase))) return null;
+  if ((plan.wildcards || []).length && !plan.wildcards.every(value => wildcardMatch(haystack, value))) return null;
 
   let score = 0;
   if (!query && !phrases.length) score = note.id === activeId ? 20 : 1;
   if (plan.hasFilters) score += 25;
   if (phrases.length) score += 28;
+  if ((plan.wildcards || []).length) score += 18;
   if (query && titleLower.includes(query)) score += 120;
   if (query && pathLower.includes(query)) score += 70;
   for (const phrase of phrases) {
@@ -1667,7 +1740,13 @@ function scoreSearch(note, content, plan) {
     if (pathLower.includes(phrase)) score += 48;
     if (bodyLower.includes(phrase)) score += 24;
   }
-  const match = firstMatchIndex(body, query, [...phrases, ...terms]);
+  for (const wildcard of plan.wildcards || []) {
+    if (wildcardMatch(titleLower, wildcard)) score += 38;
+    if (wildcardMatch(pathLower, wildcard)) score += 24;
+    if (wildcardMatch(bodyLower, wildcard)) score += 10;
+  }
+  let match = firstMatchIndex(body, query, [...phrases, ...terms]);
+  if (match.index < 0 && (plan.wildcards || []).length) match = firstWildcardMatchIndex(body, plan.wildcards);
   if (match.index >= 0) score += 40 + Math.max(0, 30 - Math.floor(match.index / 4000));
   for (const term of terms) {
     if (titleLower.includes(term)) score += 18;
@@ -1711,7 +1790,7 @@ async function runLoadedSearch(query) {
 
 async function collectLoadedSearchResults(query, token, limit) {
   const plan = parseSearchQuery(query);
-  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes) {
+  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes && !plan.hasWildcards) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
       if (token !== searchToken) return [];
@@ -1813,7 +1892,7 @@ async function collectLocalSearchResults(query, token, limit) {
       meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
     };
   }
-  const q = plan.hasExcludes ? plan.backendQuery : query.trim();
+  const q = (plan.hasExcludes || plan.hasWildcards) ? plan.backendQuery : query.trim();
   if (!q) {
     const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
     if (token !== searchToken) return { results: [] };
@@ -1877,6 +1956,7 @@ function searchHighlightTerms(query) {
   if (!plan.hasFilters && !plan.terms.length) {
     values.push(...String(query || '').toLowerCase().split(/\s+/));
   }
+  (plan.wildcards || []).forEach(value => values.push(wildcardAnchorTerm(value)));
   const seen = new Set();
   return values
     .map(value => String(value || '').replace(/^#/, '').trim().toLowerCase())
