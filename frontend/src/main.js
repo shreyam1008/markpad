@@ -38,6 +38,8 @@ let commandActiveIndex = 0;
 let searchScope = localStorage.getItem('markpad-search-scope') || 'loaded';
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
+let taskFilter = localStorage.getItem('markpad-task-filter') || 'all';
+let taskQuery = localStorage.getItem('markpad-task-query') || '';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
@@ -1488,8 +1490,117 @@ function taskStatus(task) {
   if (task.checked) return 'done';
   if (task.waiting) return 'waiting';
   if (!task.due) return 'today';
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayKey();
   return task.due <= today ? 'today' : 'upcoming';
+}
+
+function todayKey() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 10);
+}
+
+function isTaskDueNow(task) {
+  return !task.checked && !!task.due && task.due <= todayKey();
+}
+
+function isTaskOverdue(task) {
+  return !task.checked && !!task.due && task.due < todayKey();
+}
+
+function isHighPriorityTask(task) {
+  return !task.checked && ['high', 'urgent', 'now', 'p1'].includes(String(task.priority || '').toLowerCase());
+}
+
+function taskPriorityRank(task) {
+  const priority = String(task.priority || '').toLowerCase();
+  if (['urgent', 'now', 'p1'].includes(priority)) return 0;
+  if (priority === 'high') return 1;
+  if (['medium', 'normal', 'p2'].includes(priority)) return 2;
+  if (['low', 'p3'].includes(priority)) return 3;
+  return 4;
+}
+
+function taskFilterMatches(task) {
+  switch (taskFilter) {
+    case 'open': return !task.checked;
+    case 'due': return isTaskDueNow(task);
+    case 'overdue': return isTaskOverdue(task);
+    case 'waiting': return !task.checked && task.waiting;
+    case 'high': return isHighPriorityTask(task);
+    case 'done': return task.checked;
+    default: return true;
+  }
+}
+
+function taskQueryMatches(task) {
+  const terms = String(taskQuery || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const haystack = [
+    task.text, task.noteTitle, task.path, task.due, task.priority,
+    task.waiting ? 'waiting' : '', ...(task.tags || []),
+  ].join(' ').toLowerCase();
+  return terms.every(term => haystack.includes(term));
+}
+
+function sortTasksForView(tasks) {
+  return [...tasks].sort((a, b) => {
+    if (a.checked !== b.checked) return a.checked ? 1 : -1;
+    if (isTaskOverdue(a) !== isTaskOverdue(b)) return isTaskOverdue(a) ? -1 : 1;
+    const dueA = a.due || '9999-99-99';
+    const dueB = b.due || '9999-99-99';
+    if (dueA !== dueB) return dueA.localeCompare(dueB);
+    const prio = taskPriorityRank(a) - taskPriorityRank(b);
+    if (prio) return prio;
+    return String(a.noteTitle || '').localeCompare(String(b.noteTitle || '')) || a.line - b.line;
+  });
+}
+
+function visibleTasksForView(tasks) {
+  return sortTasksForView(tasks.filter(task => taskFilterMatches(task) && taskQueryMatches(task)));
+}
+
+function taskFilterCounts(tasks) {
+  return {
+    all: tasks.length,
+    open: tasks.filter(task => !task.checked).length,
+    due: tasks.filter(isTaskDueNow).length,
+    overdue: tasks.filter(isTaskOverdue).length,
+    waiting: tasks.filter(task => !task.checked && task.waiting).length,
+    high: tasks.filter(isHighPriorityTask).length,
+    done: tasks.filter(task => task.checked).length,
+  };
+}
+
+function renderTaskControls(tasks, visibleTasks) {
+  const counts = taskFilterCounts(tasks);
+  const filters = [
+    ['all', 'All'],
+    ['open', 'Open'],
+    ['due', 'Due now'],
+    ['overdue', 'Overdue'],
+    ['waiting', 'Waiting'],
+    ['high', 'High'],
+    ['done', 'Done'],
+  ];
+  const chips = filters.map(([id, label]) => `
+    <button class="task-filter${taskFilter === id ? ' active' : ''}" data-task-filter="${id}">
+      ${label} <span>${counts[id] || 0}</span>
+    </button>
+  `).join('');
+  const query = escapeHtml(taskQuery);
+  const filterLabel = (filters.find(([id]) => id === taskFilter) || filters[0])[1];
+  return `
+    <div class="task-controls">
+      <div class="task-filter-row">${chips}</div>
+      <div class="task-search-row">
+        <input data-task-search value="${query}" placeholder="Filter text, file, due date, tag, priority" />
+        <button data-task-search-apply>Apply</button>
+        <button data-task-search-clear ${taskQuery ? '' : 'disabled'}>Clear</button>
+      </div>
+      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} · ${tasks.length} total · ${counts.open} open · Markdown stays the source of truth.</div>
+    </div>
+  `;
 }
 
 function taskMeta(task) {
@@ -1552,10 +1663,10 @@ async function showTasksView(mode = taskViewMode) {
   taskViewMode = ['list', 'calendar', 'kanban'].includes(mode) ? mode : 'list';
   localStorage.setItem('markpad-task-view', taskViewMode);
   const tasks = await collectLoadedTasks();
-  const openCount = tasks.filter(task => !task.checked).length;
-  const body = taskViewMode === 'calendar' ? renderTaskCalendar(tasks)
-    : taskViewMode === 'kanban' ? renderTaskBoard(tasks)
-    : renderTaskList(tasks);
+  const visibleTasks = visibleTasksForView(tasks);
+  const body = taskViewMode === 'calendar' ? renderTaskCalendar(visibleTasks)
+    : taskViewMode === 'kanban' ? renderTaskBoard(visibleTasks)
+    : renderTaskList(visibleTasks);
   showModal('Tasks', `
     <div class="task-view-tabs">
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
@@ -1563,7 +1674,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
       <button class="task-tab push" data-task-add>+ Task</button>
     </div>
-    <div class="task-summary">${tasks.length} task${tasks.length === 1 ? '' : 's'} from loaded files · ${openCount} open · Markdown stays the source of truth.</div>
+    ${renderTaskControls(tasks, visibleTasks)}
     ${body}
   `, true);
 }
@@ -3357,6 +3468,25 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAdd = e.target.closest('[data-task-add]');
   if (taskAdd) await addQuickTask();
+  const taskFilterBtn = e.target.closest('[data-task-filter]');
+  if (taskFilterBtn) {
+    taskFilter = taskFilterBtn.dataset.taskFilter || 'all';
+    localStorage.setItem('markpad-task-filter', taskFilter);
+    await showTasksView(taskViewMode);
+  }
+  const taskSearchApply = e.target.closest('[data-task-search-apply]');
+  if (taskSearchApply) {
+    const input = modalBodyEl.querySelector('[data-task-search]');
+    taskQuery = String(input?.value || '').trim();
+    localStorage.setItem('markpad-task-query', taskQuery);
+    await showTasksView(taskViewMode);
+  }
+  const taskSearchClear = e.target.closest('[data-task-search-clear]');
+  if (taskSearchClear && !taskSearchClear.disabled) {
+    taskQuery = '';
+    localStorage.removeItem('markpad-task-query');
+    await showTasksView(taskViewMode);
+  }
   const taskToggle = e.target.closest('[data-task-toggle]');
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
   const taskOpen = e.target.closest('[data-task-open]');
@@ -3394,6 +3524,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localSearch && !localSearch.disabled) await searchLocalFolderPrompt();
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
+});
+
+modalBodyEl.addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter' || !e.target.closest('[data-task-search]')) return;
+  e.preventDefault();
+  taskQuery = String(e.target.value || '').trim();
+  localStorage.setItem('markpad-task-query', taskQuery);
+  await showTasksView(taskViewMode);
 });
 
 
