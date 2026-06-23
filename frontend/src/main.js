@@ -799,6 +799,7 @@ function commandItems() {
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
+    { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
@@ -1900,6 +1901,26 @@ function exportCanvasSvg() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
   statusText.textContent = 'Canvas SVG exported';
+}
+function loadCurrentDocumentIntoCanvas() {
+  const text = String(currentContent || '').trim();
+  if (!text) {
+    statusText.textContent = 'Current document is empty';
+    return;
+  }
+  try {
+    canvasDoc = normalizeCanvasDoc(JSON.parse(text));
+    canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+    canvasHistory = [];
+    canvasHistoryIndex = -1;
+    saveCanvasState();
+    rememberCanvasHistory(true);
+    openCanvas();
+    requestAnimationFrame(fitCanvasToContent);
+    statusText.textContent = 'Current document loaded into canvas';
+  } catch (err) {
+    statusText.textContent = 'Canvas load failed: ' + (err.message || err);
+  }
 }
 async function saveCanvasAsDraft() {
   finishCanvasTextEdit();
