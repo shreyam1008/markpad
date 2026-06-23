@@ -1687,6 +1687,10 @@ function commandItems() {
     { id: 'canvas-zoom-200', icon: 'Z2', title: 'Canvas zoom 200%', hint: 'Set the canvas view to a close 200% editing zoom', run: () => { openCanvas(); setCanvasZoomPreset(2); } },
     { id: 'canvas-zoom-in', icon: 'Z+', title: 'Canvas zoom in', hint: 'Step the canvas view in without changing content', run: () => { openCanvas(); stepCanvasZoom(1.25); } },
     { id: 'canvas-reset-view', icon: 'ZR', title: 'Canvas reset view', hint: 'Return the canvas camera to origin at 100%', run: () => { openCanvas(); resetCanvasView(); } },
+    { id: 'canvas-pan-up', icon: 'PU', title: 'Canvas pan up', hint: 'Move the canvas viewport up by one step', run: () => { openCanvas(); panCanvasView(0, 160); } },
+    { id: 'canvas-pan-down', icon: 'PD', title: 'Canvas pan down', hint: 'Move the canvas viewport down by one step', run: () => { openCanvas(); panCanvasView(0, -160); } },
+    { id: 'canvas-pan-left', icon: 'PL', title: 'Canvas pan left', hint: 'Move the canvas viewport left by one step', run: () => { openCanvas(); panCanvasView(160, 0); } },
+    { id: 'canvas-pan-right', icon: 'PR', title: 'Canvas pan right', hint: 'Move the canvas viewport right by one step', run: () => { openCanvas(); panCanvasView(-160, 0); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
@@ -3891,6 +3895,15 @@ function resetCanvasView() {
   camera.scale = 1;
   renderCanvas();
   statusText.textContent = 'Canvas view reset';
+}
+
+function panCanvasView(dx, dy) {
+  if (!canvasDoc) loadCanvasState();
+  const camera = canvasCamera();
+  camera.x += dx;
+  camera.y += dy;
+  renderCanvas();
+  statusText.textContent = 'Canvas view moved';
 }
 
 function renderCanvas() {
