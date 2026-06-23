@@ -1833,15 +1833,15 @@ function updateSearchScopeButtons() {
   });
   if (searchInput) {
     searchInput.placeholder = searchScope === 'local'
-      ? 'Search the configured local folder...'
+      ? 'Search the configured local folder with type:md plan* -archive...'
       : searchScope === 'all'
-        ? 'Search all, or filter loaded files with type:md tag:idea...'
-        : 'Search loaded files, or use type:md path:notes tag:idea task:open...';
+        ? 'Search all with type:md tag:idea plan* -"old draft"...'
+        : 'Search loaded files with type:md path:notes tag:idea task:open plan*...';
   }
   if (searchMeta) {
     searchMeta.textContent = searchScope === 'local'
-      ? 'Local folder search supports type:, path:, title:, tag:, and task: filters. Ctrl+1/2/3 switches scope.'
-      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Ctrl+1/2/3 switches scope.';
+      ? 'Local folder search supports phrases, wildcards, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
+      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Add phrases, wildcards like plan*, or exclusions like -archive.';
   }
 }
 
