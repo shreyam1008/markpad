@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"runtime"
 	"time"
 )
@@ -17,6 +18,7 @@ type RuntimeStats struct {
 	Goroutines          int    `json:"goroutines"`
 	ProcessRSSBytes     uint64 `json:"processRssBytes"`
 	ProcessRSSAvailable bool   `json:"processRssAvailable"`
+	ExecutableSizeBytes uint64 `json:"executableSizeBytes"`
 	UptimeSeconds       int64  `json:"uptimeSeconds"`
 	OS                  string `json:"os"`
 	Arch                string `json:"arch"`
@@ -26,6 +28,7 @@ func (a *App) GetRuntimeStats() RuntimeStats {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	rss, rssAvailable := processRSSBytes()
+	executableSize := executableSizeBytes()
 
 	return RuntimeStats{
 		GoAllocBytes:        mem.Alloc,
@@ -37,8 +40,21 @@ func (a *App) GetRuntimeStats() RuntimeStats {
 		Goroutines:          runtime.NumGoroutine(),
 		ProcessRSSBytes:     rss,
 		ProcessRSSAvailable: rssAvailable,
+		ExecutableSizeBytes: executableSize,
 		UptimeSeconds:       int64(time.Since(runtimeStatsStartedAt).Seconds()),
 		OS:                  runtime.GOOS,
 		Arch:                runtime.GOARCH,
 	}
+}
+
+func executableSizeBytes() uint64 {
+	path, err := os.Executable()
+	if err != nil {
+		return 0
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return 0
+	}
+	return uint64(info.Size())
 }

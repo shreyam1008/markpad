@@ -1330,6 +1330,7 @@ async function showRuntimeStats() {
       ['Go heap idle', formatBytes(Number(stats.goHeapIdleBytes || 0))],
       ['Go heap released', formatBytes(Number(stats.goHeapReleasedBytes || 0))],
       ['Go runtime sys', formatBytes(Number(stats.goSysBytes || 0))],
+      ['Executable size', stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'],
       ['Go objects', Number(stats.goObjects || 0).toLocaleString()],
       ['Goroutines', Number(stats.goroutines || 0).toLocaleString()],
       ['Uptime', formatRuntimeDuration(stats.uptimeSeconds)],
@@ -1350,6 +1351,10 @@ async function showRuntimeStats() {
           <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
             <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Goroutines</div>
             <div style="font-size:20px;font-weight:900;color:var(--text);">${Number(stats.goroutines || 0).toLocaleString()}</div>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Executable</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'n/a'}</div>
           </div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
