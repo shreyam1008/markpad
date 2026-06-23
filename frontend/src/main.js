@@ -4313,7 +4313,12 @@ document.querySelectorAll('[data-section-toggle]').forEach(btn => {
 
 // ── Editor ───────────────────────────────────────────────
 editor.addEventListener('scroll', queueReadPositionSave);
-editor.addEventListener('keyup', queueReadPositionSave);
+editor.addEventListener('keyup', () => {
+  queueReadPositionSave();
+  updateStats();
+});
+editor.addEventListener('click', updateStats);
+editor.addEventListener('select', updateStats);
 viewerCont.addEventListener('scroll', queueReadPositionSave);
 window.addEventListener('beforeunload', saveScrollPos);
 
@@ -4458,6 +4463,15 @@ editor.addEventListener('keydown', (e) => {
   }
 });
 
+function editorCursorPosition() {
+  const pos = Math.max(0, Math.min(editor.selectionStart || 0, editor.value.length));
+  const before = editor.value.slice(0, pos);
+  const lastBreak = before.lastIndexOf('\n');
+  const line = before ? before.split('\n').length : 1;
+  const col = pos - lastBreak;
+  return { line, col };
+}
+
 function updateStats() {
   const active = cachedNotes.find(n => n.id === activeId);
   const type = getFileType(active?.path, active?.kind);
@@ -4471,7 +4485,8 @@ function updateStats() {
   const readMin = Math.max(1, Math.ceil(words / 200));
   const ext = active?.path ? fileExt(active.path) : '';
   const lang = ext ? ext.toUpperCase() : typeLabel(type);
-  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 ~${readMin} min \u00b7 UTF-8`;
+  const cursor = editorCursorPosition();
+  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 Ln ${cursor.line}, Col ${cursor.col} \u00b7 ~${readMin} min \u00b7 UTF-8`;
 }
 
 // ── Save animation ───────────────────────────────────────
