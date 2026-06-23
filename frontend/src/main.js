@@ -405,6 +405,25 @@ function applyDefaultEditingPreset() {
   statusText.textContent = 'Default editing preset applied';
 }
 
+function showUiStateSummary() {
+  const theme = THEMES.find(item => item.id === currentTheme)?.label || currentTheme;
+  const canvasZoom = canvasSession?.camera?.scale ? `${Math.round(canvasSession.camera.scale * 100)}%` : '100%';
+  const canvasBg = canvasDoc?.appState?.viewBackgroundColor || '#ffffff';
+  showModal('UI State', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${escapeHtml(theme)}</strong><span>Theme</span><small>${escapeHtml(currentTheme)}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(viewMode)}</strong><span>View</span><small>${Math.round(splitRatio)}/${Math.round(100 - splitRatio)} split</small></div>
+      <div class="diag-card"><strong>${focusMode ? 'On' : 'Off'} / ${compactMode ? 'On' : 'Off'}</strong><span>Focus / Compact</span><small>local UI chrome</small></div>
+      <div class="diag-card"><strong>${editorSoftWrap ? 'Wrap' : 'No wrap'}</strong><span>Editor</span><small>${editorReadingWidth ? 'reading width' : 'full width'} · ${Math.round(fontSize / ZOOM_DEFAULT * 100)}% zoom</small></div>
+      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search scope</span><small>loaded / local / all</small></div>
+      <div class="diag-card"><strong>${escapeHtml(taskViewMode)}</strong><span>Tasks</span><small>${escapeHtml(taskSourceFilter)} · ${escapeHtml(taskFilter)}${taskQuery ? ` · ${escapeHtml(taskQuery)}` : ''}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(canvasTool)}</strong><span>Canvas tool</span><small>${canvasZoom} · grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'} · snap ${canvasSnapToGrid ? 'on' : 'off'}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(canvasBg)}</strong><span>Canvas background</span><small>stored with canvas exports</small></div>
+    </div>
+    <p class="diag-note">All values are local-only UI preferences or active in-memory canvas settings. No workspace scan is performed.</p>
+  `);
+}
+
 function normalizeSplitRatio(value) {
   return Math.max(28, Math.min(72, Number.isFinite(value) ? value : 50));
 }
@@ -1788,6 +1807,7 @@ function commandItems() {
     { id: 'writing-focus-preset', icon: 'WF', title: 'Writing focus preset', hint: 'Focus + compact + soft wrap + reading width + editor-wide split', run: applyWritingFocusPreset },
     { id: 'review-split-preset', icon: 'RV', title: 'Review split preset', hint: 'Balanced split with soft wrap and full review chrome', run: applyReviewSplitPreset },
     { id: 'default-editing-preset', icon: 'DE', title: 'Default editing preset', hint: 'Full chrome + plain editor + balanced split', run: applyDefaultEditingPreset },
+    { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
