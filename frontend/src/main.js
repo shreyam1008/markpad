@@ -1331,7 +1331,25 @@ function sessionTitleFromContent(content) {
 
 function daysLeft(deletedAt) {
   const expires = new Date(deletedAt).getTime() + DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
+  if (!Number.isFinite(expires)) return 0;
   return Math.max(0, Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000)));
+}
+
+function trashExpiryDate(deletedAt) {
+  const expires = new Date(deletedAt).getTime() + DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
+  return Number.isFinite(expires) ? new Date(expires).toLocaleDateString() : 'Unknown';
+}
+
+function trashRetentionState(deletedAt) {
+  const days = daysLeft(deletedAt);
+  if (days <= 1) return { className: 'urgent', label: 'Expires today' };
+  if (days <= 3) return { className: 'soon', label: `${days} days left` };
+  return { className: 'safe', label: `${days} days left` };
+}
+
+function trashRetentionBadge(deletedAt) {
+  const state = trashRetentionState(deletedAt);
+  return `<span class="trash-retention ${state.className}">${escapeHtml(state.label)}</span>`;
 }
 
 async function deleteDraftWithTrash(note) {
@@ -1369,18 +1387,21 @@ async function emptyDraftTrash() {
 
 function renderTrashRows(items) {
   if (!items.length) return '<div class="trash-empty">Trash is empty. Deleted drafts stay here for 30 days.</div>';
-  return `<div class="trash-list">${items.map(item => `
-    <div class="trash-row">
+  return `<div class="trash-list">${items.map(item => {
+    const state = trashRetentionState(item.deletedAt);
+    return `
+    <div class="trash-row ${state.className}">
       <div class="trash-body">
-        <strong>${escapeHtml(item.title || 'Untitled')}</strong>
-        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · ${daysLeft(item.deletedAt)} day${daysLeft(item.deletedAt) === 1 ? '' : 's'} left</span>
+        <div class="trash-title-line"><strong>${escapeHtml(item.title || 'Untitled')}</strong>${trashRetentionBadge(item.deletedAt)}</div>
+        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · expires ${escapeHtml(trashExpiryDate(item.deletedAt))}</span>
         <p>${escapeHtml((item.content || '').replace(/\s+/g, ' ').trim().slice(0, 180) || 'Empty draft')}</p>
       </div>
       <div class="trash-actions">
         <button data-trash-restore="${escapeHtml(item.id)}">Restore</button>
         <button data-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`;
+  }).join('')}</div>`;
 }
 
 async function loadFileTrash() {
@@ -1392,18 +1413,21 @@ async function loadFileTrash() {
 
 function renderFileTrashRows(items) {
   if (!items.length) return '<div class="trash-empty">No saved files in Trash.</div>';
-  return `<div class="trash-list">${items.map(item => `
-    <div class="trash-row">
+  return `<div class="trash-list">${items.map(item => {
+    const state = trashRetentionState(item.deletedAt);
+    return `
+    <div class="trash-row ${state.className}">
       <div class="trash-body">
-        <strong>${escapeHtml(item.title || basename(item.originalPath) || 'File')}</strong>
-        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · ${daysLeft(item.deletedAt)} day${daysLeft(item.deletedAt) === 1 ? '' : 's'} left · ${escapeHtml(typeLabel(getFileType(item.originalPath, item.kind)))}</span>
+        <div class="trash-title-line"><strong>${escapeHtml(item.title || basename(item.originalPath) || 'File')}</strong>${trashRetentionBadge(item.deletedAt)}</div>
+        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · expires ${escapeHtml(trashExpiryDate(item.deletedAt))} · ${escapeHtml(typeLabel(getFileType(item.originalPath, item.kind)))}</span>
         <p>${escapeHtml(item.originalPath || '')} · ${formatBytes(item.size || 0)}</p>
       </div>
       <div class="trash-actions">
         <button data-file-trash-restore="${escapeHtml(item.id)}">Restore</button>
         <button data-file-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`;
+  }).join('')}</div>`;
 }
 
 async function emptyAllTrash() {
