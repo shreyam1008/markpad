@@ -2552,6 +2552,65 @@ function moveCanvasElement(el, dx, dy) {
   return next;
 }
 
+function hasCanvasSelection() {
+  return !!canvasDoc && canvasSelectedIndex >= 0 && canvasSelectedIndex < canvasDoc.elements.length;
+}
+
+function deleteSelectedCanvasElement() {
+  if (!hasCanvasSelection()) return false;
+  canvasDoc.elements.splice(canvasSelectedIndex, 1);
+  canvasSelectedIndex = -1;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = 'Canvas element deleted';
+  return true;
+}
+
+function duplicateSelectedCanvasElement() {
+  if (!hasCanvasSelection()) return false;
+  const copy = moveCanvasElement(canvasDoc.elements[canvasSelectedIndex], 24, 24);
+  copy.id = canvasId();
+  canvasDoc.elements.push(copy);
+  canvasSelectedIndex = canvasDoc.elements.length - 1;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = 'Canvas element duplicated';
+  return true;
+}
+
+function nudgeSelectedCanvasElement(dx, dy) {
+  if (!hasCanvasSelection()) return false;
+  canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(canvasDoc.elements[canvasSelectedIndex], dx, dy);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  return true;
+}
+
+function handleCanvasSelectionShortcut(e) {
+  if (!canvasActive || !hasCanvasSelection()) return false;
+  if (canvasTextEditor && !canvasTextEditor.classList.contains('hidden')) return false;
+  if (commandOpen || searchOpen || !modalOverlay.classList.contains('hidden')) return false;
+  if (document.activeElement === commandInput || document.activeElement === searchInput || document.activeElement === findInput) return false;
+  const key = e.key;
+  if (key === 'Delete' || key === 'Backspace') {
+    e.preventDefault();
+    return deleteSelectedCanvasElement();
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key.toLowerCase() === 'd') {
+    e.preventDefault();
+    return duplicateSelectedCanvasElement();
+  }
+  const step = e.shiftKey ? 10 : 1;
+  if (key === 'ArrowLeft') { e.preventDefault(); return nudgeSelectedCanvasElement(-step, 0); }
+  if (key === 'ArrowRight') { e.preventDefault(); return nudgeSelectedCanvasElement(step, 0); }
+  if (key === 'ArrowUp') { e.preventDefault(); return nudgeSelectedCanvasElement(0, -step); }
+  if (key === 'ArrowDown') { e.preventDefault(); return nudgeSelectedCanvasElement(0, step); }
+  return false;
+}
+
 function startCanvasTextEdit(point, existingIndex = -1) {
   const camera = canvasCamera();
   canvasTextTarget = existingIndex >= 0 ? existingIndex : null;
@@ -3668,6 +3727,7 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key.toLowerCase() === 'p') { e.preventDefault(); openCommandPalette(); }
   else if (canvasActive && ctrl && !shift && key.toLowerCase() === 'z') { e.preventDefault(); undoCanvas(); }
   else if (canvasActive && ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z'))) { e.preventDefault(); redoCanvas(); }
+  else if (canvasActive && handleCanvasSelectionShortcut(e)) {}
   else if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
   else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
   else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
