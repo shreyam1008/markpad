@@ -5802,15 +5802,30 @@ function renderCanvasInventoryRows(doc) {
         ? `${(element.points || []).length} point${(element.points || []).length === 1 ? '' : 's'}`
         : `${Math.round(Number(bounds.w || 0))}x${Math.round(Number(bounds.h || 0))}`;
     return `
-    <div class="local-row" style="cursor:default;">
+    <button class="local-row" data-canvas-inventory-select="${index}" type="button">
       <span class="local-badge">${escapeHtml(String(index + 1))}</span>
       <span class="local-body">
         <strong>${escapeHtml(element.type || 'element')} ${escapeHtml(element.id || '')}</strong>
         <span>x:${Math.round(Number(bounds.x || 0))} · y:${Math.round(Number(bounds.y || 0))} · w:${Math.round(Number(bounds.w || 0))} · h:${Math.round(Number(bounds.h || 0))} · ${escapeHtml(element.stroke || '#1f2937')}</span>
         <small>${escapeHtml(label || 'No label')}</small>
       </span>
-    </div>`;
+    </button>`;
   }).join('')}</div>`;
+}
+
+function selectCanvasInventoryElement(index) {
+  if (!canvasDoc) loadCanvasState();
+  if (!Number.isInteger(index) || index < 0 || index >= canvasDoc.elements.length) {
+    statusText.textContent = 'Canvas inventory selection unavailable';
+    return;
+  }
+  modalOverlay.classList.add('hidden');
+  openCanvas();
+  canvasSelectedIndex = index;
+  syncCanvasControlsFromSelection();
+  renderCanvas();
+  requestAnimationFrame(fitCanvasToSelection);
+  statusText.textContent = 'Canvas inventory element selected';
 }
 
 function showCanvasInventory() {
@@ -7266,6 +7281,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasInventoryJsonBtn) await copyCanvasInventoryJson();
   const exportCanvasInventoryJsonBtn = e.target.closest('[data-export-canvas-inventory-json]');
   if (exportCanvasInventoryJsonBtn) exportCanvasInventoryJson();
+  const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
+  if (canvasInventorySelect) selectCanvasInventoryElement(Number(canvasInventorySelect.dataset.canvasInventorySelect));
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
