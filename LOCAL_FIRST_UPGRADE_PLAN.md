@@ -88,3 +88,40 @@ Recent local-first refinements added:
 - Canvas guide actions: inventory, selected-element inspector, fit content, clear undo, and Excalidraw interchange are reachable without memorizing command names.
 
 These remain UI/control-surface changes over existing local state. They do not introduce cloud sync, bundled icon packs, heavyweight search engines, or a drawing runtime dependency.
+
+## Backend streaming workspace search plan
+
+Goal: add strong whole-workspace search without turning Markpad into a heavy indexed app by default.
+
+Design constraints:
+
+- Markdown files remain the source of truth.
+- Search must be cancellable when the query changes.
+- Search should use bounded Go workers rather than unbounded goroutines.
+- Search should stream or batch results back to the UI so large folders do not block the app.
+- Binary size should stay stable: use the Go standard library first; avoid bundled search engines until measured need is clear.
+- Memory should stay bounded: cap file size scanned per file, cap returned snippets, and do not retain full file contents after scoring.
+- Diagnostics should expose searched/skipped counts, elapsed time, and cache/index memory if a cache is later added.
+
+Phase 1 implementation shape:
+
+- Add a backend method such as `SearchWorkspaceStream(query, options)` or a cancellable request-id based `SearchWorkspace(query, limit)`.
+- Walk the configured local folder with skip rules already used by local folder search.
+- Restrict eager content reads to text/Markdown-like files and configured size limits.
+- Use a small worker pool based on `runtime.NumCPU()` with a conservative cap.
+- Score title/path/content using the existing UI query semantics where possible.
+- Return normalized records: path, relative path, title, line, column, snippet, type, bytes scanned, and source.
+- Cancel old searches when a newer token/request id arrives.
+
+Phase 2 optional index:
+
+- Evaluate SQLite FTS5 only after measuring large-folder latency and memory.
+- If added, the index must be rebuildable and clearly derived from local files.
+- Store metadata and tokenized content only when it provides measured benefit.
+- Expose index size, last rebuild time, and invalidation state in Local Footprint.
+
+UI integration:
+
+- Reuse the existing Search Performance Guide, Local Footprint, and search cache controls.
+- Add a Workspace search scope only when backend cancellation and diagnostics are ready.
+- Keep current-file and loaded-file search available as zero-index fast paths.
