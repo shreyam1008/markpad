@@ -3686,6 +3686,7 @@ function commandItems() {
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
   { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
   { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
+  { id: 'tasks-agenda-export', icon: 'TMD', title: 'Export task agenda as Markdown', hint: 'Download the current Markdown-derived agenda as a portable file', run: exportTaskAgendaMarkdown },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
@@ -5900,6 +5901,11 @@ async function copyTaskAgendaMarkdown() {
   }
   await navigator.clipboard.writeText(taskAgendaMarkdown());
   statusText.textContent = 'Task agenda copied as Markdown';
+}
+
+function exportTaskAgendaMarkdown() {
+  downloadText('markpad-task-agenda.md', 'text/markdown', taskAgendaMarkdown());
+  statusText.textContent = 'Task agenda exported as Markdown';
 }
 
 async function showTaskAgenda() {
