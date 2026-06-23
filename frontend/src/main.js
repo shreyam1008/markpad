@@ -3048,6 +3048,7 @@ function commandItems() {
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
+    { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
     { id: 'tasks-preset-open-kanban', icon: 'TOK', title: 'Task preset: open kanban', hint: 'Show open tasks as a kanban board across all sources', run: () => showTasksPreset({ view: 'kanban', source: 'all', filter: 'open', query: '' }) },
     { id: 'tasks-preset-local-kanban', icon: 'TLK', title: 'Task preset: local kanban', hint: 'Show open local-folder tasks as a kanban board', run: () => showTasksPreset({ view: 'kanban', source: 'local', filter: 'open', query: '' }) },
@@ -4650,6 +4651,20 @@ function taskSourceMatches(task) {
     case 'local': return !!task.local;
     default: return true;
   }
+}
+
+function showTaskSyntaxHelp() {
+  showModal('Task Syntax', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>checkbox</strong><span>- [ ] Write outline</span><small>Plain Markdown task</small></div>
+      <div class="diag-card"><strong>done</strong><span>- [x] Ship note</span><small>Completed Markdown task</small></div>
+      <div class="diag-card"><strong>due date</strong><span>due:2026-06-24</span><small>Portable ISO date token</small></div>
+      <div class="diag-card"><strong>priority</strong><span>!high !medium !low</span><small>Aliases: !h, !med, !m, !l</small></div>
+      <div class="diag-card"><strong>waiting</strong><span>@waiting</span><small>Moves work into waiting filters</small></div>
+      <div class="diag-card"><strong>tag</strong><span>#project</span><small>Used by task and search filters</small></div>
+    </div>
+    <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
+  `);
 }
 
 function parseTaskQuery(query) {
