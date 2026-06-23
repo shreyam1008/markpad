@@ -306,6 +306,11 @@ function showThemeLab() {
       <button data-copy-theme-catalog-json>Copy catalog JSON</button>
       <button data-export-theme-catalog-json>Export catalog JSON</button>
       <button data-theme-guide-open>Guide</button>
+      <button data-workspace-preset="writing">Writing preset</button>
+      <button data-workspace-preset="planning">Planning preset</button>
+      <button data-workspace-preset="review">Review preset</button>
+      <button data-workspace-preset="canvas">Canvas preset</button>
+      <button data-workspace-preset="night">Night preset</button>
     </div>
     <h3 class="theme-lab-heading">Light themes</h3>
     <div class="theme-lab-grid">${renderThemeLabCards('light')}</div>
@@ -11379,6 +11384,8 @@ modalBodyEl.addEventListener('click', async (e) => {
     applyTheme(themeLabChoice.dataset.themeLabChoice);
     showThemeLab();
   }
+  const workspacePresetChoice = e.target.closest('[data-workspace-preset]');
+  if (workspacePresetChoice) await applyWorkspacePreset(workspacePresetChoice.dataset.workspacePreset);
   const copyThemeCatalogBtn = e.target.closest('[data-copy-theme-catalog-json]');
   if (copyThemeCatalogBtn) await copyThemeCatalogJson();
   const exportThemeCatalogBtn = e.target.closest('[data-export-theme-catalog-json]');
