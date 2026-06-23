@@ -1271,6 +1271,15 @@ async function copySearchResultsMarkdown() {
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`;
 }
 
+function exportSearchResultsMarkdown() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to export';
+    return;
+  }
+  downloadText('markpad-search-results.md', 'text/markdown', searchResultsToMarkdown(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as Markdown`;
+}
+
 function searchResultMatchLabel(result) {
   if (result.source !== 'local') return '';
   switch (result.matchKind) {
@@ -1612,6 +1621,7 @@ function commandItems() {
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
+    { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
