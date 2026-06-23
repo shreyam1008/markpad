@@ -1718,6 +1718,30 @@ async function copySearchResultPaths() {
   statusText.textContent = `${lines.length} search result path${lines.length === 1 ? '' : 's'} copied`;
 }
 
+async function copyActiveSearchResultMarkdown() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '';
+  const lines = [
+    '# Markpad Search Result',
+    '',
+    `- Title: ${result.title || basename(result.path) || 'Untitled'}`,
+    `- Path: ${result.path || 'Draft'}${line ? `:${line}` : ''}`,
+    `- Scope: ${searchScope}`,
+    `- Match: ${searchResultMatchLabel(result)}`,
+    result.snippet ? `- Snippet: ${String(result.snippet).replace(/\s+/g, ' ').trim()}` : '',
+  ].filter(Boolean);
+  await navigator.clipboard.writeText(lines.join('\n') + '\n');
+  statusText.textContent = 'Active search result copied as Markdown';
+}
+
 async function copySearchQuerySummary() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -2311,6 +2335,7 @@ function commandItems() {
     { id: 'copy-search-results-csv', icon: 'CCSV', title: 'Copy search results CSV', hint: 'Copy the current search result list as CSV rows', run: copySearchResultsCsv },
     { id: 'export-search-results-csv', icon: 'ECSV', title: 'Export search results CSV', hint: 'Download the current search result list as CSV rows', run: exportSearchResultsCsv },
     { id: 'copy-search-result-paths', icon: 'CP', title: 'Copy search result paths', hint: 'Copy current search result paths and line numbers as plain text', run: copySearchResultPaths },
+    { id: 'search-copy-active-result', icon: 'CAR', title: 'Copy active search result', hint: 'Copy the highlighted search result as a Markdown reference', run: copyActiveSearchResultMarkdown },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
