@@ -4886,6 +4886,7 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>waiting</strong><span>@waiting</span><small>Moves work into waiting filters</small></div>
       <div class="diag-card"><strong>tag</strong><span>#project</span><small>Used by task and search filters</small></div>
       <div class="diag-card"><strong>exclude</strong><span>-@waiting -#blocked</span><small>Hide matching task tokens</small></div>
+      <div class="diag-card"><strong>starters</strong><span>Project, weekly, review</span><small>Append portable Markdown checklists</small></div>
     </div>
     <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
   `);
