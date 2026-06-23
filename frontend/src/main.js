@@ -1873,6 +1873,7 @@ function commandItems() {
     { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .canvas JSON file in the default local folder', run: createLocalFolderCanvas },
     { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
     { id: 'export-local-settings', icon: 'EX', title: 'Export local settings', hint: 'Download a small JSON snapshot of local preferences and UI state', run: exportLocalSettings },
+    { id: 'copy-local-settings', icon: 'CX', title: 'Copy local settings', hint: 'Copy a small JSON snapshot of local preferences and UI state', run: copyLocalSettings },
     { id: 'import-local-settings', icon: 'IM', title: 'Import local settings', hint: 'Restore an exported Markpad local settings JSON snapshot', run: importLocalSettings },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
     { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: showHelpModal },
@@ -6498,7 +6499,7 @@ async function showFileInfo() {
   `);
 }
 
-async function exportLocalSettings() {
+async function buildLocalSettingsSnapshot() {
   const settings = {};
   for (const key of LOCAL_SETTINGS_KEYS) {
     const value = localStorage.getItem(key);
@@ -6508,7 +6509,7 @@ async function exportLocalSettings() {
   if (window.go?.main?.App?.GetLocalFolder) {
     try { localFolder = await window.go.main.App.GetLocalFolder(); } catch {}
   }
-  const snapshot = {
+  return {
     type: 'markpad-local-settings',
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -6519,8 +6520,18 @@ async function exportLocalSettings() {
     settings,
     omitted: ['draft contents', 'trash contents', 'canvas document body', 'version history'],
   };
+}
+
+async function exportLocalSettings() {
+  const snapshot = await buildLocalSettingsSnapshot();
   downloadText('markpad-local-settings.json', 'application/json', JSON.stringify(snapshot, null, 2) + '\n');
   statusText.textContent = 'Local settings exported';
+}
+
+async function copyLocalSettings() {
+  const snapshot = await buildLocalSettingsSnapshot();
+  await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2) + '\n');
+  statusText.textContent = 'Local settings copied';
 }
 
 function importLocalSettings() {
