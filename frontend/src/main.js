@@ -3098,6 +3098,7 @@ function commandItems() {
     { id: 'export-task-view-summary-json', icon: 'ETJ', title: 'Export task view summary JSON', hint: 'Download current task view filters and counts as JSON', run: exportTaskViewSummaryJson },
     { id: 'export-task-view-summary-csv', icon: 'ETV', title: 'Export task view summary CSV', hint: 'Download current task view filters and counts as CSV', run: exportTaskViewSummaryCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
+    { id: 'trash-guide', icon: 'TG', title: 'Trash guide', hint: 'Show retention, restore, cleanup, and report behavior for local Trash', run: showTrashGuide },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
     { id: 'copy-trash-report-csv', icon: 'CTC', title: 'Copy Trash report CSV', hint: 'Copy retained Trash items and expiry dates as CSV rows', run: copyTrashReportCsv },
@@ -3759,6 +3760,20 @@ async function exportTrashReportJson() {
   statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as JSON`;
 }
 
+function showTrashGuide() {
+  showModal('Trash Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${DRAFT_TRASH_DAYS} days</strong><span>Retention</span><small>Expired items can be cleaned manually</small></div>
+      <div class="diag-card"><strong>drafts</strong><span>localStorage</span><small>Unsaved notes stay restorable without disk files</small></div>
+      <div class="diag-card"><strong>saved files</strong><span>disk Trash manifest</span><small>Restored through the Wails backend</small></div>
+      <div class="diag-card"><strong>reports</strong><span>MD / JSON / CSV</span><small>Audit what is retained before cleanup</small></div>
+      <div class="diag-card"><strong>cleanup</strong><span>Clean Expired</span><small>Only removes items past retention</small></div>
+      <div class="diag-card"><strong>empty</strong><span>Empty Trash</span><small>Permanent local cleanup action</small></div>
+    </div>
+    <p class="diag-note">Trash is local-only. Reports include metadata and expiry dates; draft content is only copied from per-item actions to avoid exporting deleted text accidentally.</p>
+  `);
+}
+
 async function emptyAllTrash() {
   saveDraftTrash([]);
   try {
@@ -3801,6 +3816,7 @@ async function showTrashView() {
       <button data-trash-export-csv ${total ? '' : 'disabled'}>Export CSV</button>
       <button data-trash-copy-json ${total ? '' : 'disabled'}>Copy JSON</button>
       <button data-trash-export-json ${total ? '' : 'disabled'}>Export JSON</button>
+      <button data-trash-guide>Guide</button>
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
@@ -9089,6 +9105,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const trashCleanExpired = e.target.closest('[data-trash-clean-expired]');
   if (trashCleanExpired) await cleanupExpiredTrash();
+  const trashGuide = e.target.closest('[data-trash-guide]');
+  if (trashGuide) showTrashGuide();
   const trashCopyReport = e.target.closest('[data-trash-copy-report]');
   if (trashCopyReport && !trashCopyReport.disabled) await copyTrashReportMarkdown();
   const trashExportReport = e.target.closest('[data-trash-export-report]');
