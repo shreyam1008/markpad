@@ -806,6 +806,7 @@ function commandItems() {
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch Paper, Linen, Ink, Pine', run: cycleTheme },
+    { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
     { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
       <p><b>Markpad</b> is a native Markdown notepad.</p>
@@ -1013,6 +1014,64 @@ function showTrashView() {
     </div>
     ${renderTrashRows(items)}
     <p style="margin-top:10px;color:var(--muted);font-size:11px;">Saved-file trash will be backed by the local filesystem in the Go slice. This view currently protects unsaved drafts.</p>
+  `);
+}
+
+function byteSize(value) {
+  return new TextEncoder().encode(String(value || '')).length;
+}
+
+function localStorageMarkpadBytes() {
+  let total = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('markpad-')) continue;
+    total += byteSize(key) + byteSize(localStorage.getItem(key) || '');
+  }
+  return total;
+}
+
+async function loadedDocumentFootprint() {
+  let editableBytes = 0;
+  let editableCount = 0;
+  let readOnlyCount = 0;
+  for (const note of cachedNotes) {
+    const type = getFileType(note.path, note.kind);
+    if (isReadOnlyType(type)) {
+      readOnlyCount++;
+      continue;
+    }
+    editableCount++;
+    const content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
+    editableBytes += byteSize(content);
+  }
+  return { editableBytes, editableCount, readOnlyCount };
+}
+
+function heapFootprintHtml() {
+  const mem = performance && performance.memory ? performance.memory : null;
+  if (!mem) return '<span class="diag-muted">Unavailable in this webview</span>';
+  return `
+    <span>${formatBytes(mem.usedJSHeapSize || 0)} used JS heap</span>
+    <span>${formatBytes(mem.totalJSHeapSize || 0)} total JS heap</span>
+    <span>${formatBytes(mem.jsHeapSizeLimit || 0)} heap limit</span>`;
+}
+
+async function showLocalFootprint() {
+  const docs = await loadedDocumentFootprint();
+  const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
+  const trashItems = loadDraftTrash();
+  const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
+  const markpadLocalBytes = localStorageMarkpadBytes();
+  showModal('Local Footprint', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
+      <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
+      <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
+      <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
+    </div>
+    <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
+    <p class="diag-note">Exact process RSS needs a Go backend metric. This frontend view reports currently loaded text and local persisted UI data without scanning the filesystem.</p>
   `);
 }
 
