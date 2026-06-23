@@ -2152,6 +2152,20 @@ function clearLoadedSearchCacheAction() {
   statusText.textContent = 'Loaded search cache cleared';
 }
 
+function showSearchPerformanceGuide() {
+  showModal('Search Performance Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>loaded files</strong><span>Fast current scope</span><small>Searches open/loaded Markdown without scanning the whole workspace on each keypress</small></div>
+      <div class="diag-card"><strong>bounded cache</strong><span>${SEARCH_CACHE_MAX_ENTRIES} entries</span><small>Cached loaded-note text is capped at ${formatBytes(SEARCH_CACHE_MAX_BYTES)}</small></div>
+      <div class="diag-card"><strong>manual release</strong><span>Clear cache</span><small>Use the command palette action when you want to free cached text immediately</small></div>
+      <div class="diag-card"><strong>footprint</strong><span>Measured locally</span><small>Local Footprint reports search cache bytes with runtime and undo memory</small></div>
+      <div class="diag-card"><strong>next backend</strong><span>Streaming workspace search</span><small>Bounded Go workers, cancellation, and Markdown-first results</small></div>
+      <div class="diag-card"><strong>later index</strong><span>Optional FTS</span><small>Only as a rebuildable index over local Markdown, not a new source of truth</small></div>
+    </div>
+    <p class="diag-note">Search should stay local-first and memory-bounded. The current loaded-file path is intentionally small; broader workspace search should stream from disk and expose its cache/index cost in diagnostics.</p>
+  `);
+}
+
 function deleteLoadedSearchCache(id) {
   const existing = loadedSearchCache.get(id);
   if (!existing) return;
@@ -3688,6 +3702,7 @@ function commandItems() {
   { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
   { id: 'tasks-agenda-export', icon: 'TMD', title: 'Export task agenda as Markdown', hint: 'Download the current Markdown-derived agenda as a portable file', run: exportTaskAgendaMarkdown },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
+  { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
