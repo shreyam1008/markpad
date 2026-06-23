@@ -5869,12 +5869,12 @@ function taskSourceLabel(task) {
 function taskAgendaGroups() {
   const tasks = collectLoadedTasks();
   const visibleTasks = tasks.filter(taskSourceMatches);
-  const openTasks = visibleTasks.filter(task => !task.done);
+  const openTasks = visibleTasks.filter(task => !task.checked);
   const overdue = openTasks.filter(isTaskOverdue);
-  const dueToday = openTasks.filter(task => !isTaskOverdue(task) && isTaskDueNow(task));
-  const waiting = openTasks.filter(task => task.status === 'waiting');
+  const dueToday = openTasks.filter(task => !isTaskOverdue(task) && task.due === todayKey());
+  const waiting = openTasks.filter(task => task.waiting || task.status === 'waiting');
   const high = openTasks.filter(task => isHighPriorityTask(task) && !overdue.includes(task) && !dueToday.includes(task));
-  return { overdue, dueToday, waiting, high };
+  return { all: tasks, visible: visibleTasks, open: openTasks, overdue, dueToday, waiting, high };
 }
 
 function taskAgendaMarkdown() {
@@ -5924,21 +5924,18 @@ function exportTaskAgendaMarkdown() {
 }
 
 async function showTaskAgenda() {
-  const tasks = await collectLoadedTasks();
-  const sourceTasks = tasks.filter(taskSourceMatches);
-  const open = sourceTasks.filter(task => !task.checked);
-  const today = todayKey();
-  const overdue = open.filter(isTaskOverdue);
-  const dueToday = open.filter(task => task.due === today);
-  const waiting = open.filter(task => task.waiting);
-  const high = open.filter(isHighPriorityTask);
+  const groups = taskAgendaGroups();
   showModal('Task Agenda', `
-    <div class="task-summary">${open.length} open task${open.length === 1 ? '' : 's'} from ${escapeHtml(taskSourceFilter)} sources · Markdown stays the source of truth.</div>
+    <div class="task-summary">${groups.open.length} open task${groups.open.length === 1 ? '' : 's'} from ${escapeHtml(taskSourceFilter)} sources · Markdown stays the source of truth.</div>
     <div class="task-calendar">
-      ${renderTaskAgendaSection('Overdue', overdue)}
-      ${renderTaskAgendaSection('Due today', dueToday)}
-      ${renderTaskAgendaSection('Waiting', waiting)}
-      ${renderTaskAgendaSection('High priority', high)}
+      ${renderTaskAgendaSection('Overdue', groups.overdue)}
+      ${renderTaskAgendaSection('Due today', groups.dueToday)}
+      ${renderTaskAgendaSection('Waiting', groups.waiting)}
+      ${renderTaskAgendaSection('High priority', groups.high)}
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-task-agenda-md>Copy Markdown</button>
+      <button data-export-task-agenda-md>Export Markdown</button>
     </div>
     <p class="diag-note">Agenda is a derived local view over Markdown checkbox lines. It does not create a task database or rewrite task files.</p>
   `, true);
@@ -10575,6 +10572,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportExcalidrawCanvasBtn) exportExcalidrawCanvas();
   const copyExcalidrawCanvasBtn = e.target.closest('[data-copy-excalidraw-canvas]');
   if (copyExcalidrawCanvasBtn) await copyExcalidrawCanvasJson();
+  const copyTaskAgendaMdBtn = e.target.closest('[data-copy-task-agenda-md]');
+  if (copyTaskAgendaMdBtn) await copyTaskAgendaMarkdown();
+  const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
+  if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
