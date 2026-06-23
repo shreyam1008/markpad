@@ -1606,6 +1606,8 @@ async function showLocalFootprint() {
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
   const trashItems = loadDraftTrash();
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
+  const fileTrashItems = await loadFileTrash();
+  const fileTrashBytes = fileTrashItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
   const markpadLocalBytes = localStorageMarkpadBytes();
   showModal('Local Footprint', `
     <div class="diag-grid">
@@ -1614,10 +1616,11 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
       <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
       <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
+      <div class="diag-card"><strong>${formatBytes(fileTrashBytes)}</strong><span>Saved file trash</span><small>${fileTrashItems.length} retained file${fileTrashItems.length === 1 ? '' : 's'} · stored on disk</small></div>
       <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
-    <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the filesystem.</p>
+    <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the workspace; saved Trash reads the existing Trash manifest.</p>
   `);
 }
 
