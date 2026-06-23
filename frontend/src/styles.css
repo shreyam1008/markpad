@@ -890,6 +890,56 @@ body.markpad-compact #modal-body {
   color: var(--accent);
 }
 
+.trash-row {
+  position: relative;
+  overflow: hidden;
+}
+.trash-row::before {
+  content: "";
+  position: absolute;
+  inset: 10px auto 10px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+.trash-row.warning::before,
+.trash-row.expiring::before,
+.trash-row.soon::before {
+  background: #d97706;
+}
+.trash-row.expired::before {
+  background: var(--danger);
+}
+.trash-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.trash-retention {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--editor));
+  color: var(--accent);
+  padding: 1px 7px;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.trash-retention.warning,
+.trash-retention.expiring,
+.trash-retention.soon {
+  border-color: color-mix(in srgb, #d97706 34%, var(--border));
+  background: color-mix(in srgb, #d97706 10%, var(--editor));
+  color: #b45309;
+}
+.trash-retention.expired {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: color-mix(in srgb, var(--danger) 10%, var(--editor));
+  color: var(--danger);
+}
+
 /* Document outline */
 .outline-summary {
   color: var(--muted);
