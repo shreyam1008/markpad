@@ -2005,6 +2005,77 @@ async function copyActiveSearchResultCsv() {
   statusText.textContent = 'Active search result copied as CSV';
 }
 
+function exportActiveSearchResultMarkdown() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result to export';
+    return;
+  }
+  const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '';
+  const lines = [
+    '# Markpad Search Result',
+    '',
+    `- Title: ${result.title || basename(result.path) || 'Untitled'}`,
+    `- Path: ${result.path || 'Draft'}${line ? `:${line}` : ''}`,
+    `- Scope: ${searchScope}`,
+    `- Match: ${searchResultMatchLabel(result)}`,
+    result.snippet ? `- Snippet: ${String(result.snippet).replace(/\s+/g, ' ').trim()}` : '',
+  ].filter(Boolean);
+  downloadText('markpad-search-result.md', 'text/markdown', lines.join('\n') + '\n');
+  statusText.textContent = 'Active search result exported as Markdown';
+}
+
+function exportActiveSearchResultJson() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result to export';
+    return;
+  }
+  downloadText('markpad-search-result.json', 'application/json', JSON.stringify({
+    type: 'markpad-search-result',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    query: searchLastQuery || '',
+    scope: searchScope,
+    result: {
+      title: result.title || basename(result.path) || 'Untitled',
+      path: result.path || '',
+      source: result.source || '',
+      type: result.kind || result.type || getFileType(result.path, result.kind) || '',
+      match: searchResultMatchLabel(result),
+      line: Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : null,
+      score: Number.isFinite(Number(result.score)) ? Number(result.score) : null,
+      snippet: result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+    },
+  }, null, 2) + '\n');
+  statusText.textContent = 'Active search result exported as JSON';
+}
+
+function exportActiveSearchResultCsv() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result to export';
+    return;
+  }
+  const rows = [
+    ['query', 'scope', 'title', 'path', 'source', 'type', 'match', 'line', 'score', 'snippet'],
+    [
+      searchLastQuery || '',
+      searchScope,
+      result.title || basename(result.path) || 'Untitled',
+      result.path || '',
+      result.source || '',
+      result.kind || result.type || getFileType(result.path, result.kind) || '',
+      searchResultMatchLabel(result),
+      Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '',
+      Number.isFinite(Number(result.score)) ? Number(result.score) : '',
+      result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+    ],
+  ];
+  downloadText('markpad-search-result.csv', 'text/csv', rows.map(values => values.map(csvCell).join(',')).join('\n') + '\n');
+  statusText.textContent = 'Active search result exported as CSV';
+}
+
 async function openActiveSearchResult() {
   const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
   if (!result) {
@@ -2652,6 +2723,9 @@ function commandItems() {
     { id: 'search-copy-active-result', icon: 'CAR', title: 'Copy active search result', hint: 'Copy the highlighted search result as a Markdown reference', run: copyActiveSearchResultMarkdown },
     { id: 'search-copy-active-result-json', icon: 'CAJ', title: 'Copy active search result JSON', hint: 'Copy the highlighted search result as portable JSON', run: copyActiveSearchResultJson },
     { id: 'search-copy-active-result-csv', icon: 'CAC', title: 'Copy active search result CSV', hint: 'Copy the highlighted search result as one CSV row', run: copyActiveSearchResultCsv },
+    { id: 'search-export-active-result', icon: 'EAR', title: 'Export active search result', hint: 'Download the highlighted search result as Markdown', run: exportActiveSearchResultMarkdown },
+    { id: 'search-export-active-result-json', icon: 'EAJ', title: 'Export active search result JSON', hint: 'Download the highlighted search result as JSON', run: exportActiveSearchResultJson },
+    { id: 'search-export-active-result-csv', icon: 'EAC', title: 'Export active search result CSV', hint: 'Download the highlighted search result as CSV', run: exportActiveSearchResultCsv },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
