@@ -1015,6 +1015,7 @@ async function collectLocalSearchResults(query, token, limit) {
     kind: hit.kind,
     dirty: false,
     score: hit.score,
+    matchKind: hit.matchKind || '',
     matchIndex: -1,
     matchLength: 0,
     line: hit.line || 0,
@@ -1094,6 +1095,7 @@ function renderSearchResults(results, query) {
   }
   results.forEach((result, index) => {
     const row = el('button', `search-row${index === searchActiveIndex ? ' active' : ''}`);
+    const matchLabel = searchResultMatchLabel(result);
     row.type = 'button';
     row.dataset.searchId = result.id;
     row.dataset.matchIndex = String(result.matchIndex);
@@ -1105,6 +1107,7 @@ function renderSearchResults(results, query) {
           <strong>${highlightSearchText(result.title, highlightTerms)}</strong>
           ${result.dirty ? '<em>Unsaved</em>' : ''}
           ${result.source === 'local' ? '<em>Local</em>' : searchScope === 'all' ? '<em>Loaded</em>' : ''}
+          ${matchLabel ? `<em>${escapeHtml(matchLabel)}</em>` : ''}
           ${result.matchIndex >= 0 ? `<small>Line ${result.line + 1}</small>` : ''}
         </span>
         <span class="search-path">${highlightSearchText(result.path, highlightTerms)}</span>
@@ -1114,6 +1117,20 @@ function renderSearchResults(results, query) {
     row.addEventListener('click', () => openSearchResult(result));
     searchResults.appendChild(row);
   });
+}
+
+function searchResultMatchLabel(result) {
+  if (result.source !== 'local') return '';
+  switch (result.matchKind) {
+    case 'path':
+      return 'Path match';
+    case 'filter':
+      return 'Filter match';
+    case 'content':
+      return `Line ${Number(result.line || 0) + 1}`;
+    default:
+      return '';
+  }
 }
 
 function setSearchActive(index) {

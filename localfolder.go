@@ -17,6 +17,7 @@ import (
 const (
 	localFolderSettingsFile = "local-folder.json"
 	localFolderSearchCap    = 1024 * 1024
+	localFolderSearchPool   = 300
 )
 
 type LocalFolderInfo struct {
@@ -34,13 +35,14 @@ type LocalFolderFile struct {
 }
 
 type LocalFolderSearchHit struct {
-	Path    string `json:"path"`
-	RelPath string `json:"relPath"`
-	Title   string `json:"title"`
-	Kind    string `json:"kind"`
-	Line    int    `json:"line"`
-	Snippet string `json:"snippet"`
-	Score   int    `json:"score"`
+	Path      string `json:"path"`
+	RelPath   string `json:"relPath"`
+	Title     string `json:"title"`
+	Kind      string `json:"kind"`
+	Line      int    `json:"line"`
+	Snippet   string `json:"snippet"`
+	Score     int    `json:"score"`
+	MatchKind string `json:"matchKind"`
 }
 
 type localFolderSettings struct {
@@ -144,7 +146,11 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
-	hits := make([]LocalFolderSearchHit, 0, limit)
+	candidateLimit := maxInt(limit*4, limit)
+	if candidateLimit > localFolderSearchPool {
+		candidateLimit = localFolderSearchPool
+	}
+	hits := make([]LocalFolderSearchHit, 0, candidateLimit)
 	_ = filepath.WalkDir(root.Path, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -155,7 +161,7 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 			}
 			return nil
 		}
-		if len(hits) >= limit {
+		if len(hits) >= candidateLimit {
 			return filepath.SkipAll
 		}
 		kind := fileKind(path)
@@ -178,6 +184,9 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 		}
 		return hits[i].Score > hits[j].Score
 	})
+	if len(hits) > limit {
+		return hits[:limit]
+	}
 	return hits
 }
 
@@ -404,13 +413,14 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	metadataTextMatch := localFolderTextMatches(titleLower+"\n"+relLower, plan)
 	if metadataTextMatch && !plan.NeedsContent {
 		return LocalFolderSearchHit{
-			Path:    path,
-			RelPath: filepath.ToSlash(rel),
-			Title:   title,
-			Kind:    kind,
-			Line:    0,
-			Snippet: filepath.ToSlash(rel),
-			Score:   localFolderSearchScore(120, plan),
+			Path:      path,
+			RelPath:   filepath.ToSlash(rel),
+			Title:     title,
+			Kind:      kind,
+			Line:      0,
+			Snippet:   filepath.ToSlash(rel),
+			Score:     localFolderSearchScore(120, plan),
+			MatchKind: "path",
 		}, true
 	}
 	file, err := os.Open(path)
@@ -451,35 +461,42 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	}
 	if textLine >= 0 {
 		return LocalFolderSearchHit{
-			Path:    path,
-			RelPath: filepath.ToSlash(rel),
-			Title:   title,
-			Kind:    kind,
-			Line:    textLine,
-			Snippet: textSnippet,
-			Score:   localFolderSearchScore(maxInt(10, 80-textLine/50), plan),
+			Path:      path,
+			RelPath:   filepath.ToSlash(rel),
+			Title:     title,
+			Kind:      kind,
+			Line:      textLine,
+			Snippet:   textSnippet,
+			Score:     localFolderSearchScore(maxInt(10, 80-textLine/50), plan),
+			MatchKind: "content",
 		}, true
 	}
 	if filterLine >= 0 {
 		return LocalFolderSearchHit{
-			Path:    path,
-			RelPath: filepath.ToSlash(rel),
-			Title:   title,
-			Kind:    kind,
-			Line:    filterLine,
-			Snippet: filterSnippet,
-			Score:   localFolderSearchScore(maxInt(10, 76-filterLine/50), plan),
+			Path:      path,
+			RelPath:   filepath.ToSlash(rel),
+			Title:     title,
+			Kind:      kind,
+			Line:      filterLine,
+			Snippet:   filterSnippet,
+			Score:     localFolderSearchScore(maxInt(10, 76-filterLine/50), plan),
+			MatchKind: "filter",
 		}, true
 	}
 	if metadataTextMatch || plan.HasFilters {
+		matchKind := "filter"
+		if metadataTextMatch {
+			matchKind = "path"
+		}
 		return LocalFolderSearchHit{
-			Path:    path,
-			RelPath: filepath.ToSlash(rel),
-			Title:   title,
-			Kind:    kind,
-			Line:    0,
-			Snippet: filepath.ToSlash(rel),
-			Score:   localFolderSearchScore(90, plan),
+			Path:      path,
+			RelPath:   filepath.ToSlash(rel),
+			Title:     title,
+			Kind:      kind,
+			Line:      0,
+			Snippet:   filepath.ToSlash(rel),
+			Score:     localFolderSearchScore(90, plan),
+			MatchKind: matchKind,
 		}, true
 	}
 	return LocalFolderSearchHit{}, false
