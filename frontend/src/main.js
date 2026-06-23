@@ -1303,6 +1303,10 @@ function commandItems() {
     { id: 'tasks-source-all', icon: 'TSA', title: 'Tasks all sources', hint: 'Show loaded and local Markdown tasks together', run: () => showTasksForSource('all') },
     { id: 'tasks-source-loaded', icon: 'TSL', title: 'Tasks loaded source', hint: 'Show tasks from currently loaded documents only', run: () => showTasksForSource('loaded') },
     { id: 'tasks-source-local', icon: 'TSF', title: 'Tasks local source', hint: 'Show tasks from the configured local folder only', run: () => showTasksForSource('local') },
+    { id: 'tasks-due-today', icon: 'TD', title: 'Tasks due today', hint: 'Filter tasks with due:today', run: () => showTasksForQuery('due:today') },
+    { id: 'tasks-high-priority', icon: 'TH', title: 'High priority tasks', hint: 'Filter tasks with !high', run: () => showTasksForQuery('!high') },
+    { id: 'tasks-waiting', icon: 'TW', title: 'Waiting tasks', hint: 'Filter tasks tagged with @waiting', run: () => showTasksForQuery('@waiting') },
+    { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
@@ -2230,6 +2234,11 @@ function setTaskSourceFilter(value) {
 
 function showTasksForSource(source) {
   setTaskSourceFilter(source);
+  return showTasksView(taskViewMode);
+}
+
+function showTasksForQuery(query) {
+  taskQuery = String(query || '').trim();
   return showTasksView(taskViewMode);
 }
 
