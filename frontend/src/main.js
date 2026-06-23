@@ -2714,6 +2714,29 @@ function hasCanvasSelection() {
   return !!canvasDoc && canvasSelectedIndex >= 0 && canvasSelectedIndex < canvasDoc.elements.length;
 }
 
+function syncCanvasControlsFromSelection() {
+  if (!hasCanvasSelection()) return;
+  const el = canvasDoc.elements[canvasSelectedIndex];
+  if (canvasColor && /^#[0-9a-fA-F]{6}$/.test(String(el.stroke || ''))) canvasColor.value = el.stroke;
+  if (canvasWidth && el.type !== 'text' && Number.isFinite(Number(el.width))) canvasWidth.value = String(el.width);
+}
+
+function applySelectedCanvasStyle(kind) {
+  if (!canvasActive || !hasCanvasSelection()) return false;
+  const el = canvasDoc.elements[canvasSelectedIndex];
+  if ((kind === 'stroke' || kind === 'all') && canvasColor) {
+    el.stroke = canvasColor.value;
+  }
+  if ((kind === 'width' || kind === 'all') && canvasWidth && el.type !== 'text') {
+    el.width = Number(canvasWidth.value || el.width || 3);
+  }
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = 'Canvas element style updated';
+  return true;
+}
+
 function deleteSelectedCanvasElement() {
   if (!hasCanvasSelection()) return false;
   canvasDoc.elements.splice(canvasSelectedIndex, 1);
@@ -2853,6 +2876,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
         element: cloneCanvasElement(canvasDoc.elements[idx]),
         moved: false,
       };
+      syncCanvasControlsFromSelection();
       canvasStage.style.cursor = 'grabbing';
     }
     renderCanvas();
@@ -2877,6 +2901,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
   if (canvasTool === 'text') {
     const idx = canvasHitTest(point);
     canvasSelectedIndex = idx;
+    if (idx >= 0) syncCanvasControlsFromSelection();
     startCanvasTextEdit(point, idx >= 0 && canvasDoc.elements[idx].type === 'text' ? idx : -1);
     return;
   }
@@ -2984,6 +3009,8 @@ $('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
 $('canvas-minimap-toggle')?.addEventListener('click', toggleCanvasMinimap);
 $('canvas-layer-front')?.addEventListener('click', () => moveSelectedCanvasLayer('front'));
 $('canvas-layer-back')?.addEventListener('click', () => moveSelectedCanvasLayer('back'));
+canvasColor?.addEventListener('input', () => { if (hasCanvasSelection()) applySelectedCanvasStyle('stroke'); });
+canvasWidth?.addEventListener('input', () => { if (hasCanvasSelection()) applySelectedCanvasStyle('width'); });
 function exportCanvasJson() {
   const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
   downloadText('markpad-canvas-draft.json', 'application/json', json);
