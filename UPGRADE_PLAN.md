@@ -37,7 +37,7 @@ Sources:
 
 ## Phase 2: local vault layer
 
-- Current backend slice: choose a default local folder, list bounded files, and perform capped streaming search without watchers or a persistent index.
+- Current backend slice: choose a default local folder, create Markdown notes there, list bounded files, and perform capped streaming search without watchers or a persistent index.
 - Add a configurable default folder.
 - Support opening a folder as a local vault while keeping current individual-file behavior.
 - Store vault metadata under `.markpad/`.

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -179,6 +180,54 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 		return hits[i].Score > hits[j].Score
 	})
 	return hits
+}
+
+func (a *App) CreateLocalFolderNote(title string) (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Untitled"
+	}
+	name := safeLocalFileName(title)
+	if !strings.HasSuffix(strings.ToLower(name), ".md") {
+		name += ".md"
+	}
+	path := localCollisionPath(filepath.Join(root.Path, name))
+	content := "# " + strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)) + "\n\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return a.GetSession(), err
+	}
+	return a.openPath(path)
+}
+
+func safeLocalFileName(title string) string {
+	replacer := strings.NewReplacer("/", "-", "\\", "-", ":", "-", "*", "-", "?", "", "\"", "'", "<", "(", ">", ")", "|", "-")
+	name := strings.TrimSpace(replacer.Replace(title))
+	name = strings.Join(strings.Fields(name), " ")
+	if name == "" {
+		return "Untitled"
+	}
+	if len(name) > 80 {
+		name = strings.TrimSpace(name[:80])
+	}
+	return name
+}
+
+func localCollisionPath(path string) string {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return path
+	}
+	ext := filepath.Ext(path)
+	base := strings.TrimSuffix(path, ext)
+	for i := 1; ; i++ {
+		candidate := base + " " + strconv.Itoa(i) + ext
+		if _, err := os.Stat(candidate); errors.Is(err, os.ErrNotExist) {
+			return candidate
+		}
+	}
 }
 
 func (a *App) readLocalFolderSettings() (localFolderSettings, error) {
