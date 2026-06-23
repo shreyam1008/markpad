@@ -163,16 +163,16 @@ const canvasImportFile = $('canvas-import-file');
 const canvasStatus = $('canvas-status');
 
 const THEMES = [
-  { id: 'paper', label: 'Paper' },
-  { id: 'linen', label: 'Linen' },
-  { id: 'dawn', label: 'Dawn' },
-  { id: 'mist', label: 'Mist' },
-  { id: 'sand', label: 'Sand' },
-  { id: 'ink', label: 'Ink' },
-  { id: 'pine', label: 'Pine' },
-  { id: 'slate', label: 'Slate' },
-  { id: 'ember', label: 'Ember' },
-  { id: 'midnight', label: 'Midnight' },
+  { id: 'paper', label: 'Paper', mode: 'light', hint: 'Default low-glare writing surface' },
+  { id: 'linen', label: 'Linen', mode: 'light', hint: 'Warm long-form writing surface' },
+  { id: 'dawn', label: 'Dawn', mode: 'light', hint: 'Bright review and planning surface' },
+  { id: 'mist', label: 'Mist', mode: 'light', hint: 'Cool low-contrast reading surface' },
+  { id: 'sand', label: 'Sand', mode: 'light', hint: 'Planning, tasks, and canvas boards' },
+  { id: 'ink', label: 'Ink', mode: 'dark', hint: 'Neutral dark focus surface' },
+  { id: 'pine', label: 'Pine', mode: 'dark', hint: 'Green-black low-glare workspace' },
+  { id: 'slate', label: 'Slate', mode: 'dark', hint: 'Cool dark technical review' },
+  { id: 'ember', label: 'Ember', mode: 'dark', hint: 'Warm dark notes and review' },
+  { id: 'midnight', label: 'Midnight', mode: 'dark', hint: 'Deep night writing surface' },
 ];
 const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
 const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
@@ -242,6 +242,71 @@ function cycleLightTheme() {
 
 function cycleDarkTheme() {
   cycleThemeGroup(DARK_THEMES);
+}
+
+function themeCatalogSnapshot() {
+  return {
+    type: 'markpad-theme-catalog',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    current: currentTheme,
+    implementation: {
+      engine: 'css-variables',
+      assets: 'text glyphs, CSS, and existing inline SVG only',
+      storage: 'localStorage:markpad-theme',
+    },
+    themes: THEMES.map(theme => ({
+      id: theme.id,
+      label: theme.label,
+      mode: theme.mode,
+      hint: theme.hint,
+      active: theme.id === currentTheme,
+    })),
+  };
+}
+
+function themeCatalogJson() {
+  return JSON.stringify(themeCatalogSnapshot(), null, 2) + '\n';
+}
+
+async function copyThemeCatalogJson() {
+  await navigator.clipboard.writeText(themeCatalogJson());
+  statusText.textContent = 'Theme catalog copied as JSON';
+}
+
+function exportThemeCatalogJson() {
+  downloadText('markpad-theme-catalog.json', 'application/json', themeCatalogJson());
+  statusText.textContent = 'Theme catalog exported as JSON';
+}
+
+function renderThemeLabCards(mode) {
+  return THEMES
+    .filter(theme => theme.mode === mode)
+    .map(theme => `
+      <button class="theme-lab-card${theme.id === currentTheme ? ' active' : ''}" data-theme-lab-choice="${theme.id}" type="button">
+        <span class="theme-lab-swatch" data-theme-swatch="${theme.id}">
+          <i></i><i></i><i></i>
+        </span>
+        <strong>${escapeHtml(theme.label)}</strong>
+        <small>${escapeHtml(theme.hint)}</small>
+        <em>${theme.id === currentTheme ? 'Active' : 'Apply'}</em>
+      </button>
+    `).join('');
+}
+
+function showThemeLab() {
+  showModal('Theme Lab', `
+    <div class="theme-lab-actions">
+      <button data-copy-theme-catalog-json>Copy catalog JSON</button>
+      <button data-export-theme-catalog-json>Export catalog JSON</button>
+      <button data-theme-guide-open>Guide</button>
+    </div>
+    <h3 class="theme-lab-heading">Light themes</h3>
+    <div class="theme-lab-grid">${renderThemeLabCards('light')}</div>
+    <h3 class="theme-lab-heading">Dark themes</h3>
+    <div class="theme-lab-grid">${renderThemeLabCards('dark')}</div>
+    <p class="diag-note">Theme Lab compares the built-in CSS-variable themes and exports a small metadata catalog. It does not load images, icon fonts, or a runtime theme engine.</p>
+  `);
 }
 
 function clearAllUndoHistories() {
@@ -2199,6 +2264,7 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Portable</strong><span>UI state JSON</span><small>Copy/export and restore local theme preferences</small></div>
       <div class="diag-card"><strong>Lightweight</strong><span>CSS variables only</span><small>No icon fonts, image packs, or runtime theme engine</small></div>
       <div class="diag-card"><strong>Fast switch</strong><span>Command palette</span><small>Cycle all themes or only light/dark groups</small></div>
+      <div class="diag-card"><strong>Theme Lab</strong><span>Compare + export</span><small>Apply themes and copy a small local JSON catalog</small></div>
     </div>
     <p class="diag-note">Themes intentionally reuse the same DOM and text icons. This keeps memory and binary size stable while giving each workspace mode a distinct feel.</p>
   `);
@@ -3596,6 +3662,9 @@ function commandItems() {
     { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
     { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
     { id: 'theme-guide', icon: 'TG', title: 'Theme guide', hint: 'Show light, dark, preset, portability, and lightweight theme notes', run: showThemeGuide },
+    { id: 'theme-lab', icon: 'TLB', title: 'Theme Lab', hint: 'Compare light/dark themes and export the local theme catalog', run: showThemeLab },
+    { id: 'copy-theme-catalog-json', icon: 'TCJ', title: 'Copy theme catalog JSON', hint: 'Copy built-in theme metadata without CSS or image assets', run: copyThemeCatalogJson },
+    { id: 'export-theme-catalog-json', icon: 'TEJ', title: 'Export theme catalog JSON', hint: 'Download built-in theme metadata as a small local JSON file', run: exportThemeCatalogJson },
     ...themePresetCommandItems(),
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
@@ -9967,6 +10036,19 @@ modalBodyEl.addEventListener('click', async (e) => {
     applyTheme(themeChoice.dataset.themeChoice);
     showPreferences();
   }
+  const themeLabOpen = e.target.closest('[data-theme-lab-open]');
+  if (themeLabOpen) showThemeLab();
+  const themeGuideOpen = e.target.closest('[data-theme-guide-open]');
+  if (themeGuideOpen) showThemeGuide();
+  const themeLabChoice = e.target.closest('[data-theme-lab-choice]');
+  if (themeLabChoice) {
+    applyTheme(themeLabChoice.dataset.themeLabChoice);
+    showThemeLab();
+  }
+  const copyThemeCatalogBtn = e.target.closest('[data-copy-theme-catalog-json]');
+  if (copyThemeCatalogBtn) await copyThemeCatalogJson();
+  const exportThemeCatalogBtn = e.target.closest('[data-export-theme-catalog-json]');
+  if (exportThemeCatalogBtn) exportThemeCatalogJson();
   const taskView = e.target.closest('[data-task-view]');
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAdd = e.target.closest('[data-task-add]');
@@ -10390,6 +10472,7 @@ async function showPreferences() {
   showModal('Preferences', `
     <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
+    <p style="margin-top:8px;"><button class="pref-inline-action" data-theme-lab-open>Open Theme Lab</button></p>
     <p style="margin-top:8px;">Themes are CSS-variable only, so they add polish without images, icon fonts, or runtime dependencies.</p>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;margin-top:8px;">
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Focus</td><td style="padding:4px 6px;">${focusMode ? 'Enabled' : 'Disabled'} · command-driven writing chrome</td></tr>

@@ -460,6 +460,120 @@ body.markpad-compact #modal-body {
   color: var(--muted); padding: 8px 6px; font-size: 11px; font-weight: 800; cursor: pointer;
 }
 .pref-theme:hover, .pref-theme.active { border-color: var(--accent); color: var(--text); background: var(--hover); }
+.pref-inline-action,
+.theme-lab-actions button {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--editor);
+  color: var(--text);
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.pref-inline-action:hover,
+.theme-lab-actions button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+.theme-lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.theme-lab-heading {
+  margin: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 950;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.theme-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+.theme-lab-card {
+  text-align: left;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--editor);
+  color: var(--text);
+  padding: 9px;
+  cursor: pointer;
+}
+.theme-lab-card:hover,
+.theme-lab-card.active {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+.theme-lab-card strong,
+.theme-lab-card small,
+.theme-lab-card em {
+  display: block;
+}
+.theme-lab-card strong {
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 950;
+}
+.theme-lab-card small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.theme-lab-card em {
+  margin-top: 7px;
+  color: var(--accent);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.theme-lab-swatch {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr .7fr;
+  gap: 4px;
+  height: 34px;
+}
+.theme-lab-swatch i {
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, .08);
+}
+.theme-lab-swatch[data-theme-swatch="paper"] i:nth-child(1) { background: #fffffc; }
+.theme-lab-swatch[data-theme-swatch="paper"] i:nth-child(2) { background: #f5f3ed; }
+.theme-lab-swatch[data-theme-swatch="paper"] i:nth-child(3) { background: #2f6f61; }
+.theme-lab-swatch[data-theme-swatch="linen"] i:nth-child(1) { background: #fbf3e5; }
+.theme-lab-swatch[data-theme-swatch="linen"] i:nth-child(2) { background: #f1e2ca; }
+.theme-lab-swatch[data-theme-swatch="linen"] i:nth-child(3) { background: #9a5f2b; }
+.theme-lab-swatch[data-theme-swatch="dawn"] i:nth-child(1) { background: #fff6ef; }
+.theme-lab-swatch[data-theme-swatch="dawn"] i:nth-child(2) { background: #f7d7c4; }
+.theme-lab-swatch[data-theme-swatch="dawn"] i:nth-child(3) { background: #bf5b45; }
+.theme-lab-swatch[data-theme-swatch="mist"] i:nth-child(1) { background: #f5f8f7; }
+.theme-lab-swatch[data-theme-swatch="mist"] i:nth-child(2) { background: #dce8e5; }
+.theme-lab-swatch[data-theme-swatch="mist"] i:nth-child(3) { background: #3e6f8f; }
+.theme-lab-swatch[data-theme-swatch="sand"] i:nth-child(1) { background: #f7ecd8; }
+.theme-lab-swatch[data-theme-swatch="sand"] i:nth-child(2) { background: #e4cf9d; }
+.theme-lab-swatch[data-theme-swatch="sand"] i:nth-child(3) { background: #6f6230; }
+.theme-lab-swatch[data-theme-swatch="ink"] i:nth-child(1) { background: #121417; }
+.theme-lab-swatch[data-theme-swatch="ink"] i:nth-child(2) { background: #23272d; }
+.theme-lab-swatch[data-theme-swatch="ink"] i:nth-child(3) { background: #70b7a4; }
+.theme-lab-swatch[data-theme-swatch="pine"] i:nth-child(1) { background: #101813; }
+.theme-lab-swatch[data-theme-swatch="pine"] i:nth-child(2) { background: #1d2a22; }
+.theme-lab-swatch[data-theme-swatch="pine"] i:nth-child(3) { background: #8bbb72; }
+.theme-lab-swatch[data-theme-swatch="slate"] i:nth-child(1) { background: #111827; }
+.theme-lab-swatch[data-theme-swatch="slate"] i:nth-child(2) { background: #243044; }
+.theme-lab-swatch[data-theme-swatch="slate"] i:nth-child(3) { background: #8fb4ff; }
+.theme-lab-swatch[data-theme-swatch="ember"] i:nth-child(1) { background: #1c1512; }
+.theme-lab-swatch[data-theme-swatch="ember"] i:nth-child(2) { background: #3a241f; }
+.theme-lab-swatch[data-theme-swatch="ember"] i:nth-child(3) { background: #e58b63; }
+.theme-lab-swatch[data-theme-swatch="midnight"] i:nth-child(1) { background: #0b1020; }
+.theme-lab-swatch[data-theme-swatch="midnight"] i:nth-child(2) { background: #1a2440; }
+.theme-lab-swatch[data-theme-swatch="midnight"] i:nth-child(3) { background: #9bbcff; }
 #modal-overlay.tasks-modal > div { max-width: min(980px, calc(100vw - 24px)); }
 
 /* Save flash animation */
