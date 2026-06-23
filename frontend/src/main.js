@@ -2147,6 +2147,11 @@ function clearLoadedSearchCache() {
   loadedSearchCacheBytes = 0;
 }
 
+function clearLoadedSearchCacheAction() {
+  clearLoadedSearchCache();
+  statusText.textContent = 'Loaded search cache cleared';
+}
+
 function deleteLoadedSearchCache(id) {
   const existing = loadedSearchCache.get(id);
   if (!existing) return;
@@ -3681,6 +3686,7 @@ function commandItems() {
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
   { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
   { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
+  { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
