@@ -639,6 +639,37 @@ function exportLoadedWorkspaceCsv() {
   statusText.textContent = 'Loaded workspace exported as CSV';
 }
 
+function showLoadedWorkspaceInventory() {
+  const snapshot = loadedWorkspaceSnapshot();
+  const rows = snapshot.notes.length ? snapshot.notes.map(note => `
+    <div class="local-row">
+      <div>
+        <strong>${escapeHtml(note.title)}</strong>
+        <span>${escapeHtml(note.path || '(draft)')}</span>
+      </div>
+      <small>${note.active ? 'Active · ' : ''}${escapeHtml(note.type)} · ${note.dirty ? 'Unsaved' : 'Saved'}${note.viewMode ? ` · ${escapeHtml(note.viewMode)}` : ''}</small>
+    </div>
+  `).join('') : '<div class="local-empty">No open notes or files.</div>';
+  showModal('Loaded Workspace', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${snapshot.count}</strong><span>Open items</span><small>Loaded in this session</small></div>
+      <div class="diag-card"><strong>${snapshot.savedCount}</strong><span>Saved files</span><small>Have filesystem paths</small></div>
+      <div class="diag-card"><strong>${snapshot.draftCount}</strong><span>Drafts</span><small>Local unsaved notes</small></div>
+      <div class="diag-card"><strong>${snapshot.dirtyCount}</strong><span>Unsaved</span><small>Need save or discard</small></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+      <button data-copy-loaded-workspace-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+      <button data-export-loaded-workspace-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+      <button data-copy-loaded-workspace-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+      <button data-export-loaded-workspace-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+      <button data-copy-loaded-workspace-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
+      <button data-export-loaded-workspace-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+    </div>
+    <div class="local-list" style="margin-top:10px;">${rows}</div>
+    <p class="diag-note">This manifest exports metadata only. It does not include document contents, draft text, or version history.</p>
+  `);
+}
+
 function clearSearchRecents() {
   searchRecentQueries = [];
   localStorage.removeItem(SEARCH_RECENTS_KEY);
@@ -3405,6 +3436,7 @@ function commandItems() {
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
     { id: 'copy-active-path', icon: 'CAP', title: 'Copy active file path', hint: 'Copy the active saved file path to the clipboard', run: copyActiveFilePath },
     { id: 'copy-active-context', icon: 'CAC', title: 'Copy active file context', hint: 'Copy active title, path, type, and dirty state as Markdown', run: copyActiveFileContext },
+    { id: 'loaded-workspace', icon: 'LW', title: 'Loaded workspace inventory', hint: 'Show open files, drafts, dirty state, types, paths, and export shortcuts', run: showLoadedWorkspaceInventory },
     { id: 'copy-loaded-workspace', icon: 'CLW', title: 'Copy loaded workspace Markdown', hint: 'Copy open files, drafts, dirty state, types, and paths as Markdown', run: copyLoadedWorkspaceMarkdown },
     { id: 'export-loaded-workspace', icon: 'ELW', title: 'Export loaded workspace Markdown', hint: 'Download open files, drafts, dirty state, types, and paths as Markdown', run: exportLoadedWorkspaceMarkdown },
     { id: 'copy-loaded-workspace-json', icon: 'LWJ', title: 'Copy loaded workspace JSON', hint: 'Copy open workspace metadata as portable JSON', run: copyLoadedWorkspaceJson },
@@ -9091,6 +9123,18 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copySettings) await copyLocalSettings();
   const importSettings = e.target.closest('[data-import-local-settings]');
   if (importSettings) importLocalSettings();
+  const copyLoadedWorkspaceMd = e.target.closest('[data-copy-loaded-workspace-md]');
+  if (copyLoadedWorkspaceMd) await copyLoadedWorkspaceMarkdown();
+  const exportLoadedWorkspaceMd = e.target.closest('[data-export-loaded-workspace-md]');
+  if (exportLoadedWorkspaceMd) exportLoadedWorkspaceMarkdown();
+  const copyLoadedWorkspaceJson = e.target.closest('[data-copy-loaded-workspace-json]');
+  if (copyLoadedWorkspaceJson) await copyLoadedWorkspaceJson();
+  const exportLoadedWorkspaceJson = e.target.closest('[data-export-loaded-workspace-json]');
+  if (exportLoadedWorkspaceJson) exportLoadedWorkspaceJson();
+  const copyLoadedWorkspaceCsv = e.target.closest('[data-copy-loaded-workspace-csv]');
+  if (copyLoadedWorkspaceCsv) await copyLoadedWorkspaceCsv();
+  const exportLoadedWorkspaceCsv = e.target.closest('[data-export-loaded-workspace-csv]');
+  if (exportLoadedWorkspaceCsv) exportLoadedWorkspaceCsv();
   const copyFootprintMd = e.target.closest('[data-copy-footprint-md]');
   if (copyFootprintMd) await copyLocalFootprintMarkdown();
   const exportFootprintMd = e.target.closest('[data-export-footprint-md]');
