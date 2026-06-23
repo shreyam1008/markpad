@@ -1057,22 +1057,25 @@ function lineForIndex(content, index) {
 
 function parseSearchQuery(query) {
   const raw = String(query || '').trim();
-  const parts = raw.match(/"[^"]+"|\S+/g) || [];
+  const parts = raw.match(/-?"[^"]+"|\S+/g) || [];
   const filters = { path: [], title: [], type: [], tag: [], task: [] };
   const excludes = { path: [], title: [], type: [], tag: [], task: [] };
   const textParts = [];
   const excludeTerms = [];
   const phrases = [];
+  const excludePhrases = [];
   parts.forEach((part) => {
-    const quoted = /^".*"$/.test(part);
-    const clean = part.replace(/^"|"$/g, '').trim();
+    const negated = part.startsWith('-') && part.length > 1;
+    const rawToken = negated ? part.slice(1) : part;
+    const quoted = /^".*"$/.test(rawToken);
+    const clean = rawToken.replace(/^"|"$/g, '').trim();
     if (!clean) return;
     if (quoted) {
-      phrases.push(clean.toLowerCase());
+      if (negated) excludePhrases.push(clean.toLowerCase());
+      else phrases.push(clean.toLowerCase());
       return;
     }
-    const negated = clean.startsWith('-') && clean.length > 1;
-    const token = negated ? clean.slice(1) : clean;
+    const token = clean;
     const targetFilters = negated ? excludes : filters;
     const match = token.match(/^(path|title|type|kind|tag|task):(.+)$/i);
     if (match) {
@@ -1094,7 +1097,7 @@ function parseSearchQuery(query) {
   const text = textParts.join(' ').trim();
   const lower = text.toLowerCase();
   const hasFilters = Object.values(filters).some(values => values.length > 0);
-  const hasExcludes = excludeTerms.length > 0 || Object.values(excludes).some(values => values.length > 0);
+  const hasExcludes = excludeTerms.length > 0 || excludePhrases.length > 0 || Object.values(excludes).some(values => values.length > 0);
   return {
     raw,
     text,
@@ -1104,6 +1107,7 @@ function parseSearchQuery(query) {
     filters,
     excludes,
     excludeTerms: excludeTerms.filter(Boolean).slice(0, 8),
+    excludePhrases: excludePhrases.slice(0, 8),
     backendQuery: [text, ...phrases.map(phrase => `"${phrase}"`)].filter(Boolean).join(' ').trim(),
     hasFilters,
     hasExcludes,
@@ -1150,6 +1154,7 @@ function searchResultMatchesPlan(result, plan) {
   if (exclude.type.some(value => typeText.includes(value))) return false;
   if (exclude.tag.some(value => haystack.includes(`#${value}`))) return false;
   if ((plan.excludeTerms || []).some(value => haystack.includes(value))) return false;
+  if ((plan.excludePhrases || []).some(value => haystack.includes(value))) return false;
   return true;
 }
 
@@ -1180,6 +1185,7 @@ function scoreSearch(note, content, plan) {
   const haystack = `${titleLower}\n${pathLower}\n${bodyLower}`;
   if (!searchCandidateMatchesPlan(note, body, plan)) return null;
   if ((plan.excludeTerms || []).some(term => haystack.includes(term))) return null;
+  if ((plan.excludePhrases || []).some(phrase => haystack.includes(phrase))) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
   if (phrases.length && !phrases.every(phrase => haystack.includes(phrase))) return null;
 
@@ -1857,7 +1863,7 @@ function showSearchSyntaxHelp() {
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">title:plan</td><td style="padding:5px 8px;color:var(--muted);">Match the note title or filename.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
         <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">-draft -path:archive</td><td style="padding:5px 8px;color:var(--muted);">Exclude words, paths, titles, types, tags, or task states from the result set.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">-draft -"old plan" -path:archive</td><td style="padding:5px 8px;color:var(--muted);">Exclude words, exact phrases, paths, titles, types, tags, or task states from the result set.</td></tr>
       </table>
       <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:tomorrow</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
       <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
