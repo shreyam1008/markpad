@@ -1861,6 +1861,7 @@ function commandItems() {
     { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-copy-element-json', icon: 'CEJ', title: 'Copy selected canvas element JSON', hint: 'Copy the selected canvas element as portable JSON', run: copySelectedCanvasElementJson },
     { id: 'canvas-copy-element-svg', icon: 'CES', title: 'Copy selected canvas element SVG', hint: 'Copy the selected canvas element as standalone SVG markup', run: copySelectedCanvasElementSvg },
+    { id: 'canvas-paste-element-json', icon: 'PEJ', title: 'Paste canvas element JSON', hint: 'Paste one canvas element from clipboard JSON', run: pasteCanvasElementJsonFromClipboard },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
@@ -4755,6 +4756,30 @@ async function copySelectedCanvasElementSvg() {
   const doc = { elements: [canvasDoc.elements[canvasSelectedIndex]], appState: canvasDoc.appState || { viewBackgroundColor: '#ffffff' } };
   await navigator.clipboard.writeText(canvasToSvg(doc));
   statusText.textContent = 'Selected canvas element SVG copied';
+}
+
+async function pasteCanvasElementJsonFromClipboard() {
+  if (!canvasDoc) loadCanvasState();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch {
+    statusText.textContent = 'Clipboard does not contain canvas element JSON';
+    return;
+  }
+  const source = Array.isArray(parsed?.elements) ? parsed.elements[0] : parsed;
+  const element = normalizeCanvasDoc({ elements: [source], appState: canvasDoc.appState || { viewBackgroundColor: '#ffffff' } }).elements[0];
+  if (!element?.type) {
+    statusText.textContent = 'Clipboard JSON is not a supported canvas element';
+    return;
+  }
+  canvasDoc.elements.push(moveCanvasElement({ ...element, id: canvasId() }, 24, 24));
+  canvasSelectedIndex = canvasDoc.elements.length - 1;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  syncCanvasControlsFromSelection();
+  statusText.textContent = 'Canvas element JSON pasted';
 }
 
 function exportCanvasSvg() {
