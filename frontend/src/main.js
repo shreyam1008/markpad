@@ -1433,6 +1433,30 @@ function searchResultsToJson(results, query) {
   }, null, 2) + '\n';
 }
 
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function searchResultsToCsv(results, query) {
+  const rows = [
+    ['query', 'scope', 'rank', 'title', 'path', 'source', 'type', 'match', 'line', 'score', 'snippet'],
+    ...results.map((result, index) => [
+      query || '',
+      searchScope,
+      index + 1,
+      result.title || basename(result.path) || 'Untitled',
+      result.path || '',
+      result.source || 'loaded',
+      typeLabel(getFileType(result.path, result.kind)),
+      searchResultMatchLabel(result),
+      Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '',
+      Number.isFinite(Number(result.score)) ? Number(result.score) : '',
+      result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+    ]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copySearchResultsMarkdown() {
   if (!searchLastResults.length) {
     statusText.textContent = 'No search results to copy';
@@ -1475,6 +1499,28 @@ function exportSearchResultsJson() {
   }
   downloadText('markpad-search-results.json', 'application/json', searchResultsToJson(searchLastResults, searchLastQuery));
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`;
+}
+
+async function copySearchResultsCsv() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchResultsToCsv(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as CSV`;
+}
+
+function exportSearchResultsCsv() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to export';
+    return;
+  }
+  downloadText('markpad-search-results.csv', 'text/csv', searchResultsToCsv(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as CSV`;
 }
 
 async function copySearchQuerySummary() {
@@ -1851,6 +1897,8 @@ function commandItems() {
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
     { id: 'copy-search-results-json', icon: 'CJ', title: 'Copy search results JSON', hint: 'Copy the current search result list as portable JSON', run: copySearchResultsJson },
     { id: 'export-search-results-json', icon: 'EJ', title: 'Export search results JSON', hint: 'Download the current search result list as portable JSON', run: exportSearchResultsJson },
+    { id: 'copy-search-results-csv', icon: 'CCSV', title: 'Copy search results CSV', hint: 'Copy the current search result list as CSV rows', run: copySearchResultsCsv },
+    { id: 'export-search-results-csv', icon: 'ECSV', title: 'Export search results CSV', hint: 'Download the current search result list as CSV rows', run: exportSearchResultsCsv },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
