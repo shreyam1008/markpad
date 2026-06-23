@@ -4268,6 +4268,9 @@ function taskToTodoTxtLine(task) {
       if (token) parts.push(`+${token}`);
     });
   }
+  const sourceToken = taskTodoTxtToken(task.noteTitle || (task.path ? String(task.path).split(/[\\/]/).pop() : ''));
+  if (sourceToken) parts.push(`src:${sourceToken}`);
+  if (Number.isFinite(Number(task.line))) parts.push(`line:${Number(task.line) + 1}`);
   return parts.join(' ');
 }
 
