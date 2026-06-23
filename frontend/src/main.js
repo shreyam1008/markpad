@@ -3768,6 +3768,7 @@ function commandItems() {
     { id: 'canvas-grid-24', icon: 'G24', title: 'Canvas grid 24px', hint: 'Use the default 24px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(24); } },
     { id: 'canvas-grid-32', icon: 'G32', title: 'Canvas grid 32px', hint: 'Use a roomy 32px grid for drawing and snap', run: () => { openCanvas(); setCanvasGridSize(32); } },
     { id: 'canvas-grid-48', icon: 'G48', title: 'Canvas grid 48px', hint: 'Use a broad 48px grid for coarse layout and snap', run: () => { openCanvas(); setCanvasGridSize(48); } },
+    { id: 'canvas-snap-selected', icon: 'S2G', title: 'Snap selected canvas element to grid', hint: 'Align the selected element to the current canvas grid', run: snapSelectedCanvasElementToGrid },
     { id: 'canvas-bg-white', icon: 'BW', title: 'Canvas background white', hint: 'Set canvas background to plain white for exports', run: () => setCanvasBackground('#ffffff', 'white') },
     { id: 'canvas-bg-paper', icon: 'BP', title: 'Canvas background paper', hint: 'Set canvas background to warm paper', run: () => setCanvasBackground('#fffaf1', 'paper') },
     { id: 'canvas-bg-mist', icon: 'BM', title: 'Canvas background mist', hint: 'Set canvas background to soft mist', run: () => setCanvasBackground('#edf3f1', 'mist') },
@@ -7058,11 +7059,13 @@ function updateCanvasSelectionButtons() {
   const paste = $('canvas-paste');
   const duplicate = $('canvas-duplicate');
   const remove = $('canvas-delete');
+  const snap = $('canvas-snap-selected');
   const disabled = !hasCanvasSelection();
   if (copy) copy.disabled = disabled;
   if (paste) paste.disabled = !canvasClipboard;
   if (duplicate) duplicate.disabled = disabled;
   if (remove) remove.disabled = disabled;
+  if (snap) snap.disabled = disabled;
 }
 
 function rememberCanvasHistory(force) {
@@ -8013,6 +8016,35 @@ function nudgeSelectedCanvasElement(dx, dy) {
   return true;
 }
 
+function snapSelectedCanvasElementToGrid() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element to snap';
+    return false;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  if (!Number.isFinite(bounds.x) || !Number.isFinite(bounds.y)) {
+    statusText.textContent = 'Selected canvas element cannot be snapped';
+    return false;
+  }
+  const step = normalizeCanvasGridSize(canvasGridSize);
+  const nextX = Math.round(bounds.x / step) * step;
+  const nextY = Math.round(bounds.y / step) * step;
+  const dx = nextX - bounds.x;
+  const dy = nextY - bounds.y;
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+    statusText.textContent = 'Selected canvas element is already on grid';
+    return true;
+  }
+  canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(element, dx, dy);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  statusText.textContent = `Selected canvas element snapped to ${step}px grid`;
+  return true;
+}
+
 function moveSelectedCanvasLayer(direction) {
   if (!hasCanvasSelection()) {
     statusText.textContent = 'Select a canvas element first';
@@ -8261,6 +8293,7 @@ $('canvas-zoom-reset')?.addEventListener('click', () => setCanvasZoom(1));
 $('canvas-zoom-in')?.addEventListener('click', () => zoomCanvasBy(1.16));
 $('canvas-grid')?.addEventListener('click', toggleCanvasGrid);
 $('canvas-snap')?.addEventListener('click', toggleCanvasSnap);
+$('canvas-snap-selected')?.addEventListener('click', snapSelectedCanvasElementToGrid);
 $('canvas-minimap-toggle')?.addEventListener('click', toggleCanvasMinimap);
 $('canvas-layer-front')?.addEventListener('click', () => moveSelectedCanvasLayer('front'));
 $('canvas-layer-back')?.addEventListener('click', () => moveSelectedCanvasLayer('back'));
@@ -8687,6 +8720,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>tools</strong><span>Select, pan, pen, text, shape</span><small>Command palette or canvas toolbar</small></div>
       <div class="diag-card"><strong>infinite view</strong><span>Pan + zoom</span><small>Camera changes do not alter content</small></div>
       <div class="diag-card"><strong>grid</strong><span>12-48px snap</span><small>Stored as local UI preference</small></div>
+      <div class="diag-card"><strong>snap selected</strong><span>Align existing items</span><small>Move selected element to the current grid</small></div>
       <div class="diag-card"><strong>starters</strong><span>Mind map, kanban, timeline</span><small>Insert lightweight JSON templates</small></div>
       <div class="diag-card"><strong>tasks</strong><span>Visible task board</span><small>Append filtered Markdown tasks as canvas cards</small></div>
       <div class="diag-card"><strong>search</strong><span>Result board</span><small>Append current search results as canvas cards</small></div>
