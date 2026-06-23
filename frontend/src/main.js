@@ -2680,6 +2680,17 @@ async function deleteDraftTrashItem(itemId) {
   await showTrashView();
 }
 
+async function copyDraftTrashItem(itemId) {
+  const item = loadDraftTrash().find(entry => entry.id === itemId);
+  if (!item) return;
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(item.content || '');
+  statusText.textContent = 'Trash draft copied';
+}
+
 async function emptyDraftTrash() {
   saveDraftTrash([]);
   await showTrashView();
@@ -2698,6 +2709,7 @@ function renderTrashRows(items) {
       </div>
       <div class="trash-actions">
         <button data-trash-restore="${escapeHtml(item.id)}">Restore</button>
+        <button data-trash-copy="${escapeHtml(item.id)}">Copy</button>
         <button data-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
       </div>
     </div>`;
@@ -7646,6 +7658,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyTodo) await copySingleTaskTodoTxt(taskCopyTodo.dataset.taskCopyTodo);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
+  const trashCopy = e.target.closest('[data-trash-copy]');
+  if (trashCopy) await copyDraftTrashItem(trashCopy.dataset.trashCopy);
   const trashDelete = e.target.closest('[data-trash-delete]');
   if (trashDelete) await deleteDraftTrashItem(trashDelete.dataset.trashDelete);
   const fileTrashRestore = e.target.closest('[data-file-trash-restore]');
