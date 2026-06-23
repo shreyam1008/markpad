@@ -3972,6 +3972,8 @@ function commandItems() {
     { id: 'add-task-low', icon: '+L', title: 'Add low priority task', hint: 'Append a Markdown task with !low priority', run: () => addTaskTemplate('!low') },
     { id: 'add-task-waiting', icon: '+W', title: 'Add waiting task', hint: 'Append a Markdown task with @waiting context', run: () => addTaskTemplate('@waiting') },
     { id: 'add-task-high-waiting', icon: '+HW', title: 'Add high waiting task', hint: 'Append a Markdown task tagged !high and @waiting', run: () => addTaskTemplate('!high @waiting') },
+    { id: 'task-file-setup', icon: 'TFS', title: 'Task file setup', hint: 'Create or use a contained portable Tasks.md workflow', run: showTaskFileSetup },
+    { id: 'tasks-starter-inbox', icon: 'TSI', title: 'Task starter: inbox', hint: 'Create or append a portable Markdown inbox task file starter', run: () => addTaskStarterTemplate('inbox', 'Inbox') },
     { id: 'tasks-starter-project', icon: 'TSP', title: 'Task starter: project kickoff', hint: 'Append a portable Markdown project kickoff checklist', run: () => addTaskStarterTemplate('project', 'Project kickoff') },
     { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
     { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
@@ -5566,6 +5568,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-reveal ${activeId ? '' : 'disabled'}>Reveal active</button>
         <button data-local-folder-recent ${info.path && !info.missing ? '' : 'disabled'}>Recent</button>
         <button data-local-folder-new ${info.path && !info.missing ? '' : 'disabled'}>New note</button>
+        <button data-local-folder-tasks ${info.path && !info.missing ? '' : 'disabled'}>Tasks</button>
         <button data-local-folder-daily ${info.path && !info.missing ? '' : 'disabled'}>Daily</button>
         <button data-local-folder-weekly ${info.path && !info.missing ? '' : 'disabled'}>Weekly</button>
         <button data-local-folder-canvas ${info.path && !info.missing ? '' : 'disabled'}>New canvas</button>
@@ -5832,11 +5835,39 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>starters</strong><span>Project, weekly, review</span><small>Append portable Markdown checklists</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send visible tasks</span><small>Turn filtered tasks into a canvas board</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-task-file-setup>Task file setup</button>
+      <button data-task-file-inbox>Create inbox starter</button>
+      <button data-task-file-weekly>Weekly starter</button>
+    </div>
     <pre class="diag-code">- [ ] Draft launch note !high due:2026-06-24 #release
 - [ ] Wait for design review @waiting #design
 - [x] Publish changelog due:2026-06-20 #release</pre>
     <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the source stays local, portable, and not vendor-locked. List, calendar, kanban, exports, and canvas boards are views over the same Markdown source.</p>
   `);
+}
+
+function showTaskFileSetup() {
+  const target = findTaskTargetNote();
+  showModal('Task File Setup', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${target ? 'found' : 'create'}</strong><span>Tasks.md</span><small>${target ? escapeHtml(target.title || basename(target.path || '') || 'Loaded task file') : 'Uses local Tasks.md when available, otherwise creates a draft'}</small></div>
+      <div class="diag-card"><strong>portable</strong><span>Markdown only</span><small>No task database or vendor-locked format</small></div>
+      <div class="diag-card"><strong>views</strong><span>List / calendar / kanban</span><small>Same checkbox lines, different local views</small></div>
+      <div class="diag-card"><strong>tokens</strong><span>due: !priority @waiting #tag</span><small>Searchable and readable outside Markpad</small></div>
+      <div class="diag-card"><strong>exports</strong><span>MD / JSON / CSV / ICS</span><small>Useful escape hatches stay visible</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>Visual planning</span><small>Send filtered tasks to lightweight canvas cards</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-task-file-inbox>${target ? 'Append inbox starter' : 'Create inbox starter'}</button>
+      <button data-task-file-weekly>Weekly starter</button>
+      <button data-task-file-project>Project starter</button>
+      <button data-task-file-review>Review starter</button>
+      <button data-task-file-quick>Quick task</button>
+      <button data-task-file-open-view>Open task views</button>
+    </div>
+    <p class="diag-note">The contained task-file workflow is still plain Markdown. If the local-folder backend is available, starters go to local Tasks.md; otherwise Markpad creates an unsaved Tasks draft.</p>
+  `, true);
 }
 
 function showTaskCanvasGuide() {
@@ -6350,6 +6381,13 @@ function dateKeyOffset(days) {
 }
 
 function taskStarterLines(kind) {
+  if (kind === 'inbox') {
+    return [
+      `## Inbox ${todayKey()}`,
+      `- [ ] Capture first task !medium due:${todayKey()} #inbox`,
+      `- [ ] Review inbox and assign next action @waiting #inbox`,
+    ];
+  }
   if (kind === 'weekly') {
     return [
       `## Weekly Plan ${todayKey()}`,
@@ -10916,6 +10954,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (currentFileSearchCanvasBtn && !currentFileSearchCanvasBtn.disabled) insertCurrentFileSearchCanvasBoard(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchJump = e.target.closest('[data-current-file-search-jump]');
   if (currentFileSearchJump) jumpToCurrentFileSearchMatch(currentFileSearchJump.dataset.currentFileSearchJump, currentFileSearchJump.dataset.currentFileSearchLength);
+  const taskFileSetupBtn = e.target.closest('[data-task-file-setup]');
+  if (taskFileSetupBtn) showTaskFileSetup();
+  const taskFileInboxBtn = e.target.closest('[data-task-file-inbox]');
+  if (taskFileInboxBtn) await addTaskStarterTemplate('inbox', 'Inbox');
+  const taskFileWeeklyBtn = e.target.closest('[data-task-file-weekly]');
+  if (taskFileWeeklyBtn) await addTaskStarterTemplate('weekly', 'Weekly plan');
+  const taskFileProjectBtn = e.target.closest('[data-task-file-project]');
+  if (taskFileProjectBtn) await addTaskStarterTemplate('project', 'Project kickoff');
+  const taskFileReviewBtn = e.target.closest('[data-task-file-review]');
+  if (taskFileReviewBtn) await addTaskStarterTemplate('review', 'Review queue');
+  const taskFileQuickBtn = e.target.closest('[data-task-file-quick]');
+  if (taskFileQuickBtn) await addQuickTask();
+  const taskFileOpenViewBtn = e.target.closest('[data-task-file-open-view]');
+  if (taskFileOpenViewBtn) await showTasksView(taskViewMode);
   const viewModeButton = e.target.closest('[data-view-mode]');
   if (viewModeButton) setView(viewModeButton.dataset.viewMode);
   const splitPresetButton = e.target.closest('[data-split-preset]');
@@ -11122,6 +11174,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const localNew = e.target.closest('[data-local-folder-new]');
   if (localNew && !localNew.disabled) await createLocalFolderNote();
+  const localTasks = e.target.closest('[data-local-folder-tasks]');
+  if (localTasks && !localTasks.disabled) showTaskFileSetup();
   const localDaily = e.target.closest('[data-local-folder-daily]');
   if (localDaily && !localDaily.disabled) await createLocalFolderDailyNote();
   const localWeekly = e.target.closest('[data-local-folder-weekly]');
