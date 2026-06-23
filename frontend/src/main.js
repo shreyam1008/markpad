@@ -1874,6 +1874,20 @@ function showLocalFirstGuide() {
   `);
 }
 
+function showLayoutGuide() {
+  showModal('Layout Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>Editor</strong><span>Write-only lane</span><small>Use for plain text edits and low visual noise</small></div>
+      <div class="diag-card"><strong>Split</strong><span>Live Markdown preview</span><small>50/50, editor focus, or preview focus presets</small></div>
+      <div class="diag-card"><strong>Preview</strong><span>Read-only review</span><small>Best for proofreading rendered Markdown and documents</small></div>
+      <div class="diag-card"><strong>Reading width</strong><span>Constrained text</span><small>Improves long-form editing and preview scanning</small></div>
+      <div class="diag-card"><strong>Focus + compact</strong><span>Less chrome</span><small>Hide secondary UI and tighten controls</small></div>
+      <div class="diag-card"><strong>Low memory</strong><span>Release undo</span><small>Workspace low-memory clears editor and canvas undo snapshots</small></div>
+    </div>
+    <p class="diag-note">Split ratios are local UI state only. Use the command palette for exact presets or nudge commands when the drag handle is not precise enough.</p>
+  `);
+}
+
 function showSearchSyntaxHelp() {
   showModal('Search Syntax', `
     <div class="diag-grid">
@@ -3228,6 +3242,7 @@ function commandItems() {
     { id: 'restore-ui-state-json', icon: 'RUJ', title: 'Restore UI state JSON', hint: 'Restore local theme, layout, task, search, editor, and canvas preferences from clipboard JSON', run: restoreUiStateJsonFromClipboard },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
+    { id: 'layout-guide', icon: 'LG', title: 'Layout guide', hint: 'Show editor, split, preview, reading width, focus, and low-memory layout notes', run: showLayoutGuide },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
     { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
