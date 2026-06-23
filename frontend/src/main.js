@@ -33,6 +33,8 @@ let searchOpen = false;
 let searchTimer = null;
 let searchToken = 0;
 let searchActiveIndex = 0;
+let commandOpen = false;
+let commandActiveIndex = 0;
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let latestTasks = [];
@@ -100,6 +102,9 @@ const searchOverlay = $('search-overlay');
 const searchInput  = $('search-input');
 const searchResults = $('search-results');
 const searchMeta   = $('search-meta');
+const commandOverlay = $('command-overlay');
+const commandInput = $('command-input');
+const commandResults = $('command-results');
 const themeBtn     = $('btn-theme');
 const focusBtn     = $('btn-focus');
 const canvasOverlay = $('canvas-overlay');
@@ -772,6 +777,133 @@ searchInput?.addEventListener('keydown', (e) => {
 $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });
 themeBtn?.addEventListener('click', cycleTheme);
+
+function commandItems() {
+  return [
+    { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
+    { id: 'open', icon: 'O', title: 'Open file', hint: 'Open a local file', kbd: 'Ctrl+O', run: doOpen },
+    { id: 'save', icon: 'S', title: 'Save', hint: 'Save the active document', kbd: 'Ctrl+S', run: doSave },
+    { id: 'saveas', icon: 'A', title: 'Save as', hint: 'Choose a save path', kbd: 'Ctrl+Shift+S', run: doSaveAs },
+    { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
+    { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
+    { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
+    { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
+    { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
+    { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
+    { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
+    { id: 'preview', icon: 'P', title: 'Preview view', hint: 'Show preview/document only', run: () => setView('viewer') },
+    { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
+    { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
+    { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch Paper, Linen, Ink, Pine', run: cycleTheme },
+    { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
+    { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
+      <p><b>Markpad</b> is a native Markdown notepad.</p>
+      <p>Open Markdown, text, code, config, logs, PDFs, ebooks, and office documents.</p>
+      <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
+      <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
+      <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
+      <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
+      <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
+      <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
+      <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
+      <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
+      <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
+      <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>
+    `) },
+  ];
+}
+
+function commandScore(item, query) {
+  if (!query) return 1;
+  const haystack = `${item.title} ${item.hint} ${item.id}`.toLowerCase();
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.every(term => haystack.includes(term))) return 0;
+  let score = 10;
+  for (const term of terms) {
+    if (item.title.toLowerCase().startsWith(term)) score += 30;
+    else if (item.title.toLowerCase().includes(term)) score += 18;
+    else score += 8;
+  }
+  return score;
+}
+
+function renderCommandPalette() {
+  const query = commandInput.value.trim();
+  const items = commandItems()
+    .map(item => ({ item, score: commandScore(item, query) }))
+    .filter(row => row.score > 0)
+    .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title))
+    .slice(0, 18)
+    .map(row => row.item);
+  commandResults.innerHTML = '';
+  commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, items.length - 1));
+  if (!items.length) {
+    commandResults.innerHTML = '<div class="command-empty">No command matched.</div>';
+    return;
+  }
+  items.forEach((item, index) => {
+    const row = el('button', `command-row${index === commandActiveIndex ? ' active' : ''}`);
+    row.type = 'button';
+    row.dataset.commandId = item.id;
+    row.innerHTML = `
+      <span class="command-icon">${escapeHtml(item.icon)}</span>
+      <span class="command-body"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.hint)}</span></span>
+      ${item.kbd ? `<span class="command-kbd">${escapeHtml(item.kbd)}</span>` : '<span></span>'}`;
+    row.addEventListener('mousemove', () => setCommandActive(index));
+    row.addEventListener('click', () => runCommand(item));
+    commandResults.appendChild(row);
+  });
+}
+
+function setCommandActive(index) {
+  commandActiveIndex = index;
+  [...commandResults.querySelectorAll('.command-row')].forEach((row, i) => row.classList.toggle('active', i === index));
+}
+
+function openCommandPalette() {
+  commandOpen = true;
+  commandOverlay.classList.remove('hidden');
+  commandInput.value = '';
+  commandActiveIndex = 0;
+  renderCommandPalette();
+  requestAnimationFrame(() => commandInput.focus());
+}
+
+function closeCommandPalette() {
+  commandOpen = false;
+  commandOverlay.classList.add('hidden');
+  commandInput.blur();
+}
+
+async function runCommand(item) {
+  closeCommandPalette();
+  await item.run();
+}
+
+commandInput?.addEventListener('input', () => {
+  commandActiveIndex = 0;
+  renderCommandPalette();
+});
+commandInput?.addEventListener('keydown', (e) => {
+  const rows = [...commandResults.querySelectorAll('.command-row')];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    setCommandActive(Math.min(rows.length - 1, commandActiveIndex + 1));
+    rows[commandActiveIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    setCommandActive(Math.max(0, commandActiveIndex - 1));
+    rows[commandActiveIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    rows[commandActiveIndex]?.click();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeCommandPalette();
+  }
+});
+$('command-close')?.addEventListener('click', closeCommandPalette);
+commandOverlay?.addEventListener('click', (e) => { if (e.target === commandOverlay) closeCommandPalette(); });
 
 const TASK_LINE_RE = /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
 const FENCE_LINE_RE = /^(\s*)(```|~~~)/;
@@ -2176,7 +2308,9 @@ function applyFormat(action) {
 document.addEventListener('keydown', async (e) => {
   const ctrl = e.ctrlKey || e.metaKey, shift = e.shiftKey, key = e.key;
   const inSearchInput = document.activeElement === searchInput;
+  const inCommandInput = document.activeElement === commandInput;
   if (ctrl && shift && key.toLowerCase() === 'f') { e.preventDefault(); openSearchPalette(); }
+  else if (ctrl && !shift && key.toLowerCase() === 'p') { e.preventDefault(); openCommandPalette(); }
   else if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
   else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
   else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
@@ -2190,11 +2324,12 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && shift && key.toLowerCase() === 'l') { e.preventDefault(); toggleFocusMode(); }
   else if (ctrl && !shift && key === 'h') { e.preventDefault(); toggleHistory(); }
   else if (ctrl && !shift && key === 'f') { e.preventDefault(); toggleFind(); }
-  else if (ctrl && !shift && key.toLowerCase() === 'b' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('bold'); }
-  else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('italic'); }
-  else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput) { e.preventDefault(); applyFormat('link'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'b' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('bold'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('italic'); }
+  else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('link'); }
   else if (key === 'Escape') {
     if (canvasActive) closeCanvas();
+    if (commandOpen) closeCommandPalette();
     if (searchOpen) closeSearchPalette();
     if (findOpen) toggleFind();
     if (historyOpen) toggleHistory();
@@ -2289,6 +2424,7 @@ $('btn-new').addEventListener('click', doNew);
 $('btn-new-mini').addEventListener('click', doNew);
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
+$('btn-command').addEventListener('click', openCommandPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
 $('btn-canvas').addEventListener('click', openCanvas);
 $('btn-focus').addEventListener('click', toggleFocusMode);
@@ -2485,7 +2621,7 @@ function registerEvents() {
     <p><kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
     <p><kbd>Ctrl+Z</kbd> Undo &nbsp; <kbd>Ctrl+Shift+Z</kbd> Redo &nbsp; <kbd>Ctrl+Shift+S</kbd> Save As</p>
     <p><kbd>Ctrl+Shift+E</kbd> Cycle view (Editor / Split / Preview)</p>
-    <p><kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
+    <p><kbd>Ctrl+P</kbd> Command palette &nbsp; <kbd>Ctrl+Shift+B</kbd> Toggle sidebar &nbsp; <kbd>Ctrl+Shift+L</kbd> Focus mode &nbsp; <kbd>Ctrl+F</kbd> Find in file &nbsp; <kbd>Ctrl+Shift+F</kbd> Search loaded files &nbsp; <kbd>Ctrl+H</kbd> History</p>
     <p><kbd>Ctrl+B</kbd> Bold &nbsp; <kbd>Ctrl+I</kbd> Italic &nbsp; <kbd>Ctrl+K</kbd> Link</p>
     <p><kbd>Ctrl+=</kbd> Zoom in &nbsp; <kbd>Ctrl+-</kbd> Zoom out &nbsp; <kbd>Ctrl+0</kbd> Reset zoom</p>
     <p><kbd>Ctrl+Del</kbd> Delete draft &nbsp; <kbd>Esc</kbd> Close modal/find</p>

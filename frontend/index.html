@@ -93,6 +93,7 @@
         </div>
         <div class="flex gap-1.5">
           <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
+          <button id="btn-command" class="icon-btn" title="Command palette (Ctrl+P)" aria-label="Command palette"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/><path d="m16 10 3 2-3 2"/></svg></button>
           <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
           <button id="btn-canvas" class="icon-btn" title="Canvas draft" aria-label="Canvas draft"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
           <button id="btn-focus" class="icon-btn" title="Focus mode (Ctrl+Shift+L)" aria-label="Focus mode"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg></button>
@@ -235,6 +236,21 @@
         <span id="search-meta">Ctrl+F still searches inside the current file.</span>
       </div>
       <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <div id="command-overlay" class="hidden fixed inset-0 z-[72] command-backdrop">
+    <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-title">
+      <div class="command-head">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/></svg>
+        <input id="command-input" type="text" autocomplete="off" spellcheck="false" placeholder="Run a command..." aria-labelledby="command-title" />
+        <button id="command-close" title="Close command palette" aria-label="Close command palette">&times;</button>
+      </div>
+      <div class="command-sub">
+        <span id="command-title">Command palette</span>
+        <span>Enter to run · Esc to close · Ctrl+P</span>
+      </div>
+      <div id="command-results" class="command-results"></div>
     </div>
   </div>
 
