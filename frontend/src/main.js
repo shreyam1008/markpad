@@ -3390,6 +3390,8 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab" data-task-export-md>Export MD</button>
         <button class="task-tab" data-task-copy-json>Copy JSON</button>
         <button class="task-tab" data-task-export-json>Export JSON</button>
+        <button class="task-tab" data-task-copy-csv>Copy CSV</button>
+        <button class="task-tab" data-task-export-csv>Export CSV</button>
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
@@ -6620,6 +6622,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyJson) await copyVisibleTasksJson();
   const taskExportJson = e.target.closest('[data-task-export-json]');
   if (taskExportJson) await exportTasksJson();
+  const taskCopyCsv = e.target.closest('[data-task-copy-csv]');
+  if (taskCopyCsv) await copyVisibleTasksCsv();
+  const taskExportCsv = e.target.closest('[data-task-export-csv]');
+  if (taskExportCsv) await exportTasksCsv();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
