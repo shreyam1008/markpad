@@ -1251,7 +1251,9 @@ function searchResultsToMarkdown(results, query) {
     lines.push(`${index + 1}. ${result.title || basename(result.path) || 'Untitled'}`);
     lines.push(`   - Source: ${result.source === 'local' ? 'Local' : 'Loaded'}`);
     lines.push(`   - Path: ${result.path || 'Draft'}`);
-    if (result.matchKind) lines.push(`   - Match: ${result.matchKind}`);
+    const matchLabel = searchResultMatchLabel(result);
+    if (matchLabel) lines.push(`   - Match: ${matchLabel}`);
+    if (Number.isFinite(Number(result.score))) lines.push(`   - Score: ${Number(result.score)}`);
     if (result.snippet) lines.push(`   - Snippet: ${String(result.snippet).replace(/\s+/g, ' ').trim()}`);
     if (result.matchIndex >= 0 || result.source === 'local') lines.push(`   - Line: ${line}`);
   });
