@@ -379,6 +379,16 @@ async function copySearchRecentsJson() {
   statusText.textContent = 'Search recents copied as JSON';
 }
 
+function exportSearchRecentsMarkdown() {
+  downloadText('markpad-search-recents.md', 'text/markdown', searchRecentsMarkdown());
+  statusText.textContent = 'Search recents exported as Markdown';
+}
+
+function exportSearchRecentsJson() {
+  downloadText('markpad-search-recents.json', 'application/json', searchRecentsJson());
+  statusText.textContent = 'Search recents exported as JSON';
+}
+
 function getSelectedSearchText() {
   const active = document.activeElement;
   if (active && typeof active.value === 'string' && typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number' && active.selectionStart !== active.selectionEnd) {
@@ -2495,6 +2505,8 @@ function commandItems() {
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'copy-search-recents', icon: 'CSR', title: 'Copy search recents', hint: 'Copy locally stored search palette recents as Markdown', run: copySearchRecentsMarkdown },
     { id: 'copy-search-recents-json', icon: 'CSJ', title: 'Copy search recents JSON', hint: 'Copy locally stored search palette recents as JSON', run: copySearchRecentsJson },
+    { id: 'export-search-recents', icon: 'ESR', title: 'Export search recents', hint: 'Download locally stored search palette recents as Markdown', run: exportSearchRecentsMarkdown },
+    { id: 'export-search-recents-json', icon: 'ESJ', title: 'Export search recents JSON', hint: 'Download locally stored search palette recents as JSON', run: exportSearchRecentsJson },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
