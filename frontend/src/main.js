@@ -778,6 +778,7 @@ function showUiStateSummary() {
       <button data-export-ui-state-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
       <button data-copy-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
       <button data-export-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+      <button data-restore-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Restore JSON</button>
     </div>
     <p class="diag-note">All values are local-only UI preferences or active in-memory canvas settings. No workspace scan is performed.</p>
   `);
@@ -870,6 +871,145 @@ async function copyUiStateJson() {
 function exportUiStateJson() {
   downloadText('markpad-ui-state.json', 'application/json', uiStateSummaryJson());
   statusText.textContent = 'UI state exported as JSON';
+}
+
+async function restoreUiStateJsonFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch (_) {
+    statusText.textContent = 'Clipboard does not contain UI state JSON';
+    return;
+  }
+  if (!parsed || parsed.type !== 'markpad-ui-state') {
+    statusText.textContent = 'Clipboard JSON is not Markpad UI state';
+    return;
+  }
+
+  let applied = 0;
+  const layout = parsed.layout || {};
+  const editorState = parsed.editor || {};
+  const searchState = parsed.search || {};
+  const taskState = parsed.tasks || {};
+  const canvasState = parsed.canvas || {};
+
+  if (typeof parsed.theme?.id === 'string' && THEMES.some(theme => theme.id === parsed.theme.id)) {
+    applyTheme(parsed.theme.id, true);
+    applied++;
+  }
+
+  if (typeof layout.focusMode === 'boolean') {
+    focusMode = layout.focusMode;
+    localStorage.setItem('markpad-focus', focusMode ? '1' : '0');
+    applyFocusMode(true);
+    applied++;
+  }
+  if (typeof layout.compactMode === 'boolean') {
+    compactMode = layout.compactMode;
+    localStorage.setItem('markpad-compact', compactMode ? '1' : '0');
+    applyCompactMode(true);
+    applied++;
+  }
+  if (typeof layout.viewMode === 'string' && ['editor', 'split', 'viewer'].includes(layout.viewMode)) {
+    setView(layout.viewMode);
+    applied++;
+  }
+  if (Number.isFinite(Number(layout.splitRatio))) {
+    splitRatio = normalizeSplitRatio(Number(layout.splitRatio));
+    localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+    if (viewMode === 'split') applySplitRatio();
+    updateSplitPresetButtons();
+    applied++;
+  }
+
+  if (typeof editorState.softWrap === 'boolean') {
+    editorSoftWrap = editorState.softWrap;
+    applyEditorWrap(true);
+    applied++;
+  }
+  if (typeof editorState.readingWidth === 'boolean') {
+    editorReadingWidth = editorState.readingWidth;
+    applyEditorReadingWidth(true);
+    applied++;
+  }
+  if (Number.isFinite(Number(editorState.zoomPercent))) {
+    fontSize = Math.round((Number(editorState.zoomPercent) / 100) * ZOOM_DEFAULT);
+    fontSize = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fontSize));
+    applyZoom(true);
+    applied++;
+  }
+
+  if (typeof searchState.scope === 'string' && ['loaded', 'local', 'all'].includes(searchState.scope)) {
+    setSearchScope(searchState.scope);
+    applied++;
+  }
+  if (typeof searchState.lastQuery === 'string') {
+    searchLastQuery = searchState.lastQuery;
+    if (searchInput) searchInput.value = searchState.lastQuery;
+    applied++;
+  }
+
+  if (typeof taskState.viewMode === 'string' && ['list', 'calendar', 'kanban'].includes(taskState.viewMode)) {
+    taskViewMode = taskState.viewMode;
+    localStorage.setItem('markpad-task-view', taskViewMode);
+    applied++;
+  }
+  if (typeof taskState.sourceFilter === 'string') {
+    setTaskSourceFilter(taskState.sourceFilter);
+    applied++;
+  }
+  if (typeof taskState.filter === 'string') {
+    setTaskStatusFilter(taskState.filter);
+    applied++;
+  }
+  if (typeof taskState.query === 'string') {
+    taskQuery = taskState.query.trim();
+    localStorage.setItem('markpad-task-query', taskQuery);
+    applied++;
+  }
+
+  if (typeof canvasState.tool === 'string') {
+    setCanvasTool(canvasState.tool);
+    applied++;
+  }
+  if (typeof canvasState.gridVisible === 'boolean') {
+    canvasGridVisible = canvasState.gridVisible;
+    localStorage.setItem('markpad-canvas-grid', canvasGridVisible ? '1' : '0');
+    applied++;
+  }
+  if (Number.isFinite(Number(canvasState.gridSize))) {
+    canvasGridSize = normalizeCanvasGridSize(canvasState.gridSize);
+    localStorage.setItem('markpad-canvas-grid-size', String(canvasGridSize));
+    applied++;
+  }
+  if (typeof canvasState.snapToGrid === 'boolean') {
+    canvasSnapToGrid = canvasState.snapToGrid;
+    localStorage.setItem('markpad-canvas-snap', canvasSnapToGrid ? '1' : '0');
+    applied++;
+  }
+  if (typeof canvasState.minimapVisible === 'boolean') {
+    canvasMinimapVisible = canvasState.minimapVisible;
+    localStorage.setItem('markpad-canvas-minimap', canvasMinimapVisible ? '1' : '0');
+    applied++;
+  }
+  if (typeof canvasState.background === 'string' && canvasState.background.trim() && canvasDoc) {
+    canvasDoc.appState = canvasDoc.appState || {};
+    canvasDoc.appState.viewBackgroundColor = canvasState.background.trim();
+    saveCanvasState();
+    applied++;
+  }
+
+  updateSearchScopeButtons();
+  updateCanvasOptionButtons();
+  if (canvasActive) {
+    renderCanvas();
+    updateCanvasStatus();
+  }
+  statusText.textContent = applied ? `UI state restored from clipboard (${applied} preferences)` : 'No UI state preferences restored';
 }
 
 function normalizeSplitRatio(value) {
@@ -2985,6 +3125,7 @@ function commandItems() {
     { id: 'export-ui-state-summary', icon: 'EU', title: 'Export UI state Markdown', hint: 'Download current theme, layout, search, task, and canvas preferences as Markdown', run: exportUiStateSummary },
     { id: 'copy-ui-state-json', icon: 'CUJ', title: 'Copy UI state JSON', hint: 'Copy current theme, layout, search, task, and canvas preferences as JSON', run: copyUiStateJson },
     { id: 'export-ui-state-json', icon: 'EUJ', title: 'Export UI state JSON', hint: 'Download current theme, layout, search, task, and canvas preferences as JSON', run: exportUiStateJson },
+    { id: 'restore-ui-state-json', icon: 'RUJ', title: 'Restore UI state JSON', hint: 'Restore local theme, layout, task, search, editor, and canvas preferences from clipboard JSON', run: restoreUiStateJsonFromClipboard },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
@@ -8684,6 +8825,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyUiStateJsonBtn) await copyUiStateJson();
   const exportUiStateJsonBtn = e.target.closest('[data-export-ui-state-json]');
   if (exportUiStateJsonBtn) exportUiStateJson();
+  const restoreUiStateJsonBtn = e.target.closest('[data-restore-ui-state-json]');
+  if (restoreUiStateJsonBtn) await restoreUiStateJsonFromClipboard();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
