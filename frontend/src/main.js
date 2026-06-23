@@ -3378,7 +3378,8 @@ function updateCanvasStatus() {
   if (!canvasStatus || !canvasSession) return;
   const count = (canvasDoc?.elements || []).length;
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
-  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%${canvasSelectionStatus(count)}`;
+  const bytes = byteSize(JSON.stringify(canvasDoc || newCanvasDoc()));
+  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}% · ${formatBytes(bytes)}${canvasSelectionStatus(count)}`;
   updateCanvasSelectionButtons();
 }
 
