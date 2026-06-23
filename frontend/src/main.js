@@ -296,6 +296,26 @@ function searchSelectionEverywhere() {
   openSearchPaletteQuery('all', `"${phrase}"`);
 }
 
+function searchPhraseEverywhere(value, emptyMessage) {
+  const phrase = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!phrase) {
+    openSearchPaletteScope('all');
+    statusText.textContent = emptyMessage;
+    return;
+  }
+  openSearchPaletteQuery('all', `"${phrase.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+}
+
+function searchActiveTitleEverywhere() {
+  const note = cachedNotes.find(item => item.id === activeId) || {};
+  searchPhraseEverywhere(note.title || sessionTitleFromContent(currentContent), 'No active title to search');
+}
+
+function searchActivePathEverywhere() {
+  const note = cachedNotes.find(item => item.id === activeId) || {};
+  searchPhraseEverywhere(note.path || basename(note.title || ''), 'No active path to search');
+}
+
 function clearSearchRecents() {
   searchRecentQueries = [];
   localStorage.removeItem(SEARCH_RECENTS_KEY);
@@ -1724,6 +1744,8 @@ function commandItems() {
     { id: 'search-title-filter', icon: 'STI', title: 'Search by title', hint: 'Open all-source search with title: prefilled', run: () => openSearchPaletteQuery('all', 'title:') },
     { id: 'search-path-filter', icon: 'SPA', title: 'Search by path', hint: 'Open all-source search with path: prefilled', run: () => openSearchPaletteQuery('all', 'path:') },
     { id: 'search-tag-filter', icon: '#', title: 'Search by tag', hint: 'Open all-source search with tag: prefilled', run: () => openSearchPaletteQuery('all', 'tag:') },
+    { id: 'search-active-title', icon: 'SAT', title: 'Search active title everywhere', hint: 'Search loaded files and the local folder for the active title as an exact phrase', run: searchActiveTitleEverywhere },
+    { id: 'search-active-path', icon: 'SAP', title: 'Search active path everywhere', hint: 'Search loaded files and the local folder for the active path as an exact phrase', run: searchActivePathEverywhere },
     { id: 'search-open-tasks', icon: 'SO', title: 'Search open tasks', hint: 'Open all-source search with task:open prefilled', run: () => openSearchPaletteQuery('all', 'task:open ') },
     { id: 'search-done-tasks', icon: 'SD', title: 'Search completed tasks', hint: 'Open all-source search with task:done prefilled', run: () => openSearchPaletteQuery('all', 'task:done ') },
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
