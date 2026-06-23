@@ -334,6 +334,51 @@ function renderSearchRecents() {
   `;
 }
 
+function currentSearchRecents() {
+  if (!searchRecentQueries.length) searchRecentQueries = loadSearchRecentQueries();
+  return searchRecentQueries.slice(0, SEARCH_RECENTS_LIMIT);
+}
+
+function searchRecentsMarkdown() {
+  const recents = currentSearchRecents();
+  return [
+    '# Markpad Search Recents',
+    '',
+    `Generated: ${new Date().toLocaleString()}`,
+    `Count: ${recents.length}`,
+    '',
+    ...recents.map((query, index) => `${index + 1}. \`${query.replace(/`/g, '\\`')}\``),
+  ].join('\n') + '\n';
+}
+
+function searchRecentsJson() {
+  return JSON.stringify({
+    type: 'markpad-search-recents',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    count: currentSearchRecents().length,
+    queries: currentSearchRecents(),
+  }, null, 2) + '\n';
+}
+
+async function copySearchRecentsMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchRecentsMarkdown());
+  statusText.textContent = 'Search recents copied as Markdown';
+}
+
+async function copySearchRecentsJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchRecentsJson());
+  statusText.textContent = 'Search recents copied as JSON';
+}
+
 function getSelectedSearchText() {
   const active = document.activeElement;
   if (active && typeof active.value === 'string' && typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number' && active.selectionStart !== active.selectionEnd) {
@@ -2448,6 +2493,8 @@ function commandItems() {
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
     { id: 'search-clipboard-all', icon: 'SCB', title: 'Search clipboard everywhere', hint: 'Search loaded files and the local folder for clipboard text as an exact phrase', run: searchClipboardEverywhere },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
+    { id: 'copy-search-recents', icon: 'CSR', title: 'Copy search recents', hint: 'Copy locally stored search palette recents as Markdown', run: copySearchRecentsMarkdown },
+    { id: 'copy-search-recents-json', icon: 'CSJ', title: 'Copy search recents JSON', hint: 'Copy locally stored search palette recents as JSON', run: copySearchRecentsJson },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
