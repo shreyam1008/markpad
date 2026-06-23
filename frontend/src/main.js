@@ -2080,6 +2080,7 @@ function showLowMemoryGuide() {
       <div class="diag-card"><strong>measure</strong><span>Runtime stats</span><small>Sample RSS, Go heap, goroutines, uptime, and binary size</small></div>
       <div class="diag-card"><strong>inspect</strong><span>Local footprint</span><small>Estimate loaded text, canvas, Trash, localStorage, and undo bytes</small></div>
       <div class="diag-card"><strong>release</strong><span>Clear undo histories</span><small>Drop editor and canvas undo snapshots when memory matters</small></div>
+      <div class="diag-card"><strong>one step</strong><span>Cleanup + footprint</span><small>Apply low-memory preset and immediately sample footprint</small></div>
       <div class="diag-card"><strong>preset</strong><span>Workspace low memory</span><small>Enable compact mode and release undo snapshots together</small></div>
       <div class="diag-card"><strong>canvas</strong><span>bounded bridges</span><small>Task, search, outline, workspace, and backlink maps cap inserted cards</small></div>
       <div class="diag-card"><strong>assets</strong><span>text icons + CSS themes</span><small>No icon font packs, image theme bundles, or heavy drawing runtime</small></div>
