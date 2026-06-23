@@ -1949,6 +1949,46 @@ async function exportRuntimeStatsJson() {
   }
 }
 
+function runtimeStatsMarkdown(stats) {
+  return [
+    '# Markpad Runtime Stats',
+    '',
+    `Sampled: ${new Date().toISOString()}`,
+    '',
+    '## Process',
+    '',
+    `- RSS: ${stats.processRssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable'}`,
+    `- Executable size: ${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'}`,
+    `- Uptime: ${formatRuntimeDuration(stats.uptimeSeconds)}`,
+    `- Platform: ${stats.os || 'unknown'}/${stats.arch || 'unknown'}`,
+    '',
+    '## Go Runtime',
+    '',
+    `- Heap alloc: ${formatBytes(Number(stats.goAllocBytes || 0))}`,
+    `- Heap in use: ${formatBytes(Number(stats.goHeapInuseBytes || 0))}`,
+    `- Heap idle: ${formatBytes(Number(stats.goHeapIdleBytes || 0))}`,
+    `- Heap released: ${formatBytes(Number(stats.goHeapReleasedBytes || 0))}`,
+    `- Runtime sys: ${formatBytes(Number(stats.goSysBytes || 0))}`,
+    `- Objects: ${Number(stats.goObjects || 0).toLocaleString()}`,
+    `- Goroutines: ${Number(stats.goroutines || 0).toLocaleString()}`,
+    '',
+  ].join('\n');
+}
+
+async function exportRuntimeStatsMarkdown() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  try {
+    downloadText('markpad-runtime-stats.md', 'text/markdown', runtimeStatsMarkdown(await getter()));
+    statusText.textContent = 'Runtime stats exported as Markdown';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats Markdown export failed: ' + err;
+  }
+}
+
 async function showRuntimeStats() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -2053,6 +2093,7 @@ function commandItems() {
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'copy-runtime-stats-json', icon: 'CRJ', title: 'Copy runtime stats JSON', hint: 'Copy memory, binary size, goroutine, and uptime stats as JSON', run: copyRuntimeStatsJson },
     { id: 'export-runtime-stats-json', icon: 'ERJ', title: 'Export runtime stats JSON', hint: 'Download memory, binary size, goroutine, and uptime stats as JSON', run: exportRuntimeStatsJson },
+    { id: 'export-runtime-stats-md', icon: 'ERM', title: 'Export runtime stats Markdown', hint: 'Download memory, binary size, goroutine, and uptime stats as Markdown', run: exportRuntimeStatsMarkdown },
     { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
