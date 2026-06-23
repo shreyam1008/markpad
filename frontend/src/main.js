@@ -349,6 +349,20 @@ function searchSelectionEverywhere() {
   openSearchPaletteQuery('all', `"${phrase}"`);
 }
 
+async function searchClipboardEverywhere() {
+  if (!navigator.clipboard?.readText) {
+    openSearchPaletteScope('all');
+    statusText.textContent = 'Clipboard read unavailable';
+    return;
+  }
+  try {
+    searchPhraseEverywhere(await navigator.clipboard.readText(), 'Clipboard is empty');
+  } catch {
+    openSearchPaletteScope('all');
+    statusText.textContent = 'Clipboard read blocked';
+  }
+}
+
 function searchPhraseEverywhere(value, emptyMessage) {
   const phrase = String(value || '').replace(/\s+/g, ' ').trim();
   if (!phrase) {
@@ -2423,6 +2437,7 @@ function commandItems() {
     { id: 'search-open-tasks', icon: 'SO', title: 'Search open tasks', hint: 'Open all-source search with task:open prefilled', run: () => openSearchPaletteQuery('all', 'task:open ') },
     { id: 'search-done-tasks', icon: 'SD', title: 'Search completed tasks', hint: 'Open all-source search with task:done prefilled', run: () => openSearchPaletteQuery('all', 'task:done ') },
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
+    { id: 'search-clipboard-all', icon: 'SCB', title: 'Search clipboard everywhere', hint: 'Search loaded files and the local folder for clipboard text as an exact phrase', run: searchClipboardEverywhere },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
