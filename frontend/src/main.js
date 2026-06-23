@@ -3275,6 +3275,8 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-export-md>Export MD</button>
+        <button class="task-tab" data-task-copy-json>Copy JSON</button>
+        <button class="task-tab" data-task-export-json>Export JSON</button>
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
@@ -6458,6 +6460,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskAdd) await addQuickTask();
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
+  const taskCopyJson = e.target.closest('[data-task-copy-json]');
+  if (taskCopyJson) await copyVisibleTasksJson();
+  const taskExportJson = e.target.closest('[data-task-export-json]');
+  if (taskExportJson) await exportTasksJson();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
