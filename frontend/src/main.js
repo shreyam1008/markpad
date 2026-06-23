@@ -1649,6 +1649,8 @@ function commandItems() {
     { id: 'search-markdown', icon: 'SM', title: 'Search Markdown files', hint: 'Open all-source search with type:md prefilled', run: () => openSearchPaletteQuery('all', 'type:md ') },
     { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
     { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
+    { id: 'search-open-tasks', icon: 'SO', title: 'Search open tasks', hint: 'Open all-source search with task:open prefilled', run: () => openSearchPaletteQuery('all', 'task:open ') },
+    { id: 'search-done-tasks', icon: 'SD', title: 'Search completed tasks', hint: 'Open all-source search with task:done prefilled', run: () => openSearchPaletteQuery('all', 'task:done ') },
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
