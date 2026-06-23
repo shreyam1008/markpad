@@ -1411,6 +1411,28 @@ function searchResultsToMarkdown(results, query) {
   return lines.join('\n') + '\n';
 }
 
+function searchResultsToJson(results, query) {
+  return JSON.stringify({
+    type: 'markpad-search-results',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    query: query || '',
+    scope: searchScope,
+    count: results.length,
+    results: results.map(result => ({
+      title: result.title || basename(result.path) || 'Untitled',
+      path: result.path || '',
+      source: result.source || 'loaded',
+      type: typeLabel(getFileType(result.path, result.kind)),
+      match: searchResultMatchLabel(result),
+      line: Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : null,
+      matchIndex: Number.isFinite(Number(result.matchIndex)) ? Number(result.matchIndex) : null,
+      score: Number.isFinite(Number(result.score)) ? Number(result.score) : null,
+      snippet: result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+    })),
+  }, null, 2) + '\n';
+}
+
 async function copySearchResultsMarkdown() {
   if (!searchLastResults.length) {
     statusText.textContent = 'No search results to copy';
@@ -1431,6 +1453,28 @@ function exportSearchResultsMarkdown() {
   }
   downloadText('markpad-search-results.md', 'text/markdown', searchResultsToMarkdown(searchLastResults, searchLastQuery));
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as Markdown`;
+}
+
+async function copySearchResultsJson() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchResultsToJson(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as JSON`;
+}
+
+function exportSearchResultsJson() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to export';
+    return;
+  }
+  downloadText('markpad-search-results.json', 'application/json', searchResultsToJson(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`;
 }
 
 function searchResultMatchLabel(result) {
@@ -1789,6 +1833,8 @@ function commandItems() {
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'export-search-results', icon: 'ES', title: 'Export search results Markdown', hint: 'Download the current search result list as a Markdown report', run: exportSearchResultsMarkdown },
+    { id: 'copy-search-results-json', icon: 'CJ', title: 'Copy search results JSON', hint: 'Copy the current search result list as portable JSON', run: copySearchResultsJson },
+    { id: 'export-search-results-json', icon: 'EJ', title: 'Export search results JSON', hint: 'Download the current search result list as portable JSON', run: exportSearchResultsJson },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'find-selection', icon: 'FS', title: 'Find selection in current file', hint: 'Search the active editor for the selected text', run: findSelectionInCurrentFile },
     { id: 'find-from-top', icon: 'FT', title: 'Find from top', hint: 'Restart the current inline find from the start of the file', run: findFromTop },
