@@ -1611,6 +1611,12 @@ function commandItems() {
     { id: 'open', icon: 'O', title: 'Open file', hint: 'Open a local file', kbd: 'Ctrl+O', run: doOpen },
     { id: 'save', icon: 'S', title: 'Save', hint: 'Save the active document', kbd: 'Ctrl+S', run: doSave },
     { id: 'saveas', icon: 'A', title: 'Save as', hint: 'Choose a save path', kbd: 'Ctrl+Shift+S', run: doSaveAs },
+    { id: 'commands-search', icon: 'CMD', title: 'Show Search commands', hint: 'Filter the command palette to Search actions', run: () => openCommandPaletteQuery('Search') },
+    { id: 'commands-tasks', icon: 'CMD', title: 'Show Task commands', hint: 'Filter the command palette to Tasks actions', run: () => openCommandPaletteQuery('Tasks') },
+    { id: 'commands-canvas', icon: 'CMD', title: 'Show Canvas commands', hint: 'Filter the command palette to Canvas actions', run: () => openCommandPaletteQuery('Canvas') },
+    { id: 'commands-local', icon: 'CMD', title: 'Show Local commands', hint: 'Filter the command palette to Local workspace actions', run: () => openCommandPaletteQuery('Local') },
+    { id: 'commands-layout', icon: 'CMD', title: 'Show Layout commands', hint: 'Filter the command palette to layout and editor view actions', run: () => openCommandPaletteQuery('Layout') },
+    { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
@@ -1798,6 +1804,18 @@ function openCommandPalette() {
   commandActiveIndex = 0;
   renderCommandPalette();
   requestAnimationFrame(() => commandInput.focus());
+}
+
+function openCommandPaletteQuery(query) {
+  commandOpen = true;
+  commandOverlay.classList.remove('hidden');
+  commandInput.value = query;
+  commandActiveIndex = 0;
+  renderCommandPalette();
+  requestAnimationFrame(() => {
+    commandInput.focus();
+    commandInput.setSelectionRange(commandInput.value.length, commandInput.value.length);
+  });
 }
 
 function closeCommandPalette() {
