@@ -51,6 +51,7 @@ let canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
 let editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
+let editorReadingWidth = localStorage.getItem('markpad-editor-reading-width') === '1';
 let canvasDoc = null;
 let canvasSession = null;
 let canvasActive = false;
@@ -88,6 +89,17 @@ function applyEditorWrap(silent) {
 function toggleEditorWrap() {
   editorSoftWrap = !editorSoftWrap;
   applyEditorWrap();
+}
+
+function applyEditorReadingWidth(silent) {
+  document.body.classList.toggle('editor-reading-width', editorReadingWidth);
+  localStorage.setItem('markpad-editor-reading-width', editorReadingWidth ? '1' : '0');
+  if (!silent && statusText) statusText.textContent = editorReadingWidth ? 'Reading width enabled' : 'Reading width disabled';
+}
+
+function toggleEditorReadingWidth() {
+  editorReadingWidth = !editorReadingWidth;
+  applyEditorReadingWidth();
 }
 
 const $ = (id) => document.getElementById(id);
@@ -174,6 +186,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-focus',
   'markpad-split-ratio',
   'markpad-editor-wrap',
+  'markpad-editor-reading-width',
   'markpad-zoom',
   'markpad-sections',
 ];
@@ -1441,6 +1454,7 @@ function commandItems() {
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
+    { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
     { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
@@ -5514,6 +5528,7 @@ function applyImportedLocalSettings() {
   applyTheme(currentTheme, true);
   applyZoom(true);
   applyEditorWrap(true);
+  applyEditorReadingWidth(true);
   applyFocusMode(true);
   applySectionState();
   updateSearchScopeButtons();

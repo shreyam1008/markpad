@@ -293,6 +293,19 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 #editor { white-space: pre; overflow-wrap: normal; }
 #editor.editor-soft-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+body.editor-reading-width #editor {
+  max-width: 88ch;
+  margin-left: auto;
+  margin-right: auto;
+  border-left: 1px solid var(--border-soft);
+  border-right: 1px solid var(--border-soft);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset;
+}
+body.editor-reading-width #viewer .markdown-body {
+  max-width: 88ch;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* View mode buttons */
 .view-btn {
