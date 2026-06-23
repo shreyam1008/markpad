@@ -1662,6 +1662,7 @@ function commandItems() {
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
+    { id: 'canvas-fit-selection', icon: 'FS', title: 'Fit selected canvas element', hint: 'Zoom and pan to the selected canvas element', run: () => { openCanvas(); fitCanvasToSelection(); } },
     { id: 'canvas-zoom-in', icon: 'Z+', title: 'Canvas zoom in', hint: 'Increase canvas zoom around the viewport center', run: () => { openCanvas(); zoomCanvasBy(1.16); } },
     { id: 'canvas-zoom-out', icon: 'Z-', title: 'Canvas zoom out', hint: 'Decrease canvas zoom around the viewport center', run: () => { openCanvas(); zoomCanvasBy(1 / 1.16); } },
     { id: 'canvas-zoom-reset', icon: 'Z1', title: 'Canvas zoom 100%', hint: 'Reset canvas zoom to 100% without moving content off-canvas', run: () => { openCanvas(); setCanvasZoom(1); } },
@@ -3470,7 +3471,20 @@ function fitCanvasToContent() {
     renderCanvas();
     return;
   }
-  const bounds = elements.map(canvasElementBounds);
+  fitCanvasToBounds(elements.map(canvasElementBounds), 2.5);
+}
+
+function fitCanvasToSelection() {
+  if (!canvasDoc || !canvasStage || !hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return;
+  }
+  fitCanvasToBounds([canvasElementBounds(canvasDoc.elements[canvasSelectedIndex])], 3);
+  statusText.textContent = 'Canvas selection fitted';
+}
+
+function fitCanvasToBounds(bounds, maxScale = 2.5) {
+  if (!canvasStage || !bounds?.length) return;
   const minX = Math.min(...bounds.map(b => b.x));
   const minY = Math.min(...bounds.map(b => b.y));
   const maxX = Math.max(...bounds.map(b => b.x + b.w));
@@ -3478,7 +3492,7 @@ function fitCanvasToContent() {
   const rect = canvasStage.getBoundingClientRect();
   const contentW = Math.max(1, maxX - minX);
   const contentH = Math.max(1, maxY - minY);
-  const scale = Math.max(0.12, Math.min(2.5, Math.min((rect.width - 96) / contentW, (rect.height - 96) / contentH)));
+  const scale = Math.max(0.12, Math.min(maxScale, Math.min((rect.width - 96) / contentW, (rect.height - 96) / contentH)));
   canvasSession.camera = {
     x: rect.width / 2 - (minX + contentW / 2) * scale,
     y: rect.height / 2 - (minY + contentH / 2) * scale,
