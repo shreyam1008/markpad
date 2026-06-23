@@ -1304,6 +1304,10 @@ body.markpad-compact #modal-body {
 .task-priority-pill.high { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }
 .task-priority-pill.medium { border-color: #c57933; color: #a85f1d; background: color-mix(in srgb, #c57933 10%, var(--surface)); }
 .task-priority-pill.low { border-color: #6f8f61; color: #4f7044; background: color-mix(in srgb, #6f8f61 10%, var(--surface)); }
+.task-due-pill { font-weight: 950; }
+.task-due-pill.overdue { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }
+.task-due-pill.today { border-color: #c57933; color: #a85f1d; background: color-mix(in srgb, #c57933 10%, var(--surface)); }
+.task-due-pill.soon { border-color: #2f6f61; color: #2f6f61; background: color-mix(in srgb, #2f6f61 10%, var(--surface)); }
 .task-open {
   border: none; border-radius: 8px; background: var(--hover); color: var(--muted);
   padding: 5px 8px; font-size: 10px; font-weight: 850; cursor: pointer;

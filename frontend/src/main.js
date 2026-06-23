@@ -5653,10 +5653,26 @@ function renderTaskControls(tasks, visibleTasks) {
   `;
 }
 
+function taskDueBadge(task) {
+  if (!task.due || task.checked) return '';
+  const today = todayKey();
+  const dueTime = new Date(`${task.due}T00:00:00`).getTime();
+  const todayTime = new Date(`${today}T00:00:00`).getTime();
+  if (!Number.isFinite(dueTime) || !Number.isFinite(todayTime)) return '';
+  const days = Math.round((dueTime - todayTime) / (24 * 60 * 60 * 1000));
+  if (days < 0) return '<span class="task-pill task-due-pill overdue">overdue</span>';
+  if (days === 0) return '<span class="task-pill task-due-pill today">today</span>';
+  if (days === 1) return '<span class="task-pill task-due-pill soon">tomorrow</span>';
+  if (days <= 7) return `<span class="task-pill task-due-pill soon">${days} days</span>`;
+  return '';
+}
+
 function taskMeta(task) {
   const bits = [];
   bits.push(`<span class="task-pill">${escapeHtml(task.noteTitle)}</span>`);
   if (task.due) bits.push(`<span class="task-pill">due ${escapeHtml(task.due)}</span>`);
+  const dueBadge = taskDueBadge(task);
+  if (dueBadge) bits.push(dueBadge);
   if (task.priority) {
     const priorityClass = taskPriorityClass(task);
     bits.push(`<span class="task-pill task-priority-pill${priorityClass ? ` ${priorityClass}` : ''}">!${escapeHtml(task.priority)}</span>`);
