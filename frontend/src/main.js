@@ -3991,7 +3991,11 @@ function commandItems() {
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
   { id: 'tasks-agenda', icon: 'TAG', title: 'Task agenda', hint: 'Show overdue, due today, waiting, and high-priority Markdown tasks', run: showTaskAgenda },
   { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
+  { id: 'tasks-agenda-copy-json', icon: 'AJ', title: 'Copy task agenda JSON', hint: 'Copy the current Markdown-derived agenda as structured JSON', run: copyTaskAgendaJson },
+  { id: 'tasks-agenda-copy-csv', icon: 'AC', title: 'Copy task agenda CSV', hint: 'Copy the current Markdown-derived agenda as CSV rows', run: copyTaskAgendaCsv },
   { id: 'tasks-agenda-export', icon: 'TMD', title: 'Export task agenda as Markdown', hint: 'Download the current Markdown-derived agenda as a portable file', run: exportTaskAgendaMarkdown },
+  { id: 'tasks-agenda-export-json', icon: 'EAJ', title: 'Export task agenda JSON', hint: 'Download the current Markdown-derived agenda as structured JSON', run: exportTaskAgendaJson },
+  { id: 'tasks-agenda-export-csv', icon: 'EAC', title: 'Export task agenda CSV', hint: 'Download the current Markdown-derived agenda as CSV rows', run: exportTaskAgendaCsv },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
@@ -6245,6 +6249,89 @@ function taskAgendaMarkdown() {
   return lines.join('\n');
 }
 
+function taskAgendaBuckets(groups = taskAgendaGroups()) {
+  return [
+    ['overdue', 'Overdue', groups.overdue],
+    ['due_today', 'Due today', groups.dueToday],
+    ['waiting', 'Waiting', groups.waiting],
+    ['high_priority', 'High priority', groups.high],
+  ];
+}
+
+function taskAgendaRecord(bucketId, bucketTitle, task) {
+  return {
+    bucket: bucketId,
+    bucketTitle,
+    id: task.id || '',
+    title: taskDisplayTitle(task),
+    text: task.text || task.raw || '',
+    checked: !!task.checked,
+    due: task.due || '',
+    priority: task.priority || '',
+    waiting: !!task.waiting,
+    status: task.status || '',
+    tags: Array.isArray(task.tags) ? task.tags : [],
+    source: taskSourceLabel(task),
+    noteId: task.noteId || '',
+    noteTitle: task.noteTitle || '',
+    path: task.path || '',
+    line: Number.isFinite(Number(task.line)) ? Number(task.line) : '',
+    local: !!task.local,
+  };
+}
+
+function taskAgendaRecords(groups = taskAgendaGroups()) {
+  return taskAgendaBuckets(groups).flatMap(([bucketId, bucketTitle, tasks]) =>
+    tasks.map(task => taskAgendaRecord(bucketId, bucketTitle, task))
+  );
+}
+
+function taskAgendaJson() {
+  const groups = taskAgendaGroups();
+  const buckets = taskAgendaBuckets(groups);
+  return JSON.stringify({
+    type: 'markpad-task-agenda',
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    sourceFilter: taskSourceFilter,
+    counts: {
+      total: groups.all.length,
+      visible: groups.visible.length,
+      open: groups.open.length,
+      overdue: groups.overdue.length,
+      dueToday: groups.dueToday.length,
+      waiting: groups.waiting.length,
+      highPriority: groups.high.length,
+    },
+    buckets: buckets.map(([id, title, tasks]) => ({
+      id,
+      title,
+      count: tasks.length,
+      tasks: tasks.map(task => taskAgendaRecord(id, title, task)),
+    })),
+  }, null, 2) + '\n';
+}
+
+function taskAgendaCsv() {
+  const rows = [
+    ['bucket', 'title', 'due', 'priority', 'waiting', 'status', 'source', 'noteId', 'path', 'line', 'local'],
+    ...taskAgendaRecords().map(task => [
+      task.bucketTitle,
+      task.title,
+      task.due,
+      task.priority,
+      task.waiting ? 'true' : 'false',
+      task.status,
+      task.source,
+      task.noteId,
+      task.path,
+      task.line,
+      task.local ? 'true' : 'false',
+    ]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copyTaskAgendaMarkdown() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -6254,9 +6341,37 @@ async function copyTaskAgendaMarkdown() {
   statusText.textContent = 'Task agenda copied as Markdown';
 }
 
+async function copyTaskAgendaJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(taskAgendaJson());
+  statusText.textContent = 'Task agenda copied as JSON';
+}
+
+async function copyTaskAgendaCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(taskAgendaCsv());
+  statusText.textContent = 'Task agenda copied as CSV';
+}
+
 function exportTaskAgendaMarkdown() {
   downloadText('markpad-task-agenda.md', 'text/markdown', taskAgendaMarkdown());
   statusText.textContent = 'Task agenda exported as Markdown';
+}
+
+function exportTaskAgendaJson() {
+  downloadText('markpad-task-agenda.json', 'application/json', taskAgendaJson());
+  statusText.textContent = 'Task agenda exported as JSON';
+}
+
+function exportTaskAgendaCsv() {
+  downloadText('markpad-task-agenda.csv', 'text/csv', taskAgendaCsv());
+  statusText.textContent = 'Task agenda exported as CSV';
 }
 
 async function showTaskAgenda() {
@@ -6271,7 +6386,11 @@ async function showTaskAgenda() {
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-task-agenda-md>Copy Markdown</button>
+      <button data-copy-task-agenda-json>Copy JSON</button>
+      <button data-copy-task-agenda-csv>Copy CSV</button>
       <button data-export-task-agenda-md>Export Markdown</button>
+      <button data-export-task-agenda-json>Export JSON</button>
+      <button data-export-task-agenda-csv>Export CSV</button>
       <button data-task-agenda-canvas>Send to Canvas</button>
     </div>
     <p class="diag-note">Agenda is a derived local view over Markdown checkbox lines. It does not create a task database or rewrite task files.</p>
@@ -11052,8 +11171,16 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyExcalidrawCanvasBtn) await copyExcalidrawCanvasJson();
   const copyTaskAgendaMdBtn = e.target.closest('[data-copy-task-agenda-md]');
   if (copyTaskAgendaMdBtn) await copyTaskAgendaMarkdown();
+  const copyTaskAgendaJsonBtn = e.target.closest('[data-copy-task-agenda-json]');
+  if (copyTaskAgendaJsonBtn) await copyTaskAgendaJson();
+  const copyTaskAgendaCsvBtn = e.target.closest('[data-copy-task-agenda-csv]');
+  if (copyTaskAgendaCsvBtn) await copyTaskAgendaCsv();
   const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
   if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
+  const exportTaskAgendaJsonBtn = e.target.closest('[data-export-task-agenda-json]');
+  if (exportTaskAgendaJsonBtn) exportTaskAgendaJson();
+  const exportTaskAgendaCsvBtn = e.target.closest('[data-export-task-agenda-csv]');
+  if (exportTaskAgendaCsvBtn) exportTaskAgendaCsv();
   const taskAgendaCanvasBtn = e.target.closest('[data-task-agenda-canvas]');
   if (taskAgendaCanvasBtn) insertTaskAgendaCanvasBoard();
   const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
