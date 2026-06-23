@@ -63,6 +63,7 @@ Vault/
 
 ## Phase 4: trash
 
+- Current frontend slice: unsaved drafts are moved to local Trash and retained for 30 days via `localStorage`.
 - Soft-delete drafts and vault files for 30 days by moving them to `.markpad/trash/`.
 - Track original path, deleted timestamp, size, and title in `.markpad/trash.json`.
 - Add Trash view with restore, delete permanently, and empty expired.

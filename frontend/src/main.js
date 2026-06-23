@@ -123,6 +123,8 @@ const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const CANVAS_DOC_KEY = 'markpad-canvas-draft';
 const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
+const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
+const DRAFT_TRASH_DAYS = 30;
 
 function applyTheme(id, silent) {
   if (!THEMES.some(t => t.id === id)) id = 'paper';
@@ -787,6 +789,7 @@ function commandItems() {
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
+    { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
@@ -904,6 +907,106 @@ commandInput?.addEventListener('keydown', (e) => {
 });
 $('command-close')?.addEventListener('click', closeCommandPalette);
 commandOverlay?.addEventListener('click', (e) => { if (e.target === commandOverlay) closeCommandPalette(); });
+
+function loadDraftTrash() {
+  let items = [];
+  try {
+    items = JSON.parse(localStorage.getItem(DRAFT_TRASH_KEY) || '[]');
+  } catch {
+    items = [];
+  }
+  const cutoff = Date.now() - DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
+  const pruned = items.filter(item => item && item.deletedAt && new Date(item.deletedAt).getTime() >= cutoff);
+  if (pruned.length !== items.length) localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(pruned));
+  return pruned;
+}
+
+function saveDraftTrash(items) {
+  localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(items.slice(0, 80)));
+}
+
+function trashDraftSnapshot(note, content) {
+  const items = loadDraftTrash();
+  items.unshift({
+    id: 'trash-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+    title: note?.title || sessionTitleFromContent(content) || 'Untitled',
+    content: content || '',
+    deletedAt: new Date().toISOString(),
+  });
+  saveDraftTrash(items);
+}
+
+function sessionTitleFromContent(content) {
+  const first = String(content || '').split('\n').find(line => line.trim());
+  if (!first) return '';
+  return first.replace(/^#+\s*/, '').trim().slice(0, 80);
+}
+
+function daysLeft(deletedAt) {
+  const expires = new Date(deletedAt).getTime() + DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.ceil((expires - Date.now()) / (24 * 60 * 60 * 1000)));
+}
+
+async function deleteDraftWithTrash(note) {
+  if (!note || note.path) return;
+  const content = note.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(note.id);
+  trashDraftSnapshot(note, content);
+  renderSession(await window.go.main.App.DeleteNote(note.id));
+  loadContent(await window.go.main.App.GetActiveContent());
+  statusText.textContent = 'Draft moved to Trash for 30 days';
+}
+
+async function restoreDraftTrash(itemId) {
+  const items = loadDraftTrash();
+  const item = items.find(entry => entry.id === itemId);
+  if (!item) return;
+  renderSession(await window.go.main.App.NewNote());
+  await window.go.main.App.UpdateContent(activeId, item.content || '', true);
+  loadContent(item.content || '');
+  renderSession(await window.go.main.App.GetSession());
+  saveDraftTrash(items.filter(entry => entry.id !== itemId));
+  modalOverlay.classList.add('hidden');
+  setView('markdown');
+  statusText.textContent = 'Draft restored from Trash';
+}
+
+function deleteDraftTrashItem(itemId) {
+  saveDraftTrash(loadDraftTrash().filter(entry => entry.id !== itemId));
+  showTrashView();
+}
+
+function emptyDraftTrash() {
+  saveDraftTrash([]);
+  showTrashView();
+}
+
+function renderTrashRows(items) {
+  if (!items.length) return '<div class="trash-empty">Trash is empty. Deleted drafts stay here for 30 days.</div>';
+  return `<div class="trash-list">${items.map(item => `
+    <div class="trash-row">
+      <div class="trash-body">
+        <strong>${escapeHtml(item.title || 'Untitled')}</strong>
+        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · ${daysLeft(item.deletedAt)} day${daysLeft(item.deletedAt) === 1 ? '' : 's'} left</span>
+        <p>${escapeHtml((item.content || '').replace(/\s+/g, ' ').trim().slice(0, 180) || 'Empty draft')}</p>
+      </div>
+      <div class="trash-actions">
+        <button data-trash-restore="${escapeHtml(item.id)}">Restore</button>
+        <button data-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function showTrashView() {
+  const items = loadDraftTrash();
+  showModal('Trash', `
+    <div class="trash-head">
+      <span>${items.length} draft${items.length === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
+      <button data-trash-empty ${items.length ? '' : 'disabled'}>Empty Trash</button>
+    </div>
+    ${renderTrashRows(items)}
+    <p style="margin-top:10px;color:var(--muted);font-size:11px;">Saved-file trash will be backed by the local filesystem in the Go slice. This view currently protects unsaved drafts.</p>
+  `);
+}
 
 const TASK_LINE_RE = /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
 const FENCE_LINE_RE = /^(\s*)(```|~~~)/;
@@ -1527,7 +1630,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
-    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canDelete && !note.dirty ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canDelete ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
     ctxMenu.style.top = e.clientY + 'px';
     ctxMenu.classList.remove('hidden');
@@ -1728,9 +1831,7 @@ ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () 
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
   if (note && note.path) return;
-  renderSession(await window.go.main.App.DeleteNote(ctxNoteId));
-  if (ctxNoteId === activeId) loadContent(await window.go.main.App.GetActiveContent());
-  statusText.textContent = 'Draft deleted';
+  await deleteDraftWithTrash(note);
 });
 
 // ── View mode (editor / split / viewer) ──────────────────
@@ -2343,8 +2444,7 @@ document.addEventListener('keydown', async (e) => {
     e.preventDefault();
     const note = cachedNotes.find(n => n.id === activeId);
     if (note && !note.path) {
-      renderSession(await window.go.main.App.DeleteNote(activeId));
-      loadContent(await window.go.main.App.GetActiveContent());
+      await deleteDraftWithTrash(note);
     }
   }
 });
@@ -2472,6 +2572,12 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
   const taskOpen = e.target.closest('[data-task-open]');
   if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
+  const trashRestore = e.target.closest('[data-trash-restore]');
+  if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
+  const trashDelete = e.target.closest('[data-trash-delete]');
+  if (trashDelete) deleteDraftTrashItem(trashDelete.dataset.trashDelete);
+  const trashEmpty = e.target.closest('[data-trash-empty]');
+  if (trashEmpty && !trashEmpty.disabled) emptyDraftTrash();
 });
 
 
