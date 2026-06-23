@@ -2257,6 +2257,52 @@ function renderCurrentFileSearchRows(matches) {
   `).join('')}</div>`;
 }
 
+function currentFileSearchMatchCardText(match) {
+  const text = String(match?.text || '').replace(/\s+/g, ' ').trim();
+  return text.length > 58 ? `${text.slice(0, 55)}...` : text;
+}
+
+function insertCurrentFileSearchCanvasBoard(query = currentFileSearchDefaultQuery()) {
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text before sending current-file search to canvas';
+    return;
+  }
+  const pack = currentFileSearchMatches(q, 80);
+  if (!pack.matches.length) {
+    statusText.textContent = 'No current-file matches to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = pack.matches.slice(0, 24);
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `Current file search: ${q} · ${visible.length}${pack.total > visible.length ? ` of ${pack.total}` : ''} match${visible.length === 1 ? '' : 'es'}`, 18, '#2f6f61'),
+    canvasTemplateText(origin.x, origin.y - 6, activeFileSearchTitle(), 12, '#6b6e68'),
+  ];
+  visible.forEach((match, index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    const x = origin.x + col * 260;
+    const y = origin.y + row * 112 + 28;
+    const stroke = index % 2 === 0 ? '#2563eb' : '#2f6f61';
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 230, h: 86, stroke, width: 2 });
+    elements.push(canvasTemplateText(x + 14, y + 28, `L${match.line}:C${match.column}`, 15, stroke));
+    elements.push(canvasTemplateText(x + 14, y + 50, currentFileSearchMatchCardText(match), 10, '#1f2937'));
+    elements.push(canvasTemplateText(x + 14, y + 70, `offset ${match.offset}`, 9, '#6b6e68'));
+  });
+  if (pack.total > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 930, `${pack.total - visible.length} additional matches omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} current-file search match${visible.length === 1 ? '' : 'es'} sent to canvas`;
+}
+
 function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
   if (!activeId) {
     showModal('Current File Search', '<div class="local-empty">Open an editable file before searching the current file.</div>');
@@ -2275,6 +2321,7 @@ function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
       <button data-copy-current-file-search-md ${q ? '' : 'disabled'}>Copy MD</button>
       <button data-export-current-file-search-md ${q ? '' : 'disabled'}>Export MD</button>
       <button data-export-current-file-search-csv ${q ? '' : 'disabled'}>Export CSV</button>
+      <button data-current-file-search-canvas ${q && pack.matches.length ? '' : 'disabled'}>Send to Canvas</button>
     </div>
     ${q ? renderCurrentFileSearchRows(pack.matches) : '<div class="local-empty">Enter text and press Search.</div>'}
     <p class="diag-note">Current-file search reads the active editor buffer only. It is exact, case-insensitive, and does not allocate an index or touch the workspace.</p>
@@ -3888,6 +3935,7 @@ function commandItems() {
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
+  { id: 'current-file-search-to-canvas', icon: 'F2C', title: 'Send current-file search to canvas', hint: 'Create a lightweight canvas board from active-file search matches', run: () => insertCurrentFileSearchCanvasBoard() },
   { id: 'export-current-file-search-md', icon: 'FSM', title: 'Export current-file search Markdown', hint: 'Download the current active-file search report as Markdown', run: () => exportCurrentFileSearchMarkdown() },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
@@ -10863,6 +10911,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportCurrentFileSearchMdBtn && !exportCurrentFileSearchMdBtn.disabled) exportCurrentFileSearchMarkdown(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const exportCurrentFileSearchCsvBtn = e.target.closest('[data-export-current-file-search-csv]');
   if (exportCurrentFileSearchCsvBtn && !exportCurrentFileSearchCsvBtn.disabled) exportCurrentFileSearchCsv(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const currentFileSearchCanvasBtn = e.target.closest('[data-current-file-search-canvas]');
+  if (currentFileSearchCanvasBtn && !currentFileSearchCanvasBtn.disabled) insertCurrentFileSearchCanvasBoard(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchJump = e.target.closest('[data-current-file-search-jump]');
   if (currentFileSearchJump) jumpToCurrentFileSearchMatch(currentFileSearchJump.dataset.currentFileSearchJump, currentFileSearchJump.dataset.currentFileSearchLength);
   const viewModeButton = e.target.closest('[data-view-mode]');
