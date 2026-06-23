@@ -3247,6 +3247,9 @@ function commandItems() {
     { id: 'add-task-low', icon: '+L', title: 'Add low priority task', hint: 'Append a Markdown task with !low priority', run: () => addTaskTemplate('!low') },
     { id: 'add-task-waiting', icon: '+W', title: 'Add waiting task', hint: 'Append a Markdown task with @waiting context', run: () => addTaskTemplate('@waiting') },
     { id: 'add-task-high-waiting', icon: '+HW', title: 'Add high waiting task', hint: 'Append a Markdown task tagged !high and @waiting', run: () => addTaskTemplate('!high @waiting') },
+    { id: 'tasks-starter-project', icon: 'TSP', title: 'Task starter: project kickoff', hint: 'Append a portable Markdown project kickoff checklist', run: () => addTaskStarterTemplate('project', 'Project kickoff') },
+    { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
+    { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'copy-tasks-ics', icon: 'CIC', title: 'Copy visible tasks ICS', hint: 'Copy the current filtered task view as portable calendar text', run: copyVisibleTasksIcs },
     { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
@@ -5244,6 +5247,12 @@ function appendTaskToMarkdown(content, line) {
   return `${prefix}${line}\n`;
 }
 
+function appendTaskBlockToMarkdown(content, lines) {
+  const body = String(content || '');
+  const prefix = body.trim() ? body.replace(/\s*$/, '\n') : '# Tasks\n\n';
+  return `${prefix}${lines.filter(Boolean).join('\n')}\n`;
+}
+
 async function addQuickTask() {
   const raw = window.prompt('New task. You can add due:YYYY-MM-DD, !high, @waiting, #tag');
   const line = formatTaskLine(raw);
@@ -5258,6 +5267,81 @@ async function addTaskTemplate(suffix) {
   const line = formatTaskLine(`${text} ${suffix}`.trim());
   if (!line) return;
   await addTaskLine(line);
+}
+
+function dateKeyOffset(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+}
+
+function taskStarterLines(kind) {
+  if (kind === 'weekly') {
+    return [
+      `## Weekly Plan ${todayKey()}`,
+      `- [ ] Pick top three outcomes !high due:${todayKey()} #weekly`,
+      `- [ ] Review open waiting items @waiting #weekly`,
+      `- [ ] Schedule deep work block due:${dateKeyOffset(1)} !medium #weekly`,
+      `- [ ] Ship one visible improvement due:${dateKeyOffset(5)} !high #weekly`,
+    ];
+  }
+  if (kind === 'review') {
+    return [
+      `## Review Queue ${todayKey()}`,
+      `- [ ] Triage new notes !high due:${todayKey()} #review`,
+      `- [ ] Verify links and references !medium #review`,
+      `- [ ] Extract follow-up tasks @waiting #review`,
+      `- [ ] Archive completed items !low #review`,
+    ];
+  }
+  return [
+    `## Project Kickoff ${todayKey()}`,
+    `- [ ] Define outcome !high due:${todayKey()} #project`,
+    `- [ ] Gather context !medium due:${dateKeyOffset(1)} #project`,
+    `- [ ] Draft first milestone !high due:${dateKeyOffset(3)} #project`,
+    `- [ ] List risks @waiting #project`,
+  ];
+}
+
+async function addTaskStarterTemplate(kind, label) {
+  const lines = taskStarterLines(kind);
+  let target = findTaskTargetNote();
+  if (!target) {
+    if (window.go?.main?.App?.AppendLocalFolderTask) {
+      try {
+        renderSession(await window.go.main.App.AppendLocalFolderTask(lines.join('\n')));
+        loadContent(await window.go.main.App.GetActiveContent());
+        setView('markdown');
+        statusText.textContent = `${label} task starter added to local Tasks.md`;
+        await showTasksView(taskViewMode);
+        return;
+      } catch {}
+    }
+    renderSession(await window.go.main.App.NewNote());
+    target = cachedNotes.find(note => note.id === activeId);
+    const content = appendTaskBlockToMarkdown('', lines);
+    await window.go.main.App.UpdateContent(activeId, content, true);
+    loadContent(content);
+    renderSession(await window.go.main.App.GetSession());
+    setView('markdown');
+    statusText.textContent = `Created ${label} Tasks draft`;
+    await showTasksView(taskViewMode);
+    return;
+  }
+  const content = target.id === activeId ? currentContent : await window.go.main.App.GetNoteContent(target.id);
+  const next = appendTaskBlockToMarkdown(content, lines);
+  await window.go.main.App.UpdateContent(target.id, next, true);
+  if (target.id === activeId) {
+    currentContent = next;
+    editor.value = next;
+    if (viewMode !== 'markdown') renderViewer(currentContent, cachedNotes.find(n => n.id === activeId));
+    updateStats();
+    updateOutline();
+  }
+  renderSession(await window.go.main.App.GetSession());
+  statusText.textContent = `${label} task starter added`;
+  await showTasksView(taskViewMode);
 }
 
 async function addTaskLine(line) {
