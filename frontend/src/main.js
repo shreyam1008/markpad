@@ -278,6 +278,14 @@ async function applyWorkspacePreset(kind) {
     setCanvasBackground('#f7ecd8', 'sand');
     applyCanvasDrawingPreset('arrow', '#2563eb', 3, 'connector');
     statusText.textContent = 'Canvas planning workspace preset applied';
+    return;
+  }
+  if (kind === 'night') {
+    applyTheme('midnight', true);
+    if (!editorSoftWrap) toggleEditorWrap();
+    if (!editorReadingWidth) toggleEditorReadingWidth();
+    setView('viewer');
+    statusText.textContent = 'Night reading workspace preset applied';
   }
 }
 
@@ -2578,6 +2586,7 @@ function commandItems() {
     { id: 'workspace-planning', icon: 'WP', title: 'Workspace preset: planning', hint: 'Apply Sand and open open tasks as a kanban board', run: () => applyWorkspacePreset('planning') },
     { id: 'workspace-review', icon: 'WR', title: 'Workspace preset: review', hint: 'Apply Mist, reading width, and balanced split', run: () => applyWorkspacePreset('review') },
     { id: 'workspace-canvas', icon: 'WC', title: 'Workspace preset: canvas planning', hint: 'Apply Sand canvas background and connector drawing defaults', run: () => applyWorkspacePreset('canvas') },
+    { id: 'workspace-night', icon: 'WN', title: 'Workspace preset: night reading', hint: 'Apply Midnight, soft wrap, reading width, and preview view', run: () => applyWorkspacePreset('night') },
     { id: 'ui-state-summary', icon: 'UI', title: 'UI state summary', hint: 'Show current theme, layout, search, task, and canvas preferences', run: showUiStateSummary },
     { id: 'copy-ui-state-summary', icon: 'CU', title: 'Copy UI state summary', hint: 'Copy current theme, layout, search, task, and canvas preferences as Markdown', run: copyUiStateSummary },
     { id: 'export-ui-state-summary', icon: 'EU', title: 'Export UI state Markdown', hint: 'Download current theme, layout, search, task, and canvas preferences as Markdown', run: exportUiStateSummary },
