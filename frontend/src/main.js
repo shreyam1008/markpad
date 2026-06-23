@@ -1871,6 +1871,7 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
     </div>
     <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, and wildcards.</p>
+    <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
 }
 
@@ -2618,25 +2619,6 @@ function themePresetCommandItems() {
     hint: item.hint,
     run: () => applyTheme(item.theme),
   }));
-}
-
-function showSearchSyntaxHelp() {
-  showModal('Search Syntax', `
-    <div style="display:grid;gap:12px;font-size:12px;line-height:1.65;color:var(--text);">
-      <p style="margin:0;color:var(--muted);">Search stays local. Use scopes for where to search, then combine text with operators for sharper results.</p>
-      <table style="width:100%;border-collapse:collapse;">
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">"exact phrase"</td><td style="padding:5px 8px;color:var(--muted);">Match words in order.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">type:md</td><td style="padding:5px 8px;color:var(--muted);">Limit by file type, such as md, txt, canvas, or json.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">path:notes</td><td style="padding:5px 8px;color:var(--muted);">Match a folder or filename path segment.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">title:plan</td><td style="padding:5px 8px;color:var(--muted);">Match the note title or filename.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
-        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">-draft -"old plan" -path:archive</td><td style="padding:5px 8px;color:var(--muted);">Exclude words, exact phrases, paths, titles, types, tags, or task states from the result set.</td></tr>
-      </table>
-      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>due:tomorrow</strong>, <strong>due:week</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
-      <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
-    </div>
-  `);
 }
 
 function showLocalSearchLimits() {
