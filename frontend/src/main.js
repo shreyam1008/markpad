@@ -260,6 +260,27 @@ function renderSearchRecents() {
   `;
 }
 
+function getSelectedSearchText() {
+  const active = document.activeElement;
+  if (active && typeof active.value === 'string' && typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number' && active.selectionStart !== active.selectionEnd) {
+    const start = Math.min(active.selectionStart, active.selectionEnd);
+    const end = Math.max(active.selectionStart, active.selectionEnd);
+    return active.value.slice(start, end).trim();
+  }
+  return (window.getSelection?.().toString() || '').trim();
+}
+
+function searchSelectionEverywhere() {
+  const selected = getSelectedSearchText().replace(/\s+/g, ' ').trim();
+  if (!selected) {
+    openSearchPaletteScope('all');
+    statusText.textContent = 'Select text to search it everywhere';
+    return;
+  }
+  const phrase = selected.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  openSearchPaletteQuery('all', `"${phrase}"`);
+}
+
 function clearSearchRecents() {
   searchRecentQueries = [];
   localStorage.removeItem(SEARCH_RECENTS_KEY);
@@ -1628,6 +1649,7 @@ function commandItems() {
     { id: 'search-markdown', icon: 'SM', title: 'Search Markdown files', hint: 'Open all-source search with type:md prefilled', run: () => openSearchPaletteQuery('all', 'type:md ') },
     { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
     { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
+    { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
     { id: 'clear-command-recents', icon: 'CR', title: 'Clear command recents', hint: 'Remove locally stored command palette recent actions', run: clearCommandRecents },
     { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
