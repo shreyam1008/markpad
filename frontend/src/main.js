@@ -5805,6 +5805,7 @@ function boot() {
   if (window.go && window.go.main && window.go.main.App) {
     applyZoom(true);
     applyEditorWrap(true);
+    applyEditorReadingWidth(true);
     applyTheme(currentTheme, true);
     applyFocusMode(true);
     registerEvents();
