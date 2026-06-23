@@ -1073,6 +1073,7 @@ function commandItems() {
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
+    { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -3160,6 +3161,140 @@ function exportCanvasSvg() {
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
   statusText.textContent = 'Canvas SVG exported';
 }
+
+function canvasToObsidianCanvas(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const nodes = [];
+  const edges = [];
+  const nodeEntries = [];
+  const usedIds = new Set();
+  const edgeTypes = new Set(['arrow', 'line']);
+
+  source.elements.forEach((element, index) => {
+    if (!element || edgeTypes.has(element.type)) return;
+    const bounds = obsidianElementBounds(element);
+    const id = uniqueObsidianId(obsidianSafeId(element.id, `node-${index + 1}`), usedIds);
+    const node = {
+      id,
+      type: 'text',
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.w,
+      height: bounds.h,
+      text: obsidianElementText(element),
+    };
+    if (element.type === 'rect') {
+      node.type = 'group';
+      node.label = node.text || 'Rectangle';
+      delete node.text;
+    } else if (element.type === 'ellipse') {
+      node.type = 'group';
+      node.label = node.text || 'Oval';
+      delete node.text;
+    }
+    const color = obsidianColor(element.stroke || element.color || element.fill);
+    if (color) node.color = color;
+    nodes.push(node);
+    nodeEntries.push({ id, bounds });
+  });
+
+  source.elements.forEach((element, index) => {
+    if (!element || !edgeTypes.has(element.type)) return;
+    const start = { x: Number(element.x || 0), y: Number(element.y || 0) };
+    const end = { x: start.x + Number(element.w || 0), y: start.y + Number(element.h || 0) };
+    const from = nearestObsidianNode(start, nodeEntries);
+    const to = nearestObsidianNode(end, nodeEntries);
+    if (!from || !to || from.id === to.id) return;
+    const edge = {
+      id: uniqueObsidianId(obsidianSafeId(element.id, `edge-${index + 1}`), usedIds),
+      fromNode: from.id,
+      fromSide: obsidianCanvasSide(from.bounds, to.bounds),
+      toNode: to.id,
+      toSide: obsidianCanvasSide(to.bounds, from.bounds),
+    };
+    const color = obsidianColor(element.stroke || element.color);
+    if (color) edge.color = color;
+    edges.push(edge);
+  });
+
+  return { nodes, edges };
+}
+
+function exportObsidianCanvas() {
+  if (!canvasDoc) loadCanvasState();
+  const json = JSON.stringify(canvasToObsidianCanvas(canvasDoc), null, 2);
+  downloadText('markpad-canvas.canvas', 'application/json', json);
+  statusText.textContent = 'Obsidian canvas exported';
+}
+
+function obsidianElementBounds(element) {
+  const bounds = canvasElementBounds(element);
+  return {
+    x: Math.round(Number(bounds.x || 0)),
+    y: Math.round(Number(bounds.y || 0)),
+    w: Math.max(80, Math.round(Number(bounds.w || 260))),
+    h: Math.max(60, Math.round(Number(bounds.h || 120))),
+  };
+}
+
+function obsidianElementText(element) {
+  if (typeof element.text === 'string') return element.text;
+  if (element.type === 'path') return 'Freehand path';
+  if (element.type === 'rect') return 'Rectangle';
+  if (element.type === 'ellipse') return 'Oval';
+  return '';
+}
+
+function obsidianSafeId(value, fallback) {
+  const raw = String(value || fallback || '').trim();
+  const id = raw.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+  return id || fallback || canvasId();
+}
+
+function uniqueObsidianId(base, used) {
+  let id = base;
+  let suffix = 2;
+  while (used.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  used.add(id);
+  return id;
+}
+
+function obsidianColor(value) {
+  const color = String(value || '').trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : '';
+}
+
+function nearestObsidianNode(point, entries) {
+  let best = null;
+  let bestDistance = Infinity;
+  entries.forEach((entry) => {
+    const distance = distancePointToBounds(point, entry.bounds);
+    if (distance < bestDistance) {
+      best = entry;
+      bestDistance = distance;
+    }
+  });
+  return bestDistance <= 220 ? best : null;
+}
+
+function distancePointToBounds(point, bounds) {
+  const dx = Math.max(bounds.x - point.x, 0, point.x - (bounds.x + bounds.w));
+  const dy = Math.max(bounds.y - point.y, 0, point.y - (bounds.y + bounds.h));
+  return Math.hypot(dx, dy);
+}
+
+function obsidianCanvasSide(fromBounds, toBounds) {
+  const fromCenter = { x: fromBounds.x + fromBounds.w / 2, y: fromBounds.y + fromBounds.h / 2 };
+  const toCenter = { x: toBounds.x + toBounds.w / 2, y: toBounds.y + toBounds.h / 2 };
+  const dx = toCenter.x - fromCenter.x;
+  const dy = toCenter.y - fromCenter.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left';
+  return dy >= 0 ? 'bottom' : 'top';
+}
+
 function loadCurrentDocumentIntoCanvas() {
   const text = String(currentContent || '').trim();
   if (!text) {
@@ -3231,6 +3366,7 @@ function importCanvasJson() {
 $('canvas-import')?.addEventListener('click', importCanvasJson);
 $('canvas-export')?.addEventListener('click', exportCanvasJson);
 $('canvas-export-svg')?.addEventListener('click', exportCanvasSvg);
+$('canvas-export-obsidian')?.addEventListener('click', exportObsidianCanvas);
 $('canvas-save-active')?.addEventListener('click', saveCanvasToActiveDocument);
 $('canvas-save-draft')?.addEventListener('click', saveCanvasAsDraft);
 canvasImportFile?.addEventListener('change', async () => {
