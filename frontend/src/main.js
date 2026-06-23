@@ -3372,6 +3372,7 @@ function commandItems() {
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
     { id: 'tasks-kanban', icon: 'TK', title: 'Tasks kanban view', hint: 'Open Markdown tasks as a priority-grouped board', run: () => showTasksView('kanban') },
+    { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
     { id: 'tasks-preset-open-kanban', icon: 'TOK', title: 'Task preset: open kanban', hint: 'Show open tasks as a kanban board across all sources', run: () => showTasksPreset({ view: 'kanban', source: 'all', filter: 'open', query: '' }) },
@@ -5135,8 +5136,9 @@ function taskSourceMatches(task) {
 }
 
 function showTaskSyntaxHelp() {
-  showModal('Task Syntax', `
+  showModal('Task Format', `
     <div class="diag-grid">
+      <div class="diag-card"><strong>source</strong><span>Markdown checkbox lines</span><small>No hidden task database</small></div>
       <div class="diag-card"><strong>checkbox</strong><span>- [ ] Write outline</span><small>Plain Markdown task</small></div>
       <div class="diag-card"><strong>done</strong><span>- [x] Ship note</span><small>Completed Markdown task</small></div>
       <div class="diag-card"><strong>due date</strong><span>due:2026-06-24</span><small>Portable ISO date token</small></div>
@@ -5144,10 +5146,14 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>waiting</strong><span>@waiting</span><small>Moves work into waiting filters</small></div>
       <div class="diag-card"><strong>tag</strong><span>#project</span><small>Used by task and search filters</small></div>
       <div class="diag-card"><strong>exclude</strong><span>-@waiting -#blocked</span><small>Hide matching task tokens</small></div>
+      <div class="diag-card"><strong>exports</strong><span>MD / JSON / CSV / ICS / Todo.txt</span><small>Portable escape hatches stay visible</small></div>
       <div class="diag-card"><strong>starters</strong><span>Project, weekly, review</span><small>Append portable Markdown checklists</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send visible tasks</span><small>Turn filtered tasks into a canvas board</small></div>
     </div>
-    <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
+    <pre class="diag-code">- [ ] Draft launch note !high due:2026-06-24 #release
+- [ ] Wait for design review @waiting #design
+- [x] Publish changelog due:2026-06-20 #release</pre>
+    <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the source stays local, portable, and not vendor-locked. List, calendar, kanban, exports, and canvas boards are views over the same Markdown source.</p>
   `);
 }
 
@@ -5479,6 +5485,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
         <button class="task-tab push" data-task-add>+ Task</button>
+        <button class="task-tab" data-task-format>Format</button>
         <button class="task-tab" data-task-export-md>Export MD</button>
         <button class="task-tab" data-task-copy-json>Copy JSON</button>
         <button class="task-tab" data-task-export-json>Export JSON</button>
@@ -9950,6 +9957,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAdd = e.target.closest('[data-task-add]');
   if (taskAdd) await addQuickTask();
+  const taskFormat = e.target.closest('[data-task-format]');
+  if (taskFormat) showTaskSyntaxHelp();
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
   const taskCopyJson = e.target.closest('[data-task-copy-json]');
