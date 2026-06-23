@@ -1969,3 +1969,18 @@ html[data-theme="ember"] .hljs-built_in,
 html[data-theme="ember"] .hljs-builtin-name {
   color: #e9b872 !important;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .task-tab,
+  .local-actions button,
+  .local-row {
+    transition: none;
+  }
+
+  .task-tab.active,
+  .task-tab:hover,
+  .local-actions button:hover,
+  .local-row:hover {
+    transform: none;
+  }
+}
