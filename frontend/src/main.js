@@ -531,6 +531,114 @@ async function copyActiveFileContext() {
   statusText.textContent = 'Active file context copied';
 }
 
+function loadedWorkspaceSnapshot() {
+  const notes = cachedNotes.map((note, index) => {
+    const title = note.title || (note.id === activeId ? sessionTitleFromContent(currentContent) : '') || 'Untitled';
+    const path = note.path || '';
+    const kind = getFileType(path || title, note.kind);
+    return {
+      index: index + 1,
+      id: note.id || '',
+      title,
+      path,
+      type: typeLabel(kind),
+      kind,
+      active: note.id === activeId,
+      dirty: !!note.dirty,
+      draft: !path,
+      viewMode: note.id === activeId ? viewMode : (noteViewModes[note.id] || ''),
+    };
+  });
+  return {
+    type: 'markpad-loaded-workspace',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    activeId: activeId || '',
+    count: notes.length,
+    savedCount: notes.filter(note => !note.draft).length,
+    draftCount: notes.filter(note => note.draft).length,
+    dirtyCount: notes.filter(note => note.dirty).length,
+    notes,
+  };
+}
+
+function loadedWorkspaceMarkdown(snapshot = loadedWorkspaceSnapshot()) {
+  const lines = [
+    '# Markpad Loaded Workspace',
+    '',
+    `- Exported: ${new Date(snapshot.exportedAt).toLocaleString()}`,
+    `- Open items: ${snapshot.count}`,
+    `- Saved files: ${snapshot.savedCount}`,
+    `- Drafts: ${snapshot.draftCount}`,
+    `- Unsaved changes: ${snapshot.dirtyCount}`,
+    '',
+  ];
+  if (!snapshot.notes.length) {
+    lines.push('No loaded notes.');
+  } else {
+    snapshot.notes.forEach((note) => {
+      lines.push(`${note.index}. ${note.active ? '**' : ''}${note.title}${note.active ? '**' : ''}`);
+      lines.push(`   - Path: ${note.path || '(draft)'}`);
+      lines.push(`   - Type: ${note.type}`);
+      lines.push(`   - Dirty: ${note.dirty ? 'yes' : 'no'}`);
+      if (note.viewMode) lines.push(`   - View: ${note.viewMode}`);
+    });
+  }
+  return lines.join('\n') + '\n';
+}
+
+function loadedWorkspaceJson(snapshot = loadedWorkspaceSnapshot()) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function loadedWorkspaceCsv(snapshot = loadedWorkspaceSnapshot()) {
+  const rows = [
+    ['index', 'active', 'title', 'path', 'type', 'kind', 'dirty', 'draft', 'viewMode'],
+    ...snapshot.notes.map(note => [
+      note.index,
+      note.active ? 'true' : 'false',
+      note.title,
+      note.path,
+      note.type,
+      note.kind,
+      note.dirty ? 'true' : 'false',
+      note.draft ? 'true' : 'false',
+      note.viewMode || '',
+    ]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+async function copyLoadedWorkspaceMarkdown() {
+  await navigator.clipboard.writeText(loadedWorkspaceMarkdown());
+  statusText.textContent = 'Loaded workspace copied as Markdown';
+}
+
+function exportLoadedWorkspaceMarkdown() {
+  downloadText('markpad-loaded-workspace.md', 'text/markdown', loadedWorkspaceMarkdown());
+  statusText.textContent = 'Loaded workspace exported as Markdown';
+}
+
+async function copyLoadedWorkspaceJson() {
+  await navigator.clipboard.writeText(loadedWorkspaceJson());
+  statusText.textContent = 'Loaded workspace copied as JSON';
+}
+
+function exportLoadedWorkspaceJson() {
+  downloadText('markpad-loaded-workspace.json', 'application/json', loadedWorkspaceJson());
+  statusText.textContent = 'Loaded workspace exported as JSON';
+}
+
+async function copyLoadedWorkspaceCsv() {
+  await navigator.clipboard.writeText(loadedWorkspaceCsv());
+  statusText.textContent = 'Loaded workspace copied as CSV';
+}
+
+function exportLoadedWorkspaceCsv() {
+  downloadText('markpad-loaded-workspace.csv', 'text/csv', loadedWorkspaceCsv());
+  statusText.textContent = 'Loaded workspace exported as CSV';
+}
+
 function clearSearchRecents() {
   searchRecentQueries = [];
   localStorage.removeItem(SEARCH_RECENTS_KEY);
@@ -3297,6 +3405,12 @@ function commandItems() {
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
     { id: 'copy-active-path', icon: 'CAP', title: 'Copy active file path', hint: 'Copy the active saved file path to the clipboard', run: copyActiveFilePath },
     { id: 'copy-active-context', icon: 'CAC', title: 'Copy active file context', hint: 'Copy active title, path, type, and dirty state as Markdown', run: copyActiveFileContext },
+    { id: 'copy-loaded-workspace', icon: 'CLW', title: 'Copy loaded workspace Markdown', hint: 'Copy open files, drafts, dirty state, types, and paths as Markdown', run: copyLoadedWorkspaceMarkdown },
+    { id: 'export-loaded-workspace', icon: 'ELW', title: 'Export loaded workspace Markdown', hint: 'Download open files, drafts, dirty state, types, and paths as Markdown', run: exportLoadedWorkspaceMarkdown },
+    { id: 'copy-loaded-workspace-json', icon: 'LWJ', title: 'Copy loaded workspace JSON', hint: 'Copy open workspace metadata as portable JSON', run: copyLoadedWorkspaceJson },
+    { id: 'export-loaded-workspace-json', icon: 'EWJ', title: 'Export loaded workspace JSON', hint: 'Download open workspace metadata as portable JSON', run: exportLoadedWorkspaceJson },
+    { id: 'copy-loaded-workspace-csv', icon: 'LWC', title: 'Copy loaded workspace CSV', hint: 'Copy open workspace metadata as CSV rows', run: copyLoadedWorkspaceCsv },
+    { id: 'export-loaded-workspace-csv', icon: 'EWC', title: 'Export loaded workspace CSV', hint: 'Download open workspace metadata as CSV rows', run: exportLoadedWorkspaceCsv },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
@@ -3344,7 +3458,7 @@ function commandCategory(item) {
   if (id.startsWith('theme')) return 'Theme';
   if (id.includes('history')) return 'History';
   if (id.startsWith('workspace')) return 'Layout';
-  if (id.startsWith('local') || id.includes('local') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
+  if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
   if (id.includes('runtime') || id === 'footprint' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
