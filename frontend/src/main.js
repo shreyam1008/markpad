@@ -9216,6 +9216,7 @@ function applyImportedLocalSettings() {
   splitRatio = normalizeSplitRatio(splitRatio);
   localStorage.setItem('markpad-split-ratio', String(splitRatio));
   editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
+  editorReadingWidth = localStorage.getItem('markpad-editor-reading-width') === '1';
   fontSize = parseInt(localStorage.getItem('markpad-zoom') || String(fontSize), 10);
   if (!Number.isFinite(fontSize)) fontSize = ZOOM_DEFAULT;
   fontSize = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fontSize));
