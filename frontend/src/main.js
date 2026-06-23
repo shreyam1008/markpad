@@ -884,6 +884,20 @@ function updateSearchScopeButtons() {
   }
 }
 
+function appendSearchExample(example) {
+  if (!searchInput) return;
+  const current = searchInput.value.trim();
+  searchInput.value = current ? `${current} ${example}` : example;
+  searchInput.focus();
+  searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+$('search-filter-hints')?.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-search-example]');
+  if (!btn) return;
+  appendSearchExample(btn.dataset.searchExample || '');
+});
+
 async function runLocalFolderSearch(query, token) {
   const pack = await collectLocalSearchResults(query, token, 60);
   if (token !== searchToken) return;

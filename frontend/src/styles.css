@@ -355,6 +355,37 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   background: var(--accent);
   color: var(--accent-text);
 }
+.search-filter-hints {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--editor) 92%, var(--accent) 8%);
+}
+.search-filter-hints span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.search-filter-hints button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.search-filter-hints button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
 .search-recents {
   display: flex;
   align-items: center;
