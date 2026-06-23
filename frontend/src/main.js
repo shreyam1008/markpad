@@ -930,6 +930,7 @@ function commandItems() {
     { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
     { id: 'local-overview', icon: 'LO', title: 'Local folder overview', hint: 'Show lightweight counts for notes, canvases, tasks, and size', run: () => showLocalFolder() },
     { id: 'local-tags', icon: '#', title: 'Local tags', hint: 'Show Markdown tags found in the default local folder', run: showLocalTags },
+    { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
@@ -1462,6 +1463,34 @@ async function showLocalTags() {
   `, true);
 }
 
+function renderLocalLinks(links) {
+  if (!links.length) return '<div class="local-empty">No local Markdown links found in the local folder.</div>';
+  return `<div class="tag-cloud">${links.map(link => `
+    <button class="tag-chip" data-local-link-search="${escapeHtml(link.target)}">
+      <strong>${escapeHtml(link.kind === 'wiki' ? '[[' + link.target + ']]' : link.target)}</strong>
+      <span>${Number(link.count || 0)} link${Number(link.count || 0) === 1 ? '' : 's'} · ${Number(link.files || 0)} file${Number(link.files || 0) === 1 ? '' : 's'} · ${escapeHtml(link.kind || 'local')}</span>
+      ${link.latestRel ? `<small>${escapeHtml(link.latestRel)}</small>` : ''}
+    </button>
+  `).join('')}</div>`;
+}
+
+async function showLocalLinks() {
+  if (!window.go?.main?.App?.GetLocalFolder || !window.go?.main?.App?.ListLocalFolderLinks) {
+    showModal('Local Links', '<div class="local-empty">Local links backend unavailable in this build.</div>');
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  if (!info.path || info.missing) {
+    showModal('Local Links', `<div class="local-empty">${info.missing ? 'The saved local folder is missing.' : 'No default local folder set yet.'}</div>`);
+    return;
+  }
+  const links = await window.go.main.App.ListLocalFolderLinks(160);
+  showModal('Local Links', `
+    <div class="local-summary">${links.length} link target${links.length === 1 ? '' : 's'} listed · bounded Markdown scan · click a link to search the folder</div>
+    ${renderLocalLinks(links)}
+  `, true);
+}
+
 async function showLocalFolder(query = '') {
   query = String(query || '').trim();
   localFolderQuery = query;
@@ -1499,6 +1528,7 @@ async function showLocalFolder(query = '') {
         <button data-local-folder-weekly ${info.path && !info.missing ? '' : 'disabled'}>Weekly</button>
         <button data-local-folder-canvas ${info.path && !info.missing ? '' : 'disabled'}>New canvas</button>
         <button data-local-folder-tags ${info.path && !info.missing ? '' : 'disabled'}>Tags</button>
+        <button data-local-folder-links ${info.path && !info.missing ? '' : 'disabled'}>Links</button>
         <button data-local-folder-search ${info.path && !info.missing ? '' : 'disabled'}>Search</button>
         <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
       </div>
@@ -3680,6 +3710,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localTags && !localTags.disabled) await showLocalTags();
   const localTagSearch = e.target.closest('[data-local-tag-search]');
   if (localTagSearch) await showLocalFolder(localTagSearch.dataset.localTagSearch || '');
+  const localLinks = e.target.closest('[data-local-folder-links]');
+  if (localLinks && !localLinks.disabled) await showLocalLinks();
+  const localLinkSearch = e.target.closest('[data-local-link-search]');
+  if (localLinkSearch) await showLocalFolder(localLinkSearch.dataset.localLinkSearch || '');
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
 });
