@@ -2072,6 +2072,7 @@ function showLayoutGuide() {
       <div class="diag-card"><strong>Editor</strong><span>Write-only lane</span><small>Use for plain text edits and low visual noise</small></div>
       <div class="diag-card"><strong>Split</strong><span>Live Markdown preview</span><small>50/50, editor focus, or preview focus presets</small></div>
       <div class="diag-card"><strong>Preview</strong><span>Read-only review</span><small>Best for proofreading rendered Markdown and documents</small></div>
+      <div class="diag-card"><strong>Outline</strong><span>Headings to canvas</span><small>Map active Markdown structure as local canvas cards</small></div>
       <div class="diag-card"><strong>Reading width</strong><span>Constrained text</span><small>Improves long-form editing and preview scanning</small></div>
       <div class="diag-card"><strong>Focus + compact</strong><span>Less chrome</span><small>Hide secondary UI and tighten controls</small></div>
       <div class="diag-card"><strong>Low memory</strong><span>Release undo</span><small>Workspace low-memory clears editor and canvas undo snapshots</small></div>
@@ -7985,6 +7986,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>starters</strong><span>Mind map, kanban, timeline</span><small>Insert lightweight JSON templates</small></div>
       <div class="diag-card"><strong>tasks</strong><span>Visible task board</span><small>Append filtered Markdown tasks as canvas cards</small></div>
       <div class="diag-card"><strong>search</strong><span>Result board</span><small>Append current search results as canvas cards</small></div>
+      <div class="diag-card"><strong>outline</strong><span>Heading map</span><small>Append active Markdown headings as a hierarchy</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
