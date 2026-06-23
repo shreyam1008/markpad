@@ -343,6 +343,49 @@ body.editor-reading-width #viewer .markdown-body {
   margin-right: auto;
 }
 
+body.markpad-compact .icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+body.markpad-compact .tb {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+}
+
+body.markpad-compact .view-btn,
+body.markpad-compact .theme-chip,
+body.markpad-compact .pref-theme,
+body.markpad-compact .canvas-tool,
+body.markpad-compact .task-tab,
+body.markpad-compact .task-filter {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+body.markpad-compact .search-row,
+body.markpad-compact .command-row {
+  padding: 6px 8px;
+  gap: 8px;
+}
+
+body.markpad-compact .task-controls,
+body.markpad-compact .local-panel,
+body.markpad-compact .diag-grid,
+body.markpad-compact .canvas-topbar {
+  gap: 6px;
+}
+
+body.markpad-compact .task-row {
+  padding: 7px 8px;
+}
+
+body.markpad-compact #modal-body {
+  font-size: 12px;
+}
+
 /* View mode buttons */
 .view-btn {
   display: flex; align-items: center; gap: 4px; padding: 4px 10px;

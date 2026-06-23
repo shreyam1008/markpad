@@ -49,6 +49,7 @@ let canvasGridVisible = localStorage.getItem('markpad-canvas-grid') !== '0';
 let canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
 let canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
+let compactMode = localStorage.getItem('markpad-compact') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
 let editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
 let editorReadingWidth = localStorage.getItem('markpad-editor-reading-width') === '1';
@@ -186,6 +187,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-canvas-minimap',
   'markpad-canvas-session',
   'markpad-focus',
+  'markpad-compact',
   'markpad-split-ratio',
   'markpad-editor-wrap',
   'markpad-editor-reading-width',
@@ -274,6 +276,17 @@ function applyFocusMode(silent) {
 function toggleFocusMode() {
   focusMode = !focusMode;
   applyFocusMode();
+}
+
+function applyCompactMode(silent) {
+  document.body.classList.toggle('markpad-compact', compactMode);
+  localStorage.setItem('markpad-compact', compactMode ? '1' : '0');
+  if (!silent && statusText) statusText.textContent = compactMode ? 'Compact mode on' : 'Compact mode off';
+}
+
+function toggleCompactMode() {
+  compactMode = !compactMode;
+  applyCompactMode();
 }
 
 function normalizeSplitRatio(value) {
@@ -1517,6 +1530,7 @@ function commandItems() {
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
+    { id: 'compact-mode', icon: 'CP', title: compactMode ? 'Disable compact mode' : 'Enable compact mode', hint: 'Tighten sidebar, toolbar, modal, search, task, and canvas spacing', run: toggleCompactMode },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
@@ -5789,6 +5803,7 @@ function applyImportedLocalSettings() {
   canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
   canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
   focusMode = localStorage.getItem('markpad-focus') === '1';
+  compactMode = localStorage.getItem('markpad-compact') === '1';
   splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || String(splitRatio));
   splitRatio = normalizeSplitRatio(splitRatio);
   localStorage.setItem('markpad-split-ratio', String(splitRatio));
@@ -5802,6 +5817,7 @@ function applyImportedLocalSettings() {
   applyEditorWrap(true);
   applyEditorReadingWidth(true);
   applyFocusMode(true);
+  applyCompactMode(true);
   applySectionState();
   updateSearchScopeButtons();
   renderSearchRecents();
@@ -5985,6 +6001,7 @@ function boot() {
     applyEditorReadingWidth(true);
     applyTheme(currentTheme, true);
     applyFocusMode(true);
+    applyCompactMode(true);
     registerEvents();
     interceptLinks(viewer);
 
