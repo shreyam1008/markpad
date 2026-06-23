@@ -1401,6 +1401,42 @@ function formatRuntimeDuration(seconds) {
   return `${secs}s`;
 }
 
+function runtimeStatsText(stats) {
+  const rss = stats.processRssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable';
+  return [
+    'Markpad Runtime Stats',
+    `Process RSS: ${rss}`,
+    `Go heap alloc: ${formatBytes(Number(stats.goAllocBytes || 0))}`,
+    `Go heap in use: ${formatBytes(Number(stats.goHeapInuseBytes || 0))}`,
+    `Go heap idle: ${formatBytes(Number(stats.goHeapIdleBytes || 0))}`,
+    `Go heap released: ${formatBytes(Number(stats.goHeapReleasedBytes || 0))}`,
+    `Go runtime sys: ${formatBytes(Number(stats.goSysBytes || 0))}`,
+    `Executable size: ${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'}`,
+    `Go objects: ${Number(stats.goObjects || 0).toLocaleString()}`,
+    `Goroutines: ${Number(stats.goroutines || 0).toLocaleString()}`,
+    `Uptime: ${formatRuntimeDuration(stats.uptimeSeconds)}`,
+    `Platform: ${stats.os || 'unknown'}/${stats.arch || 'unknown'}`,
+  ].join('\n');
+}
+
+async function copyRuntimeStats() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(runtimeStatsText(await getter()));
+    statusText.textContent = 'Runtime stats copied';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats copy failed: ' + err;
+  }
+}
+
 async function showRuntimeStats() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -1476,6 +1512,7 @@ function commandItems() {
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
+    { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
