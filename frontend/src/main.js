@@ -920,8 +920,8 @@ function updateSearchScopeButtons() {
   }
   if (searchMeta) {
     searchMeta.textContent = searchScope === 'local'
-      ? 'Local folder search supports type:, path:, title:, tag:, and task: filters.'
-      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Ctrl+F searches current file.';
+      ? 'Local folder search supports type:, path:, title:, tag:, and task: filters. Ctrl+1/2/3 switches scope.'
+      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Ctrl+1/2/3 switches scope.';
   }
 }
 
@@ -931,6 +931,13 @@ function appendSearchExample(example) {
   searchInput.value = current ? `${current} ${example}` : example;
   searchInput.focus();
   searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function setSearchScope(scope) {
+  if (!['loaded', 'local', 'all'].includes(scope)) return;
+  searchScope = scope;
+  localStorage.setItem('markpad-search-scope', searchScope);
+  updateSearchScopeButtons();
 }
 
 $('search-filter-hints')?.addEventListener('click', (event) => {
@@ -1109,10 +1116,7 @@ function openSearchPalette() {
 }
 
 function openSearchPaletteScope(scope) {
-  if (['loaded', 'local', 'all'].includes(scope)) {
-    searchScope = scope;
-    localStorage.setItem('markpad-search-scope', searchScope);
-  }
+  setSearchScope(scope);
   openSearchPalette();
 }
 
@@ -1175,7 +1179,13 @@ async function openSearchResult(result) {
 searchInput?.addEventListener('input', queueLoadedSearch);
 searchInput?.addEventListener('keydown', (e) => {
   const rows = [...searchResults.querySelectorAll('.search-row')];
-  if (e.key === 'ArrowDown') {
+  if ((e.ctrlKey || e.metaKey) && ['1', '2', '3'].includes(e.key)) {
+    e.preventDefault();
+    const scope = e.key === '1' ? 'loaded' : e.key === '2' ? 'local' : 'all';
+    setSearchScope(scope);
+    searchActiveIndex = 0;
+    runLoadedSearch(searchInput.value);
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault();
     setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 1));
     rows[searchActiveIndex]?.scrollIntoView({ block: 'nearest' });
@@ -1193,8 +1203,7 @@ searchInput?.addEventListener('keydown', (e) => {
 });
 document.querySelectorAll('[data-search-scope]').forEach(btn => {
   btn.addEventListener('click', () => {
-    searchScope = btn.dataset.searchScope || 'loaded';
-    localStorage.setItem('markpad-search-scope', searchScope);
+    setSearchScope(btn.dataset.searchScope || 'loaded');
     searchActiveIndex = 0;
     runLoadedSearch(searchInput.value);
   });
