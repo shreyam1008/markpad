@@ -3712,6 +3712,8 @@ function lightweightAssetSnapshot() {
     strategy: {
       icons: 'text glyphs and inline SVG',
       themes: 'CSS variables',
+      polish: 'CSS transitions and layout refinements',
+      workspacePresets: 'theme/layout state only',
       imageThemes: false,
       iconFonts: false,
       runtimeThemeEngine: false,
@@ -3730,6 +3732,7 @@ function lightweightAssetSnapshot() {
       'DOM image count reflects the current rendered view only.',
       'Inline SVG count reflects visible toolbar/document icons in the current view.',
       'Themes are built-in CSS-variable themes and do not load image packs.',
+      'Workspace presets apply existing CSS variables and local layout preferences.',
     ],
   };
 }
@@ -3749,6 +3752,8 @@ function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
     '',
     `- Icons: ${snapshot.strategy.icons}`,
     `- Themes: ${snapshot.strategy.themes}`,
+    `- UI polish: ${snapshot.strategy.polish}`,
+    `- Workspace presets: ${snapshot.strategy.workspacePresets}`,
     `- Icon fonts: ${snapshot.strategy.iconFonts ? 'yes' : 'no'}`,
     `- Image theme packs: ${snapshot.strategy.imageThemes ? 'yes' : 'no'}`,
     `- Runtime theme engine: ${snapshot.strategy.runtimeThemeEngine ? 'yes' : 'no'}`,
@@ -3789,6 +3794,8 @@ function showLightweightAssetReport() {
       <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview, PDF, or drawing surfaces</small></div>
       <div class="diag-card"><strong>no</strong><span>Icon fonts</span><small>Text glyphs and inline SVG instead</small></div>
       <div class="diag-card"><strong>no</strong><span>Image theme packs</span><small>CSS variables only</small></div>
+      <div class="diag-card"><strong>CSS</strong><span>UI polish</span><small>No bitmap skins or runtime theme engine</small></div>
+      <div class="diag-card"><strong>state</strong><span>Workspace presets</span><small>Theme/layout preferences, not assets</small></div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
       <button data-copy-asset-report-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
