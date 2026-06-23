@@ -1188,6 +1188,14 @@ function openSearchPaletteScope(scope) {
   openSearchPalette();
 }
 
+function openSearchPaletteQuery(scope, query) {
+  setSearchScope(scope);
+  openSearchPalette();
+  searchInput.value = query;
+  searchActiveIndex = 0;
+  runLoadedSearch(query);
+}
+
 function closeSearchPalette() {
   searchOpen = false;
   searchOverlay.classList.add('hidden');
@@ -1426,6 +1434,9 @@ function commandItems() {
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
     { id: 'search-all', icon: 'SA', title: 'Search all scope', hint: 'Open search across loaded files and the local folder', run: () => openSearchPaletteScope('all') },
+    { id: 'search-markdown', icon: 'SM', title: 'Search Markdown files', hint: 'Open all-source search with type:md prefilled', run: () => openSearchPaletteQuery('all', 'type:md ') },
+    { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
+    { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
