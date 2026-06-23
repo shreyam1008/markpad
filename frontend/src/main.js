@@ -3338,6 +3338,7 @@ function commandItems() {
     { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-guide', icon: 'CGD', title: 'Canvas guide', hint: 'Show tools, local formats, exports, view state, and memory notes', run: showCanvasHelp },
+    { id: 'canvas-map-guide', icon: 'CMG', title: 'Canvas map guide', hint: 'Show task, search, outline, workspace, and backlink canvas bridge limits', run: showCanvasMapGuide },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-pan-tool', icon: 'CPN', title: 'Canvas pan tool', hint: 'Move around the infinite canvas without editing elements', run: () => { openCanvas(); setCanvasTool('pan'); } },
     { id: 'canvas-pen-tool', icon: 'PEN', title: 'Canvas pen tool', hint: 'Draw freehand paths on the canvas', run: () => { openCanvas(); setCanvasTool('pen'); } },
@@ -8119,6 +8120,20 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
     </div>
     <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. It imports/exports JSON Canvas, Obsidian-compatible .canvas, and Excalidraw scene data without adding a heavy drawing runtime.</p>
+  `);
+}
+
+function showCanvasMapGuide() {
+  showModal('Canvas Map Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>tasks</strong><span>24 visible tasks</span><small>Uses current task filters and keeps Markdown as source of truth</small></div>
+      <div class="diag-card"><strong>search</strong><span>24 current results</span><small>Creates a local research board from result metadata and snippets</small></div>
+      <div class="diag-card"><strong>outline</strong><span>40 headings</span><small>Maps active Markdown structure without changing the file</small></div>
+      <div class="diag-card"><strong>workspace</strong><span>24 open items</span><small>Maps loaded files and drafts from metadata only</small></div>
+      <div class="diag-card"><strong>backlinks</strong><span>24 references</span><small>Maps local backlinks for the saved active note</small></div>
+      <div class="diag-card"><strong>memory</strong><span>bounded cards</span><small>Every bridge caps inserts before writing canvas JSON</small></div>
+    </div>
+    <p class="diag-note">Canvas maps are snapshots. They help plan and review local work, but they do not replace Markdown files, task lines, search results, or workspace metadata manifests.</p>
   `);
 }
 
