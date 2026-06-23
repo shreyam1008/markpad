@@ -4382,11 +4382,22 @@ async function showFileInfo() {
 
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
+  const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
   const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}">${theme.label}</button>`).join('');
   showModal('Preferences', `
     <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
     <p style="margin-top:8px;">Themes are CSS-variable only, so they add polish without images, icon fonts, or runtime dependencies.</p>
+    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Local Workspace</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Default folder</td><td style="padding:4px 6px;word-break:break-all;">${localInfo?.path ? escapeHtml(localInfo.path) : 'Not set'}${localInfo?.missing ? ' <span style="color:#c54b33;font-weight:700;">(missing)</span>' : ''}</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Search scope</td><td style="padding:4px 6px;">${escapeHtml(searchScope)} · Loaded / Local / All</td></tr>
+      <tr><td style="padding:4px 6px;font-weight:600;">Local tools</td><td style="padding:4px 6px;">Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps</td></tr>
+    </table>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
+      <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
+    </div>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
@@ -4394,10 +4405,19 @@ async function showPreferences() {
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Rendered pages via pdf.js (read-only)</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Canvas</td><td style="padding:4px 6px;">Local JSON canvas view, import/export, SVG, Write to active .canvas/JSON/draft</td></tr>
       <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
+    </table>
+    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Canvas</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Grid</td><td style="padding:4px 6px;">${canvasGridVisible ? 'Visible' : 'Hidden'} · stored locally</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Snap</td><td style="padding:4px 6px;">${canvasSnapToGrid ? 'Enabled' : 'Disabled'} · 24-unit grid for new shapes/text</td></tr>
+      <tr><td style="padding:4px 6px;font-weight:600;">Minimap</td><td style="padding:4px 6px;">${canvasMinimapVisible ? 'Visible' : 'Hidden'} · simplified bounds only</td></tr>
     </table>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Sidebar</h3>
     <p>Favorites, Open, and Recent are collapsible sections. Open files are reorderable tabs with close buttons. Right-click for context actions.</p>
+    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Tasks and Trash</h3>
+    <p>Tasks are plain Markdown checkboxes. Deleted drafts and saved files move to local Trash with 30-day retention before permanent cleanup.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Single Instance</h3>
     <p>Only one Markpad window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Storage</h3>
