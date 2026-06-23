@@ -33,6 +33,8 @@ let searchOpen = false;
 let searchTimer = null;
 let searchToken = 0;
 let searchActiveIndex = 0;
+let searchLastResults = [];
+let searchLastQuery = '';
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
@@ -1126,6 +1128,8 @@ function highlightSearchText(value, terms) {
 function renderSearchResults(results, query) {
   const trimmedQuery = String(query || '').trim();
   const highlightTerms = searchHighlightTerms(trimmedQuery);
+  searchLastResults = Array.isArray(results) ? results : [];
+  searchLastQuery = trimmedQuery;
   searchResults.innerHTML = '';
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
   if (searchScope === 'all') {
@@ -1167,6 +1171,40 @@ function renderSearchResults(results, query) {
     row.addEventListener('click', () => openSearchResult(result));
     searchResults.appendChild(row);
   });
+}
+
+function searchResultsToMarkdown(results, query) {
+  const lines = [
+    '# Markpad Search Results',
+    '',
+    `Query: ${query || '(empty)'}`,
+    `Count: ${results.length}`,
+    `Exported: ${new Date().toLocaleString()}`,
+    '',
+  ];
+  results.forEach((result, index) => {
+    const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : 1;
+    lines.push(`${index + 1}. ${result.title || basename(result.path) || 'Untitled'}`);
+    lines.push(`   - Source: ${result.source === 'local' ? 'Local' : 'Loaded'}`);
+    lines.push(`   - Path: ${result.path || 'Draft'}`);
+    if (result.matchKind) lines.push(`   - Match: ${result.matchKind}`);
+    if (result.snippet) lines.push(`   - Snippet: ${String(result.snippet).replace(/\s+/g, ' ').trim()}`);
+    if (result.matchIndex >= 0 || result.source === 'local') lines.push(`   - Line: ${line}`);
+  });
+  return lines.join('\n') + '\n';
+}
+
+async function copySearchResultsMarkdown() {
+  if (!searchLastResults.length) {
+    statusText.textContent = 'No search results to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(searchResultsToMarkdown(searchLastResults, searchLastQuery));
+  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`;
 }
 
 function searchResultMatchLabel(result) {
@@ -1508,6 +1546,7 @@ function commandItems() {
     { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
     { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
     { id: 'clear-search-recents', icon: 'SR', title: 'Clear search recents', hint: 'Remove locally stored search palette recent queries', run: clearSearchRecents },
+    { id: 'copy-search-results', icon: 'CS', title: 'Copy search results Markdown', hint: 'Copy the current search result list as Markdown links and snippets', run: copySearchResultsMarkdown },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
