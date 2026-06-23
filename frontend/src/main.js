@@ -4396,6 +4396,10 @@ function stepEditHistory(direction) {
   updateHistoryButtons();
 }
 
+['select', 'keyup', 'mouseup'].forEach(eventName => {
+  editor.addEventListener(eventName, updateStats);
+});
+
 editor.addEventListener('input', (e) => {
   const active = cachedNotes.find(n => n.id === activeId);
   if (isReadOnlyType(getFileType(active?.path, active?.kind))) return;
@@ -4485,6 +4489,16 @@ function editorCursorPosition() {
   return { line, col };
 }
 
+function editorSelectionSummary() {
+  const start = Math.max(0, Math.min(editor.selectionStart || 0, editor.selectionEnd || 0));
+  const end = Math.max(0, Math.max(editor.selectionStart || 0, editor.selectionEnd || 0));
+  if (start === end) return '';
+  const selected = editor.value.slice(start, end);
+  const words = selected.trim() ? selected.trim().split(/\s+/).length : 0;
+  const lines = selected ? selected.split('\n').length : 0;
+  return ` \u00b7 Sel ${selected.length} ch / ${words} w / ${lines} ln`;
+}
+
 function updateStats() {
   const active = cachedNotes.find(n => n.id === activeId);
   const type = getFileType(active?.path, active?.kind);
@@ -4499,7 +4513,7 @@ function updateStats() {
   const ext = active?.path ? fileExt(active.path) : '';
   const lang = ext ? ext.toUpperCase() : typeLabel(type);
   const cursor = editorCursorPosition();
-  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 Ln ${cursor.line}, Col ${cursor.col} \u00b7 ~${readMin} min \u00b7 UTF-8`;
+  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 Ln ${cursor.line}, Col ${cursor.col}${editorSelectionSummary()} \u00b7 ~${readMin} min \u00b7 UTF-8`;
 }
 
 // ── Save animation ───────────────────────────────────────
