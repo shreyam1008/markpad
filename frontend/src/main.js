@@ -2068,6 +2068,20 @@ function showLocalFirstGuide() {
   `);
 }
 
+function showLowMemoryGuide() {
+  showModal('Low-Memory Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>measure</strong><span>Runtime stats</span><small>Sample RSS, Go heap, goroutines, uptime, and binary size</small></div>
+      <div class="diag-card"><strong>inspect</strong><span>Local footprint</span><small>Estimate loaded text, canvas, Trash, localStorage, and undo bytes</small></div>
+      <div class="diag-card"><strong>release</strong><span>Clear undo histories</span><small>Drop editor and canvas undo snapshots when memory matters</small></div>
+      <div class="diag-card"><strong>preset</strong><span>Workspace low memory</span><small>Enable compact mode and release undo snapshots together</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>bounded bridges</span><small>Task, search, outline, workspace, and backlink maps cap inserted cards</small></div>
+      <div class="diag-card"><strong>assets</strong><span>text icons + CSS themes</span><small>No icon font packs, image theme bundles, or heavy drawing runtime</small></div>
+    </div>
+    <p class="diag-note">Markpad keeps diagnostics explicit. Use reports before cleanup when you want evidence, then clear undo histories or switch workspace presets when responsiveness matters more than undo depth.</p>
+  `);
+}
+
 function showLayoutGuide() {
   showModal('Layout Guide', `
     <div class="diag-grid">
@@ -3255,6 +3269,7 @@ function commandItems() {
     { id: 'find-clear', icon: 'FC', title: 'Clear current find', hint: 'Clear the inline find query without closing the editor', run: clearCurrentFind },
     { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
+    { id: 'low-memory-guide', icon: 'LM', title: 'Low-memory guide', hint: 'Show runtime, footprint, undo cleanup, compact preset, and bounded canvas map notes', run: showLowMemoryGuide },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'export-runtime-stats-text', icon: 'ERT', title: 'Export runtime stats text', hint: 'Download memory, binary size, goroutine, and uptime stats as plain text', run: exportRuntimeStatsText },
@@ -3567,7 +3582,7 @@ function commandCategory(item) {
   if (id.startsWith('workspace')) return 'Layout';
   if (id.startsWith('local') || id.includes('local') || id.includes('loaded-workspace') || id.includes('active-context') || id.includes('active-path') || id.includes('backlinks') || id.includes('daily') || id.includes('weekly') || id.includes('reveal')) return 'Local';
   if (['focus', 'compact-mode', 'writing-focus-preset', 'review-split-preset', 'editor-wrap', 'editor-reading-width', 'layout-guide', 'split', 'split-balanced', 'split-editor-wide', 'split-editor-focus', 'split-preview-wide', 'split-preview-focus', 'split-nudge-editor', 'split-nudge-preview', 'editor', 'preview', 'sidebar'].includes(id)) return 'Layout';
-  if (id.includes('runtime') || id === 'footprint' || id.includes('undo-history')) return 'Diagnostics';
+  if (id.includes('runtime') || id === 'footprint' || id === 'low-memory-guide' || id.includes('undo-history')) return 'Diagnostics';
   if (id.includes('settings') || id === 'preferences' || id === 'help') return 'Settings';
   return 'File';
 }
