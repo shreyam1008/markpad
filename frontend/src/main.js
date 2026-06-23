@@ -9201,6 +9201,7 @@ function applyImportedLocalSettings() {
   if (!['loaded', 'local', 'all'].includes(searchScope)) searchScope = 'loaded';
   localStorage.setItem('markpad-search-scope', searchScope);
   searchRecentQueries = loadSearchRecentQueries();
+  commandRecentIds = loadCommandRecentIds();
   taskViewMode = localStorage.getItem('markpad-task-view') || taskViewMode;
   taskFilter = localStorage.getItem('markpad-task-filter') || taskFilter;
   taskQuery = localStorage.getItem('markpad-task-query') || '';
