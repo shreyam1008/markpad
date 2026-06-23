@@ -1612,6 +1612,7 @@ function commandItems() {
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
     { id: 'canvas-copy', icon: 'CC', title: 'Copy selected canvas element', hint: 'Copy the selected element to Markpad canvas clipboard', run: () => { copySelectedCanvasElement(); updateCanvasSelectionButtons(); } },
+    { id: 'canvas-copy-details', icon: 'CDT', title: 'Copy selected canvas details', hint: 'Copy selected canvas element geometry and style as Markdown', run: copySelectedCanvasDetails },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
     { id: 'canvas-delete', icon: 'CX', title: 'Delete selected canvas element', hint: 'Remove the currently selected canvas element', run: deleteSelectedCanvasElement },
@@ -3881,6 +3882,37 @@ function alignSelectedCanvasElement(direction) {
   updateCanvasStatus();
   statusText.textContent = `Canvas element aligned ${direction}`;
   return true;
+}
+
+async function copySelectedCanvasDetails() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  const lines = [
+    '# Markpad Canvas Element',
+    '',
+    `Type: ${element.type || 'element'}`,
+    `ID: ${element.id || ''}`,
+    `Bounds: x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}, w ${Math.round(Number(bounds.w || 0))}, h ${Math.round(Number(bounds.h || 0))}`,
+    `Stroke: ${element.stroke || 'none'}`,
+    `Width: ${element.width || 'n/a'}`,
+  ];
+  if (element.type === 'text') {
+    lines.push('', 'Text:', '```', String(element.text || ''), '```');
+  }
+  if (element.type === 'path') {
+    lines.push(`Points: ${(element.points || []).length}`);
+  }
+  await navigator.clipboard.writeText(lines.join('\n') + '\n');
+  statusText.textContent = 'Canvas element details copied';
 }
 
 function deleteSelectedCanvasElement() {
