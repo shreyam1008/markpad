@@ -799,6 +799,7 @@ function commandItems() {
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
+    { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'editor', icon: 'E', title: 'Editor view', hint: 'Show editor only', run: () => setView('markdown') },
@@ -1839,6 +1840,19 @@ function exportCanvasSvg() {
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
   statusText.textContent = 'Canvas SVG exported';
 }
+async function saveCanvasAsDraft() {
+  finishCanvasTextEdit();
+  if (!canvasDoc) loadCanvasState();
+  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2) + '\n';
+  if (canvasActive) closeCanvas();
+  renderSession(await window.go.main.App.NewNote());
+  await window.go.main.App.UpdateContent(activeId, json, true);
+  loadContent(json);
+  renderSession(await window.go.main.App.GetSession());
+  setView('markdown');
+  editor.focus();
+  statusText.textContent = 'Canvas JSON draft created. Use Save As for .canvas';
+}
 function importCanvasJson() {
   openCanvas();
   canvasImportFile?.click();
@@ -1846,6 +1860,7 @@ function importCanvasJson() {
 $('canvas-import')?.addEventListener('click', importCanvasJson);
 $('canvas-export')?.addEventListener('click', exportCanvasJson);
 $('canvas-export-svg')?.addEventListener('click', exportCanvasSvg);
+$('canvas-save-draft')?.addEventListener('click', saveCanvasAsDraft);
 canvasImportFile?.addEventListener('change', async () => {
   const file = canvasImportFile.files && canvasImportFile.files[0];
   canvasImportFile.value = '';
