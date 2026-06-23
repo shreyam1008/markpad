@@ -2059,6 +2059,7 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>portable data</strong><span>Markdown / JSON / CSV / ICS</span><small>Exports avoid vendor lock-in</small></div>
       <div class="diag-card"><strong>manifests</strong><span>Active file + loaded workspace</span><small>Export metadata without file contents</small></div>
       <div class="diag-card"><strong>workspace map</strong><span>Loaded items to canvas</span><small>Visualize open files and drafts locally</small></div>
+      <div class="diag-card"><strong>backlinks</strong><span>Active note to canvas</span><small>Map local references without cloud services</small></div>
       <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
       <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
@@ -3500,6 +3501,7 @@ function commandItems() {
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
     { id: 'local-links-canvas', icon: 'LG', title: 'Local links canvas', hint: 'Generate a lightweight .canvas map from local Markdown links', run: createLocalLinksCanvas },
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
+    { id: 'active-backlinks-to-canvas', icon: 'B2C', title: 'Send backlinks to canvas', hint: 'Append active-note backlinks as a lightweight local canvas map', run: insertActiveBacklinksCanvasMap },
     { id: 'copy-active-path', icon: 'CAP', title: 'Copy active file path', hint: 'Copy the active saved file path to the clipboard', run: copyActiveFilePath },
     { id: 'copy-active-context', icon: 'CAC', title: 'Copy active file context', hint: 'Copy active title, path, type, and dirty state as Markdown', run: copyActiveFileContext },
     { id: 'export-active-context', icon: 'EAC', title: 'Export active file context', hint: 'Download active title, path, type, and dirty state as Markdown', run: exportActiveFileContextMarkdown },
@@ -4655,6 +4657,70 @@ async function showActiveBacklinks() {
     <div class="local-summary">${backlinks.length} backlink${backlinks.length === 1 ? '' : 's'} for <b>${escapeHtml(note.title || basename(note.path))}</b> · bounded Markdown scan</div>
     ${renderLocalBacklinks(backlinks)}
   `, true);
+}
+
+function compactCanvasBacklinkTitle(hit) {
+  const title = String(hit?.relPath || hit?.title || basename(hit?.path || '') || 'Backlink').replace(/\s+/g, ' ').trim();
+  return title.length > 38 ? `${title.slice(0, 35)}...` : title;
+}
+
+function compactCanvasBacklinkSnippet(hit) {
+  const snippet = String(hit?.snippet || '').replace(/\s+/g, ' ').trim();
+  return snippet.length > 48 ? `${snippet.slice(0, 45)}...` : snippet;
+}
+
+async function insertActiveBacklinksCanvasMap() {
+  const note = cachedNotes.find(n => n.id === activeId);
+  if (!note?.path) {
+    statusText.textContent = 'Save the active note before sending backlinks to canvas';
+    return;
+  }
+  if (!window.go?.main?.App?.GetLocalFolder || !window.go?.main?.App?.ListLocalFolderBacklinks) {
+    statusText.textContent = 'Backlinks backend unavailable';
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  if (!info.path || info.missing) {
+    statusText.textContent = info.missing ? 'Saved local folder is missing' : 'No local folder set';
+    return;
+  }
+  const backlinks = await window.go.main.App.ListLocalFolderBacklinks(note.path, note.title || '', 120);
+  if (!backlinks.length) {
+    statusText.textContent = 'No backlinks to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = backlinks.slice(0, 24);
+  const centerX = origin.x + 320;
+  const centerY = origin.y + 120;
+  const elements = [
+    ...canvasTemplateCard(centerX - 120, centerY - 40, 240, 80, note.title || basename(note.path) || 'Active note', '#2f6f61'),
+    canvasTemplateText(origin.x, origin.y - 28, `Backlinks · ${visible.length}${backlinks.length > visible.length ? ` of ${backlinks.length}` : ''} local note${visible.length === 1 ? '' : 's'}`, 18, '#2f6f61'),
+  ];
+  visible.forEach((hit, index) => {
+    const angle = (Math.PI * 2 * index) / Math.max(1, visible.length);
+    const radiusX = 360;
+    const radiusY = 230;
+    const x = Math.round(centerX + Math.cos(angle) * radiusX - 105);
+    const y = Math.round(centerY + Math.sin(angle) * radiusY - 40);
+    elements.push(canvasTemplateArrow(centerX, centerY, x + 105, y + 40, '#6b6e68'));
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 210, h: 80, stroke: '#2563eb', width: 2 });
+    elements.push(canvasTemplateText(x + 12, y + 27, compactCanvasBacklinkTitle(hit), 13, '#2563eb'));
+    elements.push(canvasTemplateText(x + 12, y + 49, `line ${Number(hit.line || 0) + 1}`, 10, '#6b6e68'));
+    const snippet = compactCanvasBacklinkSnippet(hit);
+    if (snippet) elements.push(canvasTemplateText(x + 12, y + 68, snippet, 9, '#1f2937'));
+  });
+  if (backlinks.length > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 520, `${backlinks.length - visible.length} additional backlinks omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} backlink${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
 async function showLocalFolder(query = '') {
@@ -8047,6 +8113,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>search</strong><span>Result board</span><small>Append current search results as canvas cards</small></div>
       <div class="diag-card"><strong>outline</strong><span>Heading map</span><small>Append active Markdown headings as a hierarchy</small></div>
       <div class="diag-card"><strong>workspace</strong><span>Loaded item map</span><small>Append open files and drafts as cards</small></div>
+      <div class="diag-card"><strong>backlinks</strong><span>Reference map</span><small>Append active-note backlinks as cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
