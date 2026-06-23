@@ -2827,6 +2827,8 @@ function commandItems() {
     { id: 'export-canvas-view-state', icon: 'EVS', title: 'Export canvas view state', hint: 'Download camera, grid, snap, minimap, and element count as Markdown', run: exportCanvasViewStateMarkdown },
     { id: 'copy-canvas-view-state-json', icon: 'CVJ', title: 'Copy canvas view state JSON', hint: 'Copy camera, grid, snap, minimap, and element count as JSON', run: copyCanvasViewStateJson },
     { id: 'export-canvas-view-state-json', icon: 'EVJ', title: 'Export canvas view state JSON', hint: 'Download camera, grid, snap, minimap, and element count as JSON', run: exportCanvasViewStateJson },
+    { id: 'copy-canvas-view-state-csv', icon: 'CVC', title: 'Copy canvas view state CSV', hint: 'Copy camera, grid, snap, minimap, and element count as CSV', run: copyCanvasViewStateCsv },
+    { id: 'export-canvas-view-state-csv', icon: 'EVC', title: 'Export canvas view state CSV', hint: 'Download camera, grid, snap, minimap, and element count as CSV', run: exportCanvasViewStateCsv },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -7031,6 +7033,15 @@ function canvasViewStateJson() {
   return JSON.stringify(canvasViewStateSnapshot(), null, 2) + '\n';
 }
 
+function canvasViewStateCsv() {
+  const snapshot = canvasViewStateSnapshot();
+  const rows = [
+    ['exportedAt', 'tool', 'cameraX', 'cameraY', 'zoomPercent', 'gridVisible', 'gridSize', 'snap', 'minimapVisible', 'background', 'elementCount'],
+    [snapshot.exportedAt, snapshot.tool, snapshot.camera.x, snapshot.camera.y, snapshot.camera.zoomPercent, snapshot.grid.visible ? 'true' : 'false', snapshot.grid.size, snapshot.grid.snap ? 'true' : 'false', snapshot.minimapVisible ? 'true' : 'false', snapshot.background, snapshot.elementCount],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copyCanvasViewStateMarkdown() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -7049,6 +7060,15 @@ async function copyCanvasViewStateJson() {
   statusText.textContent = 'Canvas view state copied as JSON';
 }
 
+async function copyCanvasViewStateCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(canvasViewStateCsv());
+  statusText.textContent = 'Canvas view state copied as CSV';
+}
+
 function exportCanvasViewStateMarkdown() {
   downloadText('markpad-canvas-view-state.md', 'text/markdown', canvasViewStateMarkdown());
   statusText.textContent = 'Canvas view state exported as Markdown';
@@ -7057,6 +7077,11 @@ function exportCanvasViewStateMarkdown() {
 function exportCanvasViewStateJson() {
   downloadText('markpad-canvas-view-state.json', 'application/json', canvasViewStateJson());
   statusText.textContent = 'Canvas view state exported as JSON';
+}
+
+function exportCanvasViewStateCsv() {
+  downloadText('markpad-canvas-view-state.csv', 'text/csv', canvasViewStateCsv());
+  statusText.textContent = 'Canvas view state exported as CSV';
 }
 
 function obsidianElementBounds(element) {
