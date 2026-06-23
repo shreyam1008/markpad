@@ -291,6 +291,34 @@ function toggleCompactMode() {
   applyCompactMode();
 }
 
+function applyWritingFocusPreset() {
+  focusMode = true;
+  compactMode = true;
+  editorSoftWrap = true;
+  editorReadingWidth = true;
+  applyEditorWrap(true);
+  applyEditorReadingWidth(true);
+  applyCompactMode(true);
+  applyFocusMode(true);
+  setView('split');
+  setSplitPreset(62);
+  statusText.textContent = 'Writing focus preset applied';
+}
+
+function applyReviewSplitPreset() {
+  focusMode = false;
+  compactMode = false;
+  editorSoftWrap = true;
+  editorReadingWidth = false;
+  applyEditorWrap(true);
+  applyEditorReadingWidth(true);
+  applyCompactMode(true);
+  applyFocusMode(true);
+  setView('split');
+  setSplitPreset(50);
+  statusText.textContent = 'Review split preset applied';
+}
+
 function normalizeSplitRatio(value) {
   return Math.max(28, Math.min(72, Number.isFinite(value) ? value : 50));
 }
@@ -1610,6 +1638,8 @@ function commandItems() {
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'compact-mode', icon: 'CP', title: compactMode ? 'Disable compact mode' : 'Enable compact mode', hint: 'Tighten sidebar, toolbar, modal, search, task, and canvas spacing', run: toggleCompactMode },
+    { id: 'writing-focus-preset', icon: 'WF', title: 'Writing focus preset', hint: 'Focus + compact + soft wrap + reading width + editor-wide split', run: applyWritingFocusPreset },
+    { id: 'review-split-preset', icon: 'RV', title: 'Review split preset', hint: 'Balanced split with soft wrap and full review chrome', run: applyReviewSplitPreset },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
