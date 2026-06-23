@@ -391,6 +391,20 @@ function applyReviewSplitPreset() {
   statusText.textContent = 'Review split preset applied';
 }
 
+function applyDefaultEditingPreset() {
+  focusMode = false;
+  compactMode = false;
+  editorSoftWrap = false;
+  editorReadingWidth = false;
+  applyEditorWrap(true);
+  applyEditorReadingWidth(true);
+  applyCompactMode(true);
+  applyFocusMode(true);
+  setView('split');
+  setSplitPreset(50);
+  statusText.textContent = 'Default editing preset applied';
+}
+
 function normalizeSplitRatio(value) {
   return Math.max(28, Math.min(72, Number.isFinite(value) ? value : 50));
 }
@@ -1767,6 +1781,7 @@ function commandItems() {
     { id: 'compact-mode', icon: 'CP', title: compactMode ? 'Disable compact mode' : 'Enable compact mode', hint: 'Tighten sidebar, toolbar, modal, search, task, and canvas spacing', run: toggleCompactMode },
     { id: 'writing-focus-preset', icon: 'WF', title: 'Writing focus preset', hint: 'Focus + compact + soft wrap + reading width + editor-wide split', run: applyWritingFocusPreset },
     { id: 'review-split-preset', icon: 'RV', title: 'Review split preset', hint: 'Balanced split with soft wrap and full review chrome', run: applyReviewSplitPreset },
+    { id: 'default-editing-preset', icon: 'DE', title: 'Default editing preset', hint: 'Full chrome + plain editor + balanced split', run: applyDefaultEditingPreset },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
