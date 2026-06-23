@@ -3265,6 +3265,7 @@ function commandItems() {
     { id: 'clear-all-undo-history', icon: 'AU', title: 'Clear all undo histories', hint: 'Release editor and canvas undo snapshots to reduce memory pressure', run: clearAllUndoHistories },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
+    { id: 'canvas-document-map', icon: 'O2C', title: 'Send document outline to canvas', hint: 'Append active Markdown headings as a lightweight canvas hierarchy map', run: insertDocumentOutlineCanvasMap },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
@@ -6843,6 +6844,60 @@ function insertSearchResultsCanvasBoard() {
   renderCanvas();
   updateCanvasSelectionButtons();
   statusText.textContent = `${visible.length} search result${visible.length === 1 ? '' : 's'} sent to canvas`;
+}
+
+function canvasOutlineStroke(level) {
+  return ['#2f6f61', '#2563eb', '#d97706', '#16a34a', '#6f6230', '#dc2626'][Math.max(0, Math.min(5, Number(level || 1) - 1))];
+}
+
+function compactCanvasOutlineTitle(item) {
+  const label = `H${item.level} ${String(item.text || 'Heading').replace(/\s+/g, ' ').trim()}`;
+  return label.length > 42 ? `${label.slice(0, 39)}...` : label;
+}
+
+function insertDocumentOutlineCanvasMap() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  if (isReadOnlyType(type)) {
+    statusText.textContent = 'No editable Markdown outline to send to canvas';
+    return;
+  }
+  const outline = parseDocumentOutline(currentContent);
+  if (!outline.length) {
+    statusText.textContent = 'No headings to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = outline.slice(0, 40);
+  const title = active?.title || basename(active?.path || '') || 'Untitled';
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `${title} outline · ${visible.length}${outline.length > visible.length ? ` of ${outline.length}` : ''} heading${visible.length === 1 ? '' : 's'}`, 18, '#2f6f61'),
+  ];
+  const anchors = {};
+  visible.forEach((item, index) => {
+    const level = Math.max(1, Math.min(6, Number(item.level || 1)));
+    const x = origin.x + (level - 1) * 58;
+    const y = origin.y + index * 74;
+    const stroke = canvasOutlineStroke(level);
+    const parent = anchors[level - 1];
+    if (parent) elements.push(canvasTemplateArrow(parent.x, parent.y, x + 8, y + 29, '#6b6e68'));
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 260, h: 58, stroke, width: 2 });
+    elements.push(canvasTemplateText(x + 14, y + 25, compactCanvasOutlineTitle(item), 14, stroke));
+    elements.push(canvasTemplateText(x + 14, y + 45, `line ${item.line + 1}`, 10, '#6b6e68'));
+    anchors[level] = { x: x + 260, y: y + 29 };
+    for (let clear = level + 1; clear <= 6; clear++) delete anchors[clear];
+  });
+  if (outline.length > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + visible.length * 74 + 24, `${outline.length - visible.length} additional headings omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} outline heading${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
 function setCanvasZoomPreset(scale) {
