@@ -1819,6 +1819,7 @@ function commandItems() {
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'copy-canvas-json', icon: 'CJ', title: 'Copy canvas JSON', hint: 'Copy the current Markpad canvas document as portable JSON', run: copyCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
+    { id: 'copy-canvas-svg', icon: 'CSV', title: 'Copy canvas SVG', hint: 'Copy the current canvas as lightweight SVG markup', run: copyCanvasSvg },
     { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
     { id: 'canvas-png-full', icon: 'PGA', title: 'Export full canvas PNG', hint: 'Download all canvas content as a bounded PNG image', run: exportCanvasPngFull },
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
@@ -4666,6 +4667,13 @@ function exportCanvasSvg() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
   statusText.textContent = 'Canvas SVG exported';
+}
+
+async function copyCanvasSvg() {
+  if (!canvasDoc) loadCanvasState();
+  await navigator.clipboard.writeText(canvasToSvg(canvasDoc));
+  const count = (canvasDoc?.elements || []).length;
+  statusText.textContent = `${count} canvas element${count === 1 ? '' : 's'} copied as SVG`;
 }
 
 async function exportCanvasPngViewport() {
