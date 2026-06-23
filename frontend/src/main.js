@@ -2394,6 +2394,10 @@ function commandItems() {
     { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
     { id: 'canvas-delete', icon: 'CX', title: 'Delete selected canvas element', hint: 'Remove the currently selected canvas element', run: deleteSelectedCanvasElement },
+    { id: 'canvas-nudge-up', icon: 'NU', title: 'Canvas nudge up', hint: 'Move the selected canvas element up by grid or 10px', run: () => nudgeSelectedCanvasElement(0, -1, 'up') },
+    { id: 'canvas-nudge-down', icon: 'ND', title: 'Canvas nudge down', hint: 'Move the selected canvas element down by grid or 10px', run: () => nudgeSelectedCanvasElement(0, 1, 'down') },
+    { id: 'canvas-nudge-left', icon: 'NL', title: 'Canvas nudge left', hint: 'Move the selected canvas element left by grid or 10px', run: () => nudgeSelectedCanvasElement(-1, 0, 'left') },
+    { id: 'canvas-nudge-right', icon: 'NR', title: 'Canvas nudge right', hint: 'Move the selected canvas element right by grid or 10px', run: () => nudgeSelectedCanvasElement(1, 0, 'right') },
     { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
     { id: 'canvas-layer-backward', icon: 'LB', title: 'Canvas send backward', hint: 'Move the selected canvas element one layer backward', run: () => moveSelectedCanvasLayer('backward') },
     { id: 'canvas-layer-front', icon: 'TF', title: 'Canvas bring to front', hint: 'Move the selected canvas element above all others', run: () => moveSelectedCanvasLayer('front') },
@@ -5287,6 +5291,21 @@ function applyCanvasDrawingPreset(tool, color, width, label) {
   statusText.textContent = selected
     ? `Selected canvas element styled for ${label}`
     : `Canvas ${label} preset ready`;
+}
+
+function nudgeSelectedCanvasElement(dx, dy, label) {
+  openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element to nudge';
+    return;
+  }
+  const step = canvasSnapToGrid ? canvasGridSize : 10;
+  canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(canvasDoc.elements[canvasSelectedIndex], dx * step, dy * step);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  syncCanvasControlsFromSelection();
+  statusText.textContent = `Canvas element nudged ${label}`;
 }
 
 function updateCanvasOptionButtons() {
