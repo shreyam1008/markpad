@@ -3664,6 +3664,7 @@ function commandItems() {
     { id: 'export-task-view-summary-json', icon: 'ETJ', title: 'Export task view summary JSON', hint: 'Download current task view filters and counts as JSON', run: exportTaskViewSummaryJson },
     { id: 'export-task-view-summary-csv', icon: 'ETV', title: 'Export task view summary CSV', hint: 'Download current task view filters and counts as CSV', run: exportTaskViewSummaryCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
+    { id: 'trash-retention-audit', icon: 'TA', title: 'Trash retention audit', hint: 'Show retained items, expiry buckets, size, and next cleanup date', run: showTrashRetentionAudit },
     { id: 'trash-guide', icon: 'TG', title: 'Trash guide', hint: 'Show retention, restore, cleanup, and report behavior for local Trash', run: showTrashGuide },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -4316,6 +4317,55 @@ function trashRetentionSummaryText(draftItems, fileItems) {
   return parts.join(' · ');
 }
 
+function trashRetentionAuditSnapshot(draftItems, fileItems) {
+  const allItems = [...draftItems.map(item => ({ ...item, kind: 'draft' })), ...fileItems.map(item => ({ ...item, kind: 'file' }))];
+  const counts = allItems.reduce((acc, item) => {
+    const days = daysLeft(item.deletedAt);
+    if (days <= 1) acc.urgent += 1;
+    else if (days <= 3) acc.soon += 1;
+    else acc.safe += 1;
+    return acc;
+  }, { urgent: 0, soon: 0, safe: 0 });
+  const draftBytes = draftItems.reduce((sum, item) => sum + byteSize(item.content || ''), 0);
+  const fileBytes = fileItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  const next = allItems
+    .map(item => ({ item, expiresAt: new Date(item.deletedAt).getTime() + DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000 }))
+    .filter(entry => Number.isFinite(entry.expiresAt))
+    .sort((a, b) => a.expiresAt - b.expiresAt)[0];
+  return {
+    total: allItems.length,
+    drafts: draftItems.length,
+    files: fileItems.length,
+    draftBytes,
+    fileBytes,
+    totalBytes: draftBytes + fileBytes,
+    urgent: counts.urgent,
+    soon: counts.soon,
+    safe: counts.safe,
+    retentionDays: DRAFT_TRASH_DAYS,
+    nextExpiry: next ? new Date(next.expiresAt).toLocaleString() : 'None',
+    nextTitle: next ? (next.item.title || basename(next.item.originalPath) || 'Untitled') : '',
+  };
+}
+
+async function showTrashRetentionAudit() {
+  const draftItems = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  const audit = trashRetentionAuditSnapshot(draftItems, fileItems);
+  showModal('Trash Retention Audit', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${audit.total}</strong><span>Retained items</span><small>${audit.drafts} drafts · ${audit.files} saved files</small></div>
+      <div class="diag-card"><strong>${formatBytes(audit.totalBytes)}</strong><span>Retained size</span><small>${formatBytes(audit.draftBytes)} drafts · ${formatBytes(audit.fileBytes)} files</small></div>
+      <div class="diag-card"><strong>${audit.urgent}</strong><span>Expiring today</span><small>Restore or clean intentionally</small></div>
+      <div class="diag-card"><strong>${audit.soon}</strong><span>Expiring soon</span><small>Within 3 days</small></div>
+      <div class="diag-card"><strong>${audit.safe}</strong><span>Safe window</span><small>More than 3 days left</small></div>
+      <div class="diag-card"><strong>${audit.retentionDays}</strong><span>Retention days</span><small>Local default cleanup window</small></div>
+    </div>
+    <p class="diag-note">${audit.total ? `Next expiry: ${escapeHtml(audit.nextTitle)} at ${escapeHtml(audit.nextExpiry)}.` : 'Trash is empty. Nothing is scheduled for cleanup.'}</p>
+    <p class="diag-note">This audit is metadata-only. It does not export deleted draft contents or inspect files outside the existing local Trash manifest.</p>
+  `);
+}
+
 async function copyTrashReportMarkdown() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -4455,6 +4505,7 @@ async function showTrashView() {
       <button data-trash-export-csv ${total ? '' : 'disabled'}>Export CSV</button>
       <button data-trash-copy-json ${total ? '' : 'disabled'}>Copy JSON</button>
       <button data-trash-export-json ${total ? '' : 'disabled'}>Export JSON</button>
+      <button data-trash-audit>Audit</button>
       <button data-trash-guide>Guide</button>
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
@@ -10354,6 +10405,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashCleanExpired) await cleanupExpiredTrash();
   const trashGuide = e.target.closest('[data-trash-guide]');
   if (trashGuide) showTrashGuide();
+  const trashAudit = e.target.closest('[data-trash-audit]');
+  if (trashAudit) await showTrashRetentionAudit();
   const trashCopyReport = e.target.closest('[data-trash-copy-report]');
   if (trashCopyReport && !trashCopyReport.disabled) await copyTrashReportMarkdown();
   const trashExportReport = e.target.closest('[data-trash-export-report]');
