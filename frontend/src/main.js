@@ -2528,6 +2528,9 @@ function commandItems() {
     { id: 'copy-task-view-summary', icon: 'CTS', title: 'Copy task view summary', hint: 'Copy current task view filters and counts as Markdown', run: copyTaskViewSummary },
     { id: 'copy-task-view-summary-json', icon: 'CTJ', title: 'Copy task view summary JSON', hint: 'Copy current task view filters and counts as portable JSON', run: copyTaskViewSummaryJson },
     { id: 'copy-task-view-summary-csv', icon: 'CTV', title: 'Copy task view summary CSV', hint: 'Copy current task view filters and counts as one CSV row', run: copyTaskViewSummaryCsv },
+    { id: 'export-task-view-summary', icon: 'ETS', title: 'Export task view summary', hint: 'Download current task view filters and counts as Markdown', run: exportTaskViewSummaryMarkdown },
+    { id: 'export-task-view-summary-json', icon: 'ETJ', title: 'Export task view summary JSON', hint: 'Download current task view filters and counts as JSON', run: exportTaskViewSummaryJson },
+    { id: 'export-task-view-summary-csv', icon: 'ETV', title: 'Export task view summary CSV', hint: 'Download current task view filters and counts as CSV', run: exportTaskViewSummaryCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -4849,6 +4852,81 @@ async function copyTaskViewSummaryCsv() {
   ];
   await navigator.clipboard.writeText(rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n');
   statusText.textContent = 'Task view summary copied as CSV';
+}
+
+function taskViewSummarySnapshot(tasks) {
+  const open = tasks.filter(task => !task.checked).length;
+  const waiting = tasks.filter(task => task.waiting && !task.checked).length;
+  const high = tasks.filter(task => isHighPriorityTask(task) && !task.checked).length;
+  const due = tasks.filter(task => task.due && !task.checked).length;
+  const sources = tasks.reduce((counts, task) => {
+    counts[task.local ? 'local' : 'loaded'] += 1;
+    return counts;
+  }, { loaded: 0, local: 0 });
+  return {
+    type: 'markpad-task-view-summary',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    view: taskViewMode,
+    source: taskSourceFilter,
+    filter: taskFilter,
+    query: taskQuery || '',
+    counts: {
+      visible: tasks.length,
+      open,
+      done: tasks.length - open,
+      high,
+      waiting,
+      due,
+      loaded: sources.loaded,
+      local: sources.local,
+    },
+  };
+}
+
+function taskViewSummaryMarkdownText(summary) {
+  return [
+    '# Markpad Task View',
+    '',
+    `- Generated: ${summary.exportedAt}`,
+    `- View: ${summary.view}`,
+    `- Source: ${summary.source}`,
+    `- Filter: ${summary.filter}`,
+    `- Query: ${summary.query || '(none)'}`,
+    `- Visible: ${summary.counts.visible}`,
+    `- Open: ${summary.counts.open}`,
+    `- Done: ${summary.counts.done}`,
+    `- High priority: ${summary.counts.high}`,
+    `- Waiting: ${summary.counts.waiting}`,
+    `- With due dates: ${summary.counts.due}`,
+    `- Loaded/local: ${summary.counts.loaded}/${summary.counts.local}`,
+  ].join('\n') + '\n';
+}
+
+function taskViewSummaryCsvText(summary) {
+  const rows = [
+    ['exportedAt', 'view', 'source', 'filter', 'query', 'visible', 'open', 'done', 'high', 'waiting', 'due', 'loaded', 'local'],
+    [summary.exportedAt, summary.view, summary.source, summary.filter, summary.query || '', summary.counts.visible, summary.counts.open, summary.counts.done, summary.counts.high, summary.counts.waiting, summary.counts.due, summary.counts.loaded, summary.counts.local],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+async function exportTaskViewSummaryMarkdown() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  downloadText('markpad-task-view-summary.md', 'text/markdown', taskViewSummaryMarkdownText(taskViewSummarySnapshot(tasks)));
+  statusText.textContent = 'Task view summary exported as Markdown';
+}
+
+async function exportTaskViewSummaryJson() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  downloadText('markpad-task-view-summary.json', 'application/json', JSON.stringify(taskViewSummarySnapshot(tasks), null, 2) + '\n');
+  statusText.textContent = 'Task view summary exported as JSON';
+}
+
+async function exportTaskViewSummaryCsv() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  downloadText('markpad-task-view-summary.csv', 'text/csv', taskViewSummaryCsvText(taskViewSummarySnapshot(tasks)));
+  statusText.textContent = 'Task view summary exported as CSV';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
