@@ -2918,7 +2918,8 @@ function commandScore(item, query) {
 
 function commandCategory(item) {
   const id = String(item?.id || '');
-  if (id.startsWith('search') || id === 'find' || id.includes('outline')) return 'Search';
+  if (id.includes('search') || id === 'find' || id.startsWith('find-') || id.includes('outline')) return 'Search';
+  if (id.includes('command-recents') || id === 'clear-palette-recents') return 'Search';
   if (id.startsWith('tasks') || id.startsWith('add-task') || id.includes('task')) return 'Tasks';
   if (id.startsWith('canvas') || id === 'new-local-canvas' || id === 'local-links-canvas') return 'Canvas';
   if (id.startsWith('trash')) return 'Trash';
