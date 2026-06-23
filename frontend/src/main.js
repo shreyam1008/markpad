@@ -1158,6 +1158,25 @@ function searchResultMatchesPlan(result, plan) {
   return true;
 }
 
+function searchPlanMetaSuffix(query) {
+  const plan = parseSearchQuery(query);
+  const includeParts = [];
+  const excludeParts = [];
+  Object.entries(plan.filters).forEach(([key, values]) => {
+    values.forEach(value => includeParts.push(`${key}:${value}`));
+  });
+  Object.entries(plan.excludes).forEach(([key, values]) => {
+    values.forEach(value => excludeParts.push(`-${key}:${value}`));
+  });
+  (plan.excludeTerms || []).forEach(value => excludeParts.push(`-${value}`));
+  (plan.excludePhrases || []).forEach(value => excludeParts.push(`-"${value}"`));
+  const compact = (items) => items.length > 3 ? `${items.slice(0, 3).join(', ')} +${items.length - 3}` : items.join(', ');
+  const parts = [];
+  if (includeParts.length) parts.push(`including ${compact(includeParts)}`);
+  if (excludeParts.length) parts.push(`excluding ${compact(excludeParts)}`);
+  return parts.length ? ` · ${parts.join(' · ')}` : '';
+}
+
 function searchContentMatchesTaskFilters(content, filters) {
   if (!filters.length) return true;
   const lines = String(content || '').split('\n');
@@ -1328,7 +1347,7 @@ async function runLocalFolderSearch(query, token) {
     searchMeta.textContent = pack.meta || 'Local folder search unavailable';
     return;
   }
-  searchMeta.textContent = pack.meta || `${pack.results.length} local result${pack.results.length === 1 ? '' : 's'}`;
+  searchMeta.textContent = `${pack.meta || `${pack.results.length} local result${pack.results.length === 1 ? '' : 's'}`}${searchPlanMetaSuffix(query)}`;
   renderSearchResults(pack.results, query);
 }
 
@@ -1449,6 +1468,7 @@ function highlightSearchText(value, terms) {
 function renderSearchResults(results, query) {
   const trimmedQuery = String(query || '').trim();
   const highlightTerms = searchHighlightTerms(trimmedQuery);
+  const planMeta = searchPlanMetaSuffix(trimmedQuery);
   searchLastResults = Array.isArray(results) ? results : [];
   searchLastQuery = trimmedQuery;
   searchResults.innerHTML = '';
@@ -1457,11 +1477,11 @@ function renderSearchResults(results, query) {
     const loadedCount = results.filter(result => result.source !== 'local').length;
     const localCount = results.length - loadedCount;
     searchMeta.textContent = trimmedQuery
-      ? `${results.length} result${results.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local`
+      ? `${results.length} result${results.length === 1 ? '' : 's'}${planMeta} · ${loadedCount} loaded · ${localCount} local`
       : `${results.length} item${results.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local`;
   } else if (searchScope !== 'local') {
     searchMeta.textContent = trimmedQuery
-      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files`
+      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files${planMeta}`
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!results.length) {
