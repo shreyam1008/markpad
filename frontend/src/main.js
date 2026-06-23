@@ -3993,9 +3993,13 @@ function commandItems() {
   { id: 'tasks-agenda-copy', icon: 'MD', title: 'Copy task agenda as Markdown', hint: 'Copy the current Markdown-derived agenda for use outside Markpad', run: copyTaskAgendaMarkdown },
   { id: 'tasks-agenda-copy-json', icon: 'AJ', title: 'Copy task agenda JSON', hint: 'Copy the current Markdown-derived agenda as structured JSON', run: copyTaskAgendaJson },
   { id: 'tasks-agenda-copy-csv', icon: 'AC', title: 'Copy task agenda CSV', hint: 'Copy the current Markdown-derived agenda as CSV rows', run: copyTaskAgendaCsv },
+  { id: 'tasks-agenda-copy-ics', icon: 'AIC', title: 'Copy task agenda ICS', hint: 'Copy agenda tasks as portable calendar todos', run: copyTaskAgendaIcs },
+  { id: 'tasks-agenda-copy-todo', icon: 'ATX', title: 'Copy task agenda Todo.txt', hint: 'Copy agenda tasks as portable Todo.txt lines', run: copyTaskAgendaTodoTxt },
   { id: 'tasks-agenda-export', icon: 'TMD', title: 'Export task agenda as Markdown', hint: 'Download the current Markdown-derived agenda as a portable file', run: exportTaskAgendaMarkdown },
   { id: 'tasks-agenda-export-json', icon: 'EAJ', title: 'Export task agenda JSON', hint: 'Download the current Markdown-derived agenda as structured JSON', run: exportTaskAgendaJson },
   { id: 'tasks-agenda-export-csv', icon: 'EAC', title: 'Export task agenda CSV', hint: 'Download the current Markdown-derived agenda as CSV rows', run: exportTaskAgendaCsv },
+  { id: 'tasks-agenda-export-ics', icon: 'EAI', title: 'Export task agenda ICS', hint: 'Download agenda tasks as portable calendar todos', run: exportTaskAgendaIcs },
+  { id: 'tasks-agenda-export-todo', icon: 'EAT', title: 'Export task agenda Todo.txt', hint: 'Download agenda tasks as portable Todo.txt lines', run: exportTaskAgendaTodoTxt },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
@@ -6289,6 +6293,20 @@ function taskAgendaRecords(groups = taskAgendaGroups()) {
   );
 }
 
+function taskAgendaUniqueTasks(groups = taskAgendaGroups()) {
+  const seen = new Set();
+  const tasks = [];
+  taskAgendaBuckets(groups).forEach(([bucketId, bucketTitle, bucketTasks]) => {
+    bucketTasks.forEach((task) => {
+      const key = task.id || `${task.noteId || ''}|${task.path || ''}|${task.line || ''}|${task.text || task.raw || ''}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      tasks.push({ ...task, agendaBucket: bucketId, agendaBucketTitle: bucketTitle });
+    });
+  });
+  return tasks;
+}
+
 function taskAgendaJson() {
   const groups = taskAgendaGroups();
   const buckets = taskAgendaBuckets(groups);
@@ -6335,6 +6353,14 @@ function taskAgendaCsv() {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
+function taskAgendaIcs() {
+  return tasksToIcs(taskAgendaUniqueTasks());
+}
+
+function taskAgendaTodoTxt() {
+  return tasksToTodoTxt(taskAgendaUniqueTasks());
+}
+
 async function copyTaskAgendaMarkdown() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -6362,6 +6388,34 @@ async function copyTaskAgendaCsv() {
   statusText.textContent = 'Task agenda copied as CSV';
 }
 
+async function copyTaskAgendaIcs() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const tasks = taskAgendaUniqueTasks();
+  if (!tasks.length) {
+    statusText.textContent = 'No agenda tasks to copy';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToIcs(tasks));
+  statusText.textContent = 'Task agenda copied as ICS';
+}
+
+async function copyTaskAgendaTodoTxt() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const tasks = taskAgendaUniqueTasks();
+  if (!tasks.length) {
+    statusText.textContent = 'No agenda tasks to copy';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToTodoTxt(tasks));
+  statusText.textContent = 'Task agenda copied as Todo.txt';
+}
+
 function exportTaskAgendaMarkdown() {
   downloadText('markpad-task-agenda.md', 'text/markdown', taskAgendaMarkdown());
   statusText.textContent = 'Task agenda exported as Markdown';
@@ -6375,6 +6429,26 @@ function exportTaskAgendaJson() {
 function exportTaskAgendaCsv() {
   downloadText('markpad-task-agenda.csv', 'text/csv', taskAgendaCsv());
   statusText.textContent = 'Task agenda exported as CSV';
+}
+
+function exportTaskAgendaIcs() {
+  const tasks = taskAgendaUniqueTasks();
+  if (!tasks.length) {
+    statusText.textContent = 'No agenda tasks to export';
+    return;
+  }
+  downloadText('markpad-task-agenda.ics', 'text/calendar', tasksToIcs(tasks));
+  statusText.textContent = 'Task agenda exported as ICS';
+}
+
+function exportTaskAgendaTodoTxt() {
+  const tasks = taskAgendaUniqueTasks();
+  if (!tasks.length) {
+    statusText.textContent = 'No agenda tasks to export';
+    return;
+  }
+  downloadText('markpad-task-agenda.txt', 'text/plain', tasksToTodoTxt(tasks));
+  statusText.textContent = 'Task agenda exported as Todo.txt';
 }
 
 async function showTaskAgenda() {
@@ -6391,9 +6465,13 @@ async function showTaskAgenda() {
       <button data-copy-task-agenda-md>Copy Markdown</button>
       <button data-copy-task-agenda-json>Copy JSON</button>
       <button data-copy-task-agenda-csv>Copy CSV</button>
+      <button data-copy-task-agenda-ics>Copy ICS</button>
+      <button data-copy-task-agenda-todo>Copy Todo.txt</button>
       <button data-export-task-agenda-md>Export Markdown</button>
       <button data-export-task-agenda-json>Export JSON</button>
       <button data-export-task-agenda-csv>Export CSV</button>
+      <button data-export-task-agenda-ics>Export ICS</button>
+      <button data-export-task-agenda-todo>Export Todo.txt</button>
       <button data-task-agenda-canvas>Send to Canvas</button>
     </div>
     <p class="diag-note">Agenda is a derived local view over Markdown checkbox lines. It does not create a task database or rewrite task files.</p>
@@ -11178,12 +11256,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyTaskAgendaJsonBtn) await copyTaskAgendaJson();
   const copyTaskAgendaCsvBtn = e.target.closest('[data-copy-task-agenda-csv]');
   if (copyTaskAgendaCsvBtn) await copyTaskAgendaCsv();
+  const copyTaskAgendaIcsBtn = e.target.closest('[data-copy-task-agenda-ics]');
+  if (copyTaskAgendaIcsBtn) await copyTaskAgendaIcs();
+  const copyTaskAgendaTodoBtn = e.target.closest('[data-copy-task-agenda-todo]');
+  if (copyTaskAgendaTodoBtn) await copyTaskAgendaTodoTxt();
   const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
   if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
   const exportTaskAgendaJsonBtn = e.target.closest('[data-export-task-agenda-json]');
   if (exportTaskAgendaJsonBtn) exportTaskAgendaJson();
   const exportTaskAgendaCsvBtn = e.target.closest('[data-export-task-agenda-csv]');
   if (exportTaskAgendaCsvBtn) exportTaskAgendaCsv();
+  const exportTaskAgendaIcsBtn = e.target.closest('[data-export-task-agenda-ics]');
+  if (exportTaskAgendaIcsBtn) exportTaskAgendaIcs();
+  const exportTaskAgendaTodoBtn = e.target.closest('[data-export-task-agenda-todo]');
+  if (exportTaskAgendaTodoBtn) exportTaskAgendaTodoTxt();
   const taskAgendaCanvasBtn = e.target.closest('[data-task-agenda-canvas]');
   if (taskAgendaCanvasBtn) insertTaskAgendaCanvasBoard();
   const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
