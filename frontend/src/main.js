@@ -3699,6 +3699,7 @@ function commandItems() {
     { id: 'trash-clean-expired', icon: 'TX', title: 'Clean expired Trash', hint: 'Permanently remove draft and file trash older than 30 days', run: cleanupExpiredTrash },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-guide', icon: 'CGD', title: 'Canvas guide', hint: 'Show tools, local formats, exports, view state, and memory notes', run: showCanvasHelp },
+    { id: 'canvas-shortcuts-guide', icon: 'CSG', title: 'Canvas shortcuts guide', hint: 'Show canvas copy, duplicate, nudge, undo, redo, and delete shortcuts', run: showCanvasShortcutsGuide },
     { id: 'canvas-map-guide', icon: 'CMG', title: 'Canvas map guide', hint: 'Show task, search, outline, workspace, and backlink canvas bridge limits', run: showCanvasMapGuide },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-pan-tool', icon: 'CPN', title: 'Canvas pan tool', hint: 'Move around the infinite canvas without editing elements', run: () => { openCanvas(); setCanvasTool('pan'); } },
@@ -8661,10 +8662,28 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>backlinks</strong><span>Reference map</span><small>Append active-note backlinks as cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
+      <div class="diag-card"><strong>shortcuts</strong><span>Copy, nudge, undo</span><small>Open the focused shortcut guide</small></div>
       <div class="diag-card"><strong>autosave</strong><span>Debounced viewport</span><small>Wheel zoom writes after idle instead of every tick</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;"><button data-canvas-shortcuts-guide>Canvas shortcuts</button></div>
     <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
+  `);
+}
+
+function showCanvasShortcutsGuide() {
+  showModal('Canvas Shortcuts', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>Ctrl+Z</strong><span>Undo</span><small>Canvas-only undo while the canvas is active</small></div>
+      <div class="diag-card"><strong>Ctrl+Y</strong><span>Redo</span><small>Also supports Ctrl+Shift+Z</small></div>
+      <div class="diag-card"><strong>Ctrl+C / V</strong><span>Copy / paste</span><small>Uses Markpad's lightweight canvas clipboard</small></div>
+      <div class="diag-card"><strong>Ctrl+D</strong><span>Duplicate</span><small>Copies the selected element with a small offset</small></div>
+      <div class="diag-card"><strong>Delete</strong><span>Remove selected</span><small>Backspace works too</small></div>
+      <div class="diag-card"><strong>Arrow keys</strong><span>Nudge selected</span><small>Hold Shift for 10px steps</small></div>
+      <div class="diag-card"><strong>Esc</strong><span>Close canvas</span><small>Also closes modal/search/find first</small></div>
+      <div class="diag-card"><strong>Wheel</strong><span>Zoom viewport</span><small>Viewport save is debounced to reduce storage churn</small></div>
+    </div>
+    <p class="diag-note">Shortcuts are active only when the canvas is open and text editing, search, command palette, and modals are not focused. This prevents canvas actions from stealing normal typing shortcuts.</p>
   `);
 }
 
@@ -10326,6 +10345,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasViewStateCsvBtn) await copyCanvasViewStateCsv();
   const exportCanvasViewStateCsvBtn = e.target.closest('[data-export-canvas-view-state-csv]');
   if (exportCanvasViewStateCsvBtn) exportCanvasViewStateCsv();
+  const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
+  if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
   if (canvasInventorySelect) selectCanvasInventoryElement(Number(canvasInventorySelect.dataset.canvasInventorySelect));
   const copyUiStateMdBtn = e.target.closest('[data-copy-ui-state-md]');
