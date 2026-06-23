@@ -1284,6 +1284,24 @@ function themeCommandItems() {
   }));
 }
 
+function showSearchSyntaxHelp() {
+  showModal('Search Syntax', `
+    <div style="display:grid;gap:12px;font-size:12px;line-height:1.65;color:var(--text);">
+      <p style="margin:0;color:var(--muted);">Search stays local. Use scopes for where to search, then combine text with operators for sharper results.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">"exact phrase"</td><td style="padding:5px 8px;color:var(--muted);">Match words in order.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">type:md</td><td style="padding:5px 8px;color:var(--muted);">Limit by file type, such as md, txt, canvas, or json.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">path:notes</td><td style="padding:5px 8px;color:var(--muted);">Match a folder or filename path segment.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">title:plan</td><td style="padding:5px 8px;color:var(--muted);">Match the note title or filename.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">tag:#work</td><td style="padding:5px 8px;color:var(--muted);">Find Markdown tags.</td></tr>
+        <tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;font-weight:800;">task:open</td><td style="padding:5px 8px;color:var(--muted);">Find open tasks. Use task:done for completed tasks.</td></tr>
+      </table>
+      <p style="margin:0;color:var(--muted);">Task views also support quick filters like <strong>due:today</strong>, <strong>!high</strong>, <strong>@waiting</strong>, and <strong>#tag</strong>.</p>
+      <p style="margin:0;color:var(--muted);">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
+    </div>
+  `);
+}
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
@@ -1295,6 +1313,7 @@ function commandItems() {
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
     { id: 'search-all', icon: 'SA', title: 'Search all scope', hint: 'Open search across loaded files and the local folder', run: () => openSearchPaletteScope('all') },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
+    { id: 'search-help', icon: '?', title: 'Search syntax help', hint: 'Show local search operators, phrase search, and task filters', run: showSearchSyntaxHelp },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
