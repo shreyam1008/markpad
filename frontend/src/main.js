@@ -1679,6 +1679,7 @@ function commandItems() {
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
+    { id: 'canvas-png-full', icon: 'PGA', title: 'Export full canvas PNG', hint: 'Download all canvas content as a bounded PNG image', run: exportCanvasPngFull },
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
@@ -4325,6 +4326,52 @@ async function exportCanvasPngViewport() {
     }
     downloadBlob('markpad-canvas-viewport.png', blob);
     statusText.textContent = 'Canvas viewport PNG exported';
+  }, 'image/png');
+}
+
+function exportCanvasPngFull() {
+  if (!canvasDoc) loadCanvasState();
+  const elements = canvasDoc?.elements || [];
+  if (!elements.length) {
+    statusText.textContent = 'Canvas is empty';
+    return;
+  }
+  const bounds = elements.map(canvasElementBounds).filter(b => Number.isFinite(b.x + b.y + b.w + b.h));
+  if (!bounds.length) {
+    statusText.textContent = 'Canvas PNG export failed';
+    return;
+  }
+  const padding = 48;
+  const left = Math.min(...bounds.map(b => b.x));
+  const top = Math.min(...bounds.map(b => b.y));
+  const right = Math.max(...bounds.map(b => b.x + b.w));
+  const bottom = Math.max(...bounds.map(b => b.y + b.h));
+  const worldWidth = Math.max(1, right - left + padding * 2);
+  const worldHeight = Math.max(1, bottom - top + padding * 2);
+  const maxDimension = 4096;
+  const scale = Math.min(1, maxDimension / Math.max(worldWidth, worldHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.ceil(worldWidth * scale));
+  canvas.height = Math.max(1, Math.ceil(worldHeight * scale));
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) {
+    statusText.textContent = 'Canvas PNG export unavailable';
+    return;
+  }
+  ctx.fillStyle = canvasDoc.appState?.viewBackgroundColor || '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.translate(padding - left, padding - top);
+  elements.forEach(element => renderCanvasElement(ctx, element));
+  ctx.restore();
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      statusText.textContent = 'Canvas PNG export failed';
+      return;
+    }
+    downloadBlob('markpad-canvas-full.png', blob);
+    statusText.textContent = `Full canvas PNG exported${scale < 1 ? ' (scaled)' : ''}`;
   }, 'image/png');
 }
 
