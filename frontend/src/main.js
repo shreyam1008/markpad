@@ -206,6 +206,8 @@ const LOCAL_SETTINGS_KEYS = [
 ];
 const CANVAS_DOC_KEY = 'markpad-canvas-draft';
 const CANVAS_SESSION_KEY = 'markpad-canvas-session';
+const MARKPAD_CANVAS_FORMAT = 'markpad-canvas-v1';
+const MARKPAD_CANVAS_SCHEMA = 'https://markpad.local/schemas/canvas-v1.json';
 const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
@@ -6221,7 +6223,9 @@ function newCanvasDoc() {
   return {
     type: 'markpad-canvas',
     version: 1,
+    schema: MARKPAD_CANVAS_SCHEMA,
     source: 'markpad',
+    meta: canvasDocumentMeta({ createdAt: new Date().toISOString() }),
     elements: [],
     appState: { viewBackgroundColor: '#ffffff' },
     files: {},
@@ -6242,12 +6246,22 @@ function downloadBlob(filename, blob) {
   URL.revokeObjectURL(url);
 }
 
+function canvasDocumentMeta(meta = {}) {
+  return {
+    format: MARKPAD_CANVAS_FORMAT,
+    generator: 'Markpad',
+    ...meta,
+  };
+}
+
 function normalizeCanvasDoc(input) {
   if (input && input.type === 'markpad-canvas' && Array.isArray(input.elements)) {
     return {
       type: 'markpad-canvas',
       version: 1,
+      schema: input.schema || MARKPAD_CANVAS_SCHEMA,
       source: input.source || 'markpad',
+      meta: canvasDocumentMeta(input.meta || {}),
       elements: input.elements.filter(Boolean),
       appState: input.appState || { viewBackgroundColor: '#ffffff' },
       files: input.files || {},
@@ -6257,7 +6271,9 @@ function normalizeCanvasDoc(input) {
     return {
       type: 'markpad-canvas',
       version: 1,
+      schema: MARKPAD_CANVAS_SCHEMA,
       source: 'markpad-import-excalidraw',
+      meta: canvasDocumentMeta({ importedFrom: 'excalidraw' }),
       elements: input.elements.map(excalidrawElementToCanvas).filter(Boolean),
       appState: { viewBackgroundColor: input.appState?.viewBackgroundColor || '#ffffff' },
       files: {},
@@ -6289,13 +6305,31 @@ function normalizeCanvasDoc(input) {
     return {
       type: 'markpad-canvas',
       version: 1,
+      schema: MARKPAD_CANVAS_SCHEMA,
       source: 'markpad-import-obsidian-canvas',
+      meta: canvasDocumentMeta({ importedFrom: 'obsidian-canvas' }),
       elements,
       appState: { viewBackgroundColor: '#ffffff' },
       files: {},
     };
   }
   throw new Error('Unsupported canvas JSON');
+}
+
+function canvasPortableDoc(doc, options = {}) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const meta = canvasDocumentMeta(source.meta || {});
+  if (options.includeExportedAt) meta.exportedAt = new Date().toISOString();
+  return {
+    type: 'markpad-canvas',
+    version: 1,
+    schema: MARKPAD_CANVAS_SCHEMA,
+    source: source.source || 'markpad',
+    meta,
+    elements: source.elements || [],
+    appState: source.appState || { viewBackgroundColor: '#ffffff' },
+    files: source.files || {},
+  };
 }
 
 function excalidrawElementToCanvas(element) {
@@ -7738,14 +7772,14 @@ $('canvas-layer-back')?.addEventListener('click', () => moveSelectedCanvasLayer(
 canvasColor?.addEventListener('input', () => { if (hasCanvasSelection()) applySelectedCanvasStyle('stroke'); });
 canvasWidth?.addEventListener('input', () => { if (hasCanvasSelection()) applySelectedCanvasStyle('width'); });
 function exportCanvasJson() {
-  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
+  const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc(), { includeExportedAt: true }), null, 2);
   downloadText('markpad-canvas-draft.json', 'application/json', json);
   statusText.textContent = 'Canvas JSON exported';
 }
 
 async function copyCanvasJson() {
   if (!canvasDoc) loadCanvasState();
-  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
+  const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc(), { includeExportedAt: true }), null, 2);
   await navigator.clipboard.writeText(`${json}\n`);
   const count = (canvasDoc?.elements || []).length;
   statusText.textContent = `${count} canvas element${count === 1 ? '' : 's'} copied as JSON`;
@@ -8584,7 +8618,7 @@ function loadCurrentDocumentIntoCanvas() {
 async function saveCanvasAsDraft() {
   finishCanvasTextEdit();
   if (!canvasDoc) loadCanvasState();
-  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2) + '\n';
+  const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc()), null, 2) + '\n';
   if (canvasActive) closeCanvas();
   renderSession(await window.go.main.App.NewNote());
   await window.go.main.App.UpdateContent(activeId, json, true);
@@ -8613,7 +8647,7 @@ async function saveCanvasToActiveDocument() {
     statusText.textContent = 'Active document is read-only';
     return;
   }
-  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2) + '\n';
+  const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc()), null, 2) + '\n';
   await window.go.main.App.UpdateContent(activeId, json, true);
   currentContent = json;
   editor.value = json;
