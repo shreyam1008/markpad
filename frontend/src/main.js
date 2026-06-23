@@ -1485,6 +1485,12 @@ function commandItems() {
     { id: 'canvas-layer-back', icon: 'TB', title: 'Canvas send to back', hint: 'Move the selected canvas element behind all others', run: () => moveSelectedCanvasLayer('back') },
     { id: 'canvas-stroke-up', icon: 'W+', title: 'Canvas stroke thicker', hint: 'Increase the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(1) },
     { id: 'canvas-stroke-down', icon: 'W-', title: 'Canvas stroke thinner', hint: 'Decrease the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(-1) },
+    { id: 'canvas-align-left', icon: 'AL', title: 'Canvas align left', hint: 'Align the selected element to the visible canvas left edge', run: () => alignSelectedCanvasElement('left') },
+    { id: 'canvas-align-center', icon: 'AC', title: 'Canvas align center', hint: 'Center the selected element horizontally in the visible canvas', run: () => alignSelectedCanvasElement('center') },
+    { id: 'canvas-align-right', icon: 'AR', title: 'Canvas align right', hint: 'Align the selected element to the visible canvas right edge', run: () => alignSelectedCanvasElement('right') },
+    { id: 'canvas-align-top', icon: 'AT', title: 'Canvas align top', hint: 'Align the selected element to the visible canvas top edge', run: () => alignSelectedCanvasElement('top') },
+    { id: 'canvas-align-middle', icon: 'AM', title: 'Canvas align middle', hint: 'Center the selected element vertically in the visible canvas', run: () => alignSelectedCanvasElement('middle') },
+    { id: 'canvas-align-bottom', icon: 'AB', title: 'Canvas align bottom', hint: 'Align the selected element to the visible canvas bottom edge', run: () => alignSelectedCanvasElement('bottom') },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
@@ -3682,6 +3688,44 @@ function adjustSelectedCanvasWidth(delta) {
   renderCanvas();
   updateCanvasStatus();
   statusText.textContent = `Canvas stroke width ${next}`;
+  return true;
+}
+
+function alignSelectedCanvasElement(direction) {
+  if (!canvasActive) openCanvas();
+  if (!canvasStage || !hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  const bounds = canvasElementBounds(element);
+  const camera = canvasCamera();
+  const rect = canvasStage.getBoundingClientRect();
+  const scale = camera.scale || 1;
+  const viewport = {
+    left: -camera.x / scale,
+    top: -camera.y / scale,
+    right: (rect.width - camera.x) / scale,
+    bottom: (rect.height - camera.y) / scale,
+  };
+  viewport.cx = (viewport.left + viewport.right) / 2;
+  viewport.cy = (viewport.top + viewport.bottom) / 2;
+
+  let dx = 0;
+  let dy = 0;
+  if (direction === 'left') dx = viewport.left - bounds.x;
+  if (direction === 'center') dx = viewport.cx - (bounds.x + bounds.w / 2);
+  if (direction === 'right') dx = viewport.right - (bounds.x + bounds.w);
+  if (direction === 'top') dy = viewport.top - bounds.y;
+  if (direction === 'middle') dy = viewport.cy - (bounds.y + bounds.h / 2);
+  if (direction === 'bottom') dy = viewport.bottom - (bounds.y + bounds.h);
+
+  canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(element, dx, dy);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasStatus();
+  statusText.textContent = `Canvas element aligned ${direction}`;
   return true;
 }
 
