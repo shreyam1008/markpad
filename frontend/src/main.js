@@ -2107,9 +2107,24 @@ async function runtimeFootprint() {
   return null;
 }
 
+function undoHistoryFootprint() {
+  let editorStates = 0;
+  let editorBytes = 0;
+  editHistories.forEach((history) => {
+    editorStates += history.states?.length || 0;
+    for (const state of history.states || []) {
+      editorBytes += byteSize(state.content || '');
+    }
+  });
+  const canvasStates = canvasHistory.length;
+  const canvasBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  return { editorStates, editorBytes, canvasStates, canvasBytes };
+}
+
 async function showLocalFootprint() {
   const docs = await loadedDocumentFootprint();
   const runtimeStats = await runtimeFootprint();
+  const undo = undoHistoryFootprint();
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '') + byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
   const trashItems = loadDraftTrash();
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
@@ -2122,6 +2137,8 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${runtimeStats ? formatBytes(runtimeStats.goAlloc) : 'N/A'}</strong><span>Go heap alloc</span><small>${runtimeStats ? `${formatBytes(runtimeStats.goSys)} Go sys · ${runtimeStats.goNumGC} GC` : 'Backend metric unavailable'}</small></div>
       <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
       <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
+      <div class="diag-card"><strong>${formatBytes(undo.editorBytes)}</strong><span>Editor undo history</span><small>${undo.editorStates} text snapshot${undo.editorStates === 1 ? '' : 's'} in memory</small></div>
+      <div class="diag-card"><strong>${formatBytes(undo.canvasBytes)}</strong><span>Canvas undo history</span><small>${undo.canvasStates} canvas snapshot${undo.canvasStates === 1 ? '' : 's'} in memory</small></div>
       <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
       <div class="diag-card"><strong>${formatBytes(fileTrashBytes)}</strong><span>Saved file trash</span><small>${fileTrashItems.length} retained file${fileTrashItems.length === 1 ? '' : 's'} · stored on disk</small></div>
       <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
