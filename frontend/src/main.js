@@ -1824,6 +1824,21 @@ async function openActiveSearchResult() {
   await openSearchResult(result);
 }
 
+async function copyActiveSearchResultPath() {
+  const result = searchLastResults[searchActiveIndex] || searchLastResults[0];
+  if (!result) {
+    statusText.textContent = 'No active search result path to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '';
+  await navigator.clipboard.writeText(`${result.path || 'Draft'}${line ? `:${line}` : ''}\n`);
+  statusText.textContent = 'Active search result path copied';
+}
+
 async function copySearchQuerySummary() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -2418,6 +2433,7 @@ function commandItems() {
     { id: 'export-search-results-csv', icon: 'ECSV', title: 'Export search results CSV', hint: 'Download the current search result list as CSV rows', run: exportSearchResultsCsv },
     { id: 'copy-search-result-paths', icon: 'CP', title: 'Copy search result paths', hint: 'Copy current search result paths and line numbers as plain text', run: copySearchResultPaths },
     { id: 'search-open-active-result', icon: 'OAR', title: 'Open active search result', hint: 'Open the highlighted search result from the latest search palette state', run: openActiveSearchResult },
+    { id: 'search-copy-active-path', icon: 'CAP', title: 'Copy active search result path', hint: 'Copy the highlighted search result path and line number', run: copyActiveSearchResultPath },
     { id: 'search-copy-active-result', icon: 'CAR', title: 'Copy active search result', hint: 'Copy the highlighted search result as a Markdown reference', run: copyActiveSearchResultMarkdown },
     { id: 'search-copy-active-result-json', icon: 'CAJ', title: 'Copy active search result JSON', hint: 'Copy the highlighted search result as portable JSON', run: copyActiveSearchResultJson },
     { id: 'search-copy-active-result-csv', icon: 'CAC', title: 'Copy active search result CSV', hint: 'Copy the highlighted search result as one CSV row', run: copyActiveSearchResultCsv },
