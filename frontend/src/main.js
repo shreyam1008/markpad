@@ -1872,6 +1872,22 @@ function themeCommandItems() {
   }));
 }
 
+function themePresetCommandItems() {
+  return [
+    { id: 'theme-preset-writing', icon: 'TW', title: 'Theme preset: Warm writing', hint: 'Apply Linen for long-form writing with a soft light surface', theme: 'linen' },
+    { id: 'theme-preset-review', icon: 'TRV', title: 'Theme preset: Review mode', hint: 'Apply Mist for low-glare document review', theme: 'mist' },
+    { id: 'theme-preset-planning', icon: 'TPL', title: 'Theme preset: Planning board', hint: 'Apply Sand for tasks, kanban, and canvas planning', theme: 'sand' },
+    { id: 'theme-preset-focus', icon: 'TF', title: 'Theme preset: Dark focus', hint: 'Apply Ink for distraction-light editing', theme: 'ink' },
+    { id: 'theme-preset-night', icon: 'TN', title: 'Theme preset: Night notes', hint: 'Apply Midnight for late-session reading and editing', theme: 'midnight' },
+  ].map(item => ({
+    id: item.id,
+    icon: item.icon,
+    title: item.title,
+    hint: item.hint,
+    run: () => applyTheme(item.theme),
+  }));
+}
+
 function showSearchSyntaxHelp() {
   showModal('Search Syntax', `
     <div style="display:grid;gap:12px;font-size:12px;line-height:1.65;color:var(--text);">
@@ -2397,6 +2413,7 @@ function commandItems() {
     { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
     { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
     { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
+    ...themePresetCommandItems(),
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
     { id: 'copy-footprint-json', icon: 'CFJ', title: 'Copy local footprint JSON', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as JSON', run: copyLocalFootprintJson },
