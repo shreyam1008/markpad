@@ -2452,6 +2452,7 @@ function commandItems() {
     { id: 'canvas-align-top', icon: 'AT', title: 'Canvas align top', hint: 'Align the selected element to the visible canvas top edge', run: () => alignSelectedCanvasElement('top') },
     { id: 'canvas-align-middle', icon: 'AM', title: 'Canvas align middle', hint: 'Center the selected element vertically in the visible canvas', run: () => alignSelectedCanvasElement('middle') },
     { id: 'canvas-align-bottom', icon: 'AB', title: 'Canvas align bottom', hint: 'Align the selected element to the visible canvas bottom edge', run: () => alignSelectedCanvasElement('bottom') },
+    { id: 'canvas-align-center-view', icon: 'ACV', title: 'Canvas center selected in view', hint: 'Center the selected element both horizontally and vertically in the visible canvas', run: centerSelectedCanvasElementInView },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'copy-canvas-json', icon: 'CJ', title: 'Copy canvas JSON', hint: 'Copy the current Markpad canvas document as portable JSON', run: copyCanvasJson },
@@ -5353,6 +5354,17 @@ function nudgeSelectedCanvasElement(dx, dy, label) {
   renderCanvas();
   syncCanvasControlsFromSelection();
   statusText.textContent = `Canvas element nudged ${label}`;
+}
+
+function centerSelectedCanvasElementInView() {
+  openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element to center';
+    return;
+  }
+  alignSelectedCanvasElement('center');
+  alignSelectedCanvasElement('middle');
+  statusText.textContent = 'Canvas element centered in view';
 }
 
 function updateCanvasOptionButtons() {
