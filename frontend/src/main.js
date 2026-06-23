@@ -4303,6 +4303,8 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab" data-task-copy-todo>Copy Todo.txt</button>
         <button class="task-tab" data-task-export-todo>Export Todo.txt</button>
         <button class="task-tab" data-task-copy-summary>Copy Summary</button>
+        <button class="task-tab" data-task-copy-summary-json>Summary JSON</button>
+        <button class="task-tab" data-task-copy-summary-csv>Summary CSV</button>
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
@@ -8048,6 +8050,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskExportTodo) await exportTasksTodoTxt();
   const taskCopySummary = e.target.closest('[data-task-copy-summary]');
   if (taskCopySummary) await copyTaskViewSummary();
+  const taskCopySummaryJson = e.target.closest('[data-task-copy-summary-json]');
+  if (taskCopySummaryJson) await copyTaskViewSummaryJson();
+  const taskCopySummaryCsv = e.target.closest('[data-task-copy-summary-csv]');
+  if (taskCopySummaryCsv) await copyTaskViewSummaryCsv();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs && !taskCopyIcs.dataset.taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
