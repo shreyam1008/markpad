@@ -49,6 +49,7 @@ let canvasSnapToGrid = localStorage.getItem('markpad-canvas-snap') === '1';
 let canvasMinimapVisible = localStorage.getItem('markpad-canvas-minimap') !== '0';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
+let editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
 let canvasDoc = null;
 let canvasSession = null;
 let canvasActive = false;
@@ -74,6 +75,19 @@ function applyZoom(silent) {
 function zoomIn()  { fontSize = Math.min(fontSize + ZOOM_STEP, ZOOM_MAX); applyZoom(); }
 function zoomOut() { fontSize = Math.max(fontSize - ZOOM_STEP, ZOOM_MIN); applyZoom(); }
 function zoomReset() { fontSize = ZOOM_DEFAULT; applyZoom(); }
+
+function applyEditorWrap(silent) {
+  editor.wrap = editorSoftWrap ? 'soft' : 'off';
+  editor.classList.toggle('editor-soft-wrap', editorSoftWrap);
+  $('btn-wrap')?.classList.toggle('active', editorSoftWrap);
+  localStorage.setItem('markpad-editor-wrap', editorSoftWrap ? '1' : '0');
+  if (!silent && statusText) statusText.textContent = editorSoftWrap ? 'Soft wrap enabled' : 'Soft wrap disabled';
+}
+
+function toggleEditorWrap() {
+  editorSoftWrap = !editorSoftWrap;
+  applyEditorWrap();
+}
 
 const $ = (id) => document.getElementById(id);
 const sidebar      = $('sidebar');
@@ -157,6 +171,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-canvas-session',
   'markpad-focus',
   'markpad-split-ratio',
+  'markpad-editor-wrap',
   'markpad-zoom',
   'markpad-sections',
 ];
@@ -1198,6 +1213,7 @@ function commandItems() {
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
+    { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
     { id: 'split-balanced', icon: '50', title: 'Split 50/50', hint: 'Use a balanced editor and preview split', run: () => setSplitPreset(50) },
     { id: 'split-editor-wide', icon: '62', title: 'Split editor wide', hint: 'Give the editor more width in split view', run: () => setSplitPreset(62) },
@@ -4663,6 +4679,7 @@ $('btn-command').addEventListener('click', openCommandPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
 $('btn-canvas').addEventListener('click', openCanvas);
 $('btn-focus').addEventListener('click', toggleFocusMode);
+$('btn-wrap')?.addEventListener('click', toggleEditorWrap);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
 redoBtn.addEventListener('click', () => stepEditHistory(1));
@@ -4984,12 +5001,14 @@ function applyImportedLocalSettings() {
   splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || String(splitRatio));
   splitRatio = normalizeSplitRatio(splitRatio);
   localStorage.setItem('markpad-split-ratio', String(splitRatio));
+  editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
   fontSize = parseInt(localStorage.getItem('markpad-zoom') || String(fontSize), 10);
   if (!Number.isFinite(fontSize)) fontSize = ZOOM_DEFAULT;
   fontSize = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, fontSize));
   localStorage.setItem('markpad-zoom', String(fontSize));
   applyTheme(currentTheme, true);
   applyZoom(true);
+  applyEditorWrap(true);
   applyFocusMode(true);
   applySectionState();
   updateSearchScopeButtons();
@@ -5170,6 +5189,7 @@ async function loadApp() {
 function boot() {
   if (window.go && window.go.main && window.go.main.App) {
     applyZoom(true);
+    applyEditorWrap(true);
     applyTheme(currentTheme, true);
     applyFocusMode(true);
     registerEvents();

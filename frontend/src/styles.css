@@ -207,7 +207,11 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .tb svg { width: 15px; height: 15px; }
 .tb:hover { background: #e7ece5; color: #1a1c1b; }
 .tb.txt { width: auto; padding: 4px 8px; font-size: 12px; font-weight: 700; }
+.tb.active { background: var(--accent); color: var(--accent-text); }
 .tb-sep { width: 1px; height: 16px; background: #e8e6df; margin: 0 2px; flex-shrink: 0; }
+
+#editor { white-space: pre; overflow-wrap: normal; }
+#editor.editor-soft-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* View mode buttons */
 .view-btn {
