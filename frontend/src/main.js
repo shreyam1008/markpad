@@ -2316,6 +2316,8 @@ function commandItems() {
     { id: 'export-footprint-json', icon: 'EFJ', title: 'Export local footprint JSON', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as JSON', run: exportLocalFootprintJson },
     { id: 'copy-footprint-md', icon: 'CFM', title: 'Copy local footprint Markdown', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as Markdown', run: copyLocalFootprintMarkdown },
     { id: 'export-footprint-md', icon: 'EFM', title: 'Export local footprint Markdown', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as Markdown', run: exportLocalFootprintMarkdown },
+    { id: 'copy-footprint-csv', icon: 'CFC', title: 'Copy local footprint CSV', hint: 'Copy memory, loaded document, canvas, trash, and localStorage counters as CSV', run: copyLocalFootprintCsv },
+    { id: 'export-footprint-csv', icon: 'EFC', title: 'Export local footprint CSV', hint: 'Download memory, loaded document, canvas, trash, and localStorage counters as CSV', run: exportLocalFootprintCsv },
     { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
     { id: 'open-local-folder', icon: 'OF', title: 'Open local folder', hint: 'Open the default local workspace in the OS file manager', run: openConfiguredLocalFolder },
     { id: 'reveal-active-file', icon: 'RF', title: 'Reveal active file', hint: 'Show the active saved file in the OS file manager', run: revealActiveFile },
@@ -2867,6 +2869,34 @@ function localFootprintSnapshotToMarkdown(snapshot) {
   ].join('\n');
 }
 
+function localFootprintSnapshotToCsv(snapshot) {
+  const runtime = snapshot.runtime || {};
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt || ''],
+    ['runtime_rss_available', runtime.rssAvailable ? 'true' : 'false'],
+    ['runtime_rss_bytes', Number(runtime.processRss || 0)],
+    ['runtime_go_alloc_bytes', Number(runtime.goAlloc || 0)],
+    ['runtime_go_sys_bytes', Number(runtime.goSys || 0)],
+    ['runtime_go_gc_count', Number(runtime.goNumGC || 0)],
+    ['loaded_editable_bytes', Number(snapshot.loadedDocuments.editableBytes || 0)],
+    ['loaded_editable_count', Number(snapshot.loadedDocuments.editableCount || 0)],
+    ['loaded_readonly_count', Number(snapshot.loadedDocuments.readOnlyCount || 0)],
+    ['canvas_draft_session_bytes', Number(snapshot.canvas.draftSessionBytes || 0)],
+    ['canvas_element_count', Number(snapshot.canvas.elementCount || 0)],
+    ['editor_undo_bytes', Number(snapshot.undo.editorBytes || 0)],
+    ['editor_undo_states', Number(snapshot.undo.editorStates || 0)],
+    ['canvas_undo_bytes', Number(snapshot.undo.canvasBytes || 0)],
+    ['canvas_undo_states', Number(snapshot.undo.canvasStates || 0)],
+    ['draft_trash_bytes', Number(snapshot.trash.draftBytes || 0)],
+    ['draft_trash_count', Number(snapshot.trash.draftCount || 0)],
+    ['file_trash_bytes', Number(snapshot.trash.fileBytes || 0)],
+    ['file_trash_count', Number(snapshot.trash.fileCount || 0)],
+    ['markpad_localstorage_bytes', Number(snapshot.localStorage.markpadBytes || 0)],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function copyLocalFootprintMarkdown() {
   if (!navigator.clipboard?.writeText) {
     statusText.textContent = 'Clipboard unavailable';
@@ -2879,6 +2909,20 @@ async function copyLocalFootprintMarkdown() {
 async function exportLocalFootprintMarkdown() {
   downloadText('markpad-local-footprint.md', 'text/markdown', localFootprintSnapshotToMarkdown(await localFootprintSnapshot()));
   statusText.textContent = 'Local footprint exported as Markdown';
+}
+
+async function copyLocalFootprintCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(localFootprintSnapshotToCsv(await localFootprintSnapshot()));
+  statusText.textContent = 'Local footprint copied as CSV';
+}
+
+async function exportLocalFootprintCsv() {
+  downloadText('markpad-local-footprint.csv', 'text/csv', localFootprintSnapshotToCsv(await localFootprintSnapshot()));
+  statusText.textContent = 'Local footprint exported as CSV';
 }
 
 async function showLocalFootprint() {
