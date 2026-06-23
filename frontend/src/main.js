@@ -1137,15 +1137,16 @@ async function openSearchResult(result) {
       const active = cachedNotes.find(n => n.id === activeId);
       closeSearchPalette();
       setView(defaultViewForFileType(active?.path, active?.kind));
-      if ((result.line || 0) > 0 && !isReadOnlyType(getFileType(active?.path, active?.kind))) {
+      const localLine = Number(result.line || 0);
+      if (searchInput.value.trim() && localLine >= 0 && !isReadOnlyType(getFileType(active?.path, active?.kind))) {
         setView('markdown');
         requestAnimationFrame(() => {
-          const start = offsetForLine(editor.value, result.line || 0);
+          const start = offsetForLine(editor.value, localLine);
           const end = Math.min(editor.value.length, start + 160);
           editor.focus();
           editor.setSelectionRange(start, end);
           const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 22;
-          editor.scrollTop = Math.max(0, (result.line || 0) * lineHeight - editor.clientHeight * 0.35);
+          editor.scrollTop = Math.max(0, localLine * lineHeight - editor.clientHeight * 0.35);
         });
       }
       statusText.textContent = 'Opened local search result';
