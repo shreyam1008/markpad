@@ -476,6 +476,12 @@ function showUiStateSummary() {
       <div class="diag-card"><strong>${escapeHtml(canvasTool)}</strong><span>Canvas tool</span><small>${canvasZoom} · grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'} · snap ${canvasSnapToGrid ? 'on' : 'off'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(canvasBg)}</strong><span>Canvas background</span><small>stored with canvas exports</small></div>
     </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+      <button data-copy-ui-state-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
+      <button data-export-ui-state-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
+      <button data-copy-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
+      <button data-export-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+    </div>
     <p class="diag-note">All values are local-only UI preferences or active in-memory canvas settings. No workspace scan is performed.</p>
   `);
 }
@@ -7283,6 +7289,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportCanvasInventoryJsonBtn) exportCanvasInventoryJson();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
   if (canvasInventorySelect) selectCanvasInventoryElement(Number(canvasInventorySelect.dataset.canvasInventorySelect));
+  const copyUiStateMdBtn = e.target.closest('[data-copy-ui-state-md]');
+  if (copyUiStateMdBtn) await copyUiStateSummary();
+  const exportUiStateMdBtn = e.target.closest('[data-export-ui-state-md]');
+  if (exportUiStateMdBtn) exportUiStateSummary();
+  const copyUiStateJsonBtn = e.target.closest('[data-copy-ui-state-json]');
+  if (copyUiStateJsonBtn) await copyUiStateJson();
+  const exportUiStateJsonBtn = e.target.closest('[data-export-ui-state-json]');
+  if (exportUiStateJsonBtn) exportUiStateJson();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
