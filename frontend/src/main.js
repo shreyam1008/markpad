@@ -1817,6 +1817,7 @@ function commandItems() {
     { id: 'canvas-align-bottom', icon: 'AB', title: 'Canvas align bottom', hint: 'Align the selected element to the visible canvas bottom edge', run: () => alignSelectedCanvasElement('bottom') },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
+    { id: 'copy-canvas-json', icon: 'CJ', title: 'Copy canvas JSON', hint: 'Copy the current Markpad canvas document as portable JSON', run: copyCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
     { id: 'canvas-png-full', icon: 'PGA', title: 'Export full canvas PNG', hint: 'Download all canvas content as a bounded PNG image', run: exportCanvasPngFull },
@@ -4650,6 +4651,15 @@ function exportCanvasJson() {
   downloadText('markpad-canvas-draft.json', 'application/json', json);
   statusText.textContent = 'Canvas JSON exported';
 }
+
+async function copyCanvasJson() {
+  if (!canvasDoc) loadCanvasState();
+  const json = JSON.stringify(canvasDoc || newCanvasDoc(), null, 2);
+  await navigator.clipboard.writeText(`${json}\n`);
+  const count = (canvasDoc?.elements || []).length;
+  statusText.textContent = `${count} canvas element${count === 1 ? '' : 's'} copied as JSON`;
+}
+
 function exportCanvasSvg() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
