@@ -1553,6 +1553,7 @@ function commandItems() {
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
+    { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'tasks-list', icon: 'TL', title: 'Tasks list view', hint: 'Open Markdown tasks as a sortable list', run: () => showTasksView('list') },
     { id: 'tasks-calendar', icon: 'TC', title: 'Tasks calendar view', hint: 'Open Markdown tasks grouped by due date', run: () => showTasksView('calendar') },
@@ -5794,6 +5795,32 @@ function showDocumentOutline() {
     <div class="outline-summary">${outline.length} heading${outline.length === 1 ? '' : 's'} - parsed locally from the active editor buffer.</div>
     ${renderDocumentOutlineRows(outline)}
   `, true);
+}
+
+async function copyDocumentOutlineMarkdown() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  if (isReadOnlyType(type)) {
+    statusText.textContent = 'No editable Markdown outline to copy';
+    return;
+  }
+  const outline = parseDocumentOutline(currentContent);
+  if (!outline.length) {
+    statusText.textContent = 'No headings to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const title = active?.title || basename(active?.path || '') || 'Untitled';
+  const lines = [`# ${title} Outline`, ''];
+  outline.forEach(item => {
+    const indent = '  '.repeat(Math.max(0, item.level - 1));
+    lines.push(`${indent}- H${item.level} ${item.text} (line ${item.line + 1})`);
+  });
+  await navigator.clipboard.writeText(lines.join('\n') + '\n');
+  statusText.textContent = `${outline.length} heading${outline.length === 1 ? '' : 's'} copied`;
 }
 
 function jumpToOutlineOffset(offset) {
