@@ -203,6 +203,37 @@ func (a *App) CreateLocalFolderNote(title string) (SessionState, error) {
 	return a.openPath(path)
 }
 
+func (a *App) CreateLocalFolderCanvas(title string) (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Canvas"
+	}
+	name := safeLocalFileName(title)
+	if !strings.HasSuffix(strings.ToLower(name), ".canvas") {
+		name += ".canvas"
+	}
+	path := localCollisionPath(filepath.Join(root.Path, name))
+	content := `{
+  "type": "markpad-canvas",
+  "version": 1,
+  "source": "markpad",
+  "elements": [],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return a.GetSession(), err
+	}
+	return a.openPath(path)
+}
+
 func safeLocalFileName(title string) string {
 	replacer := strings.NewReplacer("/", "-", "\\", "-", ":", "-", "*", "-", "?", "", "\"", "'", "<", "(", ">", ")", "|", "-")
 	name := strings.TrimSpace(replacer.Replace(title))

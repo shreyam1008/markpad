@@ -37,7 +37,7 @@ Sources:
 
 ## Phase 2: local vault layer
 
-- Current backend slice: choose a default local folder, create Markdown notes there, list bounded files, and perform capped streaming search without watchers or a persistent index.
+- Current backend slice: choose a default local folder, create Markdown notes and `.canvas` files there, list bounded files, and perform capped streaming search without watchers or a persistent index.
 - Add a configurable default folder.
 - Support opening a folder as a local vault while keeping current individual-file behavior.
 - Store vault metadata under `.markpad/`.
@@ -93,7 +93,7 @@ Vault/
 
 ## Phase 6: canvas
 
-- Current frontend slices: native `<canvas>` infinite surface, pen/shape/text/arrow tools, fit-to-content, live element/zoom status, bounded undo/redo, Markpad JSON autosave, Markpad/Obsidian-style JSON import, current-document-to-canvas loading, JSON export, SVG export, and save-to-draft for existing Save As persistence.
+- Current frontend/backend slices: native `<canvas>` infinite surface, pen/shape/text/arrow tools, fit-to-content, live element/zoom status, bounded undo/redo, Markpad JSON autosave, local `.canvas` creation, Markpad/Obsidian-style JSON import, current-document-to-canvas loading, JSON export, SVG export, and save-to-draft for existing Save As persistence.
 - Start with a native `<canvas>` infinite surface, not tldraw/excalidraw bundles.
 - Support pan, zoom, pen, rectangle, ellipse, line, arrow, text, eraser, color, stroke width.
 - Store drawings as small JSON plus optional exported SVG/PNG.
