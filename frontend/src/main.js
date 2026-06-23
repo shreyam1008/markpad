@@ -6855,6 +6855,12 @@ function showCanvasInventory() {
       <button data-export-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
       <button data-copy-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
       <button data-export-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+      <button data-copy-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View</button>
+      <button data-export-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View</button>
+      <button data-copy-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View JSON</button>
+      <button data-export-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View JSON</button>
+      <button data-copy-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View CSV</button>
+      <button data-export-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View CSV</button>
     </div>
     ${renderCanvasInventoryRows(source)}
     <p class="local-note">Inventory is derived from the current local canvas draft. No files are scanned.</p>
@@ -8386,6 +8392,18 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasInventoryJsonBtn) await copyCanvasInventoryJson();
   const exportCanvasInventoryJsonBtn = e.target.closest('[data-export-canvas-inventory-json]');
   if (exportCanvasInventoryJsonBtn) exportCanvasInventoryJson();
+  const copyCanvasViewStateBtn = e.target.closest('[data-copy-canvas-view-state]');
+  if (copyCanvasViewStateBtn) await copyCanvasViewStateMarkdown();
+  const exportCanvasViewStateBtn = e.target.closest('[data-export-canvas-view-state]');
+  if (exportCanvasViewStateBtn) exportCanvasViewStateMarkdown();
+  const copyCanvasViewStateJsonBtn = e.target.closest('[data-copy-canvas-view-state-json]');
+  if (copyCanvasViewStateJsonBtn) await copyCanvasViewStateJson();
+  const exportCanvasViewStateJsonBtn = e.target.closest('[data-export-canvas-view-state-json]');
+  if (exportCanvasViewStateJsonBtn) exportCanvasViewStateJson();
+  const copyCanvasViewStateCsvBtn = e.target.closest('[data-copy-canvas-view-state-csv]');
+  if (copyCanvasViewStateCsvBtn) await copyCanvasViewStateCsv();
+  const exportCanvasViewStateCsvBtn = e.target.closest('[data-export-canvas-view-state-csv]');
+  if (exportCanvasViewStateCsvBtn) exportCanvasViewStateCsv();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
   if (canvasInventorySelect) selectCanvasInventoryElement(Number(canvasInventorySelect.dataset.canvasInventorySelect));
   const copyUiStateMdBtn = e.target.closest('[data-copy-ui-state-md]');
