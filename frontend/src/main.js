@@ -819,6 +819,9 @@ function commandItems() {
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch Paper, Linen, Ink, Pine', run: cycleTheme },
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
+    { id: 'local-folder', icon: 'LF', title: 'Local folder', hint: 'Show the default local folder and recent file list', run: () => showLocalFolder() },
+    { id: 'choose-local-folder', icon: 'LD', title: 'Choose local folder', hint: 'Set Markpad default local workspace folder', run: chooseLocalFolder },
+    { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
     { id: 'preferences', icon: ',', title: 'Preferences', hint: 'Appearance, file handling, storage', kbd: 'Ctrl+,', run: showPreferences },
     { id: 'help', icon: '?', title: 'Help', hint: 'Show shortcuts and workflow notes', run: () => showModal('Help', `
       <p><b>Markpad</b> is a native Markdown notepad.</p>
@@ -1130,6 +1133,97 @@ async function showLocalFootprint() {
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
     <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the filesystem.</p>
+  `);
+}
+
+async function chooseLocalFolder() {
+  try {
+    if (!window.go?.main?.App?.ChooseLocalFolder) {
+      statusText.textContent = 'Local folder backend unavailable';
+      return;
+    }
+    await window.go.main.App.ChooseLocalFolder();
+    await showLocalFolder();
+  } catch (err) {
+    statusText.textContent = 'Choose folder failed: ' + err;
+  }
+}
+
+async function searchLocalFolderPrompt() {
+  const query = window.prompt('Search local folder');
+  if (!query || !query.trim()) return;
+  await showLocalFolder(query.trim());
+}
+
+async function openLocalFolderFile(path) {
+  if (!path) return;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+  try {
+    renderSession(await window.go.main.App.OpenDroppedFile(path));
+    loadContent(await window.go.main.App.GetActiveContent());
+    const active = cachedNotes.find(n => n.id === activeId);
+    setView(defaultViewForFileType(active?.path, active?.kind));
+    modalOverlay.classList.add('hidden');
+    statusText.textContent = 'Opened local file';
+  } catch (err) {
+    statusText.textContent = 'Open failed: ' + err;
+  }
+}
+
+function renderLocalFolderFiles(files) {
+  if (!files.length) return '<div class="local-empty">No files listed. Choose a folder or search for text.</div>';
+  return `<div class="local-list">${files.map(file => `
+    <button class="local-row" data-local-open="${escapeHtml(file.path)}">
+      <span class="local-badge">${escapeHtml(fileIcon(file.path))}</span>
+      <span class="local-body">
+        <strong>${escapeHtml(file.relPath || file.title)}</strong>
+        <span>${escapeHtml(typeLabel(getFileType(file.path, file.kind)))} · ${formatBytes(file.size || 0)}${file.modified ? ' · ' + escapeHtml(file.modified) : ''}</span>
+      </span>
+    </button>`).join('')}</div>`;
+}
+
+function renderLocalSearchHits(hits) {
+  if (!hits.length) return '<div class="local-empty">No local folder matches.</div>';
+  return `<div class="local-list">${hits.map(hit => `
+    <button class="local-row" data-local-open="${escapeHtml(hit.path)}">
+      <span class="local-badge">${escapeHtml(fileIcon(hit.path))}</span>
+      <span class="local-body">
+        <strong>${escapeHtml(hit.relPath || hit.title)}</strong>
+        <span>Line ${Number(hit.line || 0) + 1} · ${escapeHtml(typeLabel(getFileType(hit.path, hit.kind)))}</span>
+        <small>${escapeHtml(hit.snippet || '')}</small>
+      </span>
+    </button>`).join('')}</div>`;
+}
+
+async function showLocalFolder(query = '') {
+  if (!window.go?.main?.App?.GetLocalFolder) {
+    showModal('Local Folder', '<div class="local-empty">Local folder backend unavailable in this build.</div>');
+    return;
+  }
+  const info = await window.go.main.App.GetLocalFolder();
+  let content = '';
+  if (!info.path) {
+    content = '<div class="local-empty">No default local folder set yet.</div>';
+  } else if (info.missing) {
+    content = '<div class="local-empty">The saved local folder is missing.</div>';
+  } else if (query) {
+    const hits = await window.go.main.App.SearchLocalFolder(query, 50);
+    content = `<div class="local-summary">Search: <b>${escapeHtml(query)}</b> · ${hits.length} hit${hits.length === 1 ? '' : 's'}</div>${renderLocalSearchHits(hits)}`;
+  } else {
+    const files = await window.go.main.App.ListLocalFolderFiles(200);
+    content = `<div class="local-summary">${files.length} listed file${files.length === 1 ? '' : 's'} · bounded preview</div>${renderLocalFolderFiles(files)}`;
+  }
+  showModal('Local Folder', `
+    <div class="local-head">
+      <div><strong>${escapeHtml(info.path || 'No folder selected')}</strong><span>${info.missing ? 'Missing' : info.path ? 'Default local workspace' : 'Choose a folder to start'}</span></div>
+      <div class="local-actions">
+        <button data-local-folder-choose>Choose</button>
+        <button data-local-folder-search ${info.path && !info.missing ? '' : 'disabled'}>Search</button>
+        <button data-local-folder-clear ${info.path ? '' : 'disabled'} class="danger">Clear</button>
+      </div>
+    </div>
+    ${content}
+    <p class="local-note">This is a local-first folder layer only. It does not sync and does not build a persistent index.</p>
   `);
 }
 
@@ -3067,6 +3161,17 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const trashEmpty = e.target.closest('[data-trash-empty]');
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
+  const localChoose = e.target.closest('[data-local-folder-choose]');
+  if (localChoose) await chooseLocalFolder();
+  const localClear = e.target.closest('[data-local-folder-clear]');
+  if (localClear && !localClear.disabled && window.go?.main?.App?.ClearLocalFolder) {
+    await window.go.main.App.ClearLocalFolder();
+    await showLocalFolder();
+  }
+  const localSearch = e.target.closest('[data-local-folder-search]');
+  if (localSearch && !localSearch.disabled) await searchLocalFolderPrompt();
+  const localOpen = e.target.closest('[data-local-open]');
+  if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
 });
 
 

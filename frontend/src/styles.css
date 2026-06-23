@@ -517,6 +517,56 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   .diag-grid { grid-template-columns: 1fr; }
 }
 
+/* Local folder */
+.local-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  border: 1px solid var(--border-soft); border-radius: 14px; background: var(--editor); padding: 10px;
+  margin-bottom: 10px;
+}
+.local-head strong {
+  display: block; color: var(--text); font-size: 12px; font-weight: 900; word-break: break-all;
+}
+.local-head span {
+  display: block; color: var(--muted); font-size: 10px; font-weight: 750; margin-top: 2px;
+}
+.local-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; }
+.local-actions button {
+  border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+  color: var(--muted); padding: 5px 8px; font-size: 11px; font-weight: 850; cursor: pointer;
+}
+.local-actions button:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.local-actions button:disabled { opacity: .45; cursor: default; }
+.local-actions .danger { color: var(--danger); }
+.local-summary { color: var(--muted); font-size: 11px; font-weight: 800; margin: 0 0 8px; }
+.local-list { display: flex; flex-direction: column; gap: 7px; }
+.local-row {
+  width: 100%; display: grid; grid-template-columns: 34px 1fr; gap: 9px; align-items: start;
+  border: 1px solid var(--border-soft); border-radius: 13px; background: var(--surface);
+  color: var(--text); padding: 8px; text-align: left; cursor: pointer;
+}
+.local-row:hover { border-color: var(--accent); background: var(--hover); }
+.local-badge {
+  width: 30px; height: 27px; border: 1px solid var(--border); border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--accent);
+  background: var(--editor); font-size: 9px; font-weight: 950; text-transform: uppercase;
+}
+.local-body { min-width: 0; }
+.local-body strong {
+  display: block; color: var(--text); font-size: 12px; font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.local-body span,
+.local-body small {
+  display: block; color: var(--muted); font-size: 10px; font-weight: 750; margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.local-empty { color: var(--muted); text-align: center; padding: 24px 10px; font-size: 13px; }
+.local-note { color: var(--muted); font-size: 11px; margin-top: 10px; line-height: 1.5; }
+
+@media (max-width: 580px) {
+  .local-head { flex-direction: column; }
+  .local-actions { justify-content: flex-start; }
+}
+
 /* Lightweight local canvas */
 .canvas-backdrop {
   display: flex; align-items: stretch; justify-content: center; padding: 14px;
