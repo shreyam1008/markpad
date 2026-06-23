@@ -6336,7 +6336,7 @@ async function showPreferences() {
     <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
-    <p>PDFs render page-by-page via pdf.js (~500 KB CDN). No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. This keeps the binary under 10 MB and memory low.</p>
+    <p>PDFs render page-by-page via pdf.js (~500 KB CDN). No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
   `);
 }
 
