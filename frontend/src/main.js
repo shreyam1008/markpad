@@ -2364,6 +2364,8 @@ function commandItems() {
     { id: 'canvas-bg-paper', icon: 'BP', title: 'Canvas background paper', hint: 'Set canvas background to warm paper', run: () => setCanvasBackground('#fffaf1', 'paper') },
     { id: 'canvas-bg-mist', icon: 'BM', title: 'Canvas background mist', hint: 'Set canvas background to soft mist', run: () => setCanvasBackground('#edf3f1', 'mist') },
     { id: 'canvas-bg-ink', icon: 'BI', title: 'Canvas background ink', hint: 'Set canvas background to dark ink for contrast', run: () => setCanvasBackground('#10141b', 'ink') },
+    { id: 'canvas-bg-sand', icon: 'BS', title: 'Canvas background sand', hint: 'Set canvas background to a warm planning board tone', run: () => setCanvasBackground('#f7ecd8', 'sand') },
+    { id: 'canvas-bg-slate', icon: 'BSl', title: 'Canvas background slate', hint: 'Set canvas background to a muted dark slate', run: () => setCanvasBackground('#18202b', 'slate') },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
     { id: 'canvas-zoom-out', icon: 'Z-', title: 'Canvas zoom out', hint: 'Step the canvas view out without changing content', run: () => { openCanvas(); stepCanvasZoom(0.8); } },
     { id: 'canvas-zoom-50', icon: 'Z50', title: 'Canvas zoom 50%', hint: 'Set the canvas view to a wider 50% overview', run: () => { openCanvas(); setCanvasZoomPreset(0.5); } },
