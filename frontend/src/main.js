@@ -69,6 +69,7 @@ let canvasClipboard = null;
 let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
+let canvasSaveTimer = null;
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -211,6 +212,7 @@ const MARKPAD_CANVAS_SCHEMA = 'https://markpad.local/schemas/canvas-v1.json';
 const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
+const CANVAS_SAVE_DEBOUNCE_MS = 220;
 const CANVAS_ZOOM_MIN = 0.12;
 const CANVAS_ZOOM_MAX = 4;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
@@ -6810,6 +6812,22 @@ function saveCanvasState() {
   localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
 }
 
+function queueCanvasStateSave() {
+  if (!canvasDoc || !canvasSession) return;
+  if (canvasSaveTimer) clearTimeout(canvasSaveTimer);
+  canvasSaveTimer = setTimeout(() => {
+    canvasSaveTimer = null;
+    saveCanvasState();
+  }, CANVAS_SAVE_DEBOUNCE_MS);
+}
+
+function flushCanvasStateSave() {
+  if (!canvasSaveTimer) return;
+  clearTimeout(canvasSaveTimer);
+  canvasSaveTimer = null;
+  saveCanvasState();
+}
+
 function canvasDocSnapshot() {
   return JSON.stringify(canvasDoc || newCanvasDoc());
 }
@@ -7572,6 +7590,7 @@ function openCanvas() {
 
 function closeCanvas() {
   finishCanvasTextEdit();
+  flushCanvasStateSave();
   canvasActive = false;
   canvasOverlay.classList.add('hidden');
   saveCanvasState();
@@ -8007,7 +8026,7 @@ canvasStage?.addEventListener('wheel', (e) => {
   camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, camera.scale * factor));
   camera.x = e.clientX - rect.left - before.x * camera.scale;
   camera.y = e.clientY - rect.top - before.y * camera.scale;
-  saveCanvasState();
+  queueCanvasStateSave();
   renderCanvas();
 }, { passive: false });
 
@@ -8470,9 +8489,10 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>backlinks</strong><span>Reference map</span><small>Append active-note backlinks as cards</small></div>
       <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
+      <div class="diag-card"><strong>autosave</strong><span>Debounced viewport</span><small>Wheel zoom writes after idle instead of every tick</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
     </div>
-    <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. It imports/exports JSON Canvas, Obsidian-compatible .canvas, and Excalidraw scene data without adding a heavy drawing runtime.</p>
+    <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
   `);
 }
 
