@@ -4308,6 +4308,9 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab" data-task-copy-summary>Copy Summary</button>
         <button class="task-tab" data-task-copy-summary-json>Summary JSON</button>
         <button class="task-tab" data-task-copy-summary-csv>Summary CSV</button>
+        <button class="task-tab" data-task-export-summary>Export Summary</button>
+        <button class="task-tab" data-task-export-summary-json>Export Summary JSON</button>
+        <button class="task-tab" data-task-export-summary-csv>Export Summary CSV</button>
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
@@ -8132,6 +8135,12 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopySummaryJson) await copyTaskViewSummaryJson();
   const taskCopySummaryCsv = e.target.closest('[data-task-copy-summary-csv]');
   if (taskCopySummaryCsv) await copyTaskViewSummaryCsv();
+  const taskExportSummary = e.target.closest('[data-task-export-summary]');
+  if (taskExportSummary) await exportTaskViewSummaryMarkdown();
+  const taskExportSummaryJson = e.target.closest('[data-task-export-summary-json]');
+  if (taskExportSummaryJson) await exportTaskViewSummaryJson();
+  const taskExportSummaryCsv = e.target.closest('[data-task-export-summary-csv]');
+  if (taskExportSummaryCsv) await exportTaskViewSummaryCsv();
   const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
   if (taskCopyIcs && !taskCopyIcs.dataset.taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
