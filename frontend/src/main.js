@@ -2239,6 +2239,33 @@ function currentFileSearchMarkdown(query) {
   return lines.join('\n');
 }
 
+function currentFileSearchJson(query) {
+  const pack = currentFileSearchMatches(query, 500);
+  const note = cachedNotes.find(item => item.id === activeId) || {};
+  return JSON.stringify({
+    type: 'markpad-current-file-search',
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    file: {
+      id: activeId || '',
+      title: activeFileSearchTitle(),
+      path: note.path || '',
+      kind: note.kind || '',
+    },
+    query: String(query || ''),
+    totalMatches: pack.total,
+    listedMatches: pack.matches.length,
+    truncated: pack.truncated,
+    matches: pack.matches.map(match => ({
+      line: match.line,
+      column: match.column,
+      offset: match.offset,
+      length: match.length,
+      text: match.text,
+    })),
+  }, null, 2) + '\n';
+}
+
 function currentFileSearchCsv(query) {
   const pack = currentFileSearchMatches(query, 500);
   const rows = [
@@ -2320,7 +2347,9 @@ function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
     <div class="local-summary">${q ? `${pack.total} match${pack.total === 1 ? '' : 'es'} in ${escapeHtml(activeFileSearchTitle())}${pack.truncated ? ` · first ${pack.matches.length} shown` : ''}` : `Search ${escapeHtml(activeFileSearchTitle())} without scanning other files.`}</div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-current-file-search-md ${q ? '' : 'disabled'}>Copy MD</button>
+      <button data-copy-current-file-search-json ${q ? '' : 'disabled'}>Copy JSON</button>
       <button data-export-current-file-search-md ${q ? '' : 'disabled'}>Export MD</button>
+      <button data-export-current-file-search-json ${q ? '' : 'disabled'}>Export JSON</button>
       <button data-export-current-file-search-csv ${q ? '' : 'disabled'}>Export CSV</button>
       <button data-current-file-search-canvas ${q && pack.matches.length ? '' : 'disabled'}>Send to Canvas</button>
     </div>
@@ -2344,6 +2373,20 @@ async function copyCurrentFileSearchMarkdown(query = currentFileSearchDefaultQue
   statusText.textContent = 'Current-file search copied as Markdown';
 }
 
+async function copyCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text to copy current-file search JSON';
+    return;
+  }
+  await navigator.clipboard.writeText(currentFileSearchJson(q));
+  statusText.textContent = 'Current-file search copied as JSON';
+}
+
 function exportCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()) {
   const q = String(query || '').trim();
   if (!q) {
@@ -2352,6 +2395,16 @@ function exportCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()
   }
   downloadText('markpad-current-file-search.md', 'text/markdown', currentFileSearchMarkdown(q));
   statusText.textContent = 'Current-file search exported as Markdown';
+}
+
+function exportCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
+  const q = String(query || '').trim();
+  if (!q) {
+    statusText.textContent = 'Enter text to export current-file search JSON';
+    return;
+  }
+  downloadText('markpad-current-file-search.json', 'application/json', currentFileSearchJson(q));
+  statusText.textContent = 'Current-file search exported as JSON';
 }
 
 function exportCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
@@ -3937,7 +3990,9 @@ function commandItems() {
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
   { id: 'current-file-search-to-canvas', icon: 'F2C', title: 'Send current-file search to canvas', hint: 'Create a lightweight canvas board from active-file search matches', run: () => insertCurrentFileSearchCanvasBoard() },
+  { id: 'copy-current-file-search-json', icon: 'CFJ', title: 'Copy current-file search JSON', hint: 'Copy the current active-file search report as structured JSON', run: () => copyCurrentFileSearchJson() },
   { id: 'export-current-file-search-md', icon: 'FSM', title: 'Export current-file search Markdown', hint: 'Download the current active-file search report as Markdown', run: () => exportCurrentFileSearchMarkdown() },
+  { id: 'export-current-file-search-json', icon: 'FSJ', title: 'Export current-file search JSON', hint: 'Download the current active-file search report as structured JSON', run: () => exportCurrentFileSearchJson() },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
     { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
@@ -10998,8 +11053,12 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (currentFileSearchClear && !currentFileSearchClear.disabled) showCurrentFileSearch('');
   const copyCurrentFileSearchMdBtn = e.target.closest('[data-copy-current-file-search-md]');
   if (copyCurrentFileSearchMdBtn && !copyCurrentFileSearchMdBtn.disabled) await copyCurrentFileSearchMarkdown(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const copyCurrentFileSearchJsonBtn = e.target.closest('[data-copy-current-file-search-json]');
+  if (copyCurrentFileSearchJsonBtn && !copyCurrentFileSearchJsonBtn.disabled) await copyCurrentFileSearchJson(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const exportCurrentFileSearchMdBtn = e.target.closest('[data-export-current-file-search-md]');
   if (exportCurrentFileSearchMdBtn && !exportCurrentFileSearchMdBtn.disabled) exportCurrentFileSearchMarkdown(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
+  const exportCurrentFileSearchJsonBtn = e.target.closest('[data-export-current-file-search-json]');
+  if (exportCurrentFileSearchJsonBtn && !exportCurrentFileSearchJsonBtn.disabled) exportCurrentFileSearchJson(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const exportCurrentFileSearchCsvBtn = e.target.closest('[data-export-current-file-search-csv]');
   if (exportCurrentFileSearchCsvBtn && !exportCurrentFileSearchCsvBtn.disabled) exportCurrentFileSearchCsv(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchCanvasBtn = e.target.closest('[data-current-file-search-canvas]');
