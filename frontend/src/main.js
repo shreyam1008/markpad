@@ -330,6 +330,8 @@ function renderSearchRecents() {
   searchRecents.innerHTML = `
     <span>Recent</span>
     ${searchRecentQueries.map(query => `<button data-search-recent="${escapeHtml(query)}">${escapeHtml(query)}</button>`).join('')}
+    <button data-search-recents-copy>Copy</button>
+    <button data-search-recents-export>Export</button>
     <button data-search-recents-clear>Clear</button>
   `;
 }
@@ -2191,6 +2193,14 @@ searchRecents?.addEventListener('click', (e) => {
   const clear = e.target.closest('[data-search-recents-clear]');
   if (clear) {
     clearSearchRecents();
+  }
+  const copy = e.target.closest('[data-search-recents-copy]');
+  if (copy) {
+    copySearchRecentsMarkdown();
+  }
+  const exportBtn = e.target.closest('[data-search-recents-export]');
+  if (exportBtn) {
+    exportSearchRecentsMarkdown();
   }
 });
 $('search-close')?.addEventListener('click', closeSearchPalette);
