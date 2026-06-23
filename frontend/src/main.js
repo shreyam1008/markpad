@@ -2804,6 +2804,23 @@ function trashReportToCsv(draftItems, fileItems) {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
+function trashRetentionSummaryText(draftItems, fileItems) {
+  const allItems = [...draftItems, ...fileItems];
+  const total = allItems.length;
+  const urgent = allItems.filter(item => daysLeft(item.deletedAt) <= 1).length;
+  const soon = allItems.filter(item => {
+    const days = daysLeft(item.deletedAt);
+    return days > 1 && days <= 3;
+  }).length;
+  const draftBytes = draftItems.reduce((sum, item) => sum + byteSize(item.content || ''), 0);
+  const fileBytes = fileItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  const parts = [`${total} item${total === 1 ? '' : 's'}`, `auto-cleanup after ${DRAFT_TRASH_DAYS} days`];
+  if (urgent) parts.push(`${urgent} expiring today`);
+  if (soon) parts.push(`${soon} expiring soon`);
+  if (total) parts.push(`${formatBytes(draftBytes + fileBytes)} retained`);
+  return parts.join(' · ');
+}
+
 async function copyTrashReportMarkdown() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -2882,7 +2899,7 @@ async function showTrashView() {
   const total = items.length + fileItems.length;
   showModal('Trash', `
     <div class="trash-head">
-      <span>${total} item${total === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
+      <span>${escapeHtml(trashRetentionSummaryText(items, fileItems))}</span>
       <button data-trash-copy-report ${total ? '' : 'disabled'}>Copy Report</button>
       <button data-trash-export-report ${total ? '' : 'disabled'}>Export Report</button>
       <button data-trash-copy-csv ${total ? '' : 'disabled'}>Copy CSV</button>
