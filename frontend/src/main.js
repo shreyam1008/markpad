@@ -4662,6 +4662,7 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>priority</strong><span>!high !medium !low</span><small>Aliases: !h, !med, !m, !l</small></div>
       <div class="diag-card"><strong>waiting</strong><span>@waiting</span><small>Moves work into waiting filters</small></div>
       <div class="diag-card"><strong>tag</strong><span>#project</span><small>Used by task and search filters</small></div>
+      <div class="diag-card"><strong>exclude</strong><span>-@waiting -#blocked</span><small>Hide matching task tokens</small></div>
     </div>
     <p class="diag-note">Tasks remain regular Markdown lines in your files. Markpad only reads tokens from checkbox lines, so the format stays local, portable, and not vendor-locked.</p>
   `);
@@ -4669,21 +4670,32 @@ function showTaskSyntaxHelp() {
 
 function parseTaskQuery(query) {
   const tokens = String(query || '').trim().match(/"[^"]+"|\S+/g) || [];
-  const plan = { terms: [], due: [], priority: [], tags: [], waiting: false, hasQuery: false };
+  const plan = {
+    terms: [],
+    due: [],
+    priority: [],
+    tags: [],
+    waiting: false,
+    exclude: { terms: [], due: [], priority: [], tags: [], waiting: false },
+    hasQuery: false,
+  };
   tokens.forEach((token) => {
-    const clean = token.replace(/^"|"$/g, '').trim().toLowerCase();
+    const raw = token.replace(/^"|"$/g, '').trim().toLowerCase();
+    const negated = raw.startsWith('-') && raw.length > 1;
+    const clean = negated ? raw.slice(1) : raw;
+    const target = negated ? plan.exclude : plan;
     if (!clean) return;
     plan.hasQuery = true;
     if (clean === '@waiting') {
-      plan.waiting = true;
+      target.waiting = true;
       return;
     }
     if (clean.startsWith('#') && clean.length > 1) {
-      plan.tags.push(clean.slice(1));
+      target.tags.push(clean.slice(1));
       return;
     }
     if (clean.startsWith('!') && clean.length > 1) {
-      plan.priority.push(clean.slice(1));
+      target.priority.push(clean.slice(1));
       return;
     }
     const parts = clean.split(':');
@@ -4691,19 +4703,19 @@ function parseTaskQuery(query) {
       const key = parts.shift();
       const value = parts.join(':').trim();
       if (value && key === 'due') {
-        plan.due.push(value);
+        target.due.push(value);
         return;
       }
       if (value && ['priority', 'prio', 'p'].includes(key)) {
-        plan.priority.push(value);
+        target.priority.push(value);
         return;
       }
       if (value && key === 'tag') {
-        plan.tags.push(value.replace(/^#/, ''));
+        target.tags.push(value.replace(/^#/, ''));
         return;
       }
     }
-    plan.terms.push(clean);
+    target.terms.push(clean);
   });
   return plan;
 }
@@ -4741,6 +4753,7 @@ function taskPriorityQueryMatches(task, value) {
 function taskQueryMatches(task, plan) {
   const queryPlan = plan || parseTaskQuery(taskQuery);
   if (!queryPlan.hasQuery) return true;
+  const exclude = queryPlan.exclude || { terms: [], due: [], priority: [], tags: [], waiting: false };
   if (queryPlan.waiting && !task.waiting) return false;
   if (queryPlan.due.some(value => !taskDueQueryMatches(task, value))) return false;
   if (queryPlan.priority.some(value => !taskPriorityQueryMatches(task, value))) return false;
@@ -4750,6 +4763,11 @@ function taskQueryMatches(task, plan) {
     task.text, task.noteTitle, task.path, task.due, task.priority,
     task.waiting ? 'waiting' : '', ...(task.tags || []),
   ].join(' ').toLowerCase();
+  if (exclude.waiting && task.waiting) return false;
+  if (exclude.due.some(value => taskDueQueryMatches(task, value))) return false;
+  if (exclude.priority.some(value => taskPriorityQueryMatches(task, value))) return false;
+  if (exclude.tags.some(tag => tags.includes(tag) || String(task.text || '').toLowerCase().includes(`#${tag}`))) return false;
+  if (exclude.terms.some(term => haystack.includes(term))) return false;
   return queryPlan.terms.every(term => haystack.includes(term));
 }
 
@@ -4822,7 +4840,7 @@ function renderTaskControls(tasks, visibleTasks) {
       <div class="task-filter-row">${sourceChips}</div>
       <div class="task-filter-row">${chips}</div>
       <div class="task-search-row">
-        <input data-task-search value="${query}" placeholder="Filter text, due:today, !high, @waiting, #tag" />
+        <input data-task-search value="${query}" placeholder="Filter text, due:today, !high, @waiting, #tag, -#blocked" />
         <button data-task-search-apply>Apply</button>
         <button data-task-search-clear ${taskQuery ? '' : 'disabled'}>Clear</button>
       </div>
