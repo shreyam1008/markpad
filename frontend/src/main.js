@@ -2263,6 +2263,7 @@ function commandItems() {
     { id: 'canvas-copy-element-svg', icon: 'CES', title: 'Copy selected canvas element SVG', hint: 'Copy the selected canvas element as standalone SVG markup', run: copySelectedCanvasElementSvg },
     { id: 'canvas-paste-element-json', icon: 'PEJ', title: 'Paste canvas element JSON', hint: 'Paste one canvas element from clipboard JSON', run: pasteCanvasElementJsonFromClipboard },
     { id: 'canvas-merge-json', icon: 'CMJ', title: 'Merge canvas JSON from clipboard', hint: 'Append elements from clipboard canvas JSON without replacing the draft', run: mergeCanvasJsonFromClipboard },
+    { id: 'canvas-replace-json', icon: 'CRJ', title: 'Replace canvas from clipboard JSON', hint: 'Replace the current canvas draft with clipboard Markpad, Obsidian, or Excalidraw JSON', run: replaceCanvasJsonFromClipboard },
     { id: 'canvas-paste', icon: 'CP', title: 'Paste canvas element', hint: 'Paste the copied canvas element with a small offset', run: pasteCanvasElement },
     { id: 'canvas-clear-undo-history', icon: 'CU', title: 'Clear canvas undo history', hint: 'Release in-memory canvas undo snapshots for the current canvas draft', run: clearCanvasUndoHistory },
     { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
@@ -5486,6 +5487,31 @@ async function mergeCanvasJsonFromClipboard() {
   renderCanvas();
   syncCanvasControlsFromSelection();
   statusText.textContent = `${imported.length} canvas element${imported.length === 1 ? '' : 's'} merged`;
+}
+
+async function replaceCanvasJsonFromClipboard() {
+  openCanvas();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(await navigator.clipboard.readText());
+  } catch {
+    statusText.textContent = 'Clipboard does not contain canvas JSON';
+    return;
+  }
+  const doc = normalizeCanvasDoc(parsed);
+  if (!doc.elements.length) {
+    statusText.textContent = 'Clipboard canvas has no elements';
+    return;
+  }
+  canvasDoc = doc;
+  canvasSession.camera = { x: 0, y: 0, scale: 1 };
+  canvasSelectedIndex = -1;
+  canvasMoveStart = null;
+  saveCanvasState();
+  rememberCanvasHistory(true);
+  renderCanvas();
+  requestAnimationFrame(fitCanvasToContent);
+  statusText.textContent = `${doc.elements.length} canvas element${doc.elements.length === 1 ? '' : 's'} loaded from clipboard`;
 }
 
 function exportCanvasSvg() {
