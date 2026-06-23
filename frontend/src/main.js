@@ -51,6 +51,8 @@ let canvasActive = false;
 let canvasDrawing = null;
 let canvasDraftElement = null;
 let canvasPanStart = null;
+let canvasMoveStart = null;
+let canvasSelectedIndex = -1;
 let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
@@ -952,6 +954,7 @@ function commandItems() {
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
+    { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
     { id: 'canvas-fit', icon: 'CF', title: 'Fit canvas content', hint: 'Center all canvas elements in view', run: () => { openCanvas(); fitCanvasToContent(); } },
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
@@ -2215,7 +2218,8 @@ function updateCanvasStatus() {
   if (!canvasStatus || !canvasSession) return;
   const count = (canvasDoc?.elements || []).length;
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
-  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%`;
+  const selected = canvasSelectedIndex >= 0 && canvasSelectedIndex < count ? ' · selected' : '';
+  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%${selected}`;
 }
 
 function fitCanvasToContent() {
@@ -2283,6 +2287,8 @@ function loadCanvasState() {
   try { canvasSession = JSON.parse(localStorage.getItem(CANVAS_SESSION_KEY) || ''); } catch { canvasSession = null; }
   if (!canvasDoc || !Array.isArray(canvasDoc.elements)) canvasDoc = newCanvasDoc();
   if (!canvasSession) canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+  canvasSelectedIndex = -1;
+  canvasMoveStart = null;
   canvasHistory = [];
   canvasHistoryIndex = -1;
   rememberCanvasHistory(true);
@@ -2327,6 +2333,7 @@ function restoreCanvasHistory(index) {
   try {
     canvasDoc = normalizeCanvasDoc(JSON.parse(canvasHistory[index]));
     canvasHistoryIndex = index;
+    if (canvasSelectedIndex >= canvasDoc.elements.length) canvasSelectedIndex = -1;
     saveCanvasState();
     renderCanvas();
     updateCanvasHistoryButtons();
@@ -2427,6 +2434,20 @@ function renderCanvasElement(ctx, el) {
   ctx.restore();
 }
 
+function renderCanvasSelection(ctx) {
+  if (!canvasDoc || canvasSelectedIndex < 0 || canvasSelectedIndex >= canvasDoc.elements.length) return;
+  const bounds = canvasElementBounds(canvasDoc.elements[canvasSelectedIndex]);
+  const camera = canvasCamera();
+  const scale = camera.scale || 1;
+  const pad = Math.max(6, 8 / scale);
+  ctx.save();
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2f6f61';
+  ctx.lineWidth = 1.5 / scale;
+  ctx.setLineDash([7 / scale, 4 / scale]);
+  ctx.strokeRect(bounds.x - pad, bounds.y - pad, Math.max(10, bounds.w + pad * 2), Math.max(10, bounds.h + pad * 2));
+  ctx.restore();
+}
+
 function arrowHeadPoints(x1, y1, x2, y2, size) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const spread = Math.PI / 7;
@@ -2468,12 +2489,16 @@ function renderCanvas() {
   };
   canvasDoc.elements.filter(visible).forEach(el => renderCanvasElement(ctx, el));
   if (canvasDraftElement) renderCanvasElement(ctx, canvasDraftElement);
+  renderCanvasSelection(ctx);
 }
 
 function setCanvasTool(tool) {
+  const allowed = new Set(['select', 'pan', 'pen', 'rect', 'ellipse', 'line', 'arrow', 'text', 'erase']);
+  if (!allowed.has(tool)) tool = 'pan';
   canvasTool = tool;
   localStorage.setItem('markpad-canvas-tool', tool);
   document.querySelectorAll('[data-canvas-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.canvasTool === tool));
+  if (canvasStage) canvasStage.style.cursor = tool === 'select' ? 'default' : tool === 'pan' ? 'grab' : 'crosshair';
 }
 
 function openCanvas() {
@@ -2510,6 +2535,21 @@ function canvasHitTest(point) {
     }
   }
   return -1;
+}
+
+function cloneCanvasElement(el) {
+  return JSON.parse(JSON.stringify(el));
+}
+
+function moveCanvasElement(el, dx, dy) {
+  const next = cloneCanvasElement(el);
+  if (next.type === 'path') {
+    next.points = (next.points || []).map(point => ({ x: point.x + dx, y: point.y + dy }));
+  } else {
+    next.x = Number(next.x || 0) + dx;
+    next.y = Number(next.y || 0) + dy;
+  }
+  return next;
 }
 
 function startCanvasTextEdit(point, existingIndex = -1) {
@@ -2556,6 +2596,21 @@ canvasStage?.addEventListener('pointerdown', (e) => {
   finishCanvasTextEdit();
   const point = canvasScreenToWorld(e.clientX, e.clientY);
   canvasStage.setPointerCapture(e.pointerId);
+  if (canvasTool === 'select') {
+    const idx = canvasHitTest(point);
+    canvasSelectedIndex = idx;
+    if (idx >= 0) {
+      canvasMoveStart = {
+        index: idx,
+        point,
+        element: cloneCanvasElement(canvasDoc.elements[idx]),
+        moved: false,
+      };
+      canvasStage.style.cursor = 'grabbing';
+    }
+    renderCanvas();
+    return;
+  }
   if (canvasTool === 'pan') {
     const camera = canvasCamera();
     canvasPanStart = { x: e.clientX, y: e.clientY, cameraX: camera.x, cameraY: camera.y };
@@ -2565,6 +2620,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
     const idx = canvasHitTest(point);
     if (idx >= 0) {
       canvasDoc.elements.splice(idx, 1);
+      canvasSelectedIndex = -1;
       saveCanvasState();
       rememberCanvasHistory();
       renderCanvas();
@@ -2573,6 +2629,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
   }
   if (canvasTool === 'text') {
     const idx = canvasHitTest(point);
+    canvasSelectedIndex = idx;
     startCanvasTextEdit(point, idx >= 0 && canvasDoc.elements[idx].type === 'text' ? idx : -1);
     return;
   }
@@ -2583,6 +2640,15 @@ canvasStage?.addEventListener('pointerdown', (e) => {
 
 canvasStage?.addEventListener('pointermove', (e) => {
   if (!canvasActive) return;
+  if (canvasMoveStart) {
+    const point = canvasScreenToWorld(e.clientX, e.clientY);
+    const dx = point.x - canvasMoveStart.point.x;
+    const dy = point.y - canvasMoveStart.point.y;
+    canvasMoveStart.moved = canvasMoveStart.moved || Math.hypot(dx, dy) > 0.5;
+    canvasDoc.elements[canvasMoveStart.index] = moveCanvasElement(canvasMoveStart.element, dx, dy);
+    renderCanvas();
+    return;
+  }
   if (canvasPanStart) {
     const camera = canvasCamera();
     camera.x = canvasPanStart.cameraX + (e.clientX - canvasPanStart.x);
@@ -2604,6 +2670,17 @@ canvasStage?.addEventListener('pointermove', (e) => {
 });
 
 canvasStage?.addEventListener('pointerup', () => {
+  if (canvasMoveStart) {
+    const moved = canvasMoveStart.moved;
+    canvasMoveStart = null;
+    if (canvasTool === 'select') canvasStage.style.cursor = 'default';
+    if (moved) {
+      saveCanvasState();
+      rememberCanvasHistory();
+    }
+    renderCanvas();
+    return;
+  }
   if (canvasPanStart) {
     canvasPanStart = null;
     saveCanvasState();
@@ -2611,6 +2688,7 @@ canvasStage?.addEventListener('pointerup', () => {
   if (!canvasDrawing) return;
   if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
     canvasDoc.elements.push(canvasDrawing);
+    canvasSelectedIndex = canvasDoc.elements.length - 1;
     saveCanvasState();
     rememberCanvasHistory();
   }
@@ -2672,6 +2750,8 @@ function loadCurrentDocumentIntoCanvas() {
   try {
     canvasDoc = normalizeCanvasDoc(JSON.parse(text));
     canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+    canvasSelectedIndex = -1;
+    canvasMoveStart = null;
     canvasHistory = [];
     canvasHistoryIndex = -1;
     saveCanvasState();
@@ -2712,6 +2792,8 @@ canvasImportFile?.addEventListener('change', async () => {
     const text = await file.text();
     canvasDoc = normalizeCanvasDoc(JSON.parse(text));
     canvasSession.camera = { x: 0, y: 0, scale: 1 };
+    canvasSelectedIndex = -1;
+    canvasMoveStart = null;
     saveCanvasState();
     rememberCanvasHistory(true);
     renderCanvas();
@@ -2722,6 +2804,8 @@ canvasImportFile?.addEventListener('change', async () => {
 });
 $('canvas-clear')?.addEventListener('click', () => {
   canvasDoc = newCanvasDoc();
+  canvasSelectedIndex = -1;
+  canvasMoveStart = null;
   saveCanvasState();
   rememberCanvasHistory(true);
   renderCanvas();

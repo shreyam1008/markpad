@@ -267,6 +267,7 @@
           <span>Local JSON surface. File save comes in the backend slice.</span>
         </div>
         <div class="canvas-actions">
+          <button data-canvas-tool="select" class="canvas-tool">Select</button>
           <button data-canvas-tool="pan" class="canvas-tool active">Pan</button>
           <button data-canvas-tool="pen" class="canvas-tool">Pen</button>
           <button data-canvas-tool="rect" class="canvas-tool">Rect</button>
@@ -294,7 +295,7 @@
       <div class="canvas-stage-wrap">
         <canvas id="canvas-stage"></canvas>
         <textarea id="canvas-text-editor" class="hidden" spellcheck="false"></textarea>
-        <div class="canvas-hint">Mouse wheel zooms. Drag in Pan mode moves the viewport. Draft autosaves locally.</div>
+        <div class="canvas-hint">Mouse wheel zooms. Pan moves the viewport. Select moves elements. Draft autosaves locally.</div>
       </div>
     </div>
   </div>
