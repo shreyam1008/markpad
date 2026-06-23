@@ -2299,6 +2299,8 @@ function commandItems() {
     { id: 'tasks-preset-open-kanban', icon: 'TOK', title: 'Task preset: open kanban', hint: 'Show open tasks as a kanban board across all sources', run: () => showTasksPreset({ view: 'kanban', source: 'all', filter: 'open', query: '' }) },
     { id: 'tasks-preset-local-kanban', icon: 'TLK', title: 'Task preset: local kanban', hint: 'Show open local-folder tasks as a kanban board', run: () => showTasksPreset({ view: 'kanban', source: 'local', filter: 'open', query: '' }) },
     { id: 'tasks-preset-waiting-list', icon: 'TWL', title: 'Task preset: waiting list', hint: 'Show waiting tasks in list view across all sources', run: () => showTasksPreset({ view: 'list', source: 'all', filter: 'waiting', query: '' }) },
+    { id: 'tasks-preset-overdue-list', icon: 'TOL', title: 'Task preset: overdue list', hint: 'Show overdue tasks in list view across all sources', run: () => showTasksPreset({ view: 'list', source: 'all', filter: 'overdue', query: '' }) },
+    { id: 'tasks-preset-high-kanban', icon: 'THK', title: 'Task preset: high-priority kanban', hint: 'Show high-priority tasks as a kanban board', run: () => showTasksPreset({ view: 'kanban', source: 'all', filter: 'high', query: '' }) },
     { id: 'tasks-source-all', icon: 'TSA', title: 'Tasks all sources', hint: 'Show loaded and local Markdown tasks together', run: () => showTasksForSource('all') },
     { id: 'tasks-source-loaded', icon: 'TSL', title: 'Tasks loaded source', hint: 'Show tasks from currently loaded documents only', run: () => showTasksForSource('loaded') },
     { id: 'tasks-source-local', icon: 'TSF', title: 'Tasks local source', hint: 'Show tasks from the configured local folder only', run: () => showTasksForSource('local') },
