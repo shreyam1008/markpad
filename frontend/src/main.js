@@ -2652,6 +2652,12 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>canvas</strong><span>Send results</span><small>Turn current results into a canvas board</small></div>
       <div class="diag-card"><strong>inspect</strong><span>Query plan</span><small>Show parsed terms, filters, exclusions, fuzzy, and anchors</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-search-current-file-open>Current File</button>
+      <button data-search-query-inspector-open>Query Inspector</button>
+      <button data-search-performance-open>Performance</button>
+      <button data-search-results-canvas ${searchLastResults.length ? '' : 'disabled'}>Results to Canvas</button>
+    </div>
     <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory with a bounded content cache; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
@@ -11047,6 +11053,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (openLocalFootprintBtn) await showLocalFootprint();
   const clearLoadedSearchCacheBtn = e.target.closest('[data-clear-loaded-search-cache]');
   if (clearLoadedSearchCacheBtn) clearLoadedSearchCacheAction();
+  const searchCurrentFileOpenBtn = e.target.closest('[data-search-current-file-open]');
+  if (searchCurrentFileOpenBtn) showCurrentFileSearch();
+  const searchQueryInspectorOpenBtn = e.target.closest('[data-search-query-inspector-open]');
+  if (searchQueryInspectorOpenBtn) showSearchQueryInspector();
+  const searchPerformanceOpenBtn = e.target.closest('[data-search-performance-open]');
+  if (searchPerformanceOpenBtn) showSearchPerformanceGuide();
+  const searchResultsCanvasBtn = e.target.closest('[data-search-results-canvas]');
+  if (searchResultsCanvasBtn && !searchResultsCanvasBtn.disabled) insertSearchResultsCanvasBoard();
   const currentFileSearchApply = e.target.closest('[data-current-file-search-apply]');
   if (currentFileSearchApply) showCurrentFileSearch(modalBodyEl.querySelector('[data-current-file-search-input]')?.value || '');
   const currentFileSearchClear = e.target.closest('[data-current-file-search-clear]');
