@@ -1989,6 +1989,24 @@ async function exportRuntimeStatsMarkdown() {
   }
 }
 
+async function copyRuntimeStatsMarkdown() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(runtimeStatsMarkdown(await getter()));
+    statusText.textContent = 'Runtime stats copied as Markdown';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats Markdown copy failed: ' + err;
+  }
+}
+
 async function showRuntimeStats() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -2093,6 +2111,7 @@ function commandItems() {
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
     { id: 'copy-runtime-stats-json', icon: 'CRJ', title: 'Copy runtime stats JSON', hint: 'Copy memory, binary size, goroutine, and uptime stats as JSON', run: copyRuntimeStatsJson },
     { id: 'export-runtime-stats-json', icon: 'ERJ', title: 'Export runtime stats JSON', hint: 'Download memory, binary size, goroutine, and uptime stats as JSON', run: exportRuntimeStatsJson },
+    { id: 'copy-runtime-stats-md', icon: 'CRM', title: 'Copy runtime stats Markdown', hint: 'Copy memory, binary size, goroutine, and uptime stats as Markdown', run: copyRuntimeStatsMarkdown },
     { id: 'export-runtime-stats-md', icon: 'ERM', title: 'Export runtime stats Markdown', hint: 'Download memory, binary size, goroutine, and uptime stats as Markdown', run: exportRuntimeStatsMarkdown },
     { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
