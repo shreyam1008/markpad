@@ -3,7 +3,6 @@ package main
 import (
 	"sort"
 	"strings"
-	"unicode/utf16"
 	"unicode/utf8"
 )
 
@@ -181,7 +180,7 @@ func utf16Index(content string, byteIndex int) int {
 		if i >= byteIndex {
 			break
 		}
-		units += utf16.RuneLen(r)
+		units += utf16RuneLen(r)
 	}
 	return units
 }
@@ -190,7 +189,7 @@ func utf16Len(content string) int {
 	units := 0
 	for len(content) > 0 {
 		r, size := utf8.DecodeRuneInString(content)
-		units += utf16.RuneLen(r)
+		units += utf16RuneLen(r)
 		content = content[size:]
 	}
 	return units
@@ -215,4 +214,11 @@ func maxInt(a int, b int) int {
 		return a
 	}
 	return b
+}
+
+func utf16RuneLen(r rune) int {
+	if r <= 0xFFFF {
+		return 1
+	}
+	return 2
 }
