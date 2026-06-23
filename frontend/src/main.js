@@ -33,6 +33,7 @@ let searchOpen = false;
 let searchTimer = null;
 let searchToken = 0;
 let searchActiveIndex = 0;
+let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
 let searchScope = localStorage.getItem('markpad-search-scope') || 'loaded';
@@ -112,6 +113,7 @@ const searchOverlay = $('search-overlay');
 const searchInput  = $('search-input');
 const searchResults = $('search-results');
 const searchMeta   = $('search-meta');
+const searchRecents = $('search-recents');
 const commandOverlay = $('command-overlay');
 const commandInput = $('command-input');
 const commandResults = $('command-results');
@@ -132,6 +134,8 @@ const THEMES = [
   { id: 'pine', label: 'Pine' },
 ];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
+const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
+const SEARCH_RECENTS_LIMIT = 8;
 const CANVAS_DOC_KEY = 'markpad-canvas-draft';
 const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
@@ -155,6 +159,41 @@ function cycleTheme() {
   const index = THEMES.findIndex(t => t.id === currentTheme);
   applyTheme(THEMES[(index + 1) % THEMES.length].id);
 }
+
+function loadSearchRecentQueries() {
+  try {
+    const values = JSON.parse(localStorage.getItem(SEARCH_RECENTS_KEY) || '[]');
+    return Array.isArray(values) ? values.filter(Boolean).slice(0, SEARCH_RECENTS_LIMIT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberSearchQuery(query) {
+  const q = String(query || '').trim();
+  if (q.length < 2) return;
+  searchRecentQueries = [q, ...searchRecentQueries.filter(item => item.toLowerCase() !== q.toLowerCase())].slice(0, SEARCH_RECENTS_LIMIT);
+  localStorage.setItem(SEARCH_RECENTS_KEY, JSON.stringify(searchRecentQueries));
+  renderSearchRecents();
+}
+
+function renderSearchRecents() {
+  if (!searchRecents) return;
+  if (!searchRecentQueries.length) searchRecentQueries = loadSearchRecentQueries();
+  if (!searchRecentQueries.length) {
+    searchRecents.classList.add('hidden');
+    searchRecents.innerHTML = '';
+    return;
+  }
+  searchRecents.classList.remove('hidden');
+  searchRecents.innerHTML = `
+    <span>Recent</span>
+    ${searchRecentQueries.map(query => `<button data-search-recent="${escapeHtml(query)}">${escapeHtml(query)}</button>`).join('')}
+    <button data-search-recents-clear>Clear</button>
+  `;
+}
+
+searchRecentQueries = loadSearchRecentQueries();
 
 function applyFocusMode(silent) {
   document.body.classList.toggle('markpad-focus', focusMode);
@@ -854,6 +893,7 @@ function openSearchPalette() {
   searchOverlay.classList.remove('hidden');
   searchInput.value = '';
   searchActiveIndex = 0;
+  renderSearchRecents();
   runLoadedSearch('');
   requestAnimationFrame(() => searchInput.focus());
 }
@@ -866,6 +906,7 @@ function closeSearchPalette() {
 
 async function openSearchResult(result) {
   if (!result) return;
+  rememberSearchQuery(searchInput.value);
   if (result.source === 'local') {
     if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     try {
@@ -939,6 +980,22 @@ document.querySelectorAll('[data-search-scope]').forEach(btn => {
     searchActiveIndex = 0;
     runLoadedSearch(searchInput.value);
   });
+});
+searchRecents?.addEventListener('click', (e) => {
+  const recent = e.target.closest('[data-search-recent]');
+  if (recent) {
+    searchInput.value = recent.dataset.searchRecent || '';
+    searchInput.focus();
+    searchActiveIndex = 0;
+    runLoadedSearch(searchInput.value);
+    return;
+  }
+  const clear = e.target.closest('[data-search-recents-clear]');
+  if (clear) {
+    searchRecentQueries = [];
+    localStorage.removeItem(SEARCH_RECENTS_KEY);
+    renderSearchRecents();
+  }
 });
 $('search-close')?.addEventListener('click', closeSearchPalette);
 searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) closeSearchPalette(); });

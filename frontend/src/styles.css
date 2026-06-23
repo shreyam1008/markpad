@@ -319,6 +319,42 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   background: var(--accent);
   color: var(--accent-text);
 }
+.search-recents {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+}
+.search-recents.hidden { display: none; }
+.search-recents span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.search-recents button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-recents button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
 .search-results { overflow-y: auto; padding: 8px; }
 .search-row {
   width: 100%; border: 1px solid transparent; border-radius: 14px; background: transparent;
