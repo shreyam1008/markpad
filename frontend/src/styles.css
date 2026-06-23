@@ -470,6 +470,7 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 }
 .canvas-tool:hover, .canvas-tool.active { border-color: var(--accent); background: var(--hover); color: var(--text); }
 .canvas-tool.danger { color: var(--danger); }
+.canvas-tool:disabled { opacity: .45; cursor: default; border-color: var(--border); background: var(--surface); color: var(--muted); }
 #canvas-color {
   width: 31px; height: 29px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); padding: 2px;
 }

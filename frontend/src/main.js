@@ -48,6 +48,8 @@ let canvasDrawing = null;
 let canvasDraftElement = null;
 let canvasPanStart = null;
 let canvasTextTarget = null;
+let canvasHistory = [];
+let canvasHistoryIndex = -1;
 
 // Zoom
 const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
@@ -124,6 +126,8 @@ const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const CANVAS_DOC_KEY = 'markpad-canvas-draft';
 const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const CANVAS_DPR_CAP = 1.5;
+const CANVAS_HISTORY_LIMIT = 28;
+const CANVAS_HISTORY_BYTES = 768 * 1024;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
 const DRAFT_TRASH_DAYS = 30;
 
@@ -1415,12 +1419,62 @@ function loadCanvasState() {
   try { canvasSession = JSON.parse(localStorage.getItem(CANVAS_SESSION_KEY) || ''); } catch { canvasSession = null; }
   if (!canvasDoc || !Array.isArray(canvasDoc.elements)) canvasDoc = newCanvasDoc();
   if (!canvasSession) canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+  canvasHistory = [];
+  canvasHistoryIndex = -1;
+  rememberCanvasHistory(true);
 }
 
 function saveCanvasState() {
   if (!canvasDoc || !canvasSession) return;
   localStorage.setItem(CANVAS_DOC_KEY, JSON.stringify(canvasDoc));
   localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
+}
+
+function canvasDocSnapshot() {
+  return JSON.stringify(canvasDoc || newCanvasDoc());
+}
+
+function updateCanvasHistoryButtons() {
+  const undo = $('canvas-undo');
+  const redo = $('canvas-redo');
+  if (undo) undo.disabled = canvasHistoryIndex <= 0;
+  if (redo) redo.disabled = canvasHistoryIndex < 0 || canvasHistoryIndex >= canvasHistory.length - 1;
+}
+
+function rememberCanvasHistory(force) {
+  if (!canvasDoc) return;
+  const snap = canvasDocSnapshot();
+  if (snap.length > CANVAS_HISTORY_BYTES) {
+    canvasHistory = [snap];
+    canvasHistoryIndex = 0;
+    updateCanvasHistoryButtons();
+    return;
+  }
+  if (!force && canvasHistory[canvasHistoryIndex] === snap) return;
+  if (canvasHistoryIndex < canvasHistory.length - 1) canvasHistory.splice(canvasHistoryIndex + 1);
+  canvasHistory.push(snap);
+  while (canvasHistory.length > CANVAS_HISTORY_LIMIT) canvasHistory.shift();
+  canvasHistoryIndex = canvasHistory.length - 1;
+  updateCanvasHistoryButtons();
+}
+
+function restoreCanvasHistory(index) {
+  if (index < 0 || index >= canvasHistory.length) return;
+  try {
+    canvasDoc = normalizeCanvasDoc(JSON.parse(canvasHistory[index]));
+    canvasHistoryIndex = index;
+    saveCanvasState();
+    renderCanvas();
+    updateCanvasHistoryButtons();
+  } catch {}
+}
+
+function undoCanvas() {
+  restoreCanvasHistory(canvasHistoryIndex - 1);
+}
+
+function redoCanvas() {
+  restoreCanvasHistory(canvasHistoryIndex + 1);
 }
 
 function canvasId() {
@@ -1608,6 +1662,7 @@ function finishCanvasTextEdit() {
       });
     }
     saveCanvasState();
+    rememberCanvasHistory();
   }
   canvasTextTarget = null;
   canvasTextEditor.classList.add('hidden');
@@ -1629,6 +1684,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
     if (idx >= 0) {
       canvasDoc.elements.splice(idx, 1);
       saveCanvasState();
+      rememberCanvasHistory();
       renderCanvas();
     }
     return;
@@ -1674,6 +1730,7 @@ canvasStage?.addEventListener('pointerup', () => {
   if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
     canvasDoc.elements.push(canvasDrawing);
     saveCanvasState();
+    rememberCanvasHistory();
   }
   canvasDrawing = null;
   canvasDraftElement = null;
@@ -1706,6 +1763,8 @@ canvasTextEditor?.addEventListener('keydown', (e) => {
 canvasTextEditor?.addEventListener('blur', finishCanvasTextEdit);
 window.addEventListener('resize', resizeCanvasStage);
 $('canvas-close')?.addEventListener('click', closeCanvas);
+$('canvas-undo')?.addEventListener('click', undoCanvas);
+$('canvas-redo')?.addEventListener('click', redoCanvas);
 $('canvas-reset-view')?.addEventListener('click', () => {
   canvasSession.camera = { x: 0, y: 0, scale: 1 };
   saveCanvasState();
@@ -1737,6 +1796,7 @@ canvasImportFile?.addEventListener('change', async () => {
     canvasDoc = normalizeCanvasDoc(JSON.parse(text));
     canvasSession.camera = { x: 0, y: 0, scale: 1 };
     saveCanvasState();
+    rememberCanvasHistory(true);
     renderCanvas();
     statusText.textContent = 'Canvas imported';
   } catch (err) {
@@ -1746,6 +1806,7 @@ canvasImportFile?.addEventListener('change', async () => {
 $('canvas-clear')?.addEventListener('click', () => {
   canvasDoc = newCanvasDoc();
   saveCanvasState();
+  rememberCanvasHistory(true);
   renderCanvas();
 });
 document.querySelectorAll('[data-canvas-tool]').forEach(btn => {
@@ -2593,6 +2654,8 @@ document.addEventListener('keydown', async (e) => {
   const inCommandInput = document.activeElement === commandInput;
   if (ctrl && shift && key.toLowerCase() === 'f') { e.preventDefault(); openSearchPalette(); }
   else if (ctrl && !shift && key.toLowerCase() === 'p') { e.preventDefault(); openCommandPalette(); }
+  else if (canvasActive && ctrl && !shift && key.toLowerCase() === 'z') { e.preventDefault(); undoCanvas(); }
+  else if (canvasActive && ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z'))) { e.preventDefault(); redoCanvas(); }
   else if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
   else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
   else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
