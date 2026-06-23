@@ -1029,7 +1029,7 @@ function showHelpModal() {
     <p>Use <b>Local folder</b> to set a default workspace. From there you can create notes, daily/weekly notes, canvases, quick tasks, recent-file lists, tag/link views, backlinks, and a local links canvas map.</p>
     <p><b>Search</b> supports Loaded, Local folder, and All scopes. Recent search chips are stored locally and can be cleared from the search palette.</p>
     <p><b>Trash</b> keeps deleted drafts and saved files for 30 days. Restore, permanently delete, or empty trash from the Trash view.</p>
-    <p><b>Tasks</b> are plain Markdown checkboxes. The task view can show List, Calendar, or Kanban, with filters for open, due, overdue, waiting, high priority, and done.</p>
+    <p><b>Tasks</b> are plain Markdown checkboxes. The task view can show List, Calendar, or Kanban, with filters for open, due, overdue, waiting, high priority, and done. Export ICS creates a portable calendar todo file.</p>
     <p><b>Canvas</b> uses lightweight local JSON. Select moves elements, color/width edit selected shapes, grid/snap/minimap help alignment, and Write updates the active .canvas/JSON/draft document.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Shortcuts</h3>
     <p><kbd>Ctrl+P</kbd> Command palette &nbsp; <kbd>Ctrl+N</kbd> New &nbsp; <kbd>Ctrl+O</kbd> Open &nbsp; <kbd>Ctrl+S</kbd> Save &nbsp; <kbd>Ctrl+W</kbd> Close</p>
@@ -1056,6 +1056,7 @@ function commandItems() {
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'tasks', icon: 'T', title: 'Tasks', hint: 'List, calendar, and kanban from loaded Markdown tasks', run: () => showTasksView() },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
+    { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'canvas', icon: 'C', title: 'Canvas draft', hint: 'Open the local infinite canvas draft', run: openCanvas },
     { id: 'canvas-select', icon: 'CS', title: 'Canvas select tool', hint: 'Select and move existing canvas elements', run: () => { openCanvas(); setCanvasTool('select'); } },
@@ -2061,6 +2062,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
       <button class="task-tab push" data-task-add>+ Task</button>
+      <button class="task-tab" data-task-export>Export ICS</button>
     </div>
     ${renderTaskControls(tasks, visibleTasks)}
     ${body}
@@ -2128,6 +2130,77 @@ async function addQuickTask() {
   renderSession(await window.go.main.App.GetSession());
   statusText.textContent = 'Task added to Tasks';
   await showTasksView(taskViewMode);
+}
+
+function icsEscape(value) {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+}
+
+function icsTimestamp(date = new Date()) {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+function icsFoldLine(line) {
+  const text = String(line || '');
+  const parts = [];
+  for (let i = 0; i < text.length; i += 74) {
+    parts.push((i ? ' ' : '') + text.slice(i, i + 74));
+  }
+  return parts.join('\r\n');
+}
+
+function taskIcsUid(task, index) {
+  const seed = `${task.path}|${task.line}|${task.text}|${task.due}|${index}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  return `markpad-task-${Math.abs(hash)}-${index}@local`;
+}
+
+function tasksToIcs(tasks) {
+  const stamp = icsTimestamp();
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Markpad//Local Tasks//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+  tasks.forEach((task, index) => {
+    lines.push('BEGIN:VTODO');
+    lines.push(`UID:${taskIcsUid(task, index)}`);
+    lines.push(`DTSTAMP:${stamp}`);
+    lines.push(`SUMMARY:${icsEscape(task.text || 'Task')}`);
+    lines.push(`STATUS:${task.checked ? 'COMPLETED' : 'NEEDS-ACTION'}`);
+    if (task.checked) lines.push(`COMPLETED:${stamp}`);
+    if (task.due) lines.push(`DUE;VALUE=DATE:${String(task.due).replace(/-/g, '')}`);
+    const description = [
+      task.noteTitle ? `Source: ${task.noteTitle}` : '',
+      task.path ? `Path: ${task.path}` : '',
+      Number.isFinite(task.line) ? `Line: ${task.line + 1}` : '',
+      task.priority ? `Priority: ${task.priority}` : '',
+      task.waiting ? 'Waiting: yes' : '',
+      (task.tags || []).length ? `Tags: ${(task.tags || []).join(', ')}` : '',
+    ].filter(Boolean).join('\n');
+    if (description) lines.push(`DESCRIPTION:${icsEscape(description)}`);
+    if ((task.tags || []).length) lines.push(`CATEGORIES:${icsEscape((task.tags || []).join(','))}`);
+    lines.push('END:VTODO');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFoldLine).join('\r\n') + '\r\n';
+}
+
+async function exportTasksIcs() {
+  const tasks = await collectLoadedTasks();
+  if (!tasks.length) {
+    statusText.textContent = 'No tasks to export';
+    return;
+  }
+  downloadText('markpad-tasks.ics', 'text/calendar', tasksToIcs(tasks));
+  statusText.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} exported as ICS`;
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -4217,6 +4290,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAdd = e.target.closest('[data-task-add]');
   if (taskAdd) await addQuickTask();
+  const taskExport = e.target.closest('[data-task-export]');
+  if (taskExport) await exportTasksIcs();
   const taskFilterBtn = e.target.closest('[data-task-filter]');
   if (taskFilterBtn) {
     taskFilter = taskFilterBtn.dataset.taskFilter || 'all';
