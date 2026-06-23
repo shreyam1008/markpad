@@ -3303,6 +3303,7 @@ function commandItems() {
     { id: 'tasks-starter-project', icon: 'TSP', title: 'Task starter: project kickoff', hint: 'Append a portable Markdown project kickoff checklist', run: () => addTaskStarterTemplate('project', 'Project kickoff') },
     { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
     { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
+    { id: 'tasks-to-canvas', icon: 'T2C', title: 'Send visible tasks to canvas', hint: 'Append the current filtered task view as a lightweight canvas board', run: insertVisibleTasksCanvasBoard },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'copy-tasks-ics', icon: 'CIC', title: 'Copy visible tasks ICS', hint: 'Copy the current filtered task view as portable calendar text', run: copyVisibleTasksIcs },
     { id: 'export-tasks-md', icon: 'MDT', title: 'Export visible tasks Markdown', hint: 'Download the current filtered task view as portable Markdown', run: exportTasksMarkdown },
@@ -6697,6 +6698,77 @@ function insertCanvasStarterTemplate(kind, label) {
   renderCanvas();
   updateCanvasSelectionButtons();
   statusText.textContent = `${label} canvas starter inserted`;
+}
+
+function canvasTaskCardColor(task) {
+  const priority = taskPriorityClass(task);
+  if (task.checked) return '#16a34a';
+  if (task.waiting) return '#d97706';
+  if (priority === 'urgent' || priority === 'high') return '#dc2626';
+  if (priority === 'medium') return '#2563eb';
+  if (priority === 'low') return '#6f6230';
+  return '#2f6f61';
+}
+
+function compactCanvasTaskText(task) {
+  const prefix = task.checked ? '[x]' : '[ ]';
+  const text = String(task.text || 'Task').replace(/\s+/g, ' ').trim();
+  return `${prefix} ${text.length > 42 ? `${text.slice(0, 39)}...` : text}`;
+}
+
+function compactCanvasTaskMeta(task) {
+  const bits = [];
+  if (task.due) bits.push(`due:${task.due}`);
+  if (task.priority) bits.push(`!${task.priority}`);
+  if (task.waiting) bits.push('@waiting');
+  if (task.noteTitle) bits.push(task.noteTitle);
+  return bits.join(' · ').slice(0, 52);
+}
+
+async function insertVisibleTasksCanvasBoard() {
+  const tasks = visibleTasksForView(await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  const visible = tasks.slice(0, 24);
+  const columns = [
+    ['today', 'Today'],
+    ['upcoming', 'Upcoming'],
+    ['waiting', 'Waiting'],
+    ['done', 'Done'],
+  ];
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `Task board · ${visible.length}${tasks.length > visible.length ? ` of ${tasks.length}` : ''} visible`, 18, '#2f6f61'),
+  ];
+  columns.forEach(([status, label], colIndex) => {
+    const x = origin.x + colIndex * 250;
+    const y = origin.y;
+    const colTasks = visible.filter(task => taskStatus(task) === status);
+    const height = Math.max(180, 64 + colTasks.length * 92);
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 220, h: height, stroke: '#6b6e68', width: 2 });
+    elements.push(canvasTemplateText(x + 16, y + 34, `${label} (${colTasks.length})`, 17, '#1f2937'));
+    colTasks.forEach((task, taskIndex) => {
+      const cardY = y + 62 + taskIndex * 92;
+      const stroke = canvasTaskCardColor(task);
+      elements.push({ id: canvasId(), type: 'rect', x: x + 14, y: cardY, w: 192, h: 74, stroke, width: 2 });
+      elements.push(canvasTemplateText(x + 26, cardY + 28, compactCanvasTaskText(task), 13, stroke));
+      const meta = compactCanvasTaskMeta(task);
+      if (meta) elements.push(canvasTemplateText(x + 26, cardY + 52, meta, 10, '#6b6e68'));
+    });
+  });
+  if (tasks.length > visible.length) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 470, `${tasks.length - visible.length} additional visible tasks omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${visible.length} visible task${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
 function setCanvasZoomPreset(scale) {
