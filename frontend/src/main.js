@@ -3978,6 +3978,7 @@ function commandItems() {
     { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
     { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
     { id: 'tasks-to-canvas', icon: 'T2C', title: 'Send visible tasks to canvas', hint: 'Append the current filtered task view as a lightweight canvas board', run: insertVisibleTasksCanvasBoard },
+    { id: 'task-agenda-to-canvas', icon: 'A2C', title: 'Send task agenda to canvas', hint: 'Append overdue, today, waiting, and high-priority tasks as a lightweight canvas board', run: insertTaskAgendaCanvasBoard },
     { id: 'tasks-to-canvas-guide', icon: 'TCG', title: 'Task canvas guide', hint: 'Explain task-to-canvas filters, 24-task cap, local JSON cards, and Markdown source of truth', run: showTaskCanvasGuide },
     { id: 'export-tasks-ics', icon: 'ICS', title: 'Export tasks ICS', hint: 'Download Markdown tasks as a portable calendar todo file', run: exportTasksIcs },
     { id: 'copy-tasks-ics', icon: 'CIC', title: 'Copy visible tasks ICS', hint: 'Copy the current filtered task view as portable calendar text', run: copyVisibleTasksIcs },
@@ -6210,6 +6211,7 @@ async function showTaskAgenda() {
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-task-agenda-md>Copy Markdown</button>
       <button data-export-task-agenda-md>Export Markdown</button>
+      <button data-task-agenda-canvas>Send to Canvas</button>
     </div>
     <p class="diag-note">Agenda is a derived local view over Markdown checkbox lines. It does not create a task database or rewrite task files.</p>
   `, true);
@@ -7870,6 +7872,54 @@ async function insertVisibleTasksCanvasBoard() {
   renderCanvas();
   updateCanvasSelectionButtons();
   statusText.textContent = `${visible.length} visible task${visible.length === 1 ? '' : 's'} sent to canvas`;
+}
+
+function insertTaskAgendaCanvasBoard() {
+  const groups = taskAgendaGroups();
+  const buckets = [
+    ['Overdue', groups.overdue, '#dc2626'],
+    ['Due today', groups.dueToday, '#2563eb'],
+    ['Waiting', groups.waiting, '#d97706'],
+    ['High priority', groups.high, '#6f6230'],
+  ];
+  const total = buckets.reduce((sum, [, tasks]) => sum + tasks.length, 0);
+  if (!total) {
+    statusText.textContent = 'No agenda tasks to send to canvas';
+    return;
+  }
+  openCanvas();
+  const origin = canvasTemplateOrigin();
+  let remaining = 24;
+  const elements = [
+    canvasTemplateText(origin.x, origin.y - 28, `Task agenda · ${Math.min(total, 24)}${total > 24 ? ` of ${total}` : ''} task${total === 1 ? '' : 's'}`, 18, '#2f6f61'),
+  ];
+  buckets.forEach(([label, tasks, stroke], colIndex) => {
+    const x = origin.x + colIndex * 250;
+    const y = origin.y;
+    const visible = tasks.slice(0, Math.max(0, remaining));
+    remaining -= visible.length;
+    const height = Math.max(180, 64 + visible.length * 92);
+    elements.push({ id: canvasId(), type: 'rect', x, y, w: 220, h: height, stroke, width: 2 });
+    elements.push(canvasTemplateText(x + 16, y + 34, `${label} (${tasks.length})`, 17, stroke));
+    visible.forEach((task, taskIndex) => {
+      const cardY = y + 62 + taskIndex * 92;
+      const cardStroke = canvasTaskCardColor(task);
+      elements.push({ id: canvasId(), type: 'rect', x: x + 14, y: cardY, w: 192, h: 74, stroke: cardStroke, width: 2 });
+      elements.push(canvasTemplateText(x + 26, cardY + 28, compactCanvasTaskText(task), 13, cardStroke));
+      const meta = compactCanvasTaskMeta(task);
+      if (meta) elements.push(canvasTemplateText(x + 26, cardY + 52, meta, 10, '#6b6e68'));
+    });
+  });
+  if (total > 24) {
+    elements.push(canvasTemplateText(origin.x, origin.y + 470, `${total - 24} additional agenda tasks omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
+  }
+  canvasDoc.elements.push(...elements);
+  canvasSelectedIndex = canvasDoc.elements.length - elements.length;
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  updateCanvasSelectionButtons();
+  statusText.textContent = `${Math.min(total, 24)} agenda task${Math.min(total, 24) === 1 ? '' : 's'} sent to canvas`;
 }
 
 function compactCanvasSearchTitle(result) {
@@ -10936,6 +10986,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyTaskAgendaMdBtn) await copyTaskAgendaMarkdown();
   const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
   if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
+  const taskAgendaCanvasBtn = e.target.closest('[data-task-agenda-canvas]');
+  if (taskAgendaCanvasBtn) insertTaskAgendaCanvasBoard();
   const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
   if (openLocalFootprintBtn) await showLocalFootprint();
   const clearLoadedSearchCacheBtn = e.target.closest('[data-clear-loaded-search-cache]');
