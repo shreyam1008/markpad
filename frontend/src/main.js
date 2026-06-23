@@ -40,6 +40,7 @@ let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let taskFilter = localStorage.getItem('markpad-task-filter') || 'all';
 let taskQuery = localStorage.getItem('markpad-task-query') || '';
+let localFolderQuery = '';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
 let focusMode = localStorage.getItem('markpad-focus') === '1';
@@ -1387,7 +1388,20 @@ function renderLocalFolderOverview(overview) {
   `;
 }
 
+function renderLocalFolderSearchBox(query, enabled) {
+  const disabled = enabled ? '' : 'disabled';
+  return `
+    <div class="local-search-row">
+      <input data-local-folder-query value="${escapeHtml(query || '')}" placeholder="Search local folder text files" ${disabled} />
+      <button data-local-folder-search-apply ${disabled}>Search</button>
+      <button data-local-folder-search-clear ${(enabled && query) ? '' : 'disabled'}>Clear</button>
+    </div>
+  `;
+}
+
 async function showLocalFolder(query = '') {
+  query = String(query || '').trim();
+  localFolderQuery = query;
   if (!window.go?.main?.App?.GetLocalFolder) {
     showModal('Local Folder', '<div class="local-empty">Local folder backend unavailable in this build.</div>');
     return;
@@ -1409,6 +1423,7 @@ async function showLocalFolder(query = '') {
   if (info.path && !info.missing && window.go?.main?.App?.GetLocalFolderOverview) {
     overview = renderLocalFolderOverview(await window.go.main.App.GetLocalFolderOverview());
   }
+  const searchBox = renderLocalFolderSearchBox(query, !!info.path && !info.missing);
   showModal('Local Folder', `
     <div class="local-head">
       <div><strong>${escapeHtml(info.path || 'No folder selected')}</strong><span>${info.missing ? 'Missing' : info.path ? 'Default local workspace' : 'Choose a folder to start'}</span></div>
@@ -1423,6 +1438,7 @@ async function showLocalFolder(query = '') {
       </div>
     </div>
     ${overview}
+    ${searchBox}
     ${content}
     <p class="local-note">This is a local-first folder layer only. It does not sync and does not build a persistent index.</p>
   `);
@@ -3583,16 +3599,30 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localCanvas && !localCanvas.disabled) await createLocalFolderCanvas();
   const localSearch = e.target.closest('[data-local-folder-search]');
   if (localSearch && !localSearch.disabled) await searchLocalFolderPrompt();
+  const localSearchApply = e.target.closest('[data-local-folder-search-apply]');
+  if (localSearchApply && !localSearchApply.disabled) {
+    const input = modalBodyEl.querySelector('[data-local-folder-query]');
+    await showLocalFolder(String(input?.value || '').trim());
+  }
+  const localSearchClear = e.target.closest('[data-local-folder-search-clear]');
+  if (localSearchClear && !localSearchClear.disabled) await showLocalFolder('');
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
 });
 
 modalBodyEl.addEventListener('keydown', async (e) => {
-  if (e.key !== 'Enter' || !e.target.closest('[data-task-search]')) return;
-  e.preventDefault();
-  taskQuery = String(e.target.value || '').trim();
-  localStorage.setItem('markpad-task-query', taskQuery);
-  await showTasksView(taskViewMode);
+  if (e.key !== 'Enter') return;
+  if (e.target.closest('[data-task-search]')) {
+    e.preventDefault();
+    taskQuery = String(e.target.value || '').trim();
+    localStorage.setItem('markpad-task-query', taskQuery);
+    await showTasksView(taskViewMode);
+    return;
+  }
+  if (e.target.closest('[data-local-folder-query]')) {
+    e.preventDefault();
+    await showLocalFolder(String(e.target.value || '').trim());
+  }
 });
 
 

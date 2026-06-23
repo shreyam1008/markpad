@@ -681,6 +681,47 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+.local-search-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 7px;
+  margin: 0 0 10px;
+}
+.local-search-row input {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--editor);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  outline: none;
+}
+.local-search-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.local-search-row button {
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.local-search-row button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
+.local-search-row button:disabled,
+.local-search-row input:disabled {
+  opacity: .5;
+  cursor: default;
+}
 .local-summary { color: var(--muted); font-size: 11px; font-weight: 800; margin: 0 0 8px; }
 .local-list { display: flex; flex-direction: column; gap: 7px; }
 .local-row {
@@ -708,6 +749,7 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 @media (max-width: 580px) {
   .local-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .local-search-row { grid-template-columns: 1fr; }
   .local-head { flex-direction: column; }
   .local-actions { justify-content: flex-start; }
 }
