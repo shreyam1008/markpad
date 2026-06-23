@@ -1019,7 +1019,14 @@ async function collectLocalSearchResults(query, token, limit) {
     }));
     return { results, meta: `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}` };
   }
-  const hits = await window.go.main.App.SearchLocalFolder(q, limit || 60);
+  let hits = [];
+  let diagnostics = null;
+  if (window.go.main.App.SearchLocalFolderWithStats) {
+    diagnostics = await window.go.main.App.SearchLocalFolderWithStats(q, limit || 60);
+    hits = diagnostics?.hits || [];
+  } else {
+    hits = await window.go.main.App.SearchLocalFolder(q, limit || 60);
+  }
   if (token !== searchToken) return { results: [] };
   const results = (hits || []).map(hit => ({
     source: 'local',
@@ -1034,7 +1041,15 @@ async function collectLocalSearchResults(query, token, limit) {
     line: hit.line || 0,
     snippet: hit.snippet || '',
   }));
-  return { results, meta: `${results.length} local hit${results.length === 1 ? '' : 's'} from ${info.path}` };
+  const metaParts = [`${results.length} local hit${results.length === 1 ? '' : 's'}`];
+  if (diagnostics) {
+    metaParts.push(`${Number(diagnostics.searchable || 0)} searched`);
+    metaParts.push(`${Number(diagnostics.scanned || 0)} scanned`);
+    if (Number(diagnostics.oversize || 0)) metaParts.push(`${Number(diagnostics.oversize || 0)} large skipped`);
+    if (Number(diagnostics.skipped || 0)) metaParts.push(`${Number(diagnostics.skipped || 0)} skipped`);
+    if (diagnostics.capped) metaParts.push('top matches shown');
+  }
+  return { results, meta: `${metaParts.join(' · ')} from ${info.path}` };
 }
 
 function searchHighlightTerms(query) {

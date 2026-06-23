@@ -45,6 +45,17 @@ type LocalFolderSearchHit struct {
 	MatchKind string `json:"matchKind"`
 }
 
+type LocalFolderSearchResult struct {
+	Hits       []LocalFolderSearchHit `json:"hits"`
+	Scanned    int                    `json:"scanned"`
+	Searchable int                    `json:"searchable"`
+	Skipped    int                    `json:"skipped"`
+	Oversize   int                    `json:"oversize"`
+	Candidates int                    `json:"candidates"`
+	Limit      int                    `json:"limit"`
+	Capped     bool                   `json:"capped"`
+}
+
 type localFolderSettings struct {
 	DefaultFolder string `json:"defaultFolder"`
 }
@@ -135,17 +146,23 @@ func (a *App) ListLocalFolderFiles(limit int) []LocalFolderFile {
 }
 
 func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit {
+	return a.SearchLocalFolderWithStats(query, limit).Hits
+}
+
+func (a *App) SearchLocalFolderWithStats(query string, limit int) LocalFolderSearchResult {
+	result := LocalFolderSearchResult{Hits: []LocalFolderSearchHit{}}
 	root := a.GetLocalFolder()
 	if root.Path == "" || root.Missing {
-		return []LocalFolderSearchHit{}
+		return result
 	}
 	plan := parseLocalFolderSearchQuery(query)
 	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && !plan.HasFilters {
-		return []LocalFolderSearchHit{}
+		return result
 	}
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
+	result.Limit = limit
 	candidateLimit := maxInt(limit*4, limit)
 	if candidateLimit > localFolderSearchPool {
 		candidateLimit = localFolderSearchPool
@@ -157,33 +174,50 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 		}
 		if entry.IsDir() {
 			if shouldSkipLocalDir(entry.Name()) && path != root.Path {
+				result.Skipped++
 				return filepath.SkipDir
 			}
 			return nil
 		}
+		result.Scanned++
 		kind := fileKind(path)
 		if isReadOnlyPath(path) || kind == "archive" {
+			result.Skipped++
 			return nil
 		}
 		info, err := entry.Info()
-			if err != nil || info.Size() > localFolderSearchCap {
-				return nil
+		if err != nil {
+			result.Skipped++
+			return nil
+		}
+		if info.Size() > localFolderSearchCap {
+			result.Skipped++
+			result.Oversize++
+			return nil
+		}
+		result.Searchable++
+		hit, ok := searchLocalFile(root.Path, path, kind, plan)
+		if ok {
+			result.Candidates++
+			hits = append(hits, hit)
+			if len(hits) > candidateLimit {
+				sortLocalFolderSearchHits(hits)
+				hits = hits[:candidateLimit]
+				result.Capped = true
 			}
-			hit, ok := searchLocalFile(root.Path, path, kind, plan)
-			if ok {
-				hits = append(hits, hit)
-				if len(hits) > candidateLimit {
-					sortLocalFolderSearchHits(hits)
-					hits = hits[:candidateLimit]
-				}
-			}
+		}
 		return nil
 	})
 	sortLocalFolderSearchHits(hits)
 	if len(hits) > limit {
-		return hits[:limit]
+		hits = hits[:limit]
+		result.Capped = true
 	}
-	return hits
+	if result.Candidates > len(hits) {
+		result.Capped = true
+	}
+	result.Hits = hits
+	return result
 }
 
 func sortLocalFolderSearchHits(hits []LocalFolderSearchHit) {
