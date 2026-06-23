@@ -8850,6 +8850,14 @@ function showSelectedCanvasElementInspector() {
       <button data-copy-selected-canvas-svg>Copy SVG</button>
       <button data-insert-selected-canvas-md>Insert into Note</button>
       <button data-fit-selected-canvas-element>Fit Selection</button>
+      <button data-selected-canvas-stroke="#1f2937" data-selected-canvas-stroke-label="ink">Ink</button>
+      <button data-selected-canvas-stroke="#2563eb" data-selected-canvas-stroke-label="blue">Blue</button>
+      <button data-selected-canvas-stroke="#dc2626" data-selected-canvas-stroke-label="red">Red</button>
+      <button data-selected-canvas-stroke="#16a34a" data-selected-canvas-stroke-label="green">Green</button>
+      <button data-selected-canvas-stroke="#d97706" data-selected-canvas-stroke-label="amber">Amber</button>
+      <button data-selected-canvas-width-delta="-1">Thinner</button>
+      <button data-selected-canvas-width-delta="1">Thicker</button>
+      <button data-duplicate-selected-canvas>Duplicate</button>
     </div>
     <p class="diag-note">Inspector reads the selected element already held in the canvas document. It does not export the whole canvas or create new persistent state.</p>
   `);
@@ -11422,6 +11430,12 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (insertSelectedCanvasMdBtn) insertSelectedCanvasElementMarkdownIntoNote();
   const fitSelectedCanvasElementBtn = e.target.closest('[data-fit-selected-canvas-element]');
   if (fitSelectedCanvasElementBtn) fitCanvasToSelection();
+  const selectedCanvasStrokeBtn = e.target.closest('[data-selected-canvas-stroke]');
+  if (selectedCanvasStrokeBtn) setCanvasStrokePreset(selectedCanvasStrokeBtn.dataset.selectedCanvasStroke, selectedCanvasStrokeBtn.dataset.selectedCanvasStrokeLabel || 'custom');
+  const selectedCanvasWidthDeltaBtn = e.target.closest('[data-selected-canvas-width-delta]');
+  if (selectedCanvasWidthDeltaBtn) adjustSelectedCanvasWidth(Number(selectedCanvasWidthDeltaBtn.dataset.selectedCanvasWidthDelta || 0));
+  const duplicateSelectedCanvasBtn = e.target.closest('[data-duplicate-selected-canvas]');
+  if (duplicateSelectedCanvasBtn) duplicateSelectedCanvasElement();
   const canvasInventoryOpenBtn = e.target.closest('[data-canvas-inventory-open]');
   if (canvasInventoryOpenBtn) showCanvasInventory();
   const canvasElementInspectorOpenBtn = e.target.closest('[data-canvas-element-inspector-open]');
