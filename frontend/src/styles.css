@@ -180,6 +180,87 @@ html[data-theme] .doc-path { background: var(--hover); color: var(--muted); }
 html[data-theme] ::-webkit-scrollbar-thumb { background: var(--border); }
 html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
+/* Shared polish: zero assets, theme-native, reduced-motion safe */
+.icon-btn:focus-visible,
+.tb:focus-visible,
+.view-btn:focus-visible,
+.theme-chip:focus-visible,
+.pref-theme:focus-visible,
+.search-scope button:focus-visible,
+.search-filter-hints button:focus-visible,
+.search-recents button:focus-visible,
+.search-head button:focus-visible,
+.command-head button:focus-visible,
+.command-row:focus-visible,
+.task-filter:focus-visible,
+.task-search-row button:focus-visible,
+.canvas-tool:focus-visible,
+.canvas-close:focus-visible,
+.tag-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.search-palette,
+.command-palette,
+.canvas-shell,
+#modal-overlay > div {
+  box-shadow: 0 24px 70px var(--shadow), 0 1px 0 rgba(255,255,255,.22) inset;
+}
+
+.search-row,
+.command-row,
+.task-filter,
+.canvas-tool,
+.theme-chip,
+.pref-theme,
+.tag-chip {
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;
+}
+
+.search-row:hover,
+.search-row.active,
+.command-row:hover,
+.command-row.active,
+.task-filter:hover,
+.task-filter.active,
+.canvas-tool:hover,
+.canvas-tool.active,
+.theme-chip:hover,
+.pref-theme:hover,
+.pref-theme.active,
+.tag-chip:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-row,
+  .command-row,
+  .task-filter,
+  .canvas-tool,
+  .theme-chip,
+  .pref-theme,
+  .tag-chip {
+    transition: none;
+  }
+
+  .search-row:hover,
+  .search-row.active,
+  .command-row:hover,
+  .command-row.active,
+  .task-filter:hover,
+  .task-filter.active,
+  .canvas-tool:hover,
+  .canvas-tool.active,
+  .theme-chip:hover,
+  .pref-theme:hover,
+  .pref-theme.active,
+  .tag-chip:hover {
+    transform: none;
+  }
+}
+
 /* Toolbar icon buttons */
 .icon-btn {
   width: 30px; height: 30px; border: 1px solid transparent; border-radius: 8px;
