@@ -38,6 +38,7 @@ let searchLastQuery = '';
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
+let commandRecentIds = [];
 let searchScope = localStorage.getItem('markpad-search-scope') || 'loaded';
 let currentTheme = localStorage.getItem('markpad-theme') || 'paper';
 let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
@@ -175,10 +176,13 @@ const THEMES = [
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
 const SEARCH_RECENTS_LIMIT = 8;
+const COMMAND_RECENTS_KEY = 'markpad-command-recents-v1';
+const COMMAND_RECENTS_LIMIT = 8;
 const LOCAL_SETTINGS_KEYS = [
   'markpad-theme',
   'markpad-search-scope',
   'markpad-search-recents-v1',
+  'markpad-command-recents-v1',
   'markpad-task-view',
   'markpad-task-filter',
   'markpad-task-query',
@@ -262,7 +266,31 @@ function clearSearchRecents() {
   if (statusText) statusText.textContent = 'Search recents cleared';
 }
 
+function loadCommandRecentIds() {
+  try {
+    const values = JSON.parse(localStorage.getItem(COMMAND_RECENTS_KEY) || '[]');
+    return Array.isArray(values) ? values.filter(Boolean).slice(0, COMMAND_RECENTS_LIMIT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberCommand(item) {
+  if (!item?.id) return;
+  commandRecentIds = [item.id, ...commandRecentIds.filter(id => id !== item.id)].slice(0, COMMAND_RECENTS_LIMIT);
+  localStorage.setItem(COMMAND_RECENTS_KEY, JSON.stringify(commandRecentIds));
+}
+
+function commandRecentRank(id) {
+  return commandRecentIds.indexOf(id);
+}
+
+function isRecentCommand(id) {
+  return commandRecentRank(id) >= 0;
+}
+
 searchRecentQueries = loadSearchRecentQueries();
+commandRecentIds = loadCommandRecentIds();
 
 function applyFocusMode(silent) {
   document.body.classList.toggle('markpad-focus', focusMode);
@@ -1677,7 +1705,9 @@ function commandItems() {
 }
 
 function commandScore(item, query) {
-  if (!query) return 1;
+  const recentRank = commandRecentRank(item.id);
+  const recentBoost = recentRank >= 0 ? COMMAND_RECENTS_LIMIT - recentRank : 0;
+  if (!query) return 1 + recentBoost * 10 + (item.kbd ? 2 : 0);
   const haystack = `${item.title} ${item.hint} ${item.id}`.toLowerCase();
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!terms.every(term => haystack.includes(term))) return 0;
@@ -1687,7 +1717,7 @@ function commandScore(item, query) {
     else if (item.title.toLowerCase().includes(term)) score += 18;
     else score += 8;
   }
-  return score;
+  return score + recentBoost * 4;
 }
 
 function renderCommandPalette() {
@@ -1706,12 +1736,13 @@ function renderCommandPalette() {
   }
   items.forEach((item, index) => {
     const row = el('button', `command-row${index === commandActiveIndex ? ' active' : ''}`);
+    const recent = isRecentCommand(item.id);
     row.type = 'button';
     row.dataset.commandId = item.id;
     row.innerHTML = `
       <span class="command-icon">${escapeHtml(item.icon)}</span>
       <span class="command-body"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.hint)}</span></span>
-      ${item.kbd ? `<span class="command-kbd">${escapeHtml(item.kbd)}</span>` : '<span></span>'}`;
+      ${recent ? '<span class="command-recent">Recent</span>' : item.kbd ? `<span class="command-kbd">${escapeHtml(item.kbd)}</span>` : '<span></span>'}`;
     row.addEventListener('mousemove', () => setCommandActive(index));
     row.addEventListener('click', () => runCommand(item));
     commandResults.appendChild(row);
@@ -1740,6 +1771,7 @@ function closeCommandPalette() {
 
 async function runCommand(item) {
   closeCommandPalette();
+  rememberCommand(item);
   await item.run();
 }
 
