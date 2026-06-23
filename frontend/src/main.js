@@ -1257,6 +1257,8 @@ function commandItems() {
     { id: 'canvas-grid', icon: 'CG', title: canvasGridVisible ? 'Hide canvas grid' : 'Show canvas grid', hint: 'Toggle the lightweight canvas alignment grid', run: () => { openCanvas(); toggleCanvasGrid(); } },
     { id: 'canvas-snap', icon: 'CSN', title: canvasSnapToGrid ? 'Disable canvas snap' : 'Enable canvas snap', hint: 'Snap new shape and text points to the canvas grid', run: () => { openCanvas(); toggleCanvasSnap(); } },
     { id: 'canvas-minimap', icon: 'CM', title: canvasMinimapVisible ? 'Hide canvas minimap' : 'Show canvas minimap', hint: 'Toggle the lightweight canvas navigation minimap', run: () => { openCanvas(); toggleCanvasMinimap(); } },
+    { id: 'canvas-duplicate', icon: 'CDU', title: 'Duplicate selected canvas element', hint: 'Copy the selected canvas element with a small offset', run: duplicateSelectedCanvasElement },
+    { id: 'canvas-delete', icon: 'CX', title: 'Delete selected canvas element', hint: 'Remove the currently selected canvas element', run: deleteSelectedCanvasElement },
     { id: 'canvas-layer-forward', icon: 'LF', title: 'Canvas bring forward', hint: 'Move the selected canvas element one layer forward', run: () => moveSelectedCanvasLayer('forward') },
     { id: 'canvas-layer-backward', icon: 'LB', title: 'Canvas send backward', hint: 'Move the selected canvas element one layer backward', run: () => moveSelectedCanvasLayer('backward') },
     { id: 'canvas-layer-front', icon: 'TF', title: 'Canvas bring to front', hint: 'Move the selected canvas element above all others', run: () => moveSelectedCanvasLayer('front') },
@@ -2750,6 +2752,7 @@ function updateCanvasStatus() {
   const count = (canvasDoc?.elements || []).length;
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
   canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}%${canvasSelectionStatus(count)}`;
+  updateCanvasSelectionButtons();
 }
 
 function canvasSelectionStatus(count) {
@@ -2880,6 +2883,15 @@ function updateCanvasHistoryButtons() {
   const redo = $('canvas-redo');
   if (undo) undo.disabled = canvasHistoryIndex <= 0;
   if (redo) redo.disabled = canvasHistoryIndex < 0 || canvasHistoryIndex >= canvasHistory.length - 1;
+  updateCanvasSelectionButtons();
+}
+
+function updateCanvasSelectionButtons() {
+  const duplicate = $('canvas-duplicate');
+  const remove = $('canvas-delete');
+  const disabled = !hasCanvasSelection();
+  if (duplicate) duplicate.disabled = disabled;
+  if (remove) remove.disabled = disabled;
 }
 
 function rememberCanvasHistory(force) {
@@ -3532,6 +3544,8 @@ window.addEventListener('resize', resizeCanvasStage);
 $('canvas-close')?.addEventListener('click', closeCanvas);
 $('canvas-undo')?.addEventListener('click', undoCanvas);
 $('canvas-redo')?.addEventListener('click', redoCanvas);
+$('canvas-duplicate')?.addEventListener('click', duplicateSelectedCanvasElement);
+$('canvas-delete')?.addEventListener('click', deleteSelectedCanvasElement);
 $('canvas-reset-view')?.addEventListener('click', resetCanvasView);
 $('canvas-fit')?.addEventListener('click', fitCanvasToContent);
 $('canvas-zoom-out')?.addEventListener('click', () => zoomCanvasBy(1 / 1.16));
