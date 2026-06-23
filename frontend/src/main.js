@@ -991,14 +991,14 @@ async function restoreDraftTrash(itemId) {
   statusText.textContent = 'Draft restored from Trash';
 }
 
-function deleteDraftTrashItem(itemId) {
+async function deleteDraftTrashItem(itemId) {
   saveDraftTrash(loadDraftTrash().filter(entry => entry.id !== itemId));
-  showTrashView();
+  await showTrashView();
 }
 
-function emptyDraftTrash() {
+async function emptyDraftTrash() {
   saveDraftTrash([]);
-  showTrashView();
+  await showTrashView();
 }
 
 function renderTrashRows(items) {
@@ -1017,15 +1017,51 @@ function renderTrashRows(items) {
     </div>`).join('')}</div>`;
 }
 
-function showTrashView() {
+async function loadFileTrash() {
+  try {
+    if (window.go?.main?.App?.ListFileTrash) return await window.go.main.App.ListFileTrash();
+  } catch {}
+  return [];
+}
+
+function renderFileTrashRows(items) {
+  if (!items.length) return '<div class="trash-empty">No saved files in Trash.</div>';
+  return `<div class="trash-list">${items.map(item => `
+    <div class="trash-row">
+      <div class="trash-body">
+        <strong>${escapeHtml(item.title || basename(item.originalPath) || 'File')}</strong>
+        <span>Deleted ${escapeHtml(new Date(item.deletedAt).toLocaleString())} · ${daysLeft(item.deletedAt)} day${daysLeft(item.deletedAt) === 1 ? '' : 's'} left · ${escapeHtml(typeLabel(getFileType(item.originalPath, item.kind)))}</span>
+        <p>${escapeHtml(item.originalPath || '')} · ${formatBytes(item.size || 0)}</p>
+      </div>
+      <div class="trash-actions">
+        <button data-file-trash-restore="${escapeHtml(item.id)}">Restore</button>
+        <button data-file-trash-delete="${escapeHtml(item.id)}" class="danger">Delete</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function emptyAllTrash() {
+  saveDraftTrash([]);
+  try {
+    if (window.go?.main?.App?.EmptyFileTrash) await window.go.main.App.EmptyFileTrash();
+  } catch {}
+  await showTrashView();
+}
+
+async function showTrashView() {
   const items = loadDraftTrash();
+  const fileItems = await loadFileTrash();
+  const total = items.length + fileItems.length;
   showModal('Trash', `
     <div class="trash-head">
-      <span>${items.length} draft${items.length === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
-      <button data-trash-empty ${items.length ? '' : 'disabled'}>Empty Trash</button>
+      <span>${total} item${total === 1 ? '' : 's'} · auto-cleanup after ${DRAFT_TRASH_DAYS} days</span>
+      <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
+    <h3 style="margin:8px 0 6px;font-size:12px;font-weight:900;">Saved files</h3>
+    ${renderFileTrashRows(fileItems)}
+    <h3 style="margin:12px 0 6px;font-size:12px;font-weight:900;">Drafts</h3>
     ${renderTrashRows(items)}
-    <p style="margin-top:10px;color:var(--muted);font-size:11px;">Saved-file trash will be backed by the local filesystem in the Go slice. This view currently protects unsaved drafts.</p>
+    <p style="margin-top:10px;color:var(--muted);font-size:11px;">Saved files are copied into Markpad storage before originals are removed. Restores use the original path or a restored-name fallback if there is a collision.</p>
   `);
 }
 
@@ -1988,7 +2024,7 @@ document.querySelectorAll('[data-canvas-tool]').forEach(btn => {
 });
 function makeNoteRow(note) {
   const isActive = note.id === activeId;
-  const canDelete = !note.path;
+  const canTrash = !note.path || (note.path && !note.dirty);
   const row = el('div', `group flex items-center gap-1.5 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${isActive ? 'bg-selected ring-1 ring-accent/30' : 'hover:bg-hover'}`);
   row.dataset.noteId = note.id;
   row.draggable = true;
@@ -2046,7 +2082,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
-    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canDelete ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canTrash ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
     ctxMenu.style.top = e.clientY + 'px';
     ctxMenu.classList.remove('hidden');
@@ -2246,7 +2282,18 @@ ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () =
 ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
-  if (note && note.path) return;
+  if (!note) return;
+  if (note.path) {
+    if (note.dirty) { statusText.textContent = 'Save or discard changes before deleting this file'; return; }
+    try {
+      renderSession(await window.go.main.App.MoveFileToTrash(ctxNoteId));
+      loadContent(await window.go.main.App.GetActiveContent());
+      statusText.textContent = 'File moved to Trash for 30 days';
+    } catch (err) {
+      statusText.textContent = 'Trash failed: ' + err;
+    }
+    return;
+  }
   await deleteDraftWithTrash(note);
 });
 
@@ -2863,6 +2910,16 @@ document.addEventListener('keydown', async (e) => {
     const note = cachedNotes.find(n => n.id === activeId);
     if (note && !note.path) {
       await deleteDraftWithTrash(note);
+    } else if (note && note.path && !note.dirty && window.go?.main?.App?.MoveFileToTrash) {
+      try {
+        renderSession(await window.go.main.App.MoveFileToTrash(activeId));
+        loadContent(await window.go.main.App.GetActiveContent());
+        statusText.textContent = 'File moved to Trash for 30 days';
+      } catch (err) {
+        statusText.textContent = 'Trash failed: ' + err;
+      }
+    } else if (note && note.path && note.dirty) {
+      statusText.textContent = 'Save or discard changes before deleting this file';
     }
   }
 });
@@ -2995,9 +3052,21 @@ modalBodyEl.addEventListener('click', async (e) => {
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashDelete = e.target.closest('[data-trash-delete]');
-  if (trashDelete) deleteDraftTrashItem(trashDelete.dataset.trashDelete);
+  if (trashDelete) await deleteDraftTrashItem(trashDelete.dataset.trashDelete);
+  const fileTrashRestore = e.target.closest('[data-file-trash-restore]');
+  if (fileTrashRestore && window.go?.main?.App?.RestoreFileTrash) {
+    renderSession(await window.go.main.App.RestoreFileTrash(fileTrashRestore.dataset.fileTrashRestore));
+    loadContent(await window.go.main.App.GetActiveContent());
+    modalOverlay.classList.add('hidden');
+    statusText.textContent = 'File restored from Trash';
+  }
+  const fileTrashDelete = e.target.closest('[data-file-trash-delete]');
+  if (fileTrashDelete && window.go?.main?.App?.DeleteFileTrash) {
+    await window.go.main.App.DeleteFileTrash(fileTrashDelete.dataset.fileTrashDelete);
+    await showTrashView();
+  }
   const trashEmpty = e.target.closest('[data-trash-empty]');
-  if (trashEmpty && !trashEmpty.disabled) emptyDraftTrash();
+  if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
 });
 
 
