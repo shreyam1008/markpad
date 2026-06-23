@@ -1751,6 +1751,48 @@ function firstWildcardMatchIndex(text, values) {
   return { index: -1, length: 0 };
 }
 
+function fuzzySearchMatch(value, pattern) {
+  const text = String(value || '').toLowerCase();
+  const needle = String(pattern || '').toLowerCase().replace(/\s+/g, '');
+  if (needle.length < 2 || !text) return { matched: false, index: -1, length: 0, score: 0 };
+  let start = -1;
+  let last = -1;
+  let cursor = 0;
+  let streak = 0;
+  let bestStreak = 0;
+  let gaps = 0;
+  for (let i = 0; i < text.length && cursor < needle.length; i++) {
+    if (text[i] !== needle[cursor]) continue;
+    if (start < 0) start = i;
+    if (last >= 0 && i !== last + 1) {
+      gaps += i - last - 1;
+      streak = 0;
+    }
+    streak += 1;
+    bestStreak = Math.max(bestStreak, streak);
+    last = i;
+    cursor += 1;
+  }
+  if (cursor !== needle.length) return { matched: false, index: -1, length: 0, score: 0 };
+  const length = Math.max(1, last - start + 1);
+  const density = needle.length / length;
+  const score = Math.round((density * 36) + (bestStreak * 4) - Math.min(18, gaps / 3));
+  return { matched: true, index: start, length, score };
+}
+
+function fuzzyTextMatch(value, pattern) {
+  return fuzzySearchMatch(value, pattern).matched;
+}
+
+function bestFuzzyMatchIndex(value, patterns) {
+  let best = { matched: false, index: -1, length: 0, score: -Infinity };
+  for (const pattern of patterns || []) {
+    const match = fuzzySearchMatch(value, pattern);
+    if (match.matched && match.score > best.score) best = match;
+  }
+  return best.matched ? { index: best.index, length: best.length } : { index: -1, length: 0 };
+}
+
 function parseSearchQuery(query) {
   const raw = String(query || '').trim();
   const parts = raw.match(/-?"[^"]+"|\S+/g) || [];
@@ -1762,6 +1804,8 @@ function parseSearchQuery(query) {
   const excludePhrases = [];
   const wildcards = [];
   const excludeWildcards = [];
+  const fuzzyTerms = [];
+  const excludeFuzzyTerms = [];
   parts.forEach((part) => {
     const negated = part.startsWith('-') && part.length > 1;
     const rawToken = negated ? part.slice(1) : part;
@@ -1795,6 +1839,12 @@ function parseSearchQuery(query) {
       targetFilters.tag.push(token.slice(1).toLowerCase());
       return;
     }
+    if (token.startsWith('~') && token.length > 2) {
+      const fuzzy = token.slice(1).toLowerCase().trim();
+      if (negated) excludeFuzzyTerms.push(fuzzy);
+      else fuzzyTerms.push(fuzzy);
+      return;
+    }
     if (negated) {
       excludeTerms.push(token.toLowerCase());
       return;
@@ -1804,7 +1854,7 @@ function parseSearchQuery(query) {
   const text = textParts.join(' ').trim();
   const lower = text.toLowerCase();
   const hasFilters = Object.values(filters).some(values => values.length > 0);
-  const hasExcludes = excludeTerms.length > 0 || excludePhrases.length > 0 || excludeWildcards.length > 0 || Object.values(excludes).some(values => values.length > 0);
+  const hasExcludes = excludeTerms.length > 0 || excludePhrases.length > 0 || excludeWildcards.length > 0 || excludeFuzzyTerms.length > 0 || Object.values(excludes).some(values => values.length > 0);
   return {
     raw,
     text,
@@ -1817,17 +1867,20 @@ function parseSearchQuery(query) {
     excludeTerms: excludeTerms.filter(Boolean).slice(0, 8),
     excludePhrases: excludePhrases.slice(0, 8),
     excludeWildcards: excludeWildcards.slice(0, 6),
+    fuzzyTerms: fuzzyTerms.filter(Boolean).slice(0, 6),
+    excludeFuzzyTerms: excludeFuzzyTerms.filter(Boolean).slice(0, 6),
     backendQuery: [text, ...phrases.map(phrase => `"${phrase}"`)].filter(Boolean).join(' ').trim(),
     hasFilters,
     hasExcludes,
     hasPhrases: phrases.length > 0,
     hasWildcards: wildcards.length > 0 || excludeWildcards.length > 0,
+    hasFuzzy: fuzzyTerms.length > 0 || excludeFuzzyTerms.length > 0,
     needsContentFilter: filters.tag.length > 0 || filters.task.length > 0,
   };
 }
 
 function searchCandidateMatchesPlan(note, content, plan) {
-  if (!plan || (!plan.hasFilters && !plan.hasExcludes)) return true;
+  if (!plan || (!plan.hasFilters && !plan.hasExcludes && !plan.hasFuzzy)) return true;
   const title = String(note.path ? (note.title || basename(note.path)) : (note.title || 'Untitled')).toLowerCase();
   const path = String(note.path || 'Draft').toLowerCase();
   const kind = String(getFileType(note.path, note.kind) || '').toLowerCase();
@@ -1847,11 +1900,13 @@ function searchCandidateMatchesPlan(note, content, plan) {
   if (exclude.task.length && searchContentMatchesTaskFilters(content, exclude.task)) return false;
   if ((plan.wildcards || []).some(value => !wildcardMatch(haystack, value))) return false;
   if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return false;
+  if ((plan.fuzzyTerms || []).some(value => !fuzzyTextMatch(haystack, value))) return false;
+  if ((plan.excludeFuzzyTerms || []).some(value => fuzzyTextMatch(haystack, value))) return false;
   return true;
 }
 
 function searchResultMatchesPlan(result, plan) {
-  if (!plan || (!plan.hasFilters && !plan.hasExcludes)) return true;
+  if (!plan || (!plan.hasFilters && !plan.hasExcludes && !plan.hasFuzzy)) return true;
   const title = String(result.title || basename(result.path) || 'Untitled').toLowerCase();
   const path = String(result.path || '').toLowerCase();
   const kind = String(result.kind || result.type || getFileType(result.path, result.kind) || '').toLowerCase();
@@ -1870,6 +1925,8 @@ function searchResultMatchesPlan(result, plan) {
   if ((plan.excludePhrases || []).some(value => haystack.includes(value))) return false;
   if ((plan.wildcards || []).some(value => !wildcardMatch(haystack, value))) return false;
   if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return false;
+  if ((plan.fuzzyTerms || []).some(value => !fuzzyTextMatch(haystack, value))) return false;
+  if ((plan.excludeFuzzyTerms || []).some(value => fuzzyTextMatch(haystack, value))) return false;
   return true;
 }
 
@@ -1884,9 +1941,11 @@ function searchPlanMetaSuffix(query) {
     values.forEach(value => excludeParts.push(`-${key}:${value}`));
   });
   (plan.wildcards || []).forEach(value => includeParts.push(`wildcard:${value}`));
+  (plan.fuzzyTerms || []).forEach(value => includeParts.push(`~${value}`));
   (plan.excludeTerms || []).forEach(value => excludeParts.push(`-${value}`));
   (plan.excludePhrases || []).forEach(value => excludeParts.push(`-"${value}"`));
   (plan.excludeWildcards || []).forEach(value => excludeParts.push(`-${value}`));
+  (plan.excludeFuzzyTerms || []).forEach(value => excludeParts.push(`-~${value}`));
   const compact = (items) => items.length > 3 ? `${items.slice(0, 3).join(', ')} +${items.length - 3}` : items.join(', ');
   const parts = [];
   if (includeParts.length) parts.push(`including ${compact(includeParts)}`);
@@ -1912,6 +1971,7 @@ function scoreSearch(note, content, plan) {
   const query = plan.lower;
   const terms = plan.terms;
   const phrases = plan.phrases || [];
+  const fuzzyTerms = plan.fuzzyTerms || [];
   const title = note.path ? (note.title || basename(note.path)) : 'Untitled';
   const path = note.path || 'Draft';
   const titleLower = title.toLowerCase();
@@ -1923,15 +1983,18 @@ function scoreSearch(note, content, plan) {
   if ((plan.excludeTerms || []).some(term => haystack.includes(term))) return null;
   if ((plan.excludePhrases || []).some(phrase => haystack.includes(phrase))) return null;
   if ((plan.excludeWildcards || []).some(value => wildcardMatch(haystack, value))) return null;
+  if ((plan.excludeFuzzyTerms || []).some(term => fuzzyTextMatch(haystack, term))) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
   if (phrases.length && !phrases.every(phrase => haystack.includes(phrase))) return null;
   if ((plan.wildcards || []).length && !plan.wildcards.every(value => wildcardMatch(haystack, value))) return null;
+  if (fuzzyTerms.length && !fuzzyTerms.every(term => fuzzyTextMatch(haystack, term))) return null;
 
   let score = 0;
   if (!query && !phrases.length) score = note.id === activeId ? 20 : 1;
   if (plan.hasFilters) score += 25;
   if (phrases.length) score += 28;
   if ((plan.wildcards || []).length) score += 18;
+  if (fuzzyTerms.length) score += 14;
   if (query && titleLower.includes(query)) score += 120;
   if (query && pathLower.includes(query)) score += 70;
   for (const phrase of phrases) {
@@ -1952,7 +2015,16 @@ function scoreSearch(note, content, plan) {
     if (pathLower.includes(term)) score += 10;
     if (bodyLower.includes(term)) score += 4;
   }
-  if (score <= 0 && terms.length) return null;
+  for (const term of fuzzyTerms) {
+    const titleMatch = fuzzySearchMatch(titleLower, term);
+    const pathMatch = fuzzySearchMatch(pathLower, term);
+    const bodyMatch = fuzzySearchMatch(bodyLower, term);
+    if (titleMatch.matched) score += 26 + titleMatch.score;
+    if (pathMatch.matched) score += 16 + pathMatch.score;
+    if (bodyMatch.matched) score += 6 + Math.max(0, Math.floor(bodyMatch.score / 2));
+  }
+  if (match.index < 0 && fuzzyTerms.length) match = bestFuzzyMatchIndex(bodyLower, fuzzyTerms);
+  if (score <= 0 && (terms.length || fuzzyTerms.length)) return null;
 
   return {
     id: note.id,
@@ -1989,7 +2061,7 @@ async function runLoadedSearch(query) {
 
 async function collectLoadedSearchResults(query, token, limit) {
   const plan = parseSearchQuery(query);
-  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes && !plan.hasWildcards) {
+  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases && !plan.hasExcludes && !plan.hasWildcards && !plan.hasFuzzy) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
       if (token !== searchToken) return [];
@@ -2032,15 +2104,15 @@ function updateSearchScopeButtons() {
   });
   if (searchInput) {
     searchInput.placeholder = searchScope === 'local'
-      ? 'Search the configured local folder with type:md plan* -archive...'
+      ? 'Search the configured local folder with type:md plan* ~pln -archive...'
       : searchScope === 'all'
-        ? 'Search all with type:md tag:idea plan* -"old draft"...'
-        : 'Search loaded files with type:md path:notes tag:idea task:open plan*...';
+        ? 'Search all with type:md tag:idea plan* ~pln -"old draft"...'
+        : 'Search loaded files with type:md path:notes tag:idea task:open plan* ~pln...';
   }
   if (searchMeta) {
     searchMeta.textContent = searchScope === 'local'
-      ? 'Local folder search supports phrases, wildcards, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
-      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Add phrases, wildcards like plan*, or exclusions like -archive.';
+      ? 'Local folder search supports phrases, wildcards, fuzzy ~term, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
+      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Add phrases, wildcards like plan*, fuzzy ~term, or exclusions like -archive.';
   }
 }
 
@@ -2125,13 +2197,14 @@ function showSearchSyntaxHelp() {
     <div class="diag-grid">
       <div class="diag-card"><strong>phrase</strong><span>"release notes"</span><small>Find exact words together</small></div>
       <div class="diag-card"><strong>wildcard</strong><span>plan*</span><small>Prefix, suffix, or middle matching</small></div>
+      <div class="diag-card"><strong>fuzzy</strong><span>~pln -~tmp</span><small>Opt-in approximate matching without a heavy index</small></div>
       <div class="diag-card"><strong>exclude</strong><span>-archive -"old draft"</span><small>Hide noisy matches</small></div>
       <div class="diag-card"><strong>type</strong><span>type:md type:canvas</span><small>Limit results by file kind</small></div>
       <div class="diag-card"><strong>path/title</strong><span>path:work title:idea</span><small>Focus a folder or note name</small></div>
       <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send results</span><small>Turn current results into a canvas board</small></div>
     </div>
-    <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, and wildcards.</p>
+    <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
 }
@@ -2168,7 +2241,7 @@ async function collectLocalSearchResults(query, token, limit) {
       meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
     };
   }
-  const q = (plan.hasExcludes || plan.hasWildcards) ? plan.backendQuery : query.trim();
+  const q = (plan.hasExcludes || plan.hasWildcards || plan.hasFuzzy) ? plan.backendQuery : query.trim();
   if (!q) {
     const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
     if (token !== searchToken) return { results: [] };
@@ -2224,6 +2297,7 @@ function searchHighlightTerms(query) {
   const values = [
     ...plan.phrases,
     ...plan.terms,
+    ...plan.fuzzyTerms,
     ...plan.filters.path,
     ...plan.filters.title,
     ...plan.filters.tag,
