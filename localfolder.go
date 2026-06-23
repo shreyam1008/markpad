@@ -138,7 +138,7 @@ func (a *App) SearchLocalFolder(query string, limit int) []LocalFolderSearchHit 
 		return []LocalFolderSearchHit{}
 	}
 	plan := parseLocalFolderSearchQuery(query)
-	if len(plan.Terms) == 0 && !plan.HasFilters {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && !plan.HasFilters {
 		return []LocalFolderSearchHit{}
 	}
 	if limit <= 0 || limit > 100 {
@@ -289,25 +289,32 @@ func (a *App) writeLocalFolderSettings(settings localFolderSettings) error {
 type localFolderSearchPlan struct {
 	Text         string
 	Terms        []string
+	Phrases      []string
 	PathFilters  []string
 	TitleFilters []string
 	TypeFilters  []string
 	TagFilters   []string
 	TaskFilters  []string
 	HasFilters   bool
+	HasPhrases   bool
 	NeedsContent bool
 }
 
 func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
-	fields := strings.Fields(strings.TrimSpace(query))
+	fields := localSearchQueryTokens(query)
 	textParts := make([]string, 0, len(fields))
 	plan := localFolderSearchPlan{}
 	for _, field := range fields {
-		clean := strings.Trim(strings.TrimSpace(field), `"'`)
+		clean := strings.Trim(strings.TrimSpace(field.Text), `"'`)
 		if clean == "" {
 			continue
 		}
 		lower := strings.ToLower(clean)
+		if field.Quoted {
+			plan.Phrases = append(plan.Phrases, lower)
+			plan.HasPhrases = true
+			continue
+		}
 		if strings.HasPrefix(lower, "#") && len(lower) > 1 {
 			plan.TagFilters = append(plan.TagFilters, strings.TrimPrefix(lower, "#"))
 			plan.HasFilters = true
@@ -350,6 +357,38 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 	return plan
 }
 
+type localSearchQueryToken struct {
+	Text   string
+	Quoted bool
+}
+
+func localSearchQueryTokens(query string) []localSearchQueryToken {
+	tokens := []localSearchQueryToken{}
+	var b strings.Builder
+	quoted := false
+	flush := func() {
+		text := strings.TrimSpace(b.String())
+		if text != "" {
+			tokens = append(tokens, localSearchQueryToken{Text: text, Quoted: quoted})
+		}
+		b.Reset()
+	}
+	for _, r := range strings.TrimSpace(query) {
+		if r == '"' {
+			flush()
+			quoted = !quoted
+			continue
+		}
+		if !quoted && (r == ' ' || r == '\t' || r == '\n' || r == '\r') {
+			flush()
+			continue
+		}
+		b.WriteRune(r)
+	}
+	flush()
+	return tokens
+}
+
 func searchLocalFile(root string, path string, kind string, plan localFolderSearchPlan) (LocalFolderSearchHit, bool) {
 	rel, err := filepath.Rel(root, path)
 	if err != nil {
@@ -362,7 +401,7 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	if !localFolderFiltersMatch(relLower, titleLower, typeLower, plan) {
 		return LocalFolderSearchHit{}, false
 	}
-	metadataTextMatch := plan.Text == "" || strings.Contains(titleLower, plan.Text) || strings.Contains(relLower, plan.Text) || termsContain(titleLower+"\n"+relLower, plan.Terms)
+	metadataTextMatch := localFolderTextMatches(titleLower+"\n"+relLower, plan)
 	if metadataTextMatch && !plan.NeedsContent {
 		return LocalFolderSearchHit{
 			Path:    path,
@@ -391,7 +430,7 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	for scanner.Scan() {
 		line := scanner.Text()
 		lower := strings.ToLower(line)
-		if textLine < 0 && len(plan.Terms) > 0 && termsContain(lower, plan.Terms) {
+		if textLine < 0 && localFolderTextMatches(lower, plan) && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
 			textLine = lineNo
 			textSnippet = strings.TrimSpace(line)
 		}
@@ -399,12 +438,12 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 			filterLine = lineNo
 			filterSnippet = strings.TrimSpace(line)
 		}
-		if (metadataTextMatch || textLine >= 0 || len(plan.Terms) == 0) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
+		if (metadataTextMatch || textLine >= 0 || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
 			break
 		}
 		lineNo++
 	}
-	if !metadataTextMatch && textLine < 0 && len(plan.Terms) > 0 {
+	if !metadataTextMatch && textLine < 0 && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
 		return LocalFolderSearchHit{}, false
 	}
 	if !localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
@@ -459,6 +498,21 @@ func localFolderFiltersMatch(relLower string, titleLower string, typeLower strin
 	}
 	for _, value := range plan.TypeFilters {
 		if !strings.Contains(typeLower, value) {
+			return false
+		}
+	}
+	return true
+}
+
+func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 {
+		return true
+	}
+	if len(plan.Terms) > 0 && !termsContain(value, plan.Terms) {
+		return false
+	}
+	for _, phrase := range plan.Phrases {
+		if !strings.Contains(value, phrase) {
 			return false
 		}
 	}

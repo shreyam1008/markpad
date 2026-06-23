@@ -737,9 +737,15 @@ function parseSearchQuery(query) {
   const parts = raw.match(/"[^"]+"|\S+/g) || [];
   const filters = { path: [], title: [], type: [], tag: [], task: [] };
   const textParts = [];
+  const phrases = [];
   parts.forEach((part) => {
+    const quoted = /^".*"$/.test(part);
     const clean = part.replace(/^"|"$/g, '').trim();
     if (!clean) return;
+    if (quoted) {
+      phrases.push(clean.toLowerCase());
+      return;
+    }
     const match = clean.match(/^(path|title|type|kind|tag|task):(.+)$/i);
     if (match) {
       const key = match[1].toLowerCase() === 'kind' ? 'type' : match[1].toLowerCase();
@@ -761,8 +767,10 @@ function parseSearchQuery(query) {
     text,
     lower,
     terms: lower.split(/\s+/).filter(Boolean).slice(0, 8),
+    phrases: phrases.slice(0, 8),
     filters,
     hasFilters,
+    hasPhrases: phrases.length > 0,
     needsContentFilter: filters.tag.length > 0 || filters.task.length > 0,
   };
 }
@@ -811,6 +819,7 @@ function searchContentMatchesTaskFilters(content, filters) {
 function scoreSearch(note, content, plan) {
   const query = plan.lower;
   const terms = plan.terms;
+  const phrases = plan.phrases || [];
   const title = note.path ? (note.title || basename(note.path)) : 'Untitled';
   const path = note.path || 'Draft';
   const titleLower = title.toLowerCase();
@@ -820,13 +829,20 @@ function scoreSearch(note, content, plan) {
   const haystack = `${titleLower}\n${pathLower}\n${bodyLower}`;
   if (!searchCandidateMatchesPlan(note, body, plan)) return null;
   if (terms.length && !terms.every(term => haystack.includes(term))) return null;
+  if (phrases.length && !phrases.every(phrase => haystack.includes(phrase))) return null;
 
   let score = 0;
-  if (!query) score = note.id === activeId ? 20 : 1;
+  if (!query && !phrases.length) score = note.id === activeId ? 20 : 1;
   if (plan.hasFilters) score += 25;
+  if (phrases.length) score += 28;
   if (query && titleLower.includes(query)) score += 120;
   if (query && pathLower.includes(query)) score += 70;
-  const match = firstMatchIndex(body, query, terms);
+  for (const phrase of phrases) {
+    if (titleLower.includes(phrase)) score += 90;
+    if (pathLower.includes(phrase)) score += 48;
+    if (bodyLower.includes(phrase)) score += 24;
+  }
+  const match = firstMatchIndex(body, query, [...phrases, ...terms]);
   if (match.index >= 0) score += 40 + Math.max(0, 30 - Math.floor(match.index / 4000));
   for (const term of terms) {
     if (titleLower.includes(term)) score += 18;
@@ -870,7 +886,7 @@ async function runLoadedSearch(query) {
 
 async function collectLoadedSearchResults(query, token, limit) {
   const plan = parseSearchQuery(query);
-  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters) {
+  if (window.go?.main?.App?.SearchLoadedDocuments && !plan.hasFilters && !plan.hasPhrases) {
     try {
       const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, limit || 40);
       if (token !== searchToken) return [];
@@ -1008,6 +1024,7 @@ async function collectLocalSearchResults(query, token, limit) {
 function searchHighlightTerms(query) {
   const plan = parseSearchQuery(query);
   const values = [
+    ...plan.phrases,
     ...plan.terms,
     ...plan.filters.path,
     ...plan.filters.title,
