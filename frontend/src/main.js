@@ -2527,6 +2527,7 @@ function commandItems() {
     { id: 'copy-tasks-todo', icon: 'CTT', title: 'Copy visible tasks Todo.txt', hint: 'Copy the current filtered task view as portable Todo.txt', run: copyVisibleTasksTodoTxt },
     { id: 'copy-task-view-summary', icon: 'CTS', title: 'Copy task view summary', hint: 'Copy current task view filters and counts as Markdown', run: copyTaskViewSummary },
     { id: 'copy-task-view-summary-json', icon: 'CTJ', title: 'Copy task view summary JSON', hint: 'Copy current task view filters and counts as portable JSON', run: copyTaskViewSummaryJson },
+    { id: 'copy-task-view-summary-csv', icon: 'CTV', title: 'Copy task view summary CSV', hint: 'Copy current task view filters and counts as one CSV row', run: copyTaskViewSummaryCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -4823,6 +4824,28 @@ async function copyTaskViewSummaryJson() {
     },
   }, null, 2) + '\n');
   statusText.textContent = 'Task view summary copied as JSON';
+}
+
+async function copyTaskViewSummaryCsv() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  const open = tasks.filter(task => !task.checked).length;
+  const waiting = tasks.filter(task => task.waiting && !task.checked).length;
+  const high = tasks.filter(task => isHighPriorityTask(task) && !task.checked).length;
+  const due = tasks.filter(task => task.due && !task.checked).length;
+  const sources = tasks.reduce((counts, task) => {
+    counts[task.local ? 'local' : 'loaded'] += 1;
+    return counts;
+  }, { loaded: 0, local: 0 });
+  const rows = [
+    ['view', 'source', 'filter', 'query', 'visible', 'open', 'done', 'high', 'waiting', 'due', 'loaded', 'local'],
+    [taskViewMode, taskSourceFilter, taskFilter, taskQuery || '', tasks.length, open, tasks.length - open, high, waiting, due, sources.loaded, sources.local],
+  ];
+  await navigator.clipboard.writeText(rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n');
+  statusText.textContent = 'Task view summary copied as CSV';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
