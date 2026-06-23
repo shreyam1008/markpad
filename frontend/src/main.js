@@ -1668,6 +1668,7 @@ function commandItems() {
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
+    { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
     { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
@@ -3244,6 +3245,10 @@ function newCanvasDoc() {
 
 function downloadText(filename, mime, text) {
   const blob = new Blob([text], { type: mime });
+  downloadBlob(filename, blob);
+}
+
+function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -4292,6 +4297,25 @@ function exportCanvasSvg() {
   if (!canvasDoc) loadCanvasState();
   downloadText('markpad-canvas-draft.svg', 'image/svg+xml', canvasToSvg(canvasDoc));
   statusText.textContent = 'Canvas SVG exported';
+}
+
+async function exportCanvasPngViewport() {
+  if (!canvasActive) openCanvas();
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  resizeCanvasStage();
+  renderCanvas();
+  if (!canvasStage?.toBlob || !canvasStage.width || !canvasStage.height) {
+    statusText.textContent = 'Canvas PNG export unavailable';
+    return;
+  }
+  canvasStage.toBlob((blob) => {
+    if (!blob) {
+      statusText.textContent = 'Canvas PNG export failed';
+      return;
+    }
+    downloadBlob('markpad-canvas-viewport.png', blob);
+    statusText.textContent = 'Canvas viewport PNG exported';
+  }, 'image/png');
 }
 
 function canvasToObsidianCanvas(doc) {
