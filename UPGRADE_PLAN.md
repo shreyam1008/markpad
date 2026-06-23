@@ -58,6 +58,7 @@ Vault/
 
 ## Phase 3: search
 
+- Current backend slice: loaded-document search runs in Go with active-content override, 2 MiB per-document cap, snippet results, and no persistent index.
 - Backend first: use Go for file walking, size caps, ignore rules, and cancellation.
 - Prefer ripgrep if present for large vault text search, with a built-in Go fallback.
 - Cache only file metadata and small text excerpts; never keep entire vault contents in renderer memory.

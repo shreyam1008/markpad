@@ -663,6 +663,14 @@ async function runLoadedSearch(query) {
   const q = query.trim().toLowerCase();
   const terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
   searchResults.innerHTML = '<div class="search-empty">Searching loaded files...</div>';
+  if (window.go?.main?.App?.SearchLoadedDocuments) {
+    try {
+      const results = await window.go.main.App.SearchLoadedDocuments(query, activeId, currentContent, 40);
+      if (token !== searchToken) return;
+      renderSearchResults(results || [], q);
+      return;
+    } catch {}
+  }
   const results = [];
 
   for (const note of cachedNotes) {
