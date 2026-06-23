@@ -1890,6 +1890,65 @@ async function copyRuntimeStats() {
   }
 }
 
+function runtimeStatsJson(stats) {
+  return JSON.stringify({
+    type: 'markpad-runtime-stats',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    process: {
+      rssAvailable: !!stats.processRssAvailable,
+      rssBytes: Number(stats.processRssBytes || 0),
+    },
+    go: {
+      allocBytes: Number(stats.goAllocBytes || 0),
+      heapInuseBytes: Number(stats.goHeapInuseBytes || 0),
+      heapIdleBytes: Number(stats.goHeapIdleBytes || 0),
+      heapReleasedBytes: Number(stats.goHeapReleasedBytes || 0),
+      sysBytes: Number(stats.goSysBytes || 0),
+      objects: Number(stats.goObjects || 0),
+      goroutines: Number(stats.goroutines || 0),
+    },
+    app: {
+      executableSizeBytes: Number(stats.executableSizeBytes || 0),
+      uptimeSeconds: Number(stats.uptimeSeconds || 0),
+      os: stats.os || 'unknown',
+      arch: stats.arch || 'unknown',
+    },
+  }, null, 2) + '\n';
+}
+
+async function copyRuntimeStatsJson() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(runtimeStatsJson(await getter()));
+    statusText.textContent = 'Runtime stats copied as JSON';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats JSON copy failed: ' + err;
+  }
+}
+
+async function exportRuntimeStatsJson() {
+  const getter = window.go?.main?.App?.GetRuntimeStats;
+  if (!getter) {
+    statusText.textContent = 'Runtime stats unavailable';
+    return;
+  }
+  try {
+    downloadText('markpad-runtime-stats.json', 'application/json', runtimeStatsJson(await getter()));
+    statusText.textContent = 'Runtime stats exported as JSON';
+  } catch (err) {
+    statusText.textContent = 'Runtime stats JSON export failed: ' + err;
+  }
+}
+
 async function showRuntimeStats() {
   const getter = window.go?.main?.App?.GetRuntimeStats;
   if (!getter) {
@@ -1992,6 +2051,8 @@ function commandItems() {
     { id: 'search-limits', icon: 'SLM', title: 'Local search limits', hint: 'Show the RAM-safe local folder search rules and skipped paths', run: showLocalSearchLimits },
     { id: 'runtime-stats', icon: 'RAM', title: 'Runtime stats', hint: 'Show Go heap, process RSS, goroutines, and uptime', run: showRuntimeStats },
     { id: 'copy-runtime-stats', icon: 'CR', title: 'Copy runtime stats', hint: 'Copy memory, binary size, goroutine, and uptime stats as text', run: copyRuntimeStats },
+    { id: 'copy-runtime-stats-json', icon: 'CRJ', title: 'Copy runtime stats JSON', hint: 'Copy memory, binary size, goroutine, and uptime stats as JSON', run: copyRuntimeStatsJson },
+    { id: 'export-runtime-stats-json', icon: 'ERJ', title: 'Export runtime stats JSON', hint: 'Download memory, binary size, goroutine, and uptime stats as JSON', run: exportRuntimeStatsJson },
     { id: 'clear-editor-undo-history', icon: 'EU', title: 'Clear editor undo history', hint: 'Release in-memory editor undo snapshots for open documents', run: clearEditorUndoHistory },
     { id: 'outline', icon: 'TOC', title: 'Document outline', hint: 'Jump to Markdown headings in the active document', run: showDocumentOutline },
     { id: 'copy-outline-md', icon: 'CO', title: 'Copy outline Markdown', hint: 'Copy the active document heading outline as Markdown links', run: copyDocumentOutlineMarkdown },
