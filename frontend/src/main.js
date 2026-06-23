@@ -1938,6 +1938,8 @@ function commandItems() {
     { id: 'copy-tasks-md', icon: 'CT', title: 'Copy visible tasks Markdown', hint: 'Copy the current filtered task view as Markdown text', run: copyVisibleTasksMarkdown },
     { id: 'export-tasks-json', icon: 'JT', title: 'Export visible tasks JSON', hint: 'Download the current filtered task view as portable JSON', run: exportTasksJson },
     { id: 'copy-tasks-json', icon: 'CJ', title: 'Copy visible tasks JSON', hint: 'Copy the current filtered task view as portable JSON', run: copyVisibleTasksJson },
+    { id: 'export-tasks-csv', icon: 'TCV', title: 'Export visible tasks CSV', hint: 'Download the current filtered task view as CSV rows', run: exportTasksCsv },
+    { id: 'copy-tasks-csv', icon: 'CCV', title: 'Copy visible tasks CSV', hint: 'Copy the current filtered task view as CSV rows', run: copyVisibleTasksCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -3608,6 +3610,25 @@ function tasksToJson(tasks) {
   }, null, 2) + '\n';
 }
 
+function tasksToCsv(tasks) {
+  const rows = [
+    ['text', 'checked', 'due', 'priority', 'waiting', 'tags', 'source', 'noteTitle', 'path', 'line'],
+    ...tasks.map(task => [
+      String(task.text || ''),
+      task.checked ? 'true' : 'false',
+      task.due || '',
+      task.priority || '',
+      task.waiting ? 'true' : 'false',
+      (task.tags || []).join(' '),
+      task.local ? 'local' : 'loaded',
+      task.noteTitle || '',
+      task.path || '',
+      Number.isFinite(Number(task.line)) ? Number(task.line) + 1 : '',
+    ]),
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
 async function exportTasksMarkdown() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
   if (!tasks.length) {
@@ -3626,6 +3647,16 @@ async function exportTasksJson() {
   }
   downloadText('markpad-tasks.json', 'application/json', tasksToJson(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} exported as JSON`;
+}
+
+async function exportTasksCsv() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to export';
+    return;
+  }
+  downloadText('markpad-tasks.csv', 'text/csv', tasksToCsv(tasks));
+  statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} exported as CSV`;
 }
 
 async function copyVisibleTasksMarkdown() {
@@ -3654,6 +3685,20 @@ async function copyVisibleTasksJson() {
   }
   await navigator.clipboard.writeText(tasksToJson(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as JSON`;
+}
+
+async function copyVisibleTasksCsv() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToCsv(tasks));
+  statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as CSV`;
 }
 
 async function copySingleTaskMarkdown(taskId) {
