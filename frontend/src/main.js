@@ -1414,7 +1414,7 @@ function normalizeCanvasDoc(input) {
       const y1 = from.y + from.h / 2;
       const x2 = to.x + to.w / 2;
       const y2 = to.y + to.h / 2;
-      elements.push({ id: canvasId(), type: 'line', x: x1, y: y1, w: x2 - x1, h: y2 - y1, stroke: '#2f6f61', width: 2 });
+      elements.push({ id: canvasId(), type: 'arrow', x: x1, y: y1, w: x2 - x1, h: y2 - y1, stroke: '#2f6f61', width: 2 });
     });
     return {
       type: 'markpad-canvas',
@@ -1465,6 +1465,12 @@ function canvasToSvg(doc) {
     if (el.type === 'rect') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" fill="none" stroke="${stroke}" stroke-width="${width}" rx="6"/>`;
     if (el.type === 'ellipse') return `<ellipse cx="${el.x + el.w / 2}" cy="${el.y + el.h / 2}" rx="${Math.abs(el.w / 2)}" ry="${Math.abs(el.h / 2)}" fill="none" stroke="${stroke}" stroke-width="${width}"/>`;
     if (el.type === 'line') return `<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"/>`;
+    if (el.type === 'arrow') {
+      const x2 = el.x + el.w;
+      const y2 = el.y + el.h;
+      const head = arrowHeadPoints(el.x, el.y, x2, y2, Math.max(10, width * 4));
+      return `<path d="M ${el.x} ${el.y} L ${x2} ${y2} M ${head.left.x} ${head.left.y} L ${x2} ${y2} L ${head.right.x} ${head.right.y}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
     if (el.type === 'text') {
       const size = Number(el.size || 16);
       return String(el.text || '').split('\n').map((line, i) => `<text x="${el.x}" y="${el.y + i * size * 1.35}" fill="${stroke}" font-size="${size}" font-family="monospace">${esc(line)}</text>`).join('');
@@ -1601,11 +1607,19 @@ function renderCanvasElement(ctx, el) {
     ctx.beginPath();
     ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
     ctx.stroke();
-  } else if (el.type === 'line') {
+  } else if (el.type === 'line' || el.type === 'arrow') {
     ctx.beginPath();
     ctx.moveTo(el.x, el.y);
     ctx.lineTo(el.x + el.w, el.y + el.h);
     ctx.stroke();
+    if (el.type === 'arrow') {
+      const head = arrowHeadPoints(el.x, el.y, el.x + el.w, el.y + el.h, Math.max(10, (el.width || 3) * 4));
+      ctx.beginPath();
+      ctx.moveTo(head.left.x, head.left.y);
+      ctx.lineTo(el.x + el.w, el.y + el.h);
+      ctx.lineTo(head.right.x, head.right.y);
+      ctx.stroke();
+    }
   } else if (el.type === 'text') {
     ctx.fillStyle = el.stroke || '#2f6f61';
     ctx.font = `${el.size || 16}px "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace`;
@@ -1613,6 +1627,15 @@ function renderCanvasElement(ctx, el) {
     lines.forEach((line, i) => ctx.fillText(line, el.x, el.y + i * ((el.size || 16) * 1.35)));
   }
   ctx.restore();
+}
+
+function arrowHeadPoints(x1, y1, x2, y2, size) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const spread = Math.PI / 7;
+  return {
+    left: { x: x2 - Math.cos(angle - spread) * size, y: y2 - Math.sin(angle - spread) * size },
+    right: { x: x2 - Math.cos(angle + spread) * size, y: y2 - Math.sin(angle + spread) * size },
+  };
 }
 
 function renderCanvas() {
