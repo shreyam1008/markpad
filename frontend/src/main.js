@@ -1860,6 +1860,20 @@ function setSearchScope(scope) {
   updateSearchScopeButtons();
 }
 
+function showLocalFirstGuide() {
+  showModal('Local-First Guide', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>local now</strong><span>No cloud sync</span><small>Files, drafts, UI state, tasks, canvas, and Trash stay on this computer</small></div>
+      <div class="diag-card"><strong>default folder</strong><span>Search + tasks</span><small>Choose one local folder for fast local scans</small></div>
+      <div class="diag-card"><strong>portable data</strong><span>Markdown / JSON / CSV / ICS</span><small>Exports avoid vendor lock-in</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
+      <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
+      <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
+    </div>
+    <p class="diag-note">Sync is intentionally a later layer. The current app should remain useful offline, transparent about where data lives, and easy to export before any cloud account or sync engine exists.</p>
+  `);
+}
+
 function showSearchSyntaxHelp() {
   showModal('Search Syntax', `
     <div class="diag-grid">
@@ -2945,6 +2959,7 @@ function commandItems() {
     { id: 'commands-local', icon: 'CMD', title: 'Show Local commands', hint: 'Filter the command palette to Local workspace actions', run: () => openCommandPaletteQuery('Local') },
     { id: 'commands-layout', icon: 'CMD', title: 'Show Layout commands', hint: 'Filter the command palette to layout and editor view actions', run: () => openCommandPaletteQuery('Layout') },
     { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
+    { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
