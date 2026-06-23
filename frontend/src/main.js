@@ -1689,6 +1689,7 @@ function commandItems() {
     { id: 'tasks-due-today', icon: 'TD', title: 'Tasks due today', hint: 'Filter tasks with due:today', run: () => showTasksForQuery('due:today') },
     { id: 'tasks-due-tomorrow', icon: 'TT', title: 'Tasks due tomorrow', hint: 'Filter tasks with due:tomorrow', run: () => showTasksForQuery('due:tomorrow') },
     { id: 'tasks-due-week', icon: 'TWK', title: 'Tasks due this week', hint: 'Filter tasks due within the next 7 days', run: () => showTasksForQuery('due:week') },
+    { id: 'tasks-overdue', icon: 'TO', title: 'Overdue tasks', hint: 'Filter tasks with due:overdue', run: () => showTasksForQuery('due:overdue') },
     { id: 'tasks-high-priority', icon: 'TH', title: 'High priority tasks', hint: 'Filter tasks with !high', run: () => showTasksForQuery('!high') },
     { id: 'tasks-waiting', icon: 'TW', title: 'Waiting tasks', hint: 'Filter tasks tagged with @waiting', run: () => showTasksForQuery('@waiting') },
     { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
