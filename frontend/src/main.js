@@ -1466,6 +1466,7 @@ function commandItems() {
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'canvas-obsidian', icon: 'OC', title: 'Export Obsidian canvas', hint: 'Download current canvas as an Obsidian-compatible .canvas file', run: exportObsidianCanvas },
     { id: 'canvas-excalidraw', icon: 'EX', title: 'Export Excalidraw canvas', hint: 'Download current canvas as an Excalidraw .excalidraw scene', run: exportExcalidrawCanvas },
+    { id: 'canvas-summary-md', icon: 'CM', title: 'Export canvas Markdown summary', hint: 'Download a lightweight Markdown inventory of canvas elements', run: exportCanvasMarkdownSummary },
     { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
     { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
@@ -4057,6 +4058,44 @@ function exportExcalidrawCanvas() {
   const json = JSON.stringify(canvasToExcalidraw(canvasDoc), null, 2);
   downloadText('markpad-canvas.excalidraw', 'application/json', json);
   statusText.textContent = 'Excalidraw canvas exported';
+}
+
+function canvasElementSummary(element, index) {
+  const bounds = canvasElementBounds(element);
+  const label = element.type === 'text'
+    ? String(element.text || '').replace(/\s+/g, ' ').trim().slice(0, 80)
+    : element.type === 'path'
+      ? `${(element.points || []).length} points`
+      : `${Math.round(Number(bounds.w || 0))}x${Math.round(Number(bounds.h || 0))}`;
+  return `- ${index + 1}. ${element.type || 'element'} · x:${Math.round(Number(bounds.x || 0))}, y:${Math.round(Number(bounds.y || 0))}, w:${Math.round(Number(bounds.w || 0))}, h:${Math.round(Number(bounds.h || 0))}${label ? ` · ${label}` : ''}`;
+}
+
+function canvasToMarkdownSummary(doc) {
+  const source = normalizeCanvasDoc(doc || newCanvasDoc());
+  const counts = source.elements.reduce((acc, element) => {
+    const key = element.type || 'element';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const lines = [
+    '# Markpad Canvas Summary',
+    '',
+    `Exported: ${new Date().toLocaleString()}`,
+    `Elements: ${source.elements.length}`,
+    `Types: ${Object.entries(counts).map(([type, count]) => `${type} ${count}`).join(', ') || 'none'}`,
+    '',
+    '## Elements',
+    '',
+    ...source.elements.map(canvasElementSummary),
+    '',
+  ];
+  return lines.join('\n');
+}
+
+function exportCanvasMarkdownSummary() {
+  if (!canvasDoc) loadCanvasState();
+  downloadText('markpad-canvas-summary.md', 'text/markdown', canvasToMarkdownSummary(canvasDoc));
+  statusText.textContent = 'Canvas Markdown summary exported';
 }
 
 function obsidianElementBounds(element) {
