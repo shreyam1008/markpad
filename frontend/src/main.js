@@ -2162,6 +2162,10 @@ function showSearchPerformanceGuide() {
       <div class="diag-card"><strong>next backend</strong><span>Streaming workspace search</span><small>Bounded Go workers, cancellation, and Markdown-first results</small></div>
       <div class="diag-card"><strong>later index</strong><span>Optional FTS</span><small>Only as a rebuildable index over local Markdown, not a new source of truth</small></div>
     </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-open-local-footprint>Open Local Footprint</button>
+      <button data-clear-loaded-search-cache>Clear Search Cache</button>
+    </div>
     <p class="diag-note">Search should stay local-first and memory-bounded. The current loaded-file path is intentionally small; broader workspace search should stream from disk and expose its cache/index cost in diagnostics.</p>
   `);
 }
@@ -10576,6 +10580,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyTaskAgendaMdBtn) await copyTaskAgendaMarkdown();
   const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
   if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
+  const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
+  if (openLocalFootprintBtn) await showLocalFootprint();
+  const clearLoadedSearchCacheBtn = e.target.closest('[data-clear-loaded-search-cache]');
+  if (clearLoadedSearchCacheBtn) clearLoadedSearchCacheAction();
   const canvasShortcutsGuideBtn = e.target.closest('[data-canvas-shortcuts-guide]');
   if (canvasShortcutsGuideBtn) showCanvasShortcutsGuide();
   const canvasInventorySelect = e.target.closest('[data-canvas-inventory-select]');
