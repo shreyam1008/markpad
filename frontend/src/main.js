@@ -12384,6 +12384,8 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>shortcuts</strong><span>Copy, nudge, undo</span><small>Open the focused shortcut guide</small></div>
       <div class="diag-card"><strong>autosave</strong><span>Debounced viewport</span><small>Wheel zoom writes after idle instead of every tick</small></div>
       <div class="diag-card"><strong>memory</strong><span>Bounded undo</span><small>Clear canvas undo history to release snapshots</small></div>
+      <div class="diag-card"><strong>viewport</strong><span>Bounds culling</span><small>Offscreen elements and freehand paths are skipped during draw</small></div>
+      <div class="diag-card"><strong>paths</strong><span>Single-pass bounds</span><small>No persisted bounds cache or raster preview memory</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-canvas-shortcuts-guide>Canvas shortcuts</button>
@@ -12397,7 +12399,8 @@ function showCanvasHelp() {
       <button data-export-excalidraw-canvas>Export .excalidraw</button>
       <button data-copy-excalidraw-canvas>Copy Excalidraw JSON</button>
     </div>
-    <p class="diag-note">Markpad canvas stores lightweight JSON elements and appState locally. Export .markcanvas.json for the native file, .canvas for Obsidian/JSON Canvas, or .excalidraw for external drawing tools. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
+    <p class="diag-note">Markpad canvas stores lightweight JSON elements and appState locally. Export .markcanvas.json for the native file, .canvas for Obsidian/JSON Canvas, or .excalidraw for external drawing tools. Viewport drawing uses bounds-first culling, including freehand paths, without persisting cached bounds or raster previews.</p>
+    <p class="diag-note">Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
   `);
 }
 
