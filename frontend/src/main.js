@@ -2770,6 +2770,9 @@ function searchTelemetrySummary(telemetry = searchLastTelemetry) {
   const stats = telemetry || {};
   const skipped = Number(stats.skipped || 0) + Number(stats.oversize || 0);
   const parts = [`${Number(stats.elapsedMs || 0)} ms`];
+  if (Number.isFinite(Number(stats.backendElapsedMs)) && Number(stats.backendElapsedMs) !== Number(stats.elapsedMs || 0)) {
+    parts.push(`${Number(stats.backendElapsedMs)} ms backend`);
+  }
   if (Number(stats.searched || 0)) parts.push(`${Number(stats.searched || 0)} searched`);
   if (Number(stats.scanned || 0) && Number(stats.scanned || 0) !== Number(stats.searched || 0)) parts.push(`${Number(stats.scanned || 0)} scanned`);
   if (skipped) parts.push(`${skipped} skipped`);
