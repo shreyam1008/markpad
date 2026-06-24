@@ -384,6 +384,18 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 		"button:hover .file-badge::before",
 		".theme-chip:hover::before",
 		".pref-theme.active::before",
+		".pref-theme-swatch",
+		".pref-theme-name",
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		`class="theme-lab-swatch pref-theme-swatch"`,
+		`data-theme-swatch="${theme.id}"`,
+		`<span class="pref-theme-name">${theme.label}</span>`,
 	})
 }
 
