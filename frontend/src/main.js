@@ -1669,8 +1669,11 @@ function updateSplitPresetButtons() {
   if (!group) return;
   group.querySelectorAll('[data-split-ratio]').forEach((button) => {
     const ratio = Number(button.dataset.splitRatio || 50);
-    button.classList.toggle('active', Math.abs(normalizeSplitRatio(ratio) - splitRatio) < 3);
+    const pressed = Math.abs(normalizeSplitRatio(ratio) - splitRatio) < 3;
+    button.classList.toggle('active', pressed);
+    button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
   });
+  group.querySelector('[data-split-swap]')?.setAttribute('aria-pressed', 'false');
 }
 
 function setSplitPreset(value) {
