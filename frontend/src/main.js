@@ -2778,8 +2778,12 @@ async function runLoadedSearch(query) {
   const plan = parseSearchQuery(query);
   const scopeLabel = searchScope === 'local' ? 'local folder' : searchScope === 'all' ? 'loaded and local files' : 'loaded files';
   searchLastDedupe = { input: 0, output: 0, removed: 0 };
-  searchResults.innerHTML = `<div class="search-empty">Searching ${scopeLabel}...</div>`;
   updateSearchScopeButtons();
+  if (searchScope !== 'loaded' && !String(query || '').trim()) {
+    renderSearchIdleState(query, startedAt);
+    return;
+  }
+  searchResults.innerHTML = `<div class="search-empty">Searching ${scopeLabel}...</div>`;
   if (searchScope === 'local') {
     await runLocalFolderSearch(query, token);
     return;
@@ -2902,6 +2906,21 @@ function searchDiagnosticsSummary(telemetry = searchLastDiagnostics) {
   if (skipped) parts.push(`${skipped} skipped`);
   if (stats.capped) parts.push('capped');
   return parts.join(' · ');
+}
+
+function renderSearchIdleState(query, startedAt) {
+  const trimmedQuery = String(query || '').trim();
+  const scopeName = searchScope === 'all' ? 'All' : 'Local folder';
+  const message = searchScope === 'all'
+    ? 'Type a query to search loaded and local files. Empty all-scope searches stay idle to avoid scanning your workspace.'
+    : 'Type a query to search the local folder. Empty local searches stay idle to avoid scanning your workspace.';
+  setSearchDiagnostics({ scope: searchScope, startedAt, searched: 0, scanned: 0, resultCount: 0 });
+  searchLastResults = [];
+  searchLastQuery = trimmedQuery;
+  searchActiveIndex = 0;
+  searchInput?.removeAttribute('aria-activedescendant');
+  searchResults.innerHTML = searchEmptyHtml(message, trimmedQuery);
+  searchMeta.textContent = `${scopeName} search idle · no files scanned · Ctrl/Cmd+1/2/3 switches scope`;
 }
 
 function searchProfileSnapshot(query = searchLastQuery, results = searchLastResults) {

@@ -2941,3 +2941,131 @@ button:hover .file-badge,
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* Split/edit/search refinement pass: variable-only, no new assets. */
+:root {
+  --focus-halo: color-mix(in srgb, var(--accent) 18%, transparent);
+  --lifted-border: color-mix(in srgb, var(--accent) 26%, var(--border));
+  --panel-sheen: color-mix(in srgb, var(--editor) 72%, var(--surface));
+}
+
+.search-palette {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, var(--editor));
+}
+
+.search-head {
+  border-bottom-color: var(--border-soft);
+  background: linear-gradient(180deg, var(--panel-sheen), var(--surface));
+}
+
+.search-palette input:focus,
+.search-palette textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-halo);
+}
+
+.search-row {
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.search-row:hover,
+.search-row.active {
+  border-color: var(--lifted-border);
+  background: color-mix(in srgb, var(--hover) 76%, var(--editor));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--shadow) 18%, transparent);
+}
+
+.search-row mark {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--hover));
+  color: var(--text);
+  padding: 0 .18em;
+}
+
+body.markpad-compact .search-row {
+  padding: 6px 8px;
+}
+
+#editor-container,
+#viewer {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 78%, transparent), transparent 72px),
+    var(--editor);
+}
+
+#editor,
+#viewer .markdown-body {
+  caret-color: var(--accent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor) 70%, white 30%);
+}
+
+#editor:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--focus-halo);
+}
+
+#resize-divider {
+  background: color-mix(in srgb, var(--border-soft) 82%, transparent);
+  transition: background .14s ease, box-shadow .14s ease;
+}
+
+#resize-divider:hover {
+  background: color-mix(in srgb, var(--accent) 20%, var(--border-soft));
+  box-shadow: 0 0 0 1px var(--focus-halo);
+}
+
+#resize-divider::after {
+  left: -4px;
+  width: 8px;
+  height: 52px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  background:
+    repeating-linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 34%, var(--border)) 0 3px,
+      transparent 3px 8px
+    ),
+    var(--surface);
+}
+
+html[data-theme] .markdown-body pre,
+html[data-theme] .hljs {
+  border-color: var(--lifted-border);
+  border-radius: 14px;
+  line-height: 1.58;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor) 72%, white 28%);
+}
+
+html[data-theme] .markdown-body code {
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: .12em .34em;
+}
+
+.doc-card {
+  border-color: var(--lifted-border);
+  background: linear-gradient(180deg, var(--panel-sheen), var(--surface));
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--shadow) 18%, transparent);
+}
+
+.doc-title {
+  line-height: 1.25;
+}
+
+.doc-path {
+  border: 1px solid var(--border-soft);
+  line-height: 1.45;
+}
+
+.doc-note {
+  color: var(--text);
+}
+
+.doc-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--focus-halo);
+}
