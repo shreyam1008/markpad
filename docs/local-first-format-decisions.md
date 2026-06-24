@@ -37,6 +37,7 @@ Use a Markdown task file as the canonical format.
 - Task line format: GitHub-style Markdown tasks, for example `- [ ] Write release notes`.
 - Metadata: optional inline attributes after the task text, for example `@due(2026-07-01) @status(todo) @priority(high)`.
 - Views: list, calendar, and kanban are projections of the same file.
+- Controls: task view, source, and status filters should expose active pressed state while remaining projections over Markdown.
 - No lock-in: users can edit the task file in any Markdown editor.
 - Diagnostics: Task Source Profile must expose loaded/local counts, due buckets, active filters, generated `tasks.md` size, and export readiness.
 - Main view: summarize visible/total tasks, loaded/local sources, task files, and due buckets from the current parsed Markdown only.
