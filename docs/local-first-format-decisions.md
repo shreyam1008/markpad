@@ -121,6 +121,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Let Upgrade Map sync readiness list portable formats and device-local state boundaries only; do not implement sync or mark caches/indexes as portable data.
 - Let Upgrade Map status labels be derived summaries over already sampled metadata; they are not validation gates or test results.
 - Let Upgrade Map expose existing cleanup/profile actions, but do not add new cleanup semantics there.
+- Link Upgrade Map from Local-First Guide for discovery, but keep detailed metrics centralized in Upgrade Map rather than duplicated across guides.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
