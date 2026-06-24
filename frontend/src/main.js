@@ -17,9 +17,7 @@ let historyOpen = false;
 let historySelectedTs = null;
 let saving = false;
 let readPosTimer = null;
-let pdfRenderToken = 0;
 let viewerRenderKey = '';
-let pdfLibPromise = null;
 const noteViewModes = {};
 const noteScrollPos = {};
 const editHistories = new Map();
@@ -1891,104 +1889,24 @@ function renderDocumentCard(note) {
   const title = note?.title || 'Document';
   const path = note?.path || '';
   const label = typeLabel(type);
+  const noteText = type === 'pdf'
+    ? 'PDF preview is local-first in this phase: Markpad does not download pdf.js or contact a CDN. Open it in your system PDF viewer for full rendering.'
+    : 'This format is kept read-only in Markpad to stay tiny, fast, and safe. Open it in your system viewer for full rendering.';
   return `
     <div class="doc-card">
       <div class="doc-icon">${icon}</div>
       <div class="doc-title">${title}</div>
       <div class="doc-meta">${label} · ${size}</div>
       <div class="doc-path">${path.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-      <p class="doc-note">This format is kept read-only in Markpad to stay tiny, fast, and safe. Open it in your system viewer for full rendering.</p>
+      <p class="doc-note">${noteText}</p>
       <button class="doc-open" data-open-external="${path.replace(/"/g,'&quot;')}">Open Externally</button>
     </div>`;
 }
 
-// ── PDF rendering (pdf.js) ───────────────────────────────
-function ensurePdfLib() {
-  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-  if (pdfLibPromise) return pdfLibPromise;
-  pdfLibPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.onload = () => {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      resolve(pdfjsLib);
-    };
-    script.onerror = () => reject(new Error('PDF renderer could not be loaded'));
-    document.head.appendChild(script);
-  });
-  return pdfLibPromise;
-}
-
-async function renderPdf(note) {
-  const path = note?.path;
-  if (!path) return renderDocumentCard(note);
-  const token = ++pdfRenderToken;
-  viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading PDF...</div>';
-  try {
-    await ensurePdfLib();
-    let b64 = await window.go.main.App.ReadFileBase64(path);
-    let raw = atob(b64);
-    b64 = '';
-    const arr = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-    raw = '';
-    const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
-    if (token !== pdfRenderToken) return;
-    const container = document.createElement('div');
-    container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;';
-    const header = document.createElement('div');
-    header.style.cssText = 'text-align:center;color:#6b6e68;font-size:12px;font-weight:600;margin-bottom:8px;';
-    header.textContent = `${note.title || 'PDF'} — ${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
-    container.appendChild(header);
-    const MAX_INITIAL = 2;
-    const LOAD_STEP = 3;
-    const renderPage = async (num) => {
-      const page = await pdf.getPage(num);
-      const scale = 1.15;
-      const vp = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.cssText = 'max-width:100%;border:1px solid #e8e6df;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);';
-      await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
-      return canvas;
-    };
-    for (let i = 1; i <= Math.min(MAX_INITIAL, pdf.numPages); i++) {
-      container.appendChild(await renderPage(i));
-    }
-    if (pdf.numPages > MAX_INITIAL) {
-      let rendered = MAX_INITIAL;
-      const more = document.createElement('button');
-      more.style.cssText = 'border:none;background:#2f6f61;color:#fffffb;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:8px 0;';
-      more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
-      more.addEventListener('click', async () => {
-        more.textContent = 'Loading...';
-        more.disabled = true;
-        const end = Math.min(rendered + LOAD_STEP, pdf.numPages);
-        for (let i = rendered + 1; i <= end; i++) {
-          container.insertBefore(await renderPage(i), more);
-        }
-        rendered = end;
-        if (rendered >= pdf.numPages) more.remove();
-        else {
-          more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
-          more.disabled = false;
-        }
-        restoreScrollPos();
-      });
-      container.appendChild(more);
-    }
-    const openBtn = document.createElement('button');
-    openBtn.className = 'doc-open';
-    openBtn.textContent = 'Open Externally';
-    openBtn.dataset.openExternal = path;
-    container.appendChild(openBtn);
-    viewer.innerHTML = '';
-    viewer.appendChild(container);
-    restoreScrollPos();
-  } catch (err) {
-    viewer.innerHTML = renderDocumentCard(note) + '<div style="text-align:center;color:#c54b33;font-size:12px;margin-top:8px;">PDF render error: ' + (err.message || err) + '</div>';
-  }
+// ── PDF fallback (local-first) ───────────────────────────
+function renderPdf(note) {
+  viewer.innerHTML = renderDocumentCard(note);
+  restoreScrollPos();
 }
 
 // ── Image preview ────────────────────────────────────────
@@ -4721,7 +4639,7 @@ themeBtn?.addEventListener('click', cycleTheme);
 function showHelpModal() {
   showModal('Help', `
     <p><b>Markpad</b> is a native Markdown notepad.</p>
-    <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, office files, JSON, and .canvas files. Session, drafts, trash, history, tasks, search state, and canvas drafts stay local.</p>
+    <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, office files, JSON, and .canvas files. PDFs use a local-first read-only card with Open Externally; images still preview inline. Session, drafts, trash, history, tasks, search state, and canvas drafts stay local.</p>
     <h3 style="margin-top:12px;margin-bottom:4px;">Core workflow</h3>
     <p>Use <b>Local folder</b> to set a default workspace. From there you can create notes, daily/weekly notes, canvases, quick tasks, recent-file lists, tag/link views, backlinks, and a local links canvas map.</p>
     <p><b>Search</b> supports Loaded, Local folder, and All scopes. Recent search chips are stored locally and can be cleared from the search palette.</p>
@@ -5672,7 +5590,7 @@ function showLightweightAssetReport() {
       <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>${snapshot.counts.remoteImages} remote · ${snapshot.counts.embeddedImages} embedded</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.counts.estimatedDecodedImageBytes || 0)}</strong><span>Image decode est.</span><small>${snapshot.counts.imagePixels} rendered pixels</small></div>
       <div class="diag-card"><strong>${snapshot.counts.inlineSvg}</strong><span>Inline SVG</span><small>Current toolbar/document DOM</small></div>
-      <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview, PDF, or drawing surfaces</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview or drawing surfaces</small></div>
       <div class="diag-card"><strong>${snapshot.commandIcons.total}</strong><span>Command text icons</span><small>${snapshot.commandIcons.unique} unique labels</small></div>
       <div class="diag-card"><strong>${snapshot.commandIcons.longLabels}</strong><span>Long icon labels</span><small>Text labels, no font pack</small></div>
       <div class="diag-card"><strong>no</strong><span>Icon fonts</span><small>Text glyphs and inline SVG instead</small></div>
@@ -15443,7 +15361,7 @@ async function showPreferences() {
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + syntax-highlighted Code View</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Rendered pages via pdf.js (read-only)</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Local-first read-only card + Open Externally</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Canvas</td><td style="padding:4px 6px;">Native .markcanvas.json export, local JSON canvas view, Obsidian/JSON Canvas import/export, Excalidraw import/export, SVG, PNG viewport/full export, Markdown summary, Write to active .markcanvas.json/.canvas/JSON/draft</td></tr>
       <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
@@ -15464,7 +15382,7 @@ async function showPreferences() {
     <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
-    <p>PDFs render page-by-page via pdf.js (~500 KB CDN). No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
+    <p>PDFs do not load a runtime renderer or CDN script; Markpad shows a local-first read-only card with Open Externally. No PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
   `);
 }
 
@@ -15485,14 +15403,14 @@ function showChangelog() {
         <li>Extended syntax highlighting: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more language mappings</li>
         <li>Fixed Open Folder: uses xdg-open/open/explorer (was broken on Linux)</li>
         <li>Fixed PDF dirty indicator: read-only files no longer show "NOT SAVED"</li>
-        <li>Performance: pdf.js deferred, highlight.js extras deferred, faster cold start</li>
+        <li>Performance: removed runtime PDF CDN loading and blocking first-paint CDN scripts</li>
         <li>BUNDLE_BUDGET.md: tracks size/memory cost of every feature</li>
         <li>Comprehensive agents.md: strict guardrails for AI-assisted development</li>
       </ul>
       <p><b>v0.6 Dhruva</b></p>
       <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
         <li>Single instance: only one window, second launch opens files in existing</li>
-        <li>PDF rendering via pdf.js (page-by-page, lazy, lightweight)</li>
+        <li>PDF files use read-only document cards with Open Externally</li>
         <li>Image inline preview for image files</li>
         <li>File info modal with path, size, type, modified date, open folder</li>
         <li>Rich right-click context menu on all sidebar sections</li>
@@ -15564,7 +15482,7 @@ function registerEvents() {
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
     <p><b>Markpad</b> v0.7 <span style="opacity:0.6;font-style:italic;">Eklavya</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Single instance, PDF rendering, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
+    <p>Single instance, PDF read-only cards, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
