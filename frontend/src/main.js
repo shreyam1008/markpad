@@ -470,33 +470,27 @@ function themeRecipesMarkdown() {
 }
 
 async function copyThemeRecipesJson() {
-  await navigator.clipboard.writeText(themeRecipesJson());
-  statusText.textContent = 'Theme recipes copied as JSON';
+  return copyGeneratedText(themeRecipesJson, 'Theme recipes copied as JSON');
 }
 
 function exportThemeRecipesJson() {
-  downloadText('markpad-theme-recipes.json', 'application/json', themeRecipesJson());
-  statusText.textContent = 'Theme recipes exported as JSON';
+  exportGeneratedText('markpad-theme-recipes.json', 'application/json', themeRecipesJson, 'Theme recipes exported as JSON');
 }
 
 async function copyThemeRecipesMarkdown() {
-  await navigator.clipboard.writeText(themeRecipesMarkdown());
-  statusText.textContent = 'Theme recipes copied as Markdown';
+  return copyGeneratedText(themeRecipesMarkdown, 'Theme recipes copied as Markdown');
 }
 
 function exportThemeRecipesMarkdown() {
-  downloadText('markpad-theme-recipes.md', 'text/markdown', themeRecipesMarkdown());
-  statusText.textContent = 'Theme recipes exported as Markdown';
+  exportGeneratedText('markpad-theme-recipes.md', 'text/markdown', themeRecipesMarkdown, 'Theme recipes exported as Markdown');
 }
 
 async function copyThemeCatalogJson() {
-  await navigator.clipboard.writeText(themeCatalogJson());
-  statusText.textContent = 'Theme catalog copied as JSON';
+  return copyGeneratedText(themeCatalogJson, 'Theme catalog copied as JSON');
 }
 
 function exportThemeCatalogJson() {
-  downloadText('markpad-theme-catalog.json', 'application/json', themeCatalogJson());
-  statusText.textContent = 'Theme catalog exported as JSON';
+  exportGeneratedText('markpad-theme-catalog.json', 'application/json', themeCatalogJson, 'Theme catalog exported as JSON');
 }
 
 function renderThemeLabCards(mode) {
