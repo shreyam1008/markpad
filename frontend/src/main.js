@@ -7004,6 +7004,70 @@ function taskFilterCounts(tasks) {
   };
 }
 
+function renderTaskSourceStrip(tasks, visibleTasks) {
+  const allTasks = Array.isArray(tasks) ? tasks : [];
+  const shownTasks = Array.isArray(visibleTasks) ? visibleTasks : [];
+  const allLoaded = allTasks.filter(task => !task.local).length;
+  const allLocal = allTasks.length - allLoaded;
+  const visibleLoaded = shownTasks.filter(task => !task.local).length;
+  const visibleLocal = shownTasks.length - visibleLoaded;
+  const openVisible = shownTasks.filter(task => !task.checked).length;
+  const sourceFiles = new Set(allTasks.map(task => task.path || task.noteTitle || (task.local ? 'Local task file' : 'Draft')));
+  const dueCounts = shownTasks.reduce((acc, task) => {
+    const bucket = taskDueBucket(task);
+    acc[bucket] = (acc[bucket] || 0) + 1;
+    return acc;
+  }, { overdue: 0, today: 0, tomorrow: 0, week: 0, later: 0, unscheduled: 0, done: 0 });
+  const dueBuckets = [
+    ['overdue', 'Overdue', 'danger'],
+    ['today', 'Today', 'today'],
+    ['tomorrow', 'Tomorrow', 'soon'],
+    ['week', 'Week', 'soon'],
+    ['later', 'Later', 'later'],
+    ['unscheduled', 'No due', 'muted'],
+    ['done', 'Done', 'done'],
+  ];
+  const totalForMeter = Math.max(1, shownTasks.length);
+  const slices = dueBuckets
+    .filter(([key]) => dueCounts[key] > 0)
+    .map(([key, label, className]) => {
+      const width = Math.round((dueCounts[key] / totalForMeter) * 1000) / 10;
+      return `<span class="task-source-slice ${className}" style="width:${width}%;" title="${escapeHtml(`${label}: ${dueCounts[key]}`)}"></span>`;
+    })
+    .join('');
+  const dueChips = dueBuckets.map(([key, label, className]) => `
+    <span class="task-source-chip ${className}"><strong>${dueCounts[key] || 0}</strong>${escapeHtml(label)}</span>
+  `).join('');
+  return `
+    <div class="task-source-strip" aria-label="Task source and due summary">
+      <div class="task-source-card">
+        <strong>${shownTasks.length}/${allTasks.length}</strong>
+        <span>Visible / total</span>
+        <small>${openVisible} open · ${shownTasks.length - openVisible} done</small>
+      </div>
+      <div class="task-source-card">
+        <strong>${visibleLoaded}/${allLoaded}</strong>
+        <span>Loaded</span>
+        <small>Current session Markdown</small>
+      </div>
+      <div class="task-source-card">
+        <strong>${visibleLocal}/${allLocal}</strong>
+        <span>Local folder</span>
+        <small>Plain file source</small>
+      </div>
+      <div class="task-source-card">
+        <strong>${sourceFiles.size}</strong>
+        <span>Task files</span>
+        <small>No database lock-in</small>
+      </div>
+      <div class="task-source-meter">
+        <div class="task-source-track">${slices || '<span class="task-source-slice empty" style="width:100%;"></span>'}</div>
+        <div class="task-source-legend">${dueChips}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderTaskControls(tasks, visibleTasks) {
   const sourceTasks = tasks.filter(taskSourceMatches);
   const counts = taskFilterCounts(sourceTasks);
@@ -7057,6 +7121,7 @@ function renderTaskControls(tasks, visibleTasks) {
         <button data-task-query-example="@waiting">@waiting</button>
         <button data-task-query-example="#idea">#idea</button>
       </div>
+      ${renderTaskSourceStrip(tasks, visibleTasks)}
       <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} from ${escapeHtml(sourceLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${sourceTasks.length}/${tasks.length} source-matched · ${counts.open} open · Markdown stays the source of truth.</div>
     </div>
   `;
