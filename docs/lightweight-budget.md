@@ -58,6 +58,7 @@ These are product targets, not promises for every development build:
 - Theme choice controls should expose active pressed state without adding a runtime theme engine.
 - Split/edit controls should remain keyboard-accessible, expose view and preset pressed/active state, and work without modal-heavy workflows.
 - Formatting controls should use labeled toolbar semantics and pressed state for local editor toggles.
+- Inline find should remain a local editor search region with labeled input and lightweight status text.
 - Empty states and guides should explain local behavior instead of hiding complexity behind opaque automation.
 
 ## Cleanup and diagnostics
