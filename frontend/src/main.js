@@ -57,7 +57,10 @@ let canvasGridSize = normalizeCanvasGridSize(localStorage.getItem('markpad-canva
 let focusMode = localStorage.getItem('markpad-focus') === '1';
 let compactMode = localStorage.getItem('markpad-compact') === '1';
 let splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || '50');
-let editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
+const EDITOR_WRAP_KEY = 'markpad-editor-wrap';
+const EDITOR_WRAP_USER_KEY = 'markpad-editor-wrap-user';
+let editorWrapUserChoice = localStorage.getItem(EDITOR_WRAP_USER_KEY) === '1';
+let editorSoftWrap = editorWrapUserChoice ? localStorage.getItem(EDITOR_WRAP_KEY) === '1' : true;
 let editorReadingWidth = localStorage.getItem('markpad-editor-reading-width') === '1';
 let canvasDoc = null;
 let canvasSession = null;
@@ -92,13 +95,24 @@ function zoomReset() { fontSize = ZOOM_DEFAULT; applyZoom(); }
 function applyEditorWrap(silent) {
   editor.wrap = editorSoftWrap ? 'soft' : 'off';
   editor.classList.toggle('editor-soft-wrap', editorSoftWrap);
-  $('btn-wrap')?.classList.toggle('active', editorSoftWrap);
-  $('btn-wrap')?.setAttribute('aria-pressed', editorSoftWrap ? 'true' : 'false');
-  localStorage.setItem('markpad-editor-wrap', editorSoftWrap ? '1' : '0');
+  const wrapBtn = $('btn-wrap');
+  if (wrapBtn) {
+    const mode = editorSoftWrap ? 'Wrap' : 'No wrap';
+    const type = typeLabel(activeType());
+    wrapBtn.classList.add('wrap-chip');
+    wrapBtn.classList.toggle('active', editorSoftWrap);
+    wrapBtn.textContent = mode;
+    wrapBtn.title = `${mode}: toggle visual line wrapping for ${type}. Use No wrap for code-like files.`;
+    wrapBtn.setAttribute('aria-label', `${mode}. Toggle soft wrap for the editor.`);
+    wrapBtn.setAttribute('aria-pressed', editorSoftWrap ? 'true' : 'false');
+  }
+  localStorage.setItem(EDITOR_WRAP_KEY, editorSoftWrap ? '1' : '0');
+  localStorage.setItem(EDITOR_WRAP_USER_KEY, editorWrapUserChoice ? '1' : '0');
   if (!silent && statusText) statusText.textContent = editorSoftWrap ? 'Soft wrap enabled' : 'Soft wrap disabled';
 }
 
 function toggleEditorWrap() {
+  editorWrapUserChoice = true;
   editorSoftWrap = !editorSoftWrap;
   applyEditorWrap();
 }
@@ -229,6 +243,7 @@ const LOCAL_SETTINGS_KEYS = [
   'markpad-compact',
   'markpad-split-ratio',
   'markpad-editor-wrap',
+  'markpad-editor-wrap-user',
   'markpad-editor-reading-width',
   'markpad-zoom',
   'markpad-sections',
@@ -1404,6 +1419,7 @@ function exportLayoutProfileCsv() {
 function applyWritingFocusPreset() {
   focusMode = true;
   compactMode = true;
+  editorWrapUserChoice = true;
   editorSoftWrap = true;
   editorReadingWidth = true;
   applyEditorWrap(true);
@@ -1418,6 +1434,7 @@ function applyWritingFocusPreset() {
 function applyReviewSplitPreset() {
   focusMode = false;
   compactMode = false;
+  editorWrapUserChoice = true;
   editorSoftWrap = true;
   editorReadingWidth = false;
   applyEditorWrap(true);
@@ -1432,6 +1449,7 @@ function applyReviewSplitPreset() {
 function applyDefaultEditingPreset() {
   focusMode = false;
   compactMode = false;
+  editorWrapUserChoice = true;
   editorSoftWrap = false;
   editorReadingWidth = false;
   applyEditorWrap(true);
@@ -1613,6 +1631,7 @@ async function restoreUiStateJsonFromClipboard() {
   }
 
   if (typeof editorState.softWrap === 'boolean') {
+    editorWrapUserChoice = true;
     editorSoftWrap = editorState.softWrap;
     applyEditorWrap(true);
     applied++;
@@ -2136,8 +2155,12 @@ function renderSession(state) {
   recents.forEach(r => recentList.appendChild(makeRecentRow(r)));
 
   const active = cachedNotes.find(n => n.id === activeId);
+  const activeIdentity = active ? (active.path || active.title || 'Unsaved draft') : 'Untitled';
   noteTitle.textContent = active ? (active.path ? active.title : 'Untitled') : 'Untitled';
+  noteTitle.title = activeIdentity;
+  noteTitle.setAttribute('aria-label', active ? `${typeLabel(getFileType(active.path, active.kind))}: ${activeIdentity}` : 'Untitled');
   dirtyInd.classList.toggle('hidden', !(active && active.dirty));
+  applyEditorWrap(true);
   updateHistoryButtons();
 
   requestAnimationFrame(() => {
@@ -13268,6 +13291,7 @@ function makeNoteRow(note) {
   const canTrash = !note.path || (note.path && !note.dirty);
   const row = el('div', `group flex items-center gap-1.5 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${isActive ? 'bg-selected ring-1 ring-accent/30' : 'hover:bg-hover'}`);
   row.dataset.noteId = note.id;
+  row.title = note.path ? `${note.title || 'Untitled'}\n${note.path}` : 'Unsaved draft';
   row.draggable = true;
 
   // Star on the left
@@ -13288,8 +13312,10 @@ function makeNoteRow(note) {
   const content = el('div', 'flex-1 min-w-0');
   const title = el('div', 'text-[13px] font-medium truncate');
   title.textContent = note.path ? note.title : 'Untitled';
+  title.title = row.title;
   const status = el('div', `text-[11px] ${note.dirty ? 'text-unsaved font-semibold' : 'text-muted'}`);
   status.textContent = note.dirty ? 'NOT SAVED' : (note.path ? typeLabel(getFileType(note.path, note.kind)) : 'draft');
+  status.title = note.path || status.textContent;
   content.append(title, status);
   row.appendChild(content);
 
@@ -13407,6 +13433,7 @@ function loadContent(content) {
   committedDirty = !!active?.dirty;
   const ft = getFileType(active?.path, active?.kind);
   if (isReadOnlyType(ft)) dirtyInd.classList.add('hidden');
+  applyEditorWrap(true);
   if (viewMode !== 'markdown') renderViewer(currentContent, active);
   updateStats();
   if (historyOpen) renderHistory();
@@ -13900,7 +13927,7 @@ function updateStats() {
   const ext = active?.path ? fileExt(active.path) : '';
   const lang = ext ? ext.toUpperCase() : typeLabel(type);
   const cursor = editorCursorPosition();
-  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 Ln ${cursor.line}, Col ${cursor.col}${editorSelectionSummary()} \u00b7 ~${readMin} min \u00b7 UTF-8`;
+  statusStats.textContent = `${lang} \u00b7 ${lines} ln \u00b7 ${words} w \u00b7 ${t.length} ch \u00b7 Ln ${cursor.line}, Col ${cursor.col}${editorSelectionSummary()} \u00b7 ~${readMin} min \u00b7 ${editorSoftWrap ? 'Wrap' : 'No wrap'} \u00b7 UTF-8`;
 }
 
 // ── Save animation ───────────────────────────────────────
@@ -15129,7 +15156,8 @@ function applyImportedLocalSettings() {
   splitRatio = parseFloat(localStorage.getItem('markpad-split-ratio') || String(splitRatio));
   splitRatio = normalizeSplitRatio(splitRatio);
   localStorage.setItem('markpad-split-ratio', String(splitRatio));
-  editorSoftWrap = localStorage.getItem('markpad-editor-wrap') === '1';
+  editorWrapUserChoice = localStorage.getItem(EDITOR_WRAP_USER_KEY) === '1';
+  editorSoftWrap = editorWrapUserChoice ? localStorage.getItem(EDITOR_WRAP_KEY) === '1' : true;
   editorReadingWidth = localStorage.getItem('markpad-editor-reading-width') === '1';
   fontSize = parseInt(localStorage.getItem('markpad-zoom') || String(fontSize), 10);
   if (!Number.isFinite(fontSize)) fontSize = ZOOM_DEFAULT;

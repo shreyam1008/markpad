@@ -330,8 +330,47 @@ html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 .tb.active { background: var(--accent); color: var(--accent-text); }
 .tb-sep { width: 1px; height: 16px; background: #e8e6df; margin: 0 2px; flex-shrink: 0; }
 
-#editor { white-space: pre; overflow-wrap: normal; }
-#editor.editor-soft-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+#btn-wrap.wrap-chip {
+  width: auto;
+  min-width: 54px;
+  height: 28px;
+  padding: 0 9px;
+  border-color: var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+#btn-wrap.wrap-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--editor));
+  color: var(--accent);
+}
+#btn-wrap.wrap-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--hover);
+}
+
+#editor-container {
+  min-width: 0;
+  overflow-x: hidden;
+}
+#editor {
+  min-width: 0;
+  max-width: 100%;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-wrap: normal;
+}
+#editor.editor-soft-wrap {
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+}
 body.editor-reading-width #editor {
   max-width: 88ch;
   margin-left: auto;
