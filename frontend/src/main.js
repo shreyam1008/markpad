@@ -9648,6 +9648,7 @@ function canvasToolLabel(tool) {
     line: 'Line',
     arrow: 'Arrow',
     text: 'Text',
+    sticky: 'Sticky note',
     erase: 'Erase',
   })[tool] || 'Canvas';
 }
@@ -9749,6 +9750,13 @@ function canvasToSvg(doc) {
       return `<path d="${esc(d)}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     if (el.type === 'rect') return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" fill="none" stroke="${stroke}" stroke-width="${width}" rx="6"/>`;
+    if (el.type === 'sticky') {
+      const bounds = canvasElementBounds(el);
+      const fill = esc(el.fill || '#fff4a8');
+      const size = Number(el.size || 15);
+      const lines = canvasWrapTextLines(String(el.text || 'Sticky note'), size, Math.max(40, bounds.w - 18)).slice(0, Math.max(1, Math.floor((bounds.h - 16) / (size * 1.25))));
+      return `<rect x="${bounds.x}" y="${bounds.y}" width="${bounds.w}" height="${bounds.h}" fill="${fill}" stroke="${stroke}" stroke-width="${width}" rx="10"/>\n${lines.map((line, i) => `<text x="${bounds.x + 10}" y="${bounds.y + 20 + i * size * 1.25}" fill="${stroke}" font-size="${size}" font-family="monospace">${esc(line)}</text>`).join('\n')}`;
+    }
     if (el.type === 'ellipse') return `<ellipse cx="${el.x + el.w / 2}" cy="${el.y + el.h / 2}" rx="${Math.abs(el.w / 2)}" ry="${Math.abs(el.h / 2)}" fill="none" stroke="${stroke}" stroke-width="${width}"/>`;
     if (el.type === 'line') return `<line x1="${el.x}" y1="${el.y}" x2="${el.x + el.w}" y2="${el.y + el.h}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round"/>`;
     if (el.type === 'arrow') {
@@ -9764,6 +9772,29 @@ function canvasToSvg(doc) {
     return '';
   }).join('\n  ');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${maxX - minX} ${maxY - minY}" width="${Math.ceil(maxX - minX)}" height="${Math.ceil(maxY - minY)}">\n  <rect x="${minX}" y="${minY}" width="${maxX - minX}" height="${maxY - minY}" fill="${esc(doc?.appState?.viewBackgroundColor || '#ffffff')}"/>\n  ${body}\n</svg>\n`;
+}
+
+function canvasWrapTextLines(text, size, maxWidth) {
+  const maxChars = Math.max(8, Math.floor(Number(maxWidth || 120) / (Number(size || 15) * .58)));
+  return String(text || '')
+    .split('\n')
+    .flatMap((line) => {
+      const words = line.split(/\s+/).filter(Boolean);
+      if (!words.length) return [''];
+      const lines = [];
+      let current = '';
+      for (const word of words) {
+        const next = current ? `${current} ${word}` : word;
+        if (next.length > maxChars && current) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = next;
+        }
+      }
+      if (current) lines.push(current);
+      return lines;
+    });
 }
 
 function loadCanvasState() {
@@ -9940,6 +9971,17 @@ function renderCanvasElement(ctx, el) {
     ctx.stroke();
   } else if (el.type === 'rect') {
     ctx.strokeRect(el.x, el.y, el.w, el.h);
+  } else if (el.type === 'sticky') {
+    const bounds = canvasElementBounds(el);
+    const size = el.size || 15;
+    ctx.fillStyle = el.fill || '#fff4a8';
+    ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+    ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+    ctx.fillStyle = el.stroke || '#3f3a1f';
+    ctx.font = `${size}px "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace`;
+    const lines = canvasWrapTextLines(String(el.text || 'Sticky note'), size, Math.max(40, bounds.w - 18))
+      .slice(0, Math.max(1, Math.floor((bounds.h - 16) / (size * 1.25))));
+    lines.forEach((line, i) => ctx.fillText(line, bounds.x + 10, bounds.y + 20 + i * size * 1.25));
   } else if (el.type === 'ellipse') {
     ctx.beginPath();
     ctx.ellipse(el.x + el.w / 2, el.y + el.h / 2, Math.abs(el.w / 2), Math.abs(el.h / 2), 0, 0, Math.PI * 2);
@@ -10490,7 +10532,7 @@ function renderCanvas() {
 }
 
 function setCanvasTool(tool) {
-  const allowed = new Set(['select', 'pan', 'pen', 'rect', 'ellipse', 'line', 'arrow', 'text', 'erase']);
+  const allowed = new Set(['select', 'pan', 'pen', 'rect', 'ellipse', 'line', 'arrow', 'text', 'sticky', 'erase']);
   if (!allowed.has(tool)) tool = 'pan';
   canvasTool = tool;
   localStorage.setItem('markpad-canvas-tool', tool);
@@ -11060,10 +11102,12 @@ function startCanvasTextEdit(point, existingIndex = -1) {
   const camera = canvasCamera();
   canvasTextTarget = existingIndex >= 0 ? existingIndex : null;
   const existing = existingIndex >= 0 ? canvasDoc.elements[existingIndex] : null;
+  const sticky = existing?.type === 'sticky';
   canvasTextEditor.value = existing?.text || '';
-  canvasTextEditor.style.left = `${(existing?.x ?? point.x) * camera.scale + camera.x}px`;
-  canvasTextEditor.style.top = `${((existing?.y ?? point.y) - 18) * camera.scale + camera.y}px`;
-  canvasTextEditor.style.width = existing ? `${Math.max(180, String(existing.text || '').length * 8)}px` : '220px';
+  canvasTextEditor.style.left = `${((existing?.x ?? point.x) + (sticky ? 10 : 0)) * camera.scale + camera.x}px`;
+  canvasTextEditor.style.top = `${((existing?.y ?? point.y) + (sticky ? 10 : -18)) * camera.scale + camera.y}px`;
+  canvasTextEditor.style.width = sticky ? `${Math.max(160, Math.abs(existing.w || 220) - 20) * camera.scale}px` : existing ? `${Math.max(180, String(existing.text || '').length * 8)}px` : '220px';
+  canvasTextEditor.style.height = sticky ? `${Math.max(60, Math.abs(existing.h || 140) - 20) * camera.scale}px` : '';
   canvasTextEditor.classList.remove('hidden');
   requestAnimationFrame(() => canvasTextEditor.focus());
   canvasTextEditor.dataset.worldX = String(existing?.x ?? point.x);
@@ -11137,11 +11181,12 @@ canvasStage?.addEventListener('pointerdown', (e) => {
     const idx = canvasHitTest(point);
     canvasSelectedIndex = idx;
     if (idx >= 0) syncCanvasControlsFromSelection();
-    startCanvasTextEdit(point, idx >= 0 && canvasDoc.elements[idx].type === 'text' ? idx : -1);
+    startCanvasTextEdit(point, idx >= 0 && ['text', 'sticky'].includes(canvasDoc.elements[idx].type) ? idx : -1);
     return;
   }
   const base = { id: canvasId(), stroke: canvasColor.value, width: Number(canvasWidth.value || 3) };
   if (canvasTool === 'pen') canvasDrawing = { ...base, type: 'path', points: [point] };
+  else if (canvasTool === 'sticky') canvasDrawing = { ...base, type: 'sticky', x: point.x, y: point.y, w: 220, h: 140, fill: '#fff4a8', text: 'Sticky note', size: 15 };
   else canvasDrawing = { ...base, type: canvasTool, x: point.x, y: point.y, w: 0, h: 0 };
 });
 
@@ -11194,7 +11239,7 @@ canvasStage?.addEventListener('pointerup', () => {
     saveCanvasState();
   }
   if (!canvasDrawing) return;
-  if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
+  if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : canvasDrawing.type === 'sticky' || Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
     canvasDoc.elements.push(canvasDrawing);
     canvasSelectedIndex = canvasDoc.elements.length - 1;
     saveCanvasState();
@@ -11562,6 +11607,24 @@ function canvasToExcalidraw(doc) {
     if (element.type === 'rect') {
       return excalidrawBaseElement(element, index, 'rectangle');
     }
+    if (element.type === 'sticky') {
+      const base = excalidrawBaseElement(element, index, 'text');
+      const text = String(element.text || 'Sticky note');
+      const fontSize = Math.max(8, Number(element.size || 15));
+      return {
+        ...base,
+        backgroundColor: element.fill || '#fff4a8',
+        text,
+        originalText: text,
+        fontSize,
+        fontFamily: 3,
+        textAlign: 'left',
+        verticalAlign: 'top',
+        baseline: Math.round(fontSize * 1.25),
+        lineHeight: 1.25,
+        containerId: null,
+      };
+    }
     if (element.type === 'ellipse') {
       return excalidrawBaseElement(element, index, 'ellipse');
     }
@@ -11639,7 +11702,7 @@ async function copyExcalidrawCanvasJson() {
 
 function canvasElementSummary(element, index) {
   const bounds = canvasElementBounds(element);
-  const label = element.type === 'text'
+  const label = ['text', 'sticky'].includes(element.type)
     ? String(element.text || '').replace(/\s+/g, ' ').trim().slice(0, 80)
     : element.type === 'path'
       ? `${(element.points || []).length} points`
@@ -11652,7 +11715,7 @@ function renderCanvasInventoryRows(doc) {
   if (!source.elements.length) return '<div class="canvas-empty">Canvas is empty.</div>';
   return `<div class="local-list">${source.elements.map((element, index) => {
     const bounds = canvasElementBounds(element);
-    const label = element.type === 'text'
+    const label = ['text', 'sticky'].includes(element.type)
       ? String(element.text || '').replace(/\s+/g, ' ').trim().slice(0, 120)
       : element.type === 'path'
         ? `${(element.points || []).length} point${(element.points || []).length === 1 ? '' : 's'}`
@@ -12286,6 +12349,7 @@ function obsidianElementText(element) {
   if (element.type === 'path') return 'Freehand path';
   if (element.type === 'rect') return 'Rectangle';
   if (element.type === 'ellipse') return 'Oval';
+  if (element.type === 'sticky') return 'Sticky note';
   return '';
 }
 

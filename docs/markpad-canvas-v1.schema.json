@@ -72,7 +72,7 @@
           "type": "string"
         },
         "type": {
-          "enum": ["path", "text", "rect", "ellipse", "line", "arrow"]
+          "enum": ["path", "text", "sticky", "rect", "ellipse", "line", "arrow"]
         },
         "x": {
           "type": "number"
