@@ -13887,6 +13887,7 @@ function makeNoteRow(note) {
   row.dataset.noteId = note.id;
   row.title = note.path ? `${note.title || 'Untitled'}\n${note.path}` : 'Unsaved draft';
   row.draggable = true;
+  row.tabIndex = 0;
 
   // Star on the left
   if (note.path) {
@@ -13940,7 +13941,7 @@ function makeNoteRow(note) {
     const hasPath = !!note.path;
     const isCanvas = getFileType(note.path, note.kind) === 'canvas';
     const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
-    starBtn.textContent = note.star ? 'Unstar' : 'Star';
+    setCtxText('star', note.star ? 'Unstar' : 'Star');
     starBtn.style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="open"]').style.display = 'none';
     ctxMenu.querySelector('[data-ctx="search"]').style.display = 'none';
@@ -13953,9 +13954,21 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
     const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
-    deleteBtn.textContent = 'Delete';
+    setCtxText('delete', 'Delete');
     deleteBtn.style.display = canTrash ? '' : 'none';
-    showContextMenuAt(e);
+    openContextMenuAt(e, row);
+  });
+
+  row.addEventListener('keydown', (e) => {
+    if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return;
+    e.preventDefault();
+    const rect = row.getBoundingClientRect();
+    row.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + Math.min(32, rect.width / 2),
+      clientY: rect.top + rect.height / 2,
+    }));
   });
 
   row.addEventListener('dragstart', () => { draggedNoteId = note.id; row.classList.add('note-dragging'); });
@@ -14153,11 +14166,15 @@ async function requestCloseNote(note) {
 }
 
 // ── Context menu ─────────────────────────────────────────
-document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
+let ctxPreviousFocus = null;
+
+document.addEventListener('click', () => hideContextMenu({ restoreFocus: false }));
 document.addEventListener('click', (event) => {
   if (canvasContextMenu?.contains(event.target)) return;
   hideCanvasContextMenu();
 });
+window.addEventListener('blur', () => hideContextMenu({ restoreFocus: false }));
+ctxMenu.addEventListener('contextmenu', (event) => event.preventDefault());
 
 function contextTargetNote() {
   return ctxNoteId ? cachedNotes.find(n => n.id === ctxNoteId) : null;
@@ -14198,10 +14215,84 @@ function contextRelatedSearchQuery() {
   return '';
 }
 
-function showContextMenuAt(event) {
-  ctxMenu.style.left = event.clientX + 'px';
-  ctxMenu.style.top = event.clientY + 'px';
+function visibleCtxButtons() {
+  return Array.from(ctxMenu.querySelectorAll('.ctx-item')).filter(btn => btn.style.display !== 'none' && !btn.disabled);
+}
+
+function focusCtxButton(indexOrDelta, relative = true) {
+  const buttons = visibleCtxButtons();
+  if (!buttons.length) return;
+  const current = buttons.indexOf(document.activeElement);
+  const next = relative ? (current + indexOrDelta + buttons.length) % buttons.length : Math.max(0, Math.min(buttons.length - 1, indexOrDelta));
+  buttons[next].focus();
+}
+
+function focusCtxTextMatch(key) {
+  const needle = String(key || '').toLowerCase();
+  if (!needle || needle.length !== 1) return false;
+  const match = visibleCtxButtons().find(btn => (btn.textContent || '').trim().toLowerCase().startsWith(needle));
+  if (!match) return false;
+  match.focus();
+  return true;
+}
+
+function handleContextMenuKeydown(event) {
+  if (ctxMenu.classList.contains('hidden')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    hideContextMenu();
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    focusCtxButton(1);
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    focusCtxButton(-1);
+  } else if (event.key === 'Home') {
+    event.preventDefault();
+    focusCtxButton(0, false);
+  } else if (event.key === 'End') {
+    event.preventDefault();
+    focusCtxButton(visibleCtxButtons().length - 1, false);
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    if (document.activeElement?.classList?.contains('ctx-item')) {
+      event.preventDefault();
+      document.activeElement.click();
+    }
+  } else if (!event.ctrlKey && !event.metaKey && !event.altKey) {
+    if (focusCtxTextMatch(event.key)) event.preventDefault();
+  }
+}
+
+function hideContextMenu({ restoreFocus = true } = {}) {
+  if (ctxMenu.classList.contains('hidden')) return;
+  hideContextMenu({ restoreFocus: false });
+  document.removeEventListener('keydown', handleContextMenuKeydown);
+  if (restoreFocus && ctxPreviousFocus && document.contains(ctxPreviousFocus)) ctxPreviousFocus.focus();
+  ctxPreviousFocus = null;
+}
+
+function openContextMenuAt(event, sourceEl = null) {
+  ctxPreviousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : sourceEl;
   ctxMenu.classList.remove('hidden');
+  const pad = 9;
+  const rect = ctxMenu.getBoundingClientRect();
+  const left = Math.max(pad, Math.min(event.clientX, window.innerWidth - rect.width - pad));
+  const top = Math.max(pad, Math.min(event.clientY, window.innerHeight - rect.height - pad));
+  ctxMenu.style.left = left + 'px';
+  ctxMenu.style.top = top + 'px';
+  document.addEventListener('keydown', handleContextMenuKeydown);
+  requestAnimationFrame(() => focusCtxButton(0, false));
+}
+
+function showContextMenuAt(event) {
+  openContextMenuAt(event);
+}
+
+function setCtxText(action, label) {
+  const btn = ctxMenu.querySelector(`[data-ctx="${action}"]`);
+  const text = btn?.querySelector('span:first-child');
+  if (text) text.textContent = label;
+  else if (btn) btn.textContent = label;
 }
 
 function showLocalFileContextMenu(event, path) {
@@ -14223,9 +14314,9 @@ function showLocalFileContextMenu(event, path) {
   ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="close"]').style.display = 'none';
   const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
-  deleteBtn.textContent = 'Move to Trash';
+  setCtxText('delete', 'Move to Trash');
   deleteBtn.style.display = window.go?.main?.App?.MoveLocalFolderFileToTrash ? '' : 'none';
-  showContextMenuAt(event);
+  openContextMenuAt(event, event.target.closest?.('[data-local-open]'));
 }
 
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
@@ -14233,13 +14324,13 @@ ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () =>
 });
 ctxMenu.querySelector('[data-ctx="open"]').addEventListener('click', async () => {
   const path = contextTargetPath();
-  ctxMenu.classList.add('hidden');
+  hideContextMenu({ restoreFocus: false });
   if (path) await openLocalFolderFile(path);
   else statusText.textContent = 'No file path to open';
 });
 ctxMenu.querySelector('[data-ctx="search"]').addEventListener('click', async () => {
   const query = contextRelatedSearchQuery();
-  ctxMenu.classList.add('hidden');
+  hideContextMenu({ restoreFocus: false });
   if (query) await showLocalFolder(query);
   else statusText.textContent = 'No file path to search';
 });
@@ -14306,7 +14397,7 @@ ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', asy
     await navigator.clipboard.writeText(`[[${contextWikilinkTitle()}]]`);
     statusText.textContent = 'Wikilink copied';
   } else statusText.textContent = 'No file path to copy';
-  ctxMenu.classList.add('hidden');
+  hideContextMenu({ restoreFocus: false });
 });
 ctxMenu.querySelector('[data-ctx="copyembed"]').addEventListener('click', async () => {
   const target = contextEmbedTarget();
@@ -14314,7 +14405,7 @@ ctxMenu.querySelector('[data-ctx="copyembed"]').addEventListener('click', async 
     await navigator.clipboard.writeText(`![[${target}]]`);
     statusText.textContent = 'Embed copied';
   } else statusText.textContent = 'No file path to copy';
-  ctxMenu.classList.add('hidden');
+  hideContextMenu({ restoreFocus: false });
 });
 ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
@@ -14325,7 +14416,7 @@ ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () 
   if (ctxLocalPath) {
     try {
       await window.go.main.App.MoveLocalFolderFileToTrash(ctxLocalPath);
-      ctxMenu.classList.add('hidden');
+      hideContextMenu({ restoreFocus: false });
       await showLocalFolder(localFolderQuery);
       statusText.textContent = 'Local file moved to Trash for 30 days';
     } catch (err) {
@@ -15061,7 +15152,7 @@ document.addEventListener('keydown', async (e) => {
     if (findOpen) toggleFind();
     if (historyOpen) toggleHistory();
     modalOverlay.classList.add('hidden');
-    ctxMenu.classList.add('hidden');
+    hideContextMenu({ restoreFocus: false });
     hideCanvasContextMenu();
   }
   else if (ctrl && (key === '=' || key === '+')) { e.preventDefault(); zoomIn(); }
