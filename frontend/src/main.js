@@ -78,6 +78,7 @@ let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
 let canvasSaveTimer = null;
+let canvasSaveTimerSessionOnly = false;
 let canvasBoundsCache = new WeakMap();
 let canvasRenderFrame = 0;
 let loadedSearchCacheBytes = 0;
@@ -10685,7 +10686,7 @@ function fitCanvasToContent() {
   const elements = canvasDoc.elements || [];
   if (!elements.length) {
     canvasSession.camera = { x: 0, y: 0, scale: 1 };
-    saveCanvasState();
+    saveCanvasSessionState();
     renderCanvas();
     return;
   }
@@ -10716,7 +10717,7 @@ function fitCanvasToBounds(bounds, maxScale = 2.5) {
     y: rect.height / 2 - (minY + contentH / 2) * scale,
     scale,
   };
-  saveCanvasState();
+  saveCanvasSessionState();
   renderCanvas();
 }
 
@@ -10734,7 +10735,7 @@ function setCanvasZoom(nextScale) {
   camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, Number(nextScale) || 1));
   camera.x = rect.width / 2 - before.x * camera.scale;
   camera.y = rect.height / 2 - before.y * camera.scale;
-  saveCanvasState();
+  saveCanvasSessionState();
   renderCanvas();
   statusText.textContent = `Canvas zoom ${Math.round(camera.scale * 100)}%`;
 }
@@ -10747,7 +10748,7 @@ function zoomCanvasBy(factor) {
 function resetCanvasView() {
   if (!canvasSession) loadCanvasState();
   canvasSession.camera = { x: 0, y: 0, scale: 1 };
-  saveCanvasState();
+  saveCanvasSessionState();
   renderCanvas();
   statusText.textContent = 'Canvas view reset';
 }
@@ -10835,20 +10836,33 @@ function saveCanvasState() {
   localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
 }
 
-function queueCanvasStateSave() {
-  if (!canvasDoc || !canvasSession) return;
+function saveCanvasSessionState() {
+  if (!canvasSession) return;
+  localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
+}
+
+function queueCanvasStateSave(options = {}) {
+  if (!canvasSession || (!options.sessionOnly && !canvasDoc)) return;
+  const sessionOnly = !!options.sessionOnly;
+  canvasSaveTimerSessionOnly = canvasSaveTimer ? canvasSaveTimerSessionOnly && sessionOnly : sessionOnly;
   if (canvasSaveTimer) clearTimeout(canvasSaveTimer);
   canvasSaveTimer = setTimeout(() => {
+    const shouldSaveSessionOnly = canvasSaveTimerSessionOnly;
     canvasSaveTimer = null;
-    saveCanvasState();
+    canvasSaveTimerSessionOnly = false;
+    if (shouldSaveSessionOnly) saveCanvasSessionState();
+    else saveCanvasState();
   }, CANVAS_SAVE_DEBOUNCE_MS);
 }
 
 function flushCanvasStateSave() {
   if (!canvasSaveTimer) return;
   clearTimeout(canvasSaveTimer);
+  const shouldSaveSessionOnly = canvasSaveTimerSessionOnly;
   canvasSaveTimer = null;
-  saveCanvasState();
+  canvasSaveTimerSessionOnly = false;
+  if (shouldSaveSessionOnly) saveCanvasSessionState();
+  else saveCanvasState();
 }
 
 function canvasDocSnapshot() {
@@ -11503,6 +11517,7 @@ function setCanvasZoomPreset(scale) {
   if (!canvasDoc) loadCanvasState();
   const camera = canvasCamera();
   camera.scale = Math.max(0.2, Math.min(4, scale));
+  saveCanvasSessionState();
   renderCanvas();
   statusText.textContent = `Canvas zoom ${Math.round(camera.scale * 100)}%`;
 }
@@ -11518,6 +11533,7 @@ function panCanvasView(dx, dy) {
   const camera = canvasCamera();
   camera.x += dx;
   camera.y += dy;
+  saveCanvasSessionState();
   renderCanvas();
   statusText.textContent = 'Canvas view moved';
 }
@@ -11710,7 +11726,7 @@ function closeCanvas() {
   flushCanvasStateSave();
   canvasActive = false;
   canvasOverlay.classList.add('hidden');
-  saveCanvasState();
+  saveCanvasSessionState();
 }
 
 function canvasPointNearBounds(point, bounds, tolerance = 0) {
@@ -12304,7 +12320,7 @@ canvasStage?.addEventListener('pointerup', () => {
   }
   if (canvasPanStart) {
     canvasPanStart = null;
-    saveCanvasState();
+    saveCanvasSessionState();
   }
   if (!canvasDrawing) return;
   const createdSticky = canvasDrawing.type === 'sticky';
@@ -12334,7 +12350,7 @@ canvasStage?.addEventListener('wheel', (e) => {
   camera.scale = Math.max(CANVAS_ZOOM_MIN, Math.min(CANVAS_ZOOM_MAX, camera.scale * factor));
   camera.x = e.clientX - rect.left - before.x * camera.scale;
   camera.y = e.clientY - rect.top - before.y * camera.scale;
-  queueCanvasStateSave();
+  queueCanvasStateSave({ sessionOnly: true });
   renderCanvas();
 }, { passive: false });
 
