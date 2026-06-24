@@ -36,7 +36,7 @@ let searchActiveIndex = 0;
 let searchLastResults = [];
 let searchLastQuery = '';
 let searchLastDedupe = { input: 0, output: 0, removed: 0 };
-let searchLastTelemetry = { scope: 'loaded', elapsedMs: 0, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
+let searchLastTelemetry = { scope: 'loaded', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
@@ -1514,7 +1514,7 @@ function uiStateSummaryJson() {
       scope: searchScope,
       lastQuery: searchLastQuery || '',
       resultCount: searchLastResults.length,
-      telemetry: { ...searchLastTelemetry },
+      diagnostics: { ...searchLastTelemetry },
     },
     tasks: {
       viewMode: taskViewMode,
@@ -2433,14 +2433,18 @@ function searchResultMatchesPlan(result, plan) {
   const typeText = `${kind} ${typeLabel(kind)} ${path.split('.').pop() || ''}`.toLowerCase();
   const snippet = String(result.snippet || '').toLowerCase();
   const haystack = `${title}\n${path}\n${snippet}`;
+  const resultBody = searchResultFilterText(result);
   const exclude = plan.excludes || { path: [], title: [], type: [], tag: [], task: [] };
   if (plan.filters.path.some(value => !path.includes(value))) return false;
   if (plan.filters.title.some(value => !title.includes(value))) return false;
   if (plan.filters.type.some(value => !typeText.includes(value))) return false;
+  if (plan.filters.tag.some(value => !resultBody.includes(`#${value}`))) return false;
+  if (!searchResultMatchesTaskFilters(result, plan.filters.task)) return false;
   if (exclude.path.some(value => path.includes(value))) return false;
   if (exclude.title.some(value => title.includes(value))) return false;
   if (exclude.type.some(value => typeText.includes(value))) return false;
-  if (exclude.tag.some(value => haystack.includes(`#${value}`))) return false;
+  if (exclude.tag.some(value => resultBody.includes(`#${value}`))) return false;
+  if (exclude.task.length && searchResultMatchesTaskFilters(result, exclude.task)) return false;
   if ((plan.excludeTerms || []).some(value => haystack.includes(value))) return false;
   if ((plan.excludePhrases || []).some(value => haystack.includes(value))) return false;
   if ((plan.wildcards || []).some(value => !wildcardMatch(haystack, value))) return false;
@@ -2496,12 +2500,26 @@ function searchQueryChipItems(query) {
 function renderSearchQueryChips(query) {
   const chips = searchQueryChipItems(query);
   if (!chips.length) return '';
+  const buttons = chips.map((chip) => {
+    const labelAttr = escapeAttr(chip.label);
+    const kindAttr = escapeAttr(chip.kind);
+    return `<button type="button" data-search-chip="${labelAttr}" class="${kindAttr}" title="Add ${labelAttr}">${escapeHtml(chip.label)}</button>`;
+  }).join('');
   return `
     <div class="search-query-chips" aria-label="Parsed search query">
       <span>Query plan</span>
-      ${chips.map(chip => `<button type="button" data-search-chip="${escapeHtml(chip.label)}" class="${escapeHtml(chip.kind)}" title="Add ${escapeHtml(chip.label)}">${escapeHtml(chip.label)}</button>`).join('')}
+      ${buttons}
     </div>
   `;
+}
+
+function escapeAttr(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function searchContentMatchesTaskFilters(content, filters) {
@@ -2516,6 +2534,40 @@ function searchContentMatchesTaskFilters(content, filters) {
     }
     return lines.some(line => /^\s*[-*+]\s+\[[ xX]\]\s+/.test(line) && line.toLowerCase().includes(filter));
   });
+}
+
+function searchResultFilterText(result) {
+  return [
+    result?.snippet,
+    result?.text,
+    result?.raw,
+    result?.title,
+    result?.path,
+  ].map(value => String(value || '').toLowerCase()).join('\n');
+}
+
+function searchResultMatchesTaskFilters(result, filters) {
+  if (!filters.length) return true;
+  const text = searchResultFilterText(result);
+  return filters.every((filter) => {
+    if (['open', 'todo', 'unchecked'].includes(filter)) return /\[[\s]\]/.test(text);
+    if (['done', 'closed', 'checked'].includes(filter)) return /\[[x]\]/i.test(text);
+    return /\[[\sx]\]/i.test(text) && text.includes(filter);
+  });
+}
+
+function localSearchBackendQuery(plan, rawQuery) {
+  const backend = String(plan?.backendQuery || '').trim();
+  if (backend) return backend;
+  const tagFilters = plan?.filters?.tag || [];
+  if (tagFilters.length) return tagFilters.map(tag => `#${tag}`).join(' ');
+  const taskFilters = plan?.filters?.task || [];
+  const firstTask = taskFilters[0] || '';
+  if (['open', 'todo', 'unchecked'].includes(firstTask)) return '[ ]';
+  if (['done', 'closed', 'checked'].includes(firstTask)) return '[x]';
+  if (firstTask) return firstTask;
+  if (plan?.hasFilters || plan?.hasExcludes) return '';
+  return String(rawQuery || '').trim();
 }
 
 function scoreSearch(note, content, plan) {
@@ -2694,9 +2746,11 @@ function searchElapsedMs(startedAt, fallback) {
 }
 
 function setSearchTelemetry(stats = {}) {
+  const backendElapsedMs = Number.isFinite(Number(stats.elapsedMs)) ? Math.max(0, Math.round(Number(stats.elapsedMs))) : null;
   searchLastTelemetry = {
     scope: stats.scope || searchScope,
-    elapsedMs: searchElapsedMs(stats.startedAt, stats.elapsedMs),
+    elapsedMs: Number.isFinite(Number(stats.startedAt)) ? searchElapsedMs(stats.startedAt) : searchElapsedMs(null, stats.elapsedMs),
+    backendElapsedMs,
     searched: Math.max(0, Number(stats.searched ?? stats.searchable ?? 0)),
     scanned: Math.max(0, Number(stats.scanned ?? stats.searched ?? stats.searchable ?? 0)),
     skipped: Math.max(0, Number(stats.skipped || 0)),
@@ -2735,7 +2789,7 @@ function searchProfileSnapshot(query = searchLastQuery, results = searchLastResu
     backendQuery: plan.backendQuery || '',
     resultCount: resultItems.length,
     sources,
-    telemetry: { ...searchLastTelemetry },
+    diagnostics: { ...searchLastTelemetry },
     dedupe: searchScope === 'all' ? searchLastDedupe : { input: resultItems.length, output: resultItems.length, removed: 0 },
     operators: {
       terms: plan.terms || [],
@@ -2800,7 +2854,7 @@ function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
     '',
     '## Local performance',
     '',
-    `- Last run: ${searchTelemetrySummary(snapshot.telemetry)}`,
+    `- Last run: ${searchTelemetrySummary(snapshot.diagnostics)}`,
     `- Loaded search cache: ${formatBytes(snapshot.cache.bytes || 0)} (${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries)`,
     `- Current result page: ${formatBytes(snapshot.resultPage?.bytes || 0)} (${snapshot.resultPage?.count || 0} results, ${formatBytes(snapshot.resultPage?.snippetBytes || 0)} snippets)`,
     `- Cache cap: ${formatBytes(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)}`,
@@ -2829,12 +2883,13 @@ function searchProfileCsv(snapshot = searchProfileSnapshot()) {
     ['dedupe_input', Number(snapshot.dedupe?.input || 0)],
     ['dedupe_output', Number(snapshot.dedupe?.output || 0)],
     ['dedupe_removed', Number(snapshot.dedupe?.removed || 0)],
-    ['last_run_elapsed_ms', Number(snapshot.telemetry?.elapsedMs || 0)],
-    ['last_run_searched', Number(snapshot.telemetry?.searched || 0)],
-    ['last_run_scanned', Number(snapshot.telemetry?.scanned || 0)],
-    ['last_run_skipped', Number(snapshot.telemetry?.skipped || 0)],
-    ['last_run_oversize', Number(snapshot.telemetry?.oversize || 0)],
-    ['last_run_capped', snapshot.telemetry?.capped ? 'true' : 'false'],
+    ['last_run_elapsed_ms', Number(snapshot.diagnostics?.elapsedMs || 0)],
+    ['last_run_backend_elapsed_ms', snapshot.diagnostics?.backendElapsedMs ?? ''],
+    ['last_run_searched', Number(snapshot.diagnostics?.searched || 0)],
+    ['last_run_scanned', Number(snapshot.diagnostics?.scanned || 0)],
+    ['last_run_skipped', Number(snapshot.diagnostics?.skipped || 0)],
+    ['last_run_oversize', Number(snapshot.diagnostics?.oversize || 0)],
+    ['last_run_capped', snapshot.diagnostics?.capped ? 'true' : 'false'],
     ['result_page_bytes', Number(snapshot.resultPage?.bytes || 0)],
     ['result_page_snippet_bytes', Number(snapshot.resultPage?.snippetBytes || 0)],
     ['result_page_metadata_bytes', Number(snapshot.resultPage?.metadataBytes || 0)],
@@ -2860,7 +2915,7 @@ function showSearchProfile() {
     <div class="diag-grid">
       <div class="diag-card"><strong>${escapeHtml(snapshot.scope)}</strong><span>Scope</span><small>loaded / local / all</small></div>
       <div class="diag-card"><strong>${snapshot.resultCount}</strong><span>Current results</span><small>${escapeHtml(sourceText)}</small></div>
-      <div class="diag-card"><strong>${Number(snapshot.telemetry?.elapsedMs || 0)} ms</strong><span>Last run</span><small>${escapeHtml(searchTelemetrySummary(snapshot.telemetry))}</small></div>
+      <div class="diag-card"><strong>${Number(snapshot.diagnostics?.elapsedMs || 0)} ms</strong><span>Last run</span><small>${escapeHtml(searchTelemetrySummary(snapshot.diagnostics))}</small></div>
       <div class="diag-card"><strong>${snapshot.dedupe.removed || 0}</strong><span>De-duplicated</span><small>${snapshot.dedupe.input || snapshot.resultCount} merged hits</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.resultPage.bytes || 0)}</strong><span>Result page</span><small>${formatBytes(snapshot.resultPage.snippetBytes || 0)} snippets · avg ${formatBytes(snapshot.resultPage.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.cache.bytes || 0)}</strong><span>Loaded cache</span><small>${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries</small></div>
@@ -2912,7 +2967,7 @@ function renderSearchResultStrip(results, query) {
     + (snapshot.operators.wildcards || []).length
     + (snapshot.operators.fuzzyTerms || []).length;
   const dedupe = snapshot.dedupe || { input: snapshot.resultCount, output: snapshot.resultCount, removed: 0 };
-  const telemetry = snapshot.telemetry || {};
+  const telemetry = snapshot.diagnostics || {};
   const skipped = Number(telemetry.skipped || 0) + Number(telemetry.oversize || 0);
   const dedupeCard = snapshot.scope === 'all'
     ? `<div class="search-result-card">
@@ -2990,6 +3045,10 @@ function searchEmptyHtml(message, query = searchLastQuery) {
 }
 
 async function copySearchProfileMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
   await navigator.clipboard.writeText(searchProfileMarkdown());
   statusText.textContent = 'Search profile copied as Markdown';
 }
@@ -3000,6 +3059,10 @@ function exportSearchProfileMarkdown() {
 }
 
 async function copySearchProfileJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
   await navigator.clipboard.writeText(searchProfileJson());
   statusText.textContent = 'Search profile copied as JSON';
 }
@@ -3010,6 +3073,10 @@ function exportSearchProfileJson() {
 }
 
 async function copySearchProfileCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
   await navigator.clipboard.writeText(searchProfileCsv());
   statusText.textContent = 'Search profile copied as CSV';
 }
@@ -3385,8 +3452,9 @@ function dedupeSearchResults(results) {
 async function runAllSearch(query, token) {
   const startedAt = performance.now();
   const plan = parseSearchQuery(query);
+  const loadedLimit = 35;
   const [loaded, localPack] = await Promise.all([
-    collectLoadedSearchResults(query, token, 35),
+    collectLoadedSearchResults(query, token, loadedLimit),
     collectLocalSearchResults(query, token, 35),
   ]);
   if (token !== searchToken) return;
@@ -3408,7 +3476,7 @@ async function runAllSearch(query, token) {
     scanned: cachedNotes.length + Number(localPack.stats?.scanned ?? 0),
     skipped: Number(localPack.stats?.skipped || 0),
     oversize: Number(localPack.stats?.oversize || 0),
-    capped: !!localPack.stats?.capped || results.length >= 70,
+    capped: loaded.length >= loadedLimit || !!localPack.stats?.capped || results.length >= 70,
     resultCount: results.length,
   });
   renderSearchResults(results, query);
@@ -3642,6 +3710,10 @@ async function runLocalFolderSearch(query, token) {
   if (token !== searchToken) return;
   setSearchTelemetry({ ...(pack.stats || {}), scope: 'local', startedAt, resultCount: (pack.results || []).length });
   if (pack.message) {
+    searchLastResults = [];
+    searchLastQuery = String(query || '').trim();
+    searchActiveIndex = 0;
+    searchInput?.removeAttribute('aria-activedescendant');
     searchResults.innerHTML = searchEmptyHtml(pack.message, query);
     searchMeta.textContent = pack.meta || 'Local folder search unavailable';
     return;
@@ -3664,7 +3736,7 @@ async function collectLocalSearchResults(query, token, limit) {
       meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
     };
   }
-  const q = (plan.hasExcludes || plan.hasWildcards || plan.hasFuzzy) ? plan.backendQuery : query.trim();
+  const q = localSearchBackendQuery(plan, query);
   if (!q) {
     const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
     if (token !== searchToken) return { results: [] };
