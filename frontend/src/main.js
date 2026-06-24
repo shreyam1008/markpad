@@ -13956,6 +13956,7 @@ function makeNoteRow(note) {
     starBtn.textContent = note.star ? 'Unstar' : 'Star';
     starBtn.style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="info"]').style.display = '';
+    ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
@@ -14177,6 +14178,20 @@ ctxMenu.querySelector('[data-ctx="info"]').addEventListener('click', async () =>
       activeId = prevId;
     }
   }
+});
+ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () => {
+  if (!ctxNoteId) return;
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (!note || note.path) return;
+  if (ctxNoteId !== activeId) {
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+    await window.go.main.App.SetActive(ctxNoteId);
+    activeId = ctxNoteId;
+    loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));
+    renderSession(await window.go.main.App.GetSession());
+    restoreNoteView();
+  }
+  await doSaveAs();
 });
 ctxMenu.querySelector('[data-ctx="folder"]').addEventListener('click', () => {
   const note = cachedNotes.find(n => n.id === ctxNoteId);

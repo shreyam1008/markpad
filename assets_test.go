@@ -303,6 +303,33 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	})
 }
 
+func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`id="ctx-menu"`,
+		`data-ctx="saveas"`,
+		"Save As...",
+		`data-ctx="folder"`,
+		`data-ctx="copypath"`,
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		`ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';`,
+		`ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () => {`,
+		"if (!note || note.path) return;",
+		"await window.go.main.App.SetActive(ctxNoteId);",
+		"loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));",
+		"await doSaveAs();",
+	})
+}
+
 func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {

@@ -58,7 +58,7 @@ Production builds embed the frontend assets and do not require runtime CDN fetch
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
 - **Sidebar** — Favorites / Open / Recent sections. Star on left, close on right. Collapse sections, drag-and-drop reorder
 - **Sidebar Outline** — Real-time markdown Table of Contents outline that scroll-syncs the editor and viewer panes
-- **Rich right-click** — Star, File Info, Open Folder, Copy Path, Close, Delete
+- **Rich right-click** — Star, File Info, Save As for drafts, Open Folder, Copy Path, Close, Delete
 - **File info** — Click (i) in the title bar for name, path, size, type, modified date, and Open Folder
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
 - **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
