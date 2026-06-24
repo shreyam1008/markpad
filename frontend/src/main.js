@@ -371,7 +371,7 @@ function renderThemeLabCards(mode) {
   return THEMES
     .filter(theme => theme.mode === mode)
     .map(theme => `
-      <button class="theme-lab-card${theme.id === currentTheme ? ' active' : ''}" data-theme-lab-choice="${theme.id}" type="button">
+      <button class="theme-lab-card${theme.id === currentTheme ? ' active' : ''}" data-theme-lab-choice="${theme.id}" type="button" aria-pressed="${theme.id === currentTheme ? 'true' : 'false'}">
         <span class="theme-lab-swatch" data-theme-swatch="${theme.id}">
           <i></i><i></i><i></i>
         </span>
@@ -3339,12 +3339,12 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Recipes</strong><span>Writing, planning, review, focus, night</span><small>Export lightweight Markdown/JSON guidance</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
-      <button data-theme-choice="paper">Paper</button>
-      <button data-theme-choice="linen">Linen</button>
-      <button data-theme-choice="mist">Mist</button>
-      <button data-theme-choice="ink">Ink</button>
-      <button data-theme-choice="pine">Pine</button>
-      <button data-theme-choice="midnight">Midnight</button>
+      <button data-theme-choice="paper" aria-pressed="${currentTheme === 'paper' ? 'true' : 'false'}">Paper</button>
+      <button data-theme-choice="linen" aria-pressed="${currentTheme === 'linen' ? 'true' : 'false'}">Linen</button>
+      <button data-theme-choice="mist" aria-pressed="${currentTheme === 'mist' ? 'true' : 'false'}">Mist</button>
+      <button data-theme-choice="ink" aria-pressed="${currentTheme === 'ink' ? 'true' : 'false'}">Ink</button>
+      <button data-theme-choice="pine" aria-pressed="${currentTheme === 'pine' ? 'true' : 'false'}">Pine</button>
+      <button data-theme-choice="midnight" aria-pressed="${currentTheme === 'midnight' ? 'true' : 'false'}">Midnight</button>
       <button data-theme-lab-open>Theme Lab</button>
       <button data-copy-theme-recipes-md>Copy recipes MD</button>
       <button data-export-theme-recipes-json>Export recipes JSON</button>
@@ -14309,7 +14309,7 @@ function applyImportedLocalSettings() {
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
   const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
-  const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" data-theme-mode="${theme.mode}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}">${theme.label}</button>`).join('');
+  const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" data-theme-mode="${theme.mode}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}" aria-pressed="${theme.id === currentTheme ? 'true' : 'false'}">${theme.label}</button>`).join('');
   showModal('Preferences', `
     <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
