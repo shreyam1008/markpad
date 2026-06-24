@@ -469,6 +469,7 @@ func TestSearchSyntaxStripStaysStaticAndLocalFirst(t *testing.T) {
 		`data-search-example="task:open"`,
 		`data-search-example="task:done"`,
 		`data-search-example="&quot;exact phrase&quot;"`,
+		`data-search-example="~fuzzy"`,
 		`data-search-example="-path:archive"`,
 		`data-search-example="-task:done"`,
 	})
