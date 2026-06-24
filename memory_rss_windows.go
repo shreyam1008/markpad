@@ -46,3 +46,7 @@ func processRSSBytes() (uint64, bool) {
 
 	return uint64(counters.WorkingSetSize), true
 }
+
+func processTreeMemory() processTreeMemoryStats {
+	return processTreeMemoryStats{Source: "process tree memory unavailable on windows"}
+}

@@ -15,19 +15,36 @@ type RuntimeStats struct {
 	GoHeapIdleBytes     uint64 `json:"goHeapIdleBytes"`
 	GoHeapReleasedBytes uint64 `json:"goHeapReleasedBytes"`
 	GoObjects           uint64 `json:"goObjects"`
+	GoNumGC             uint32 `json:"goNumGC"`
 	Goroutines          int    `json:"goroutines"`
 	ProcessRSSBytes     uint64 `json:"processRssBytes"`
 	ProcessRSSAvailable bool   `json:"processRssAvailable"`
+	ProcessTreeRSSBytes uint64 `json:"processTreeRssBytes"`
+	ProcessTreePSSBytes uint64 `json:"processTreePssBytes"`
+	ProcessTreeCount    int    `json:"processTreeCount"`
+	ProcessTreeRSSReady bool   `json:"processTreeRssAvailable"`
+	ProcessTreePSSReady bool   `json:"processTreePssAvailable"`
+	ProcessTreeSource   string `json:"processTreeSource"`
 	ExecutableSizeBytes uint64 `json:"executableSizeBytes"`
 	UptimeSeconds       int64  `json:"uptimeSeconds"`
 	OS                  string `json:"os"`
 	Arch                string `json:"arch"`
 }
 
+type processTreeMemoryStats struct {
+	RSSBytes     uint64
+	PSSBytes     uint64
+	ProcessCount int
+	RSSAvailable bool
+	PSSAvailable bool
+	Source       string
+}
+
 func (a *App) GetRuntimeStats() RuntimeStats {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	rss, rssAvailable := processRSSBytes()
+	tree := processTreeMemory()
 	executableSize := executableSizeBytes()
 
 	return RuntimeStats{
@@ -37,9 +54,16 @@ func (a *App) GetRuntimeStats() RuntimeStats {
 		GoHeapIdleBytes:     mem.HeapIdle,
 		GoHeapReleasedBytes: mem.HeapReleased,
 		GoObjects:           mem.HeapObjects,
+		GoNumGC:             mem.NumGC,
 		Goroutines:          runtime.NumGoroutine(),
 		ProcessRSSBytes:     rss,
 		ProcessRSSAvailable: rssAvailable,
+		ProcessTreeRSSBytes: tree.RSSBytes,
+		ProcessTreePSSBytes: tree.PSSBytes,
+		ProcessTreeCount:    tree.ProcessCount,
+		ProcessTreeRSSReady: tree.RSSAvailable,
+		ProcessTreePSSReady: tree.PSSAvailable,
+		ProcessTreeSource:   tree.Source,
 		ExecutableSizeBytes: executableSize,
 		UptimeSeconds:       int64(time.Since(runtimeStatsStartedAt).Seconds()),
 		OS:                  runtime.GOOS,

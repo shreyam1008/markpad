@@ -9,19 +9,19 @@ This file tracks what each layer costs so new features stay within budget.
 |-----------|---------------|-------|
 | Go runtime + stdlib | ~4.5 MB | net/http, encoding, os, json, path |
 | Wails v2 framework | ~2.5 MB | Webview bindings, IPC, menus, dialogs |
-| Embedded frontend (`frontend/`) | ~120 KB | HTML + JS + precompiled CSS (see below) |
+| Embedded frontend (`frontend/`) | ~0.9 MB raw source | HTML + JS + precompiled CSS (see below) |
 | Session/history logic (`internal/`) | ~15 KB | Pure Go, no heavy deps |
-| **Total binary** | **~8 MB** | Confirmed via `wails build` |
+| **Total binary** | **9.4 MB** | Confirmed June 24, 2026 via `make build` and Wails CLI |
 
 ## Frontend assets (embedded in binary)
 
 | File | Raw size | Lines | Role |
 |------|---------|-------|------|
-| `frontend/src/main.js` | ~70 KB | ~1500 | All frontend logic |
+| `frontend/src/main.js` | ~743 KB | ~15000 | All frontend logic |
 | `frontend/index.html` | ~16 KB | ~230 | App shell |
 | `frontend/src/tailwind.css` | ~21 KB | generated | Precompiled utility CSS |
-| `frontend/src/styles.css` | ~8 KB | ~170 | Custom CSS overrides |
-| **Total frontend** | **~115 KB** | | Embedded in binary |
+| `frontend/src/styles.css` | measured in repo | custom | Custom CSS overrides |
+| **Total frontend** | **~0.9 MB** | | Embedded in binary |
 
 ## CDN dependencies (loaded at runtime, NOT in binary)
 
@@ -57,14 +57,20 @@ because shared pages make RSS misleading.
 |-------|---------------:|-------|
 | v0.7 with Tailwind browser compiler | ~349 MB | Measured June 7, 2026 |
 | Current precompiled-CSS/lazy-PDF build | ~191 MB | Measured June 7, 2026 after 15s idle; about 45% lower |
+| June 24, 2026 recovery build | ~173.5 MB PSS / ~426.1 MB RSS | 3s sample: main process + WebKit network + WebKit web process |
 
 The webview baseline dominates memory. Document data, undo, diffs, PDF canvases, and image reads are
 explicitly bounded below so usage does not grow without control.
 
+`Runtime Stats` and `Local Footprint` report self RSS plus Linux process-tree RSS/PSS. RSS matches what
+many process monitors show, while PSS is the better budget metric because WebKit shares memory pages
+between the main, network, and web processes.
+
 ## Budget rules
 
 - **Binary must stay under 10 MB.** Do not add heavy Go dependencies.
-- **Frontend JS must stay under 80 KB raw** (excluding CDN). Currently ~70 KB.
+- **Frontend JS growth must be intentional and measured.** The current monolith is already ~743 KB raw;
+  prefer pruning, splitting, or lazy paths before adding large new features.
 - **Tailwind is precompiled.** Never restore the browser CDN compiler; regenerate with `make css`.
 - **No new sync CDN scripts.** Any new library must load with `defer` or on-demand.
 - **Syntax highlighting capped at 5000 lines.** Prevents webview OOM on huge files.

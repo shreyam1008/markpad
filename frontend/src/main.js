@@ -5137,20 +5137,28 @@ function formatRuntimeDuration(seconds) {
 }
 
 function runtimeStatsText(stats) {
-  const rss = stats.processRssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable';
+  const runtime = normalizeRuntimeStats(stats);
+  const rss = runtime.processRssAvailable ? formatBytes(runtime.processRssBytes) : 'Unavailable';
+  const treeRss = runtime.processTreeRssAvailable ? formatBytes(runtime.processTreeRssBytes) : 'Unavailable';
+  const treePss = runtime.processTreePssAvailable ? formatBytes(runtime.processTreePssBytes) : 'Unavailable';
   return [
     'Markpad Runtime Stats',
-    `Process RSS: ${rss}`,
-    `Go heap alloc: ${formatBytes(Number(stats.goAllocBytes || 0))}`,
-    `Go heap in use: ${formatBytes(Number(stats.goHeapInuseBytes || 0))}`,
-    `Go heap idle: ${formatBytes(Number(stats.goHeapIdleBytes || 0))}`,
-    `Go heap released: ${formatBytes(Number(stats.goHeapReleasedBytes || 0))}`,
-    `Go runtime sys: ${formatBytes(Number(stats.goSysBytes || 0))}`,
-    `Executable size: ${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'}`,
-    `Go objects: ${Number(stats.goObjects || 0).toLocaleString()}`,
-    `Goroutines: ${Number(stats.goroutines || 0).toLocaleString()}`,
-    `Uptime: ${formatRuntimeDuration(stats.uptimeSeconds)}`,
-    `Platform: ${stats.os || 'unknown'}/${stats.arch || 'unknown'}`,
+    `Self RSS: ${rss}`,
+    `Process tree RSS: ${treeRss}`,
+    `Process tree PSS: ${treePss}`,
+    `Process tree count: ${runtime.processTreeCount || 'Unavailable'}`,
+    `Process tree source: ${runtime.processTreeSource || 'Unavailable'}`,
+    `Go heap alloc: ${formatBytes(runtime.goAllocBytes)}`,
+    `Go heap in use: ${formatBytes(runtime.goHeapInuseBytes)}`,
+    `Go heap idle: ${formatBytes(runtime.goHeapIdleBytes)}`,
+    `Go heap released: ${formatBytes(runtime.goHeapReleasedBytes)}`,
+    `Go runtime sys: ${formatBytes(runtime.goSysBytes)}`,
+    `Executable size: ${runtime.executableSizeBytes ? formatBytes(runtime.executableSizeBytes) : 'Unavailable'}`,
+    `Go objects: ${runtime.goObjects.toLocaleString()}`,
+    `Go GC count: ${runtime.goNumGC.toLocaleString()}`,
+    `Goroutines: ${runtime.goroutines.toLocaleString()}`,
+    `Uptime: ${formatRuntimeDuration(runtime.uptimeSeconds)}`,
+    `Platform: ${runtime.os || 'unknown'}/${runtime.arch || 'unknown'}`,
   ].join('\n');
 }
 
@@ -5187,28 +5195,36 @@ async function exportRuntimeStatsText() {
 }
 
 function runtimeStatsJson(stats) {
+  const runtime = normalizeRuntimeStats(stats);
   return JSON.stringify({
     type: 'markpad-runtime-stats',
     version: 1,
     sampledAt: new Date().toISOString(),
     process: {
-      rssAvailable: !!stats.processRssAvailable,
-      rssBytes: Number(stats.processRssBytes || 0),
+      rssAvailable: runtime.processRssAvailable,
+      rssBytes: runtime.processRssBytes,
+      treeRssAvailable: runtime.processTreeRssAvailable,
+      treeRssBytes: runtime.processTreeRssBytes,
+      treePssAvailable: runtime.processTreePssAvailable,
+      treePssBytes: runtime.processTreePssBytes,
+      treeProcessCount: runtime.processTreeCount,
+      treeSource: runtime.processTreeSource,
     },
     go: {
-      allocBytes: Number(stats.goAllocBytes || 0),
-      heapInuseBytes: Number(stats.goHeapInuseBytes || 0),
-      heapIdleBytes: Number(stats.goHeapIdleBytes || 0),
-      heapReleasedBytes: Number(stats.goHeapReleasedBytes || 0),
-      sysBytes: Number(stats.goSysBytes || 0),
-      objects: Number(stats.goObjects || 0),
-      goroutines: Number(stats.goroutines || 0),
+      allocBytes: runtime.goAllocBytes,
+      heapInuseBytes: runtime.goHeapInuseBytes,
+      heapIdleBytes: runtime.goHeapIdleBytes,
+      heapReleasedBytes: runtime.goHeapReleasedBytes,
+      sysBytes: runtime.goSysBytes,
+      objects: runtime.goObjects,
+      numGC: runtime.goNumGC,
+      goroutines: runtime.goroutines,
     },
     app: {
-      executableSizeBytes: Number(stats.executableSizeBytes || 0),
-      uptimeSeconds: Number(stats.uptimeSeconds || 0),
-      os: stats.os || 'unknown',
-      arch: stats.arch || 'unknown',
+      executableSizeBytes: runtime.executableSizeBytes,
+      uptimeSeconds: runtime.uptimeSeconds,
+      os: runtime.os || 'unknown',
+      arch: runtime.arch || 'unknown',
     },
   }, null, 2) + '\n';
 }
@@ -5246,6 +5262,7 @@ async function exportRuntimeStatsJson() {
 }
 
 function runtimeStatsMarkdown(stats) {
+  const runtime = normalizeRuntimeStats(stats);
   return [
     '# Markpad Runtime Stats',
     '',
@@ -5253,40 +5270,53 @@ function runtimeStatsMarkdown(stats) {
     '',
     '## Process',
     '',
-    `- RSS: ${stats.processRssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable'}`,
-    `- Executable size: ${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'}`,
-    `- Uptime: ${formatRuntimeDuration(stats.uptimeSeconds)}`,
-    `- Platform: ${stats.os || 'unknown'}/${stats.arch || 'unknown'}`,
+    `- Self RSS: ${runtime.processRssAvailable ? formatBytes(runtime.processRssBytes) : 'Unavailable'}`,
+    `- Process tree RSS: ${runtime.processTreeRssAvailable ? formatBytes(runtime.processTreeRssBytes) : 'Unavailable'}`,
+    `- Process tree PSS: ${runtime.processTreePssAvailable ? formatBytes(runtime.processTreePssBytes) : 'Unavailable'}`,
+    `- Process tree count: ${runtime.processTreeCount || 'Unavailable'}`,
+    `- Process tree source: ${runtime.processTreeSource || 'Unavailable'}`,
+    `- Executable size: ${runtime.executableSizeBytes ? formatBytes(runtime.executableSizeBytes) : 'Unavailable'}`,
+    `- Uptime: ${formatRuntimeDuration(runtime.uptimeSeconds)}`,
+    `- Platform: ${runtime.os || 'unknown'}/${runtime.arch || 'unknown'}`,
     '',
     '## Go Runtime',
     '',
-    `- Heap alloc: ${formatBytes(Number(stats.goAllocBytes || 0))}`,
-    `- Heap in use: ${formatBytes(Number(stats.goHeapInuseBytes || 0))}`,
-    `- Heap idle: ${formatBytes(Number(stats.goHeapIdleBytes || 0))}`,
-    `- Heap released: ${formatBytes(Number(stats.goHeapReleasedBytes || 0))}`,
-    `- Runtime sys: ${formatBytes(Number(stats.goSysBytes || 0))}`,
-    `- Objects: ${Number(stats.goObjects || 0).toLocaleString()}`,
-    `- Goroutines: ${Number(stats.goroutines || 0).toLocaleString()}`,
+    `- Heap alloc: ${formatBytes(runtime.goAllocBytes)}`,
+    `- Heap in use: ${formatBytes(runtime.goHeapInuseBytes)}`,
+    `- Heap idle: ${formatBytes(runtime.goHeapIdleBytes)}`,
+    `- Heap released: ${formatBytes(runtime.goHeapReleasedBytes)}`,
+    `- Runtime sys: ${formatBytes(runtime.goSysBytes)}`,
+    `- Objects: ${runtime.goObjects.toLocaleString()}`,
+    `- GC count: ${runtime.goNumGC.toLocaleString()}`,
+    `- Goroutines: ${runtime.goroutines.toLocaleString()}`,
     '',
   ].join('\n');
 }
 
 function runtimeStatsCsv(stats) {
+  const runtime = normalizeRuntimeStats(stats);
   const rows = [
     ['metric', 'value'],
-    ['process_rss_available', stats.processRssAvailable ? 'true' : 'false'],
-    ['process_rss_bytes', Number(stats.processRssBytes || 0)],
-    ['executable_size_bytes', Number(stats.executableSizeBytes || 0)],
-    ['uptime_seconds', Number(stats.uptimeSeconds || 0)],
-    ['os', stats.os || 'unknown'],
-    ['arch', stats.arch || 'unknown'],
-    ['go_alloc_bytes', Number(stats.goAllocBytes || 0)],
-    ['go_heap_inuse_bytes', Number(stats.goHeapInuseBytes || 0)],
-    ['go_heap_idle_bytes', Number(stats.goHeapIdleBytes || 0)],
-    ['go_heap_released_bytes', Number(stats.goHeapReleasedBytes || 0)],
-    ['go_sys_bytes', Number(stats.goSysBytes || 0)],
-    ['go_objects', Number(stats.goObjects || 0)],
-    ['goroutines', Number(stats.goroutines || 0)],
+    ['process_rss_available', runtime.processRssAvailable ? 'true' : 'false'],
+    ['process_rss_bytes', runtime.processRssBytes],
+    ['process_tree_rss_available', runtime.processTreeRssAvailable ? 'true' : 'false'],
+    ['process_tree_rss_bytes', runtime.processTreeRssBytes],
+    ['process_tree_pss_available', runtime.processTreePssAvailable ? 'true' : 'false'],
+    ['process_tree_pss_bytes', runtime.processTreePssBytes],
+    ['process_tree_count', runtime.processTreeCount],
+    ['process_tree_source', runtime.processTreeSource],
+    ['executable_size_bytes', runtime.executableSizeBytes],
+    ['uptime_seconds', runtime.uptimeSeconds],
+    ['os', runtime.os || 'unknown'],
+    ['arch', runtime.arch || 'unknown'],
+    ['go_alloc_bytes', runtime.goAllocBytes],
+    ['go_heap_inuse_bytes', runtime.goHeapInuseBytes],
+    ['go_heap_idle_bytes', runtime.goHeapIdleBytes],
+    ['go_heap_released_bytes', runtime.goHeapReleasedBytes],
+    ['go_sys_bytes', runtime.goSysBytes],
+    ['go_objects', runtime.goObjects],
+    ['go_num_gc', runtime.goNumGC],
+    ['goroutines', runtime.goroutines],
   ];
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
@@ -5513,19 +5543,26 @@ async function showRuntimeStats() {
   }
 
   try {
-    const stats = await getter();
+    const stats = normalizeRuntimeStats(await getter());
     const rssAvailable = Boolean(stats.processRssAvailable);
-    const rss = rssAvailable ? formatBytes(Number(stats.processRssBytes || 0)) : 'Unavailable on this OS';
+    const rss = rssAvailable ? formatBytes(stats.processRssBytes) : 'Unavailable on this OS';
+    const treeRss = stats.processTreeRssAvailable ? formatBytes(stats.processTreeRssBytes) : 'Unavailable on this OS';
+    const treePss = stats.processTreePssAvailable ? formatBytes(stats.processTreePssBytes) : 'Unavailable on this OS';
     const rows = [
-      ['Process RSS', rss],
-      ['Go heap alloc', formatBytes(Number(stats.goAllocBytes || 0))],
-      ['Go heap in use', formatBytes(Number(stats.goHeapInuseBytes || 0))],
-      ['Go heap idle', formatBytes(Number(stats.goHeapIdleBytes || 0))],
-      ['Go heap released', formatBytes(Number(stats.goHeapReleasedBytes || 0))],
-      ['Go runtime sys', formatBytes(Number(stats.goSysBytes || 0))],
-      ['Executable size', stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'Unavailable'],
-      ['Go objects', Number(stats.goObjects || 0).toLocaleString()],
-      ['Goroutines', Number(stats.goroutines || 0).toLocaleString()],
+      ['Self RSS', rss],
+      ['Process tree RSS', treeRss],
+      ['Process tree PSS', treePss],
+      ['Process tree count', stats.processTreeCount || 'Unavailable'],
+      ['Process tree source', stats.processTreeSource || 'Unavailable'],
+      ['Go heap alloc', formatBytes(stats.goAllocBytes)],
+      ['Go heap in use', formatBytes(stats.goHeapInuseBytes)],
+      ['Go heap idle', formatBytes(stats.goHeapIdleBytes)],
+      ['Go heap released', formatBytes(stats.goHeapReleasedBytes)],
+      ['Go runtime sys', formatBytes(stats.goSysBytes)],
+      ['Executable size', stats.executableSizeBytes ? formatBytes(stats.executableSizeBytes) : 'Unavailable'],
+      ['Go objects', stats.goObjects.toLocaleString()],
+      ['Go GC count', stats.goNumGC.toLocaleString()],
+      ['Goroutines', stats.goroutines.toLocaleString()],
       ['Uptime', formatRuntimeDuration(stats.uptimeSeconds)],
       ['Platform', `${escapeHtml(stats.os || 'unknown')}/${escapeHtml(stats.arch || 'unknown')}`],
     ];
@@ -5534,20 +5571,24 @@ async function showRuntimeStats() {
       <div style="display:grid;gap:12px;">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">
           <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
-            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Process RSS</div>
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Process tree PSS</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${escapeHtml(treePss)}</div>
+          </div>
+          <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
+            <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Self RSS</div>
             <div style="font-size:20px;font-weight:900;color:var(--text);">${escapeHtml(rss)}</div>
           </div>
           <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
             <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Go heap</div>
-            <div style="font-size:20px;font-weight:900;color:var(--text);">${formatBytes(Number(stats.goAllocBytes || 0))}</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${formatBytes(stats.goAllocBytes)}</div>
           </div>
           <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
             <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Goroutines</div>
-            <div style="font-size:20px;font-weight:900;color:var(--text);">${Number(stats.goroutines || 0).toLocaleString()}</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${stats.goroutines.toLocaleString()}</div>
           </div>
           <div style="border:1px solid var(--border);background:var(--editor);border-radius:12px;padding:12px;">
             <div style="font-size:10px;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Executable</div>
-            <div style="font-size:20px;font-weight:900;color:var(--text);">${stats.executableSizeBytes ? formatBytes(Number(stats.executableSizeBytes || 0)) : 'n/a'}</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text);">${stats.executableSizeBytes ? formatBytes(stats.executableSizeBytes) : 'n/a'}</div>
           </div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
@@ -7041,9 +7082,45 @@ function heapFootprintHtml() {
 
 async function runtimeFootprint() {
   try {
-    if (window.go?.main?.App?.GetRuntimeStats) return await window.go.main.App.GetRuntimeStats();
+    if (window.go?.main?.App?.GetRuntimeStats) return normalizeRuntimeStats(await window.go.main.App.GetRuntimeStats());
   } catch {}
   return null;
+}
+
+function normalizeRuntimeStats(stats) {
+  if (!stats) return null;
+  const goAllocBytes = Number(stats.goAllocBytes ?? stats.goAlloc ?? 0);
+  const goSysBytes = Number(stats.goSysBytes ?? stats.goSys ?? 0);
+  const processRssBytes = Number(stats.processRssBytes ?? stats.processRss ?? 0);
+  const processTreeRssBytes = Number(stats.processTreeRssBytes ?? 0);
+  const processTreePssBytes = Number(stats.processTreePssBytes ?? 0);
+  return {
+    ...stats,
+    processRssAvailable: Boolean(stats.processRssAvailable ?? stats.rssAvailable),
+    rssAvailable: Boolean(stats.processRssAvailable ?? stats.rssAvailable),
+    processRssBytes,
+    processRss: processRssBytes,
+    processTreeRssAvailable: Boolean(stats.processTreeRssAvailable),
+    processTreePssAvailable: Boolean(stats.processTreePssAvailable),
+    processTreeRssBytes,
+    processTreePssBytes,
+    processTreeCount: Number(stats.processTreeCount || 0),
+    processTreeSource: stats.processTreeSource || '',
+    goAllocBytes,
+    goAlloc: goAllocBytes,
+    goSysBytes,
+    goSys: goSysBytes,
+    goHeapInuseBytes: Number(stats.goHeapInuseBytes || 0),
+    goHeapIdleBytes: Number(stats.goHeapIdleBytes || 0),
+    goHeapReleasedBytes: Number(stats.goHeapReleasedBytes || 0),
+    goObjects: Number(stats.goObjects || 0),
+    goNumGC: Number(stats.goNumGC || 0),
+    goroutines: Number(stats.goroutines || 0),
+    executableSizeBytes: Number(stats.executableSizeBytes || 0),
+    uptimeSeconds: Number(stats.uptimeSeconds || 0),
+    os: stats.os || '',
+    arch: stats.arch || '',
+  };
 }
 
 function undoHistoryFootprint() {
@@ -7087,8 +7164,14 @@ async function localFootprintSnapshot() {
     sampledAt: new Date().toISOString(),
     runtime: runtimeStats ? {
       rssAvailable: !!runtimeStats.rssAvailable,
-      rssSource: runtimeStats.rssSource || '',
+      rssSource: runtimeStats.rssSource || 'backend self RSS',
       processRss: Number(runtimeStats.processRss || 0),
+      processTreeRssAvailable: !!runtimeStats.processTreeRssAvailable,
+      processTreePssAvailable: !!runtimeStats.processTreePssAvailable,
+      processTreeRss: Number(runtimeStats.processTreeRssBytes || 0),
+      processTreePss: Number(runtimeStats.processTreePssBytes || 0),
+      processTreeCount: Number(runtimeStats.processTreeCount || 0),
+      processTreeSource: runtimeStats.processTreeSource || '',
       goAlloc: Number(runtimeStats.goAlloc || 0),
       goSys: Number(runtimeStats.goSys || 0),
       goNumGC: Number(runtimeStats.goNumGC || 0),
@@ -7147,7 +7230,10 @@ function localFootprintSnapshotToMarkdown(snapshot) {
     '',
     '## Runtime',
     '',
-    `- Process RSS: ${runtime.rssAvailable ? formatBytes(runtime.processRss) : 'N/A'} (${runtime.rssSource || 'unavailable'})`,
+    `- Self RSS: ${runtime.rssAvailable ? formatBytes(runtime.processRss) : 'N/A'} (${runtime.rssSource || 'unavailable'})`,
+    `- Process tree RSS: ${runtime.processTreeRssAvailable ? formatBytes(runtime.processTreeRss) : 'N/A'}`,
+    `- Process tree PSS: ${runtime.processTreePssAvailable ? formatBytes(runtime.processTreePss) : 'N/A'}`,
+    `- Process tree count: ${Number(runtime.processTreeCount || 0) || 'N/A'} (${runtime.processTreeSource || 'unavailable'})`,
     `- Go heap alloc: ${runtime.goAlloc ? formatBytes(runtime.goAlloc) : 'N/A'}`,
     `- Go sys: ${runtime.goSys ? formatBytes(runtime.goSys) : 'N/A'}`,
     `- Go GC count: ${Number(runtime.goNumGC || 0)}`,
@@ -7189,6 +7275,12 @@ function localFootprintSnapshotToCsv(snapshot) {
     ['sampled_at', snapshot.sampledAt || ''],
     ['runtime_rss_available', runtime.rssAvailable ? 'true' : 'false'],
     ['runtime_rss_bytes', Number(runtime.processRss || 0)],
+    ['runtime_process_tree_rss_available', runtime.processTreeRssAvailable ? 'true' : 'false'],
+    ['runtime_process_tree_rss_bytes', Number(runtime.processTreeRss || 0)],
+    ['runtime_process_tree_pss_available', runtime.processTreePssAvailable ? 'true' : 'false'],
+    ['runtime_process_tree_pss_bytes', Number(runtime.processTreePss || 0)],
+    ['runtime_process_tree_count', Number(runtime.processTreeCount || 0)],
+    ['runtime_process_tree_source', runtime.processTreeSource || ''],
     ['runtime_go_alloc_bytes', Number(runtime.goAlloc || 0)],
     ['runtime_go_sys_bytes', Number(runtime.goSys || 0)],
     ['runtime_go_gc_count', Number(runtime.goNumGC || 0)],
@@ -7262,7 +7354,9 @@ async function showLocalFootprint() {
   const markpadLocalBytes = localStorageMarkpadBytes();
   showModal('Local Footprint', `
     <div class="diag-grid">
-      <div class="diag-card"><strong>${runtimeStats?.rssAvailable ? formatBytes(runtimeStats.processRss) : 'N/A'}</strong><span>Process RSS</span><small>${runtimeStats?.rssSource || 'Backend metric unavailable'}</small></div>
+      <div class="diag-card"><strong>${runtimeStats?.processTreePssAvailable ? formatBytes(runtimeStats.processTreePssBytes) : 'N/A'}</strong><span>Process tree PSS</span><small>${runtimeStats?.processTreeCount ? `${runtimeStats.processTreeCount} processes · ${runtimeStats.processTreeSource}` : 'Backend tree metric unavailable'}</small></div>
+      <div class="diag-card"><strong>${runtimeStats?.processTreeRssAvailable ? formatBytes(runtimeStats.processTreeRssBytes) : 'N/A'}</strong><span>Process tree RSS</span><small>Process-monitor view; shared pages may double count</small></div>
+      <div class="diag-card"><strong>${runtimeStats?.rssAvailable ? formatBytes(runtimeStats.processRss) : 'N/A'}</strong><span>Self RSS</span><small>${runtimeStats?.rssSource || 'Backend self metric unavailable'}</small></div>
       <div class="diag-card"><strong>${runtimeStats ? formatBytes(runtimeStats.goAlloc) : 'N/A'}</strong><span>Go heap alloc</span><small>${runtimeStats ? `${formatBytes(runtimeStats.goSys)} Go sys · ${runtimeStats.goNumGC} GC` : 'Backend metric unavailable'}</small></div>
       <div class="diag-card"><strong>${formatBytes(docs.editableBytes)}</strong><span>Loaded editable text</span><small>${docs.editableCount} editable · ${docs.readOnlyCount} read-only loaded</small></div>
       <div class="diag-card"><strong>${formatBytes(searchCache.bytes)}</strong><span>Search cache</span><small>${searchCache.entries}/${searchCache.maxEntries} entries · cap ${formatBytes(searchCache.maxBytes)}</small></div>
