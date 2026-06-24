@@ -622,16 +622,16 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		`data-create-kind="open-folder"`,
 		`data-create-kind="search-folder"`,
 		`data-create-kind="other"`,
-		`data-menu-chip="SOON"`,
-		`disabled`,
+		`data-menu-chip="FILE"`,
 		"Files first",
 		`class="create-menu-section-label">Create</div>`,
 		`class="create-menu-section-label">Workspace</div>`,
-		`class="create-menu-section-label">Later</div>`,
+		`class="create-menu-section-label">More</div>`,
 		"Today in the local folder",
 		"This week in the local folder",
 		"Open Tasks.md or setup list, calendar, kanban",
 		"Create native .markcanvas.json in the local folder",
+		"Choose extension and lightweight text template",
 		"Reveal the configured local workspace",
 		"Find text in the configured local workspace",
 		"Tasks from loaded files",
@@ -680,6 +680,7 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await createLocalFolderWeeklyNote()",
 		"await openConfiguredLocalFolder()",
 		"await searchLocalFolderPrompt()",
+		"await createOtherFileFromMenu()",
 		"await doNew()",
 		"function openTaskFileSetup()",
 		"async function openTaskFileFromMenu()",
@@ -699,12 +700,16 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await saveCanvasAsDraft()",
 		"insertLoadedWorkspaceCanvasMap()",
 		"await createLocalFolderCanvas()",
+		"function promptOtherFileModal()",
+		"const OTHER_FILE_PRESETS = [",
+		"data-other-file-extension=",
+		"await window.go.main.App.CreateLocalFolderFile(choice.title, choice.extension)",
 		"const localNew = e.target.closest('[data-local-folder-new]');",
 		"const localTasks = e.target.closest('[data-local-folder-tasks]');",
 		"const localCanvas = e.target.closest('[data-local-folder-canvas]');",
 		"Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps",
 		"Choose a local folder before creating canvas files",
-		"Other file creation is coming next",
+		"Choose a local folder before creating files",
 	})
 
 	featureDecisions, err := os.ReadFile("docs/local-first-feature-decisions.md")
@@ -712,9 +717,9 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertTextIncludesAll(t, "docs/local-first-feature-decisions.md", string(featureDecisions), []string{
-		"| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and later Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |",
+		"| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and validated Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |",
 		"Markpad should keep a files-first creation surface in the sidebar.",
-		"The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and a disabled Other file placeholder until the remaining rules are specified.",
+		"The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and Other file with validated text-safe extensions.",
 		"Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.",
 		"Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.",
 		"Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas button opens the active native canvas file when selected, otherwise it falls back to the local scratch canvas.",
@@ -729,8 +734,8 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertTextIncludesAll(t, "docs/ui-direction.md", string(uiDirection), []string{
-		"Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and later Other file once validated; keep recents, favorites, local folder actions, and compact badges visible here.",
-		"Create: keep the sidebar `+ New` menu explicit about Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and a disabled Other file placeholder until extension rules are defined.",
+		"Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and validated Other file; keep recents, favorites, local folder actions, and compact badges visible here.",
+		"Create: keep the sidebar `+ New` menu explicit about Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and Other file with validated text-safe extensions and lightweight starters.",
 		`Tasks: keep the affordance framed as "Tasks from loaded files" and "Tasks.md setup, list, calendar, kanban"; list/calendar/kanban are views over Markdown files, not a separate workspace type.`,
 		"Task workflow: sidebar Task actions should expose List, Calendar, Kanban, Quick task, and Task setup without introducing virtual tabs.",
 		"Canvas: keep the top-bar canvas positioned as the active canvas opener; it should load the selected `.markcanvas.json` file when active and fall back to the local scratch canvas otherwise.",
@@ -779,6 +784,8 @@ func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
 		".create-menu button:focus-visible strong",
 		".workflow-menu button:focus-visible strong",
 		".create-menu button:disabled::after",
+		".other-file-presets",
+		".other-file-presets button.active",
 		".create-menu-section-label",
 		".create-menu-section-label::after",
 		".icon-btn.active",

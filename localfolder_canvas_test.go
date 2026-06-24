@@ -27,6 +27,47 @@ func TestLocalCanvasFileNameUsesNativeMarkcanvasExtension(t *testing.T) {
 	}
 }
 
+func TestLocalOtherFileNameUsesValidatedTextExtension(t *testing.T) {
+	cases := []struct {
+		title string
+		ext   string
+		want  string
+	}{
+		{title: "Data", ext: "json", want: "Data.json"},
+		{title: "Data.csv", ext: "txt", want: "Data.txt"},
+		{title: "", ext: ".md", want: "Untitled.md"},
+	}
+
+	for _, tc := range cases {
+		got, err := localOtherFileName(tc.title, tc.ext)
+		if err != nil {
+			t.Fatalf("localOtherFileName(%q, %q) error = %v", tc.title, tc.ext, err)
+		}
+		if got != tc.want {
+			t.Fatalf("localOtherFileName(%q, %q) = %q, want %q", tc.title, tc.ext, got, tc.want)
+		}
+	}
+
+	if _, err := localOtherFileName("Run me", "exe"); err == nil {
+		t.Fatal("localOtherFileName accepted executable extension")
+	}
+	if _, err := localOtherFileName("Bad", "../sh"); err == nil {
+		t.Fatal("localOtherFileName accepted unsafe extension characters")
+	}
+}
+
+func TestLocalOtherFileTemplateUsesLightweightTextStarters(t *testing.T) {
+	if got := localOtherFileTemplate("Data.json"); got != "{\n}\n" {
+		t.Fatalf("JSON template = %q, want empty object", got)
+	}
+	if got := localOtherFileTemplate("Notes.md"); got != "# Notes\n\n" {
+		t.Fatalf("Markdown template = %q, want heading", got)
+	}
+	if got := localOtherFileTemplate("Plain.txt"); got != "" {
+		t.Fatalf("Text template = %q, want empty file", got)
+	}
+}
+
 func TestMarkpadCanvasDocumentJSONIncludesNativeSchema(t *testing.T) {
 	var doc map[string]any
 	if err := json.Unmarshal([]byte(markpadCanvasDocumentJSON("markpad-test")), &doc); err != nil {

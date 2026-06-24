@@ -558,6 +558,38 @@ body.writing-empty #viewer::first-line {
   font-size: 11px;
   line-height: 1.35;
 }
+.other-file-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+.other-file-presets button {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--editor);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px;
+  text-align: left;
+}
+.other-file-presets button:hover,
+.other-file-presets button.active {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--editor));
+}
+.other-file-presets strong {
+  font-size: 12px;
+  font-weight: 950;
+}
+.other-file-presets span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+}
 
 .sidebar-workflow {
   display: grid;

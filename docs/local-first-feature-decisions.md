@@ -10,7 +10,7 @@ Updated: 2026-06-24
 | Tasks | Markdown task list items as source of truth, with visible metadata tokens | Calendar-grade VTODO sync, hidden IDs until line-hash identity is insufficient |
 | Canvas | Markpad-owned versioned JSON canvas files | Bundling tldraw/Excalidraw/InfiniPaint as the primary engine before measurement |
 | Theme/Icon assets | CSS variables plus tiny self-contained SVG only; keep the existing asset budgets as hard guardrails | Theme screenshots, texture packs, icon webfonts, framework-scale icon bundles |
-| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and later Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |
+| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and validated Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |
 
 ## Search direction
 
@@ -105,8 +105,8 @@ Initial implementation constraints:
 - `Note` creates a local Markdown note when a default folder is configured, otherwise it falls back to an unsaved Markdown draft.
 - `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
 - `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend; the top-bar Canvas button opens that active canvas file when selected or falls back to the scratch canvas otherwise.
-- `Other file` must stay disabled until extension validation, template choice, and collision behavior are explicit.
-- The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and a disabled Other file placeholder until the remaining rules are specified.
+- `Other file` creates only local text/code files with validated extensions, lightweight starters for known text formats, executable/binary-looking extensions blocked, and collision-safe numbering.
+- The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and Other file with validated text-safe extensions.
 - Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
 - Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.
 - Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas button opens the active native canvas file when selected, otherwise it falls back to the local scratch canvas.
@@ -121,7 +121,7 @@ The active reference checkout is `temp/zennotes`; `/temp/zencode`, `/tmp/zencode
 
 Borrow these patterns in Markpad's local-first shape:
 
-- Typed create actions: explicit Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and future validated Other file actions.
+- Typed create actions: explicit Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and validated Other file actions.
 - Command-backed menus: every sidebar/menu affordance should map to a command action so keyboard, context menu, and button paths stay consistent.
 - Layered search: keep command search, file search, active-document find, and folder text search as distinct scopes with visible counts and truthful status.
 - Trash workflow: preserve explicit restore, report, clean-expired, empty, and permanent-delete confirmations with clear retention language.

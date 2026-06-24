@@ -7807,6 +7807,7 @@ async function createLocalFolderNote() {
 }
 
 let canvasTitlePromptResolve = null;
+let otherFilePromptResolve = null;
 
 function resolveCanvasTitlePrompt(value) {
   if (!canvasTitlePromptResolve) return;
@@ -7839,6 +7840,60 @@ function promptCanvasTitleModal() {
       <p class="diag-note">Use short file names. Markpad will normalize the extension and keep view state out of the portable canvas file.</p>
     `);
     requestAnimationFrame(() => modalBodyEl.querySelector('[data-canvas-title-input]')?.focus());
+  });
+}
+
+const OTHER_FILE_PRESETS = ['txt', 'json', 'csv', 'html', 'css', 'js', 'go', 'py', 'custom'];
+
+function resolveOtherFilePrompt(value) {
+  if (!otherFilePromptResolve) return;
+  const resolve = otherFilePromptResolve;
+  otherFilePromptResolve = null;
+  modalOverlay.classList.add('hidden');
+  resolve(value);
+}
+
+function selectOtherFileExtension(extension) {
+  modalBodyEl.querySelectorAll('[data-other-file-extension]').forEach(button => {
+    const active = button.dataset.otherFileExtension === extension;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  const custom = modalBodyEl.querySelector('[data-other-file-custom]');
+  if (!custom) return;
+  custom.disabled = extension !== 'custom';
+  if (extension === 'custom') custom.focus();
+}
+
+function submitOtherFilePrompt() {
+  const title = String(modalBodyEl.querySelector('[data-other-file-title]')?.value ?? '');
+  const active = modalBodyEl.querySelector('[data-other-file-extension].active')?.dataset.otherFileExtension || 'txt';
+  const custom = String(modalBodyEl.querySelector('[data-other-file-custom]')?.value ?? '').trim();
+  const extension = (active === 'custom' ? custom : active).replace(/^\./, '').toLowerCase();
+  resolveOtherFilePrompt({ title, extension });
+}
+
+function promptOtherFileModal() {
+  if (otherFilePromptResolve) resolveOtherFilePrompt(null);
+  return new Promise(resolve => {
+    otherFilePromptResolve = resolve;
+    const presetButtons = OTHER_FILE_PRESETS.map((extension, index) => `
+      <button type="button" data-other-file-extension="${extension}" class="${index === 0 ? 'active' : ''}">
+        <strong>${extension === 'custom' ? 'Custom' : extension.toUpperCase()}</strong>
+        <span>${extension === 'custom' ? 'type ext' : `.${extension}`}</span>
+      </button>
+    `).join('');
+    showModal('New Other File', `
+      <p class="diag-note"><b>Text-safe local files.</b> Blocks executable extensions, adds tiny starters, and preserves collisions with numbered names.</p>
+      <div class="other-file-presets">${presetButtons}</div>
+      <div class="local-search-row" style="margin-top:10px;">
+        <input data-other-file-title type="text" placeholder="File name" />
+        <input data-other-file-custom type="text" placeholder="ext" disabled />
+        <button data-other-file-create type="button">Create</button>
+        <button data-other-file-cancel type="button">Cancel</button>
+      </div>
+    `);
+    requestAnimationFrame(() => modalBodyEl.querySelector('[data-other-file-title]')?.focus());
   });
 }
 
@@ -15407,6 +15462,26 @@ async function createCanvasFromMenu() {
   if (await ensureReadyLocalFolder('Choose a local folder before creating canvas files')) await createLocalFolderCanvas();
 }
 
+async function createOtherFileFromMenu() {
+  if (!(await ensureReadyLocalFolder('Choose a local folder before creating files'))) return;
+  const choice = await promptOtherFileModal();
+  if (!choice) return;
+  try {
+    if (!window.go?.main?.App?.CreateLocalFolderFile) {
+      statusText.textContent = 'Local file backend unavailable';
+      return;
+    }
+    renderSession(await window.go.main.App.CreateLocalFolderFile(choice.title, choice.extension));
+    loadContent(await window.go.main.App.GetActiveContent());
+    const active = cachedNotes.find(n => n.id === activeId);
+    setView(defaultViewForFileType(active?.path, active?.kind));
+    modalOverlay.classList.add('hidden');
+    statusText.textContent = `Local .${choice.extension} file created`;
+  } catch (err) {
+    statusText.textContent = 'Create local file failed: ' + err;
+  }
+}
+
 function openTaskFileSetup() {
   showTaskFileSetup();
   statusText.textContent = 'Task file setup';
@@ -15456,7 +15531,7 @@ async function runCreateMenuAction(kind) {
       if (await ensureReadyLocalFolder('Choose a local folder before searching files')) await searchLocalFolderPrompt();
       break;
     case 'other':
-      statusText.textContent = 'Other file creation is coming next';
+      await createOtherFileFromMenu();
       break;
     default:
       break;
@@ -15610,11 +15685,13 @@ function showModal(t, html, wide) {
 }
 $('modal-close').addEventListener('click', () => {
   resolveCanvasTitlePrompt(null);
+  resolveOtherFilePrompt(null);
   modalOverlay.classList.add('hidden');
 });
 modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) {
     resolveCanvasTitlePrompt(null);
+    resolveOtherFilePrompt(null);
     modalOverlay.classList.add('hidden');
   }
 });
@@ -15627,6 +15704,21 @@ modalBodyEl.addEventListener('click', async (e) => {
   const canvasTitleCancel = e.target.closest('[data-canvas-title-cancel]');
   if (canvasTitleCancel && !canvasTitleCancel.disabled) {
     resolveCanvasTitlePrompt(null);
+    return;
+  }
+  const otherFileExtension = e.target.closest('[data-other-file-extension]');
+  if (otherFileExtension && !otherFileExtension.disabled) {
+    selectOtherFileExtension(otherFileExtension.dataset.otherFileExtension || 'txt');
+    return;
+  }
+  const otherFileCreate = e.target.closest('[data-other-file-create]');
+  if (otherFileCreate && !otherFileCreate.disabled) {
+    submitOtherFilePrompt();
+    return;
+  }
+  const otherFileCancel = e.target.closest('[data-other-file-cancel]');
+  if (otherFileCancel && !otherFileCancel.disabled) {
+    resolveOtherFilePrompt(null);
     return;
   }
   const folder = e.target.closest('[data-open-folder]');
@@ -16225,6 +16317,13 @@ modalBodyEl.addEventListener('keydown', async (e) => {
     e.preventDefault();
     if (e.key === 'Enter') submitCanvasTitlePrompt();
     else resolveCanvasTitlePrompt(null);
+    return;
+  }
+  if (e.target.closest('[data-other-file-title], [data-other-file-custom]')) {
+    if (e.key !== 'Enter' && e.key !== 'Escape') return;
+    e.preventDefault();
+    if (e.key === 'Enter') submitOtherFilePrompt();
+    else resolveOtherFilePrompt(null);
     return;
   }
   if (e.key !== 'Enter') return;

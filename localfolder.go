@@ -23,6 +23,11 @@ const (
 	markpadCanvasExtension  = ".markcanvas.json"
 )
 
+var blockedLocalCreateExtensions = map[string]struct{}{
+	"app": {}, "bat": {}, "bin": {}, "cmd": {}, "com": {}, "dll": {}, "dmg": {},
+	"exe": {}, "msi": {}, "ps1": {}, "sh": {}, "so": {}, "sys": {},
+}
+
 var (
 	localFolderSearches            localFolderSearchGate
 	localFolderSearchTestYieldHook func()
@@ -382,6 +387,22 @@ func (a *App) CreateLocalFolderNote(title string) (SessionState, error) {
 	return a.openPath(path)
 }
 
+func (a *App) CreateLocalFolderFile(title string, extension string) (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	name, err := localOtherFileName(title, extension)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	path := localCollisionPath(filepath.Join(root.Path, name))
+	if err := localFolderAtomicWrite(path, []byte(localOtherFileTemplate(filepath.Base(path))), 0o644); err != nil {
+		return a.GetSession(), err
+	}
+	return a.openPath(path)
+}
+
 func (a *App) CreateLocalFolderCanvas(title string) (SessionState, error) {
 	root := a.GetLocalFolder()
 	if root.Path == "" || root.Missing {
@@ -411,6 +432,77 @@ func localCanvasFileName(title string) string {
 		return name[:len(name)-len(".json")] + markpadCanvasExtension
 	default:
 		return name + markpadCanvasExtension
+	}
+}
+
+func localOtherFileName(title string, extension string) (string, error) {
+	ext, err := normalizeLocalTextExtension(extension)
+	if err != nil {
+		return "", err
+	}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Untitled"
+	}
+	name := safeLocalFileName(title)
+	suffix := "." + ext
+	if strings.HasSuffix(strings.ToLower(name), suffix) {
+		return name, nil
+	}
+	if currentExt := filepath.Ext(name); currentExt != "" {
+		name = strings.TrimSuffix(name, currentExt)
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = "Untitled"
+	}
+	return name + suffix, nil
+}
+
+func normalizeLocalTextExtension(extension string) (string, error) {
+	ext := strings.TrimPrefix(strings.TrimSpace(strings.ToLower(extension)), ".")
+	if ext == "" {
+		return "", errors.New("file extension is required")
+	}
+	if len(ext) > 16 {
+		return "", errors.New("file extension is too long")
+	}
+	for _, r := range ext {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			continue
+		}
+		return "", errors.New("file extension must use letters, numbers, dash, or underscore")
+	}
+	if _, blocked := blockedLocalCreateExtensions[ext]; blocked {
+		return "", errors.New("executable file extensions are not created from Markpad")
+	}
+	return ext, nil
+}
+
+func localOtherFileTemplate(name string) string {
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
+	title := strings.TrimSuffix(filepath.Base(name), filepath.Ext(name))
+	switch ext {
+	case "md", "markdown":
+		return "# " + title + "\n\n"
+	case "json":
+		return "{\n}\n"
+	case "csv":
+		return "name,value\n"
+	case "yaml", "yml":
+		return "---\n"
+	case "toml":
+		return "# " + title + "\n"
+	case "html", "htm":
+		return "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>" + title + "</title>\n</head>\n<body>\n\n</body>\n</html>\n"
+	case "css":
+		return ":root {\n}\n"
+	case "py":
+		return "# " + title + "\n"
+	case "js", "ts", "jsx", "tsx", "go", "rs":
+		return "// " + title + "\n"
+	default:
+		return ""
 	}
 }
 
