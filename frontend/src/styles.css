@@ -3100,8 +3100,13 @@ body.markpad-compact #modal-body {
 .task-board { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 8px; min-width: 620px; }
 .task-col { border: 1px solid var(--border-soft); border-radius: 14px; background: var(--surface); padding: 8px; }
 .task-col h4 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-.task-col .task-row { grid-template-columns: 24px 1fr; margin-bottom: 7px; }
-.task-col .task-open { display: none; }
+.task-col .task-row { grid-template-columns: 24px 1fr auto; margin-bottom: 7px; }
+.task-col .task-open:not(.task-open-compact) { display: none; }
+.task-open-compact {
+  align-self: start;
+  padding: 4px 6px;
+  font-size: 9px;
+}
 .task-board-group {
   border-top: 1px solid var(--border-soft);
   padding-top: 7px;

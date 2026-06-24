@@ -214,6 +214,54 @@ func (a *App) AppendLocalFolderTask(line string) (SessionState, error) {
 	return a.openPath(path)
 }
 
+func (a *App) OpenLocalTaskFile() (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	path, err := ensureLocalTaskFile(root.Path)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	if a.ctx == nil {
+		return a.openLocalTaskFileWithoutWindowTitle(path)
+	}
+	return a.openPath(path)
+}
+
+func ensureLocalTaskFile(root string) (string, error) {
+	path := localTaskAppendPath(root)
+	if info, err := os.Stat(path); err == nil {
+		if info.IsDir() {
+			return "", errors.New("task file path is a folder")
+		}
+		return path, nil
+	} else if !os.IsNotExist(err) {
+		return "", err
+	}
+	if err := localFolderAtomicWrite(path, []byte("# Tasks\n\n"), 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (a *App) openLocalTaskFileWithoutWindowTitle(path string) (SessionState, error) {
+	abs, err := filepath.Abs(path)
+	if err == nil {
+		path = abs
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	doc := a.sess.AddFile(path, string(data))
+	a.sess.AddRecent(path)
+	_ = a.store.WriteDraft(doc, string(data))
+	_ = a.store.SaveSnapshot(doc.ID, string(data), "open")
+	_ = a.store.Save(a.sess)
+	return a.GetSession(), nil
+}
+
 func localTaskAppendPath(root string) string {
 	for _, name := range localTaskAppendFileCandidates {
 		path := filepath.Join(root, name)

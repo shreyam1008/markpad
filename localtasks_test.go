@@ -16,7 +16,11 @@ func newLocalTaskTestApp(t *testing.T) *App {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &App{store: store}
+	sess, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &App{store: store, sess: sess}
 }
 
 func TestLocalTaskAppendPathPrefersExistingCanonicalTaskFile(t *testing.T) {
@@ -224,6 +228,56 @@ func TestMoveLocalFolderTaskRewritesMarkdownSource(t *testing.T) {
 	}
 	if len(tasks) != 2 || !tasks[0].Checked || tasks[0].Due != "" || tasks[0].Waiting {
 		t.Fatalf("rescanned task = %#v, want done without due/waiting metadata", tasks)
+	}
+}
+
+func TestOpenLocalTaskFileCreatesHeadingOnly(t *testing.T) {
+	app := newLocalTaskTestApp(t)
+	root := t.TempDir()
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := app.OpenLocalTaskFile(); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "tasks.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "# Tasks\n\n" {
+		t.Fatalf("tasks.md = %q, want heading only", string(data))
+	}
+	if strings.Contains(string(data), "Review new Tasks.md workflow") {
+		t.Fatalf("tasks.md unexpectedly includes starter task: %q", string(data))
+	}
+}
+
+func TestOpenLocalTaskFileReusesExistingTaskFileWithoutAppending(t *testing.T) {
+	app := newLocalTaskTestApp(t)
+	root := t.TempDir()
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "Tasks.md")
+	want := "# Existing\n\n- [ ] keep this\n"
+	if err := os.WriteFile(path, []byte(want), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := app.OpenLocalTaskFile(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != want {
+		t.Fatalf("Tasks.md changed = %q, want %q", string(data), want)
+	}
+	if strings.Contains(string(data), "Review new Tasks.md workflow") {
+		t.Fatalf("Tasks.md unexpectedly includes starter task: %q", string(data))
 	}
 }
 

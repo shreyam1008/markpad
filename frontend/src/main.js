@@ -8751,7 +8751,7 @@ function renderTaskRow(task, compact) {
         ${taskSourceTrail(task)}
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
-      ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button><button class="task-open" data-task-copy-todo="${escapeHtml(task.id)}">Todo.txt</button>`}
+      ${compact ? `<button class="task-open task-open-compact" data-task-open="${escapeHtml(task.id)}" title="Open source task line">Open</button>` : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button><button class="task-open" data-task-copy-todo="${escapeHtml(task.id)}">Todo.txt</button>`}
     </div>`;
 }
 
@@ -8798,9 +8798,9 @@ function taskEmptyStateHtml(message = 'No Markdown tasks found in loaded files.'
       <span>Tasks stay as Markdown checkbox lines; these views are just projections.</span>
       <div class="task-empty-actions">
         <button type="button" data-task-add>+ Task</button>
-        <button type="button" data-task-file-setup>Task File</button>
-        <button type="button" data-task-format>Format Help</button>
-        <button type="button" data-task-source-profile>Source Profile</button>
+        <button type="button" data-task-file-source>Open/Create Tasks.md</button>
+        <button type="button" data-task-file-setup>Task setup</button>
+        <button type="button" data-task-format>Format help</button>
         <button type="button" data-task-reset-filters>Reset Filters</button>
       </div>
     </div>`;
@@ -9177,7 +9177,7 @@ async function showTasksView(mode = taskViewMode, options = {}) {
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list" aria-pressed="${taskViewMode === 'list' ? 'true' : 'false'}">List</button>
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar" aria-pressed="${taskViewMode === 'calendar' ? 'true' : 'false'}">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban" aria-pressed="${taskViewMode === 'kanban' ? 'true' : 'false'}">Kanban</button>
-      <button class="task-tab" data-task-file-source>${taskTarget ? 'Open Tasks.md' : 'Create Tasks.md'}</button>
+      <button class="task-tab" data-task-file-source>${taskTarget ? 'Open source file' : 'Open/Create Tasks.md'}</button>
       <button class="task-tab" data-task-agenda>Agenda</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
@@ -15432,39 +15432,37 @@ function openTaskFileSetup() {
   statusText.textContent = 'Task file setup';
 }
 
-async function createTaskFileFromMenu() {
-  if (!window.go?.main?.App?.AppendLocalFolderTask || !(await hasReadyLocalFolder())) {
+async function openTaskFileFromMenu() {
+  const target = findTaskTargetNote();
+  if (target) {
+    if (activeId && activeId !== target.id) {
+      noteViewModes[activeId] = viewMode;
+      saveScrollPos();
+    }
+    await window.go.main.App.SetActive(target.id);
+    activeId = target.id;
+    loadContent(await window.go.main.App.GetNoteContent(target.id));
+    renderSession(await window.go.main.App.GetSession());
+    modalOverlay.classList.add('hidden');
+    setView('markdown');
+    statusText.textContent = 'Task source file opened';
+    return;
+  }
+  if (!window.go?.main?.App?.OpenLocalTaskFile || !(await hasReadyLocalFolder())) {
     openTaskFileSetup();
     return;
   }
   try {
-    renderSession(await window.go.main.App.AppendLocalFolderTask(`Review new Tasks.md workflow !medium due:${todayKey()} #inbox`));
+    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+    renderSession(await window.go.main.App.OpenLocalTaskFile());
     loadContent(await window.go.main.App.GetActiveContent());
+    modalOverlay.classList.add('hidden');
     setView('markdown');
-    await showTasksView('list');
-    statusText.textContent = 'Local Tasks.md created';
-  } catch {
+    statusText.textContent = 'Task source file opened';
+  } catch (err) {
+    statusText.textContent = 'Task source file failed: ' + err;
     openTaskFileSetup();
   }
-}
-
-async function openTaskFileFromMenu() {
-  const target = findTaskTargetNote();
-  if (!target) {
-    await createTaskFileFromMenu();
-    return;
-  }
-  if (activeId && activeId !== target.id) {
-    noteViewModes[activeId] = viewMode;
-    saveScrollPos();
-  }
-  await window.go.main.App.SetActive(target.id);
-  activeId = target.id;
-  loadContent(await window.go.main.App.GetNoteContent(target.id));
-  renderSession(await window.go.main.App.GetSession());
-  restoreNoteView();
-  await showTasksView('list');
-  statusText.textContent = 'Task file opened';
 }
 
 async function runCreateMenuAction(kind) {

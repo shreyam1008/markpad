@@ -273,8 +273,8 @@ func TestTaskRenderingBoundsAreGuarded(t *testing.T) {
 		"renderTaskList(visibleTasks, page)",
 		"const taskTarget = findTaskTargetNote();",
 		"data-task-file-source",
-		"Open Tasks.md",
-		"Create Tasks.md",
+		"Open source file",
+		"Open/Create Tasks.md",
 		"await openTaskFileFromMenu();",
 	})
 }
@@ -330,6 +330,8 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		".task-board-actions button.active",
 		".task-board-actions button:disabled",
 		".task-board-drop-hint",
+		".task-open-compact",
+		".task-col .task-open:not(.task-open-compact)",
 	})
 }
 
@@ -709,14 +711,11 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await createOtherFileFromMenu()",
 		"await doNew()",
 		"function openTaskFileSetup()",
-		"async function createTaskFileFromMenu()",
 		"async function openTaskFileFromMenu()",
 		"const target = findTaskTargetNote();",
-		"await createTaskFileFromMenu();",
-		"AppendLocalFolderTask(`Review new Tasks.md workflow !medium due:${todayKey()} #inbox`)",
-		"statusText.textContent = 'Local Tasks.md created'",
-		"await showTasksView('list')",
-		"statusText.textContent = 'Task file opened'",
+		"window.go.main.App.OpenLocalTaskFile()",
+		"modalOverlay.classList.add('hidden');",
+		"statusText.textContent = 'Task source file opened'",
 		"showTaskFileSetup()",
 		"async function runTaskWorkflowAction(kind)",
 		"function updateCanvasButtonState()",
