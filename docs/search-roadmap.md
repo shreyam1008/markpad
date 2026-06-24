@@ -28,6 +28,12 @@ Constraints:
 - Prefer external-content FTS5 tables so the index does not duplicate full document text.
 - Add rebuild and integrity-check flows because external-content indexes must stay consistent with the source table.
 - Consider the trigram tokenizer only for substring search needs; it trades index size for more flexible matching.
+- Do not add a SQLite driver directly to production code until a branch-local budget probe records binary-size, startup, and PSS deltas against the current Wails build.
+- Keep the probe reversible: build once with the candidate driver, run `make budget`, `make smoke-desktop`, and `make memory`, then discard or commit only if it stays inside the release budget.
+- Bias toward pure-Go/cgo-free candidates for packaging simplicity, but reject any candidate that pushes Markpad over the binary or memory budget.
 - Keep sync/cloud work out of the search index design until the local path is stable.
 
-Primary reference: SQLite FTS5 supports external-content tables and documents the consistency responsibility, rebuild path, and trigram tokenizer behavior at https://sqlite.org/fts5.html.
+Primary references:
+
+- SQLite FTS5 supports external-content tables and documents the consistency responsibility, rebuild path, and trigram tokenizer behavior at https://sqlite.org/fts5.html.
+- The pure-Go `modernc.org/sqlite` driver is a candidate only after measurement: https://pkg.go.dev/modernc.org/sqlite.
