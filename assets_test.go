@@ -717,6 +717,20 @@ func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 		"draftOverCap: trashBytes > DRAFT_TRASH_BYTES",
 		"Newest 80 drafts stay first; oldest drafts are trimmed to fit the byte cap",
 	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".trash-row.soon:hover",
+		".trash-row.urgent:hover",
+		".trash-row.soon::after",
+		".trash-row.urgent::after",
+		".trash-retention.soon::before",
+		".trash-retention.urgent::before",
+		".trash-actions button:disabled",
+	})
 }
 
 func TestCanvasImportCapsContractIsGuarded(t *testing.T) {
