@@ -244,6 +244,7 @@ const THEMES = [
   { id: 'sage', label: 'Sage', mode: 'light', hint: 'Soft green writing and research surface' },
   { id: 'pearl', label: 'Pearl', mode: 'light', hint: 'Quiet neutral reading surface' },
   { id: 'blueprint', label: 'Blueprint', mode: 'light', hint: 'Crisp technical review surface' },
+  { id: 'glacier', label: 'Glacier', mode: 'light', hint: 'Pale blue-white planning and review surface' },
   { id: 'ink', label: 'Ink', mode: 'dark', hint: 'Neutral dark focus surface' },
   { id: 'pine', label: 'Pine', mode: 'dark', hint: 'Green-black low-glare workspace' },
   { id: 'slate', label: 'Slate', mode: 'dark', hint: 'Cool dark technical review' },
@@ -252,6 +253,7 @@ const THEMES = [
   { id: 'graphite', label: 'Graphite', mode: 'dark', hint: 'Balanced dark surface for long editing' },
   { id: 'harbor', label: 'Harbor', mode: 'dark', hint: 'Blue-green night reading surface' },
   { id: 'copper', label: 'Copper', mode: 'dark', hint: 'Warm dark planning and review surface' },
+  { id: 'nocturne', label: 'Nocturne', mode: 'dark', hint: 'Deep blue-black long-session writing surface' },
 ];
 const THEME_RECIPES = [
   { id: 'writing', label: 'Warm writing', theme: 'linen', layout: 'soft wrap, reading width, 62/38 split', bestFor: 'Long-form Markdown drafting' },
@@ -263,8 +265,8 @@ const THEME_RECIPES = [
   { id: 'night', label: 'Night notes', theme: 'midnight', layout: 'soft wrap, preview view, low brightness', bestFor: 'Late-session reading and edits' },
   { id: 'archive', label: 'Archive pass', theme: 'graphite', layout: 'viewer mode, search recents, subdued chrome', bestFor: 'Sorting and reading older notes' },
 ];
-const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand', 'sage', 'pearl', 'blueprint'];
-const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight', 'graphite', 'harbor', 'copper'];
+const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand', 'sage', 'pearl', 'blueprint', 'glacier'];
+const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight', 'graphite', 'harbor', 'copper', 'nocturne'];
 const THEME_COMPANIONS = {
   paper: 'ink',
   linen: 'ember',
@@ -274,6 +276,7 @@ const THEME_COMPANIONS = {
   sage: 'harbor',
   pearl: 'graphite',
   blueprint: 'slate',
+  glacier: 'nocturne',
   ink: 'paper',
   pine: 'mist',
   slate: 'dawn',
@@ -282,6 +285,7 @@ const THEME_COMPANIONS = {
   graphite: 'pearl',
   harbor: 'sage',
   copper: 'sand',
+  nocturne: 'glacier',
 };
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_CACHE_MAX_ENTRIES = 24;
@@ -6206,8 +6210,8 @@ function commandItems() {
     { id: 'sidebar', icon: 'B', title: 'Toggle sidebar', hint: sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar', kbd: 'Ctrl+Shift+B', run: toggleSidebar },
     { id: 'history', icon: 'H', title: 'Version history', hint: 'Open saved snapshots and diffs', kbd: 'Ctrl+H', run: toggleHistory },
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
-    { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
-    { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
+    { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch through all light CSS-variable themes', run: cycleLightTheme },
+    { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch through all dark CSS-variable themes', run: cycleDarkTheme },
     { id: 'theme-companion', icon: 'TC', title: 'Switch to theme companion', hint: 'Apply the recommended light/dark companion for the current theme', run: applyThemeCompanion },
     { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
     { id: 'theme-guide', icon: 'TG', title: 'Theme guide', hint: 'Show light, dark, preset, portability, and lightweight theme notes', run: showThemeGuide },

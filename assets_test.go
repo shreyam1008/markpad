@@ -393,6 +393,10 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 		".pref-theme.active::before",
 		".pref-theme-swatch",
 		".pref-theme-name",
+		`html[data-theme="glacier"]`,
+		`html[data-theme="nocturne"]`,
+		`.theme-lab-swatch[data-theme-swatch="glacier"]`,
+		`.theme-lab-swatch[data-theme-swatch="nocturne"]`,
 	})
 
 	mainJS, err := os.ReadFile("frontend/src/main.js")
@@ -403,6 +407,10 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 		`class="theme-lab-swatch pref-theme-swatch"`,
 		`data-theme-swatch="${theme.id}"`,
 		`<span class="pref-theme-name">${theme.label}</span>`,
+		`{ id: 'glacier', label: 'Glacier', mode: 'light'`,
+		`{ id: 'nocturne', label: 'Nocturne', mode: 'dark'`,
+		"Switch through all light CSS-variable themes",
+		"Switch through all dark CSS-variable themes",
 	})
 }
 
