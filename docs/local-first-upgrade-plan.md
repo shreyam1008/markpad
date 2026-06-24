@@ -1,35 +1,63 @@
 # Markpad local-first upgrade plan
 
-This plan keeps Markpad lightweight: local files remain the source of truth, the frontend stays dependency-light, and larger capabilities are built in Go or small custom browser code instead of bundling heavy editors.
+## Goal
 
-## Reference decisions
+Markpad should become a durable local-first notes workspace where plain files stay canonical, richer views are layered on top, and future features do not force sync, cloud, or heavyweight runtime costs.
 
-- Search: prefer a Go-backed SQLite FTS5 index for the local folder because SQLite FTS5 is built for full-text search over document collections and supports ranking through `bm25()`: https://sqlite.org/fts5.html
-- Loaded-file search: keep the current in-memory path for open/cached files. If richer loaded-document ranking is needed later, evaluate tiny in-browser indexes such as MiniSearch before FlexSearch: https://github.com/lucaong/minisearch and https://github.com/nextapps-de/flexsearch
-- Canvas storage: keep native Markpad documents as `.markcanvas.json`; keep `.canvas` / JSON Canvas as the portable interchange format because it is open, readable, and intended for infinite-canvas interoperability: https://jsoncanvas.org/ and https://github.com/obsidianmd/jsoncanvas
-- Canvas editor: do not bundle tldraw or Excalidraw for now. Borrow interaction patterns, but keep Markpad's custom canvas renderer. tldraw's document/session split is still a good persistence model: https://tldraw.dev/docs/persistence
-- Desktop shell: continue leaning on Wails for the Go/local OS bridge and web UI runtime rather than shipping a Chromium bundle: https://wails.io/docs/reference/runtime/intro/
+## Reference source
 
-## Phase 1: local polish and capability
+- Available local reference: `temp/zennotes`
+- Not available: `/temp/zencode`
+- When plan details are unclear, prefer patterns already present in `temp/zennotes` over inventing new architecture.
 
-- Search: keep scope chips for Loaded, Local, and All; add discoverable syntax help; then move local-folder search to a persistent FTS index when backend files can be touched safely.
-- Tasks: treat Markdown task lines as the user-owned source format. Keep Tasks.md as the default append target and expose list, calendar, and kanban as views over the same files.
-- Trash: keep 30-day soft delete semantics visible in the UI, with manual cleanup available from Trash.
-- Canvas: keep JSON Canvas export and Markpad JSON save paths; improve selection, dimensions, clipboard, zoom, and keyboard operations before considering heavier drawing libraries.
-- Themes and UI: expand through CSS variables only. Avoid image-heavy assets; prefer text glyphs, inline SVG, and CSS-drawn affordances.
-- Editor: keep split presets, soft wrap, cursor/selection stats, and local-only document outline.
+## Non-negotiable constraints
 
-## Phase 2: prepared but not implemented yet
+- Local-first only. No sync, account, cloud, or remote-state work for now.
+- Files on disk are the source of truth. Derived state must be rebuildable.
+- Do not introduce large frontend libraries, heavy binaries, or always-on background services.
+- Memory use must stay low enough for modest machines; favor bounded caches and incremental work.
 
-- Sync: design around a local file graph plus conflict metadata. Do not encode cloud assumptions into Phase 1 storage.
-- Search index portability: keep the FTS database disposable. Files are canonical; indexes can be rebuilt.
-- Canvas sync: separate document state from session state, following the tldraw-style split. Sync the document, keep camera/selection local per device.
-- File watching: use a bounded watcher/index queue when adding live indexing. Avoid recursive hidden/vendor folders and debounce burst writes.
+## File-first UX model
 
-## Performance guardrails
+- Notes, tasks, canvas docs, and trash metadata should map cleanly to user-visible files.
+- UI features are views over files, not replacements for files.
+- If a feature needs hidden state, keep it minimal, local, and disposable.
+- Import/export should preserve simple file ownership and avoid lock-in.
 
-- No heavyweight canvas/editor dependencies in Phase 1.
-- No bundled icon packs; use CSS, currentColor SVG, or compact glyph labels.
-- Local search should cap file size and file type scanning, stream file reads, and index incrementally.
-- UI lists should render summaries and snippets, not whole file bodies.
-- Any future index must be optional and rebuildable from the user's local files.
+## Roadmap
+
+- Search: keep loaded-file search fast, add local-folder indexing only as a disposable local index, and avoid making the index canonical.
+- Canvas: keep a lightweight custom path, store canvas data in file-backed formats, and defer any heavy drawing/editor stack.
+- Tasks: treat Markdown task lines as canonical and build list/calendar/kanban views from those files.
+- Trash: use soft delete with clear restore and cleanup behavior; keep deletion reversible by default.
+- Theme: extend through tokens and variables, not asset-heavy theming systems.
+- Icons: prefer inline SVG, CSS, or small local assets; do not add large icon packs.
+
+## Low-RAM and binary guardrails
+
+- Cap search/index work by file size, file type, and queue depth.
+- Stream or batch file processing; avoid loading large folders into memory at once.
+- Keep indexes, caches, and previews optional and rebuildable.
+- Prefer existing platform/runtime capabilities before adding new native dependencies.
+- Reject features that materially increase binary size unless they unblock core local-first value.
+
+## Validation cadence
+
+- Validate at the plan level before implementation starts on a new area.
+- Validate again after each small backend milestone, not only at the end of a large branch.
+- Re-check this document whenever roadmap scope changes, local-first assumptions shift, or a new dependency is proposed.
+
+## Commit strategy
+
+- Keep commits small and single-purpose.
+- Separate groundwork from behavior changes where practical.
+- Update this document in the same change set when architecture, constraints, or roadmap intent changes.
+- Do not batch speculative roadmap changes with unrelated implementation.
+
+## Anti-drift guardrails
+
+- Do not let search, tasks, canvas, or trash become database-first products; files remain canonical.
+- Do not sneak in sync prerequisites "for later". If sync ever becomes real scope, it needs an explicit plan revision.
+- Do not add heavyweight editor/canvas/icon dependencies as shortcuts.
+- Do not store essential user data only in caches, indexes, or opaque internal formats.
+- Do not diverge from `temp/zennotes`-backed patterns without writing down why in this document first.
