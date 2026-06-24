@@ -4,7 +4,8 @@ This document fixes the storage direction for the current local-only upgrade. Th
 
 ## Research anchors
 
-- SQLite FTS5 is the best fit for fast local search because it is embedded, mature, and supports full-text indexes that can be rebuilt from source files.
+- SQLite FTS5 is the best fit for fast local search because it is embedded, mature, and supports full-text indexes that can be rebuilt from source files: https://sqlite.org/fts5.html
+- ripgrep is the right behavior reference for bounded folder scans because it is line-oriented, fast, and respects ignore/binary defaults, but Markpad should not bundle a separate search binary in the lightweight core: https://github.com/BurntSushi/ripgrep
 - tldraw persistence separates durable document state from per-user session state. Markpad should mirror that split for canvas files.
 - Excalidraw stores local scenes as plaintext JSON in `.excalidraw` files. Markpad canvas should remain plain JSON and provide import/export compatibility rather than a binary-only format.
 
@@ -25,6 +26,7 @@ Implementation bias:
 - Prefer FTS5 `unicode61` tokenization for normal notes.
 - Prefer an external-content or contentless index pattern so the searchable text is not duplicated as another authoritative database.
 - Use incremental indexing from file modified time and size.
+- Keep direct folder scans bounded and dependency-free in Phase 1; copy ripgrep-style defaults such as skipping obvious binary files and keeping snippets small.
 
 ## Tasks
 
