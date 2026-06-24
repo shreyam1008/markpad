@@ -10875,22 +10875,25 @@ function closeCanvas() {
   saveCanvasState();
 }
 
+function canvasPointNearBounds(point, bounds, tolerance = 0) {
+  return point.x >= bounds.x - tolerance
+    && point.x <= bounds.x + bounds.w + tolerance
+    && point.y >= bounds.y - tolerance
+    && point.y <= bounds.y + bounds.h + tolerance;
+}
+
 function canvasHitTest(point) {
+  const tolerance = 12 / canvasCamera().scale;
   for (let i = canvasDoc.elements.length - 1; i >= 0; i--) {
     const el = canvasDoc.elements[i];
+    const bounds = canvasElementBounds(el);
+    if (!canvasPointNearBounds(point, bounds, tolerance)) continue;
     if (el.type === 'path') {
-      if ((el.points || []).some(p => Math.hypot(p.x - point.x, p.y - point.y) < 12 / canvasCamera().scale)) return i;
+      if ((el.points || []).some(p => Math.hypot(p.x - point.x, p.y - point.y) < tolerance)) return i;
     } else if (el.type === 'text') {
-      const lines = String(el.text || '').split('\n');
-      const w = Math.max(...lines.map(line => line.length), 8) * ((el.size || 16) * .62);
-      const h = lines.length * ((el.size || 16) * 1.35);
-      if (point.x >= el.x && point.x <= el.x + w && point.y >= el.y - 18 && point.y <= el.y + h) return i;
+      return i;
     } else {
-      const x = Math.min(el.x, el.x + (el.w || 0));
-      const y = Math.min(el.y, el.y + (el.h || 0));
-      const w = Math.abs(el.w || 0);
-      const h = Math.abs(el.h || 0);
-      if (point.x >= x - 6 && point.x <= x + w + 6 && point.y >= y - 6 && point.y <= y + h + 6) return i;
+      return i;
     }
   }
   return -1;
