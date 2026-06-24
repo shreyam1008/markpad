@@ -2764,6 +2764,8 @@ function localSearchBackendQuery(plan, rawQuery) {
   const anchors = [];
   const backend = String(plan?.backendQuery || '').trim();
   if (backend) anchors.push(backend);
+  anchors.push(...(plan?.fuzzyTerms || []).map(term => `~${term}`));
+  anchors.push(...(plan?.excludeFuzzyTerms || []).map(term => `-~${term}`));
   const tagFilters = plan?.filters?.tag || [];
   anchors.push(...tagFilters.map(tag => `#${tag}`));
   const taskFilters = plan?.filters?.task || [];

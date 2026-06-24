@@ -136,6 +136,46 @@ func TestSearchLocalFolderSupportsExclusions(t *testing.T) {
 	}
 }
 
+func TestSearchLocalFolderSupportsFuzzyTerms(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"alpha.md": "budget search launch plan\n",
+		"beta.md":  "ordinary note without the target sequence\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(folder, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result := app.SearchLocalFolderWithStats("~alp", 10)
+	if len(result.Hits) != 1 {
+		t.Fatalf("fuzzy hits = %d, want 1: %#v", len(result.Hits), result.Hits)
+	}
+	if result.Hits[0].RelPath != "alpha.md" {
+		t.Fatalf("fuzzy hit = %q, want alpha.md", result.Hits[0].RelPath)
+	}
+	if result.Hits[0].MatchKind != "path" && result.Hits[0].MatchKind != "content" {
+		t.Fatalf("fuzzy MatchKind = %q, want path or content", result.Hits[0].MatchKind)
+	}
+
+	excluded := app.SearchLocalFolderWithStats("~alp -~budget", 10)
+	for _, hit := range excluded.Hits {
+		if hit.RelPath == "alpha.md" {
+			t.Fatalf("excluded fuzzy hit returned alpha.md: %#v", excluded.Hits)
+		}
+	}
+}
+
 func TestSearchLocalFolderRanksMetadataAndReturnsHitMetadata(t *testing.T) {
 	store, err := session.NewStoreAt(t.TempDir())
 	if err != nil {

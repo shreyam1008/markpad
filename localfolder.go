@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -203,7 +204,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 		return
 	}
 	plan := parseLocalFolderSearchQuery(query)
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && !plan.HasFilters {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 && !plan.HasFilters {
 		return
 	}
 	if limit <= 0 || limit > 100 {
@@ -445,8 +446,10 @@ type localFolderSearchPlan struct {
 	TypeFilters          []string
 	TagFilters           []string
 	TaskFilters          []string
+	FuzzyTerms           []string
 	ExcludedTerms        []string
 	ExcludedPhrases      []string
+	ExcludedFuzzyTerms   []string
 	ExcludedPathFilters  []string
 	ExcludedTitleFilters []string
 	ExcludedTypeFilters  []string
@@ -483,6 +486,19 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 			} else {
 				plan.Phrases = append(plan.Phrases, lower)
 				plan.HasPhrases = true
+			}
+			continue
+		}
+		if strings.HasPrefix(lower, "~") && len(lower) > 1 {
+			fuzzy := strings.TrimSpace(strings.TrimPrefix(lower, "~"))
+			if fuzzy != "" {
+				if negated {
+					plan.ExcludedFuzzyTerms = append(plan.ExcludedFuzzyTerms, fuzzy)
+					plan.NeedsExclusionScan = true
+				} else {
+					plan.FuzzyTerms = append(plan.FuzzyTerms, fuzzy)
+				}
+				plan.NeedsContent = true
 			}
 			continue
 		}
@@ -636,7 +652,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 			MatchKind: matchKind,
 		}
 	}
-	hasTextQuery := len(plan.Terms) > 0 || len(plan.Phrases) > 0
+	hasTextQuery := len(plan.Terms) > 0 || len(plan.Phrases) > 0 || len(plan.FuzzyTerms) > 0
 	metadataTextMatch := hasTextQuery && localFolderTextMatches(titleLower+"\n"+relLower, plan)
 	metadataScore := localFolderMetadataScore(titleLower, relLower, plan)
 	if metadataTextMatch && !plan.NeedsContent {
@@ -660,6 +676,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 	textLineScore := 0
 	textTerms := make(map[string]bool, len(plan.Terms))
 	textPhrases := make(map[string]bool, len(plan.Phrases))
+	textFuzzy := make(map[string]bool, len(plan.FuzzyTerms))
 	matchedTags := make(map[string]bool, len(plan.TagFilters))
 	matchedTasks := make(map[string]bool, len(plan.TaskFilters))
 	inFence := false
@@ -680,8 +697,8 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 		} else if inFence {
 			taskFilterLine = false
 		}
-		if len(plan.Terms) > 0 || len(plan.Phrases) > 0 {
-			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases) {
+		if hasTextQuery {
+			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases, textFuzzy) {
 				lineScore := localFolderLineTextScore(lower, lineNo, plan)
 				if textLine < 0 || lineScore > textLineScore {
 					textLineScore = lineScore
@@ -702,12 +719,12 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 		if localFolderTextHasExcluded(lower, plan) || localFolderLineMatchesExcludedContentFilters(lower, plan, taskFilterLine) {
 			return LocalFolderSearchHit{}, false
 		}
-		if !plan.NeedsExclusionScan && (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases) || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
+		if !plan.NeedsExclusionScan && (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy) || !hasTextQuery) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
 			break
 		}
 		lineNo++
 	}
-	if !metadataTextMatch && !localFolderTextFiltersMatched(plan, textTerms, textPhrases) && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
+	if !metadataTextMatch && !localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy) && hasTextQuery {
 		return LocalFolderSearchHit{}, false
 	}
 	if !localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
@@ -735,7 +752,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 }
 
 func localFolderMetadataScore(titleLower string, relLower string, plan localFolderSearchPlan) int {
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 {
 		return 90
 	}
 	query := strings.TrimSpace(plan.Text)
@@ -769,6 +786,13 @@ func localFolderMetadataScore(titleLower string, relLower string, plan localFold
 			score += 8
 		}
 	}
+	for _, term := range plan.FuzzyTerms {
+		if fuzzyContains(titleLower, term) {
+			score += 8
+		} else if fuzzyContains(relLower, term) {
+			score += 4
+		}
+	}
 	depth := strings.Count(relLower, "/")
 	if depth > 0 {
 		score -= minInt(depth*2, 14)
@@ -793,6 +817,11 @@ func localFolderLineTextScore(lineLower string, lineNo int, plan localFolderSear
 	for _, term := range plan.Terms {
 		if strings.Contains(lineLower, term) {
 			score += 4
+		}
+	}
+	for _, term := range plan.FuzzyTerms {
+		if fuzzyContains(lineLower, term) {
+			score += 3
 		}
 	}
 	return score
@@ -877,11 +906,16 @@ func localFolderTextHasExcluded(value string, plan localFolderSearchPlan) bool {
 			return true
 		}
 	}
+	for _, term := range plan.ExcludedFuzzyTerms {
+		if fuzzyContains(value, term) {
+			return true
+		}
+	}
 	return false
 }
 
 func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 {
 		return true
 	}
 	if len(plan.Terms) > 0 && !termsContain(value, plan.Terms) {
@@ -892,10 +926,15 @@ func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
 			return false
 		}
 	}
+	for _, term := range plan.FuzzyTerms {
+		if !fuzzyContains(value, term) {
+			return false
+		}
+	}
 	return true
 }
 
-func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool) bool {
+func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool) bool {
 	matched := false
 	for _, term := range plan.Terms {
 		if strings.Contains(line, term) {
@@ -909,10 +948,16 @@ func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms 
 			matched = true
 		}
 	}
+	for _, term := range plan.FuzzyTerms {
+		if fuzzyContains(line, term) {
+			fuzzy[term] = true
+			matched = true
+		}
+	}
 	return matched
 }
 
-func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool) bool {
+func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool) bool {
 	for _, term := range plan.Terms {
 		if !terms[term] {
 			return false
@@ -920,6 +965,33 @@ func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]
 	}
 	for _, phrase := range plan.Phrases {
 		if !phrases[phrase] {
+			return false
+		}
+	}
+	for _, term := range plan.FuzzyTerms {
+		if !fuzzy[term] {
+			return false
+		}
+	}
+	return true
+}
+
+func fuzzyContains(value string, pattern string) bool {
+	if pattern == "" {
+		return true
+	}
+	offset := 0
+	for _, needle := range pattern {
+		found := false
+		for offset < len(value) {
+			r, size := utf8.DecodeRuneInString(value[offset:])
+			offset += size
+			if r == needle {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return false
 		}
 	}
