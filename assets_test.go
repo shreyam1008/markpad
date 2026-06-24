@@ -381,6 +381,34 @@ func TestCommandPaletteGeneratedEntriesKeepBundleHeadroom(t *testing.T) {
 	})
 }
 
+func TestSearchEmptyStateGuidesNextMoves(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(data), []string{
+		"function searchEmptyHtml(message, query = searchLastQuery)",
+		"const scopeLabel = { loaded: 'Loaded files', local: 'Local folder', all: 'All local files' }[searchScope] || 'Loaded files';",
+		`<span class="search-empty-scope">Current scope: <b>${escapeHtml(scopeLabel)}</b></span>`,
+		`<span class="search-empty-group-label">Try another scope</span>`,
+		`<span class="search-empty-group-label">Inspect or narrow</span>`,
+		`data-search-empty-scope="${scope}"`,
+		`data-search-empty-action="${action}"`,
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".search-empty-scope",
+		".search-empty-scope b",
+		".search-empty-group",
+		".search-empty-group-label",
+		".search-empty-chip.active",
+	})
+}
+
 func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	indexHTML, err := os.ReadFile("frontend/index.html")
 	if err != nil {

@@ -3271,6 +3271,7 @@ function renderSearchResultStrip(results, query) {
 }
 
 function searchEmptyHtml(message, query = searchLastQuery) {
+  const scopeLabel = { loaded: 'Loaded files', local: 'Local folder', all: 'All local files' }[searchScope] || 'Loaded files';
   const scopeButtons = [
     ['loaded', 'Loaded'],
     ['local', 'Local folder'],
@@ -3290,10 +3291,17 @@ function searchEmptyHtml(message, query = searchLastQuery) {
   return `
     <div class="search-empty">
       <strong>${escapeHtml(message)}</strong>
+      <span class="search-empty-scope">Current scope: <b>${escapeHtml(scopeLabel)}</b></span>
       ${queryLine}
       ${queryPlan}
-      <div class="search-empty-actions">${scopeButtons}</div>
-      <div class="search-empty-actions">${actionButtons}</div>
+      <div class="search-empty-group">
+        <span class="search-empty-group-label">Try another scope</span>
+        <div class="search-empty-actions">${scopeButtons}</div>
+      </div>
+      <div class="search-empty-group">
+        <span class="search-empty-group-label">Inspect or narrow</span>
+        <div class="search-empty-actions">${actionButtons}</div>
+      </div>
     </div>
   `;
 }

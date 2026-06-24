@@ -1874,15 +1874,28 @@ body.markpad-compact #modal-body {
 .search-empty {
   color: var(--muted);
   text-align: center;
-  padding: 28px 16px;
+  padding: 30px 16px;
   font-size: 13px;
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .search-empty strong {
   color: var(--text);
   font-size: 14px;
+}
+.search-empty-scope {
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--editor));
+  color: var(--muted);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 850;
+}
+.search-empty-scope b {
+  color: var(--accent);
+  font-weight: 950;
 }
 .search-empty code {
   border: 1px solid var(--border-soft);
@@ -1891,6 +1904,18 @@ body.markpad-compact #modal-body {
   color: var(--text);
   padding: 1px 5px;
   font-size: 11px;
+}
+.search-empty-group {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+.search-empty-group-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 .search-empty-actions {
   display: flex;
