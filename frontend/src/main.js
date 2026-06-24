@@ -2655,6 +2655,65 @@ function showSearchProfile() {
   `);
 }
 
+function renderSearchResultStrip(results, query) {
+  const snapshot = searchProfileSnapshot(query, results);
+  const sources = snapshot.sources || {};
+  const loadedCount = Number(sources.loaded || 0);
+  const localCount = Number(sources.local || 0);
+  const otherCount = Math.max(0, Number(snapshot.resultCount || 0) - loadedCount - localCount);
+  const total = Math.max(1, Number(snapshot.resultCount || 0));
+  const sourceSlices = [
+    ['loaded', 'Loaded', loadedCount],
+    ['local', 'Local', localCount],
+    ['other', 'Other', otherCount],
+  ].filter(([, , count]) => count > 0).map(([className, label, count]) => {
+    const width = Math.round((count / total) * 1000) / 10;
+    return `<span class="search-source-slice ${className}" style="width:${width}%;" title="${escapeHtml(`${label}: ${count}`)}"></span>`;
+  }).join('');
+  const filters = Object.values(snapshot.operators.filters || {}).reduce((sum, values) => sum + (values || []).length, 0);
+  const excludes = Object.values(snapshot.operators.excludes || {}).reduce((sum, values) => sum + (values || []).length, 0)
+    + (snapshot.operators.excludeTerms || []).length
+    + (snapshot.operators.excludePhrases || []).length
+    + (snapshot.operators.excludeWildcards || []).length
+    + (snapshot.operators.excludeFuzzyTerms || []).length;
+  const termCount = (snapshot.operators.terms || []).length
+    + (snapshot.operators.phrases || []).length
+    + (snapshot.operators.wildcards || []).length
+    + (snapshot.operators.fuzzyTerms || []).length;
+  return `
+    <div class="search-result-strip" aria-label="Search result source summary">
+      <div class="search-result-card">
+        <strong>${snapshot.resultCount}</strong>
+        <span>Results</span>
+        <small>${escapeHtml(snapshot.scope)} scope</small>
+      </div>
+      <div class="search-result-card">
+        <strong>${loadedCount}</strong>
+        <span>Loaded</span>
+        <small>Open/session files</small>
+      </div>
+      <div class="search-result-card">
+        <strong>${localCount}</strong>
+        <span>Local folder</span>
+        <small>Bounded disk scan</small>
+      </div>
+      <div class="search-result-card">
+        <strong>${termCount}</strong>
+        <span>Terms</span>
+        <small>${filters} filters · ${excludes} excludes</small>
+      </div>
+      <div class="search-source-meter">
+        <div class="search-source-track">${sourceSlices || '<span class="search-source-slice empty" style="width:100%;"></span>'}</div>
+        <div class="search-source-legend">
+          <span><strong>${loadedCount}</strong> loaded</span>
+          <span><strong>${localCount}</strong> local</span>
+          <span><strong>${otherCount}</strong> other</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function copySearchProfileMarkdown() {
   await navigator.clipboard.writeText(searchProfileMarkdown());
   statusText.textContent = 'Search profile copied as Markdown';
@@ -3387,7 +3446,7 @@ function renderSearchResults(results, query) {
   const planMeta = searchPlanMetaSuffix(trimmedQuery);
   searchLastResults = Array.isArray(results) ? results : [];
   searchLastQuery = trimmedQuery;
-  searchResults.innerHTML = '';
+  searchResults.innerHTML = renderSearchResultStrip(results, trimmedQuery);
   searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
   if (searchScope === 'all') {
     const loadedCount = results.filter(result => result.source !== 'local').length;
@@ -3401,7 +3460,7 @@ function renderSearchResults(results, query) {
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!results.length) {
-    searchResults.innerHTML = `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`;
+    searchResults.insertAdjacentHTML('beforeend', `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`);
     return;
   }
   results.forEach((result, index) => {
