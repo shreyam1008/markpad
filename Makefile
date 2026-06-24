@@ -41,6 +41,7 @@ validate:
 	$(GO) vet ./...
 	node --check frontend/src/main.js
 	$(MAKE) build
+	$(MAKE) budget
 
 fmt:
 	$(GO)fmt -w . ./internal

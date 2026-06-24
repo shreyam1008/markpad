@@ -28,3 +28,5 @@ jobs:
         run: node --check frontend/src/main.js
       - name: Build
         run: go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o dist/markpad .
+      - name: Budget
+        run: make budget
