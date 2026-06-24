@@ -5742,7 +5742,7 @@ function commandItems() {
   { id: 'export-current-file-search-csv', icon: 'FSC', title: 'Export current-file search CSV', hint: 'Download the current active-file search report as CSV rows', run: () => exportCurrentFileSearchCsv() },
     { id: 'tasks-format-guide', icon: 'TFG', title: 'Task format guide', hint: 'Show the portable Markdown task contract and export formats', run: showTaskSyntaxHelp },
     { id: 'tasks-syntax-help', icon: 'TSH', title: 'Task syntax help', hint: 'Show Markdown task tokens for due dates, priority, waiting, and tags', run: showTaskSyntaxHelp },
-    { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: 'Show today\\'s tasks in calendar view across all sources', run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
+    { id: 'tasks-preset-today-calendar', icon: 'TDC', title: 'Task preset: today calendar', hint: "Show today's tasks in calendar view across all sources", run: () => showTasksPreset({ view: 'calendar', source: 'all', filter: 'all', query: 'due:today' }) },
     { id: 'tasks-preset-open-kanban', icon: 'TOK', title: 'Task preset: open kanban', hint: 'Show open tasks as a kanban board across all sources', run: () => showTasksPreset({ view: 'kanban', source: 'all', filter: 'open', query: '' }) },
     { id: 'tasks-preset-local-kanban', icon: 'TLK', title: 'Task preset: local kanban', hint: 'Show open local-folder tasks as a kanban board', run: () => showTasksPreset({ view: 'kanban', source: 'local', filter: 'open', query: '' }) },
     { id: 'tasks-preset-waiting-list', icon: 'TWL', title: 'Task preset: waiting list', hint: 'Show waiting tasks in list view across all sources', run: () => showTasksPreset({ view: 'list', source: 'all', filter: 'waiting', query: '' }) },
@@ -5766,8 +5766,8 @@ function commandItems() {
     { id: 'tasks-clear-query', icon: 'T0', title: 'Clear task query', hint: 'Clear the task text and operator filter', run: () => showTasksForQuery('') },
     { id: 'tasks-reset-filters', icon: 'TRF', title: 'Reset task filters', hint: 'Show all task sources, filters, and queries again', run: resetTaskViewFilters },
     { id: 'add-task', icon: '+T', title: 'Add task', hint: 'Append a Markdown task to Tasks.md or a Tasks draft', run: addQuickTask },
-    { id: 'add-task-today', icon: '+D', title: 'Add task due today', hint: 'Append a Markdown task tagged with today\\'s due date', run: () => addTaskTemplate(`due:${todayKey()}`) },
-    { id: 'add-task-tomorrow', icon: '+M', title: 'Add task due tomorrow', hint: 'Append a Markdown task tagged with tomorrow\\'s due date', run: () => addTaskTemplate(`due:${tomorrowKey()}`) },
+    { id: 'add-task-today', icon: '+D', title: 'Add task due today', hint: "Append a Markdown task tagged with today's due date", run: () => addTaskTemplate(`due:${todayKey()}`) },
+    { id: 'add-task-tomorrow', icon: '+M', title: 'Add task due tomorrow', hint: "Append a Markdown task tagged with tomorrow's due date", run: () => addTaskTemplate(`due:${tomorrowKey()}`) },
     { id: 'add-task-high-today', icon: '+HT', title: 'Add high priority task due today', hint: 'Append a Markdown task tagged !high and due today', run: () => addTaskTemplate(`!high due:${todayKey()}`) },
     { id: 'add-task-high', icon: '+H', title: 'Add high priority task', hint: 'Append a Markdown task with !high priority', run: () => addTaskTemplate('!high') },
     { id: 'add-task-medium', icon: '+ME', title: 'Add medium priority task', hint: 'Append a Markdown task with !medium priority', run: () => addTaskTemplate('!medium') },
@@ -11061,16 +11061,6 @@ function stepCanvasZoom(multiplier) {
   setCanvasZoomPreset(camera.scale * multiplier);
 }
 
-function resetCanvasView() {
-  if (!canvasDoc) loadCanvasState();
-  const camera = canvasCamera();
-  camera.x = 0;
-  camera.y = 0;
-  camera.scale = 1;
-  renderCanvas();
-  statusText.textContent = 'Canvas view reset';
-}
-
 function panCanvasView(dx, dy) {
   if (!canvasDoc) loadCanvasState();
   const camera = canvasCamera();
@@ -11609,7 +11599,7 @@ function pasteCanvasElement() {
   return true;
 }
 
-function nudgeSelectedCanvasElement(dx, dy) {
+function nudgeSelectedCanvasElementByPixels(dx, dy) {
   if (!hasCanvasSelection()) return false;
   canvasDoc.elements[canvasSelectedIndex] = moveCanvasElement(canvasDoc.elements[canvasSelectedIndex], dx, dy);
   saveCanvasState();
@@ -11700,10 +11690,10 @@ function handleCanvasSelectionShortcut(e) {
     return duplicateSelectedCanvasElement();
   }
   const step = e.shiftKey ? 10 : 1;
-  if (key === 'ArrowLeft') { e.preventDefault(); return nudgeSelectedCanvasElement(-step, 0); }
-  if (key === 'ArrowRight') { e.preventDefault(); return nudgeSelectedCanvasElement(step, 0); }
-  if (key === 'ArrowUp') { e.preventDefault(); return nudgeSelectedCanvasElement(0, -step); }
-  if (key === 'ArrowDown') { e.preventDefault(); return nudgeSelectedCanvasElement(0, step); }
+  if (key === 'ArrowLeft') { e.preventDefault(); return nudgeSelectedCanvasElementByPixels(-step, 0); }
+  if (key === 'ArrowRight') { e.preventDefault(); return nudgeSelectedCanvasElementByPixels(step, 0); }
+  if (key === 'ArrowUp') { e.preventDefault(); return nudgeSelectedCanvasElementByPixels(0, -step); }
+  if (key === 'ArrowDown') { e.preventDefault(); return nudgeSelectedCanvasElementByPixels(0, step); }
   return false;
 }
 
@@ -12797,7 +12787,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Bytes: ${formatBytes(snapshot.document.bytes || 0)}`,
     `- Elements: ${snapshot.document.elements || 0}`,
     `- Element JSON: ${formatBytes(snapshot.document.elementBytes || 0)} (${formatBytes(snapshot.document.averageElementBytes || 0)} average)`,
-    `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? snapshot.document.elements || 0}/${snapshot.virtualization?.totalElements ?? snapshot.document.elements || 0}`,
+    `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? (snapshot.document.elements || 0)}/${snapshot.virtualization?.totalElements ?? (snapshot.document.elements || 0)}`,
     `- Viewport-visible paths: ${snapshot.virtualization?.visiblePathElements || 0}/${snapshot.virtualization?.totalPathElements || 0}`,
     `- Path bounds: ${snapshot.virtualization?.pathBounds || 'single-pass'}; paths culled by bounds: ${snapshot.virtualization?.pathsCulledByBounds ? 'yes' : 'no'}`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
@@ -14685,16 +14675,16 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
   const taskOpen = e.target.closest('[data-task-open]');
   if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
-  const taskCopy = e.target.closest('[data-task-copy]');
-  if (taskCopy) await copySingleTaskMarkdown(taskCopy.dataset.taskCopy);
-  const taskCopyJson = e.target.closest('[data-task-copy-json]');
-  if (taskCopyJson) await copySingleTaskJson(taskCopyJson.dataset.taskCopyJson);
-  const taskCopyIcs = e.target.closest('[data-task-copy-ics]');
-  if (taskCopyIcs) await copySingleTaskIcs(taskCopyIcs.dataset.taskCopyIcs);
-  const taskCopyCsv = e.target.closest('[data-task-copy-csv]');
-  if (taskCopyCsv) await copySingleTaskCsv(taskCopyCsv.dataset.taskCopyCsv);
-  const taskCopyTodo = e.target.closest('[data-task-copy-todo]');
-  if (taskCopyTodo) await copySingleTaskTodoTxt(taskCopyTodo.dataset.taskCopyTodo);
+  const singleTaskCopy = e.target.closest('[data-task-copy]');
+  if (singleTaskCopy) await copySingleTaskMarkdown(singleTaskCopy.dataset.taskCopy);
+  const singleTaskCopyJson = e.target.closest('[data-task-copy-json]');
+  if (singleTaskCopyJson) await copySingleTaskJson(singleTaskCopyJson.dataset.taskCopyJson);
+  const singleTaskCopyIcs = e.target.closest('[data-task-copy-ics]');
+  if (singleTaskCopyIcs) await copySingleTaskIcs(singleTaskCopyIcs.dataset.taskCopyIcs);
+  const singleTaskCopyCsv = e.target.closest('[data-task-copy-csv]');
+  if (singleTaskCopyCsv) await copySingleTaskCsv(singleTaskCopyCsv.dataset.taskCopyCsv);
+  const singleTaskCopyTodo = e.target.closest('[data-task-copy-todo]');
+  if (singleTaskCopyTodo) await copySingleTaskTodoTxt(singleTaskCopyTodo.dataset.taskCopyTodo);
   const trashRestore = e.target.closest('[data-trash-restore]');
   if (trashRestore) await restoreDraftTrash(trashRestore.dataset.trashRestore);
   const trashCopy = e.target.closest('[data-trash-copy]');
@@ -14755,10 +14745,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashCopyCsv && !trashCopyCsv.disabled) await copyTrashReportCsv();
   const trashExportCsv = e.target.closest('[data-trash-export-csv]');
   if (trashExportCsv && !trashExportCsv.disabled) await exportTrashReportCsv();
-  const trashCopyJson = e.target.closest('[data-trash-copy-json]');
-  if (trashCopyJson && !trashCopyJson.disabled) await copyTrashReportJson();
-  const trashExportJson = e.target.closest('[data-trash-export-json]');
-  if (trashExportJson && !trashExportJson.disabled) await exportTrashReportJson();
+  const trashCopyReportJson = e.target.closest('[data-trash-copy-json]');
+  if (trashCopyReportJson && !trashCopyReportJson.disabled) await copyTrashReportJson();
+  const trashExportReportJson = e.target.closest('[data-trash-export-json]');
+  if (trashExportReportJson && !trashExportReportJson.disabled) await exportTrashReportJson();
   const trashEmpty = e.target.closest('[data-trash-empty]');
   if (trashEmpty && !trashEmpty.disabled) await emptyAllTrash();
   const localChoose = e.target.closest('[data-local-folder-choose]');
