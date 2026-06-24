@@ -4420,6 +4420,9 @@ function commandItems() {
     { id: 'export-task-view-summary-csv', icon: 'ETV', title: 'Export task view summary CSV', hint: 'Download current task view filters and counts as CSV', run: exportTaskViewSummaryCsv },
     { id: 'trash', icon: 'X', title: 'Trash', hint: 'Restore deleted drafts kept for 30 days', run: showTrashView },
     { id: 'trash-retention-audit', icon: 'TA', title: 'Trash retention audit', hint: 'Show retained items, expiry buckets, size, and next cleanup date', run: showTrashRetentionAudit },
+    { id: 'trash-cleanup-profile', icon: 'TCP', title: 'Trash cleanup profile', hint: 'Show expired candidates, retained bytes, backend cleanup support, and safe cleanup paths', run: showTrashCleanupProfile },
+    { id: 'copy-trash-cleanup-profile', icon: 'TCM', title: 'Copy Trash cleanup profile', hint: 'Copy local Trash cleanup readiness as Markdown', run: copyTrashCleanupProfileMarkdown },
+    { id: 'export-trash-cleanup-profile', icon: 'TEM', title: 'Export Trash cleanup profile', hint: 'Download local Trash cleanup readiness as Markdown', run: exportTrashCleanupProfileMarkdown },
     { id: 'trash-guide', icon: 'TG', title: 'Trash guide', hint: 'Show retention, restore, cleanup, and report behavior for local Trash', run: showTrashGuide },
     { id: 'copy-trash-report', icon: 'CTR', title: 'Copy Trash report', hint: 'Copy retained Trash items and expiry dates as Markdown', run: copyTrashReportMarkdown },
     { id: 'export-trash-report', icon: 'ETR', title: 'Export Trash report', hint: 'Download retained Trash items and expiry dates as Markdown', run: exportTrashReportMarkdown },
@@ -5139,6 +5142,180 @@ async function showTrashRetentionAudit() {
   `);
 }
 
+function trashCleanupProfileSnapshot(rawDraftItems, activeDraftItems, fileItems) {
+  const now = Date.now();
+  const activeIds = new Set(activeDraftItems.map(item => item.id));
+  const expiredDraftItems = rawDraftItems.filter(item => item?.id && !activeIds.has(item.id));
+  const visibleExpiredFileItems = fileItems.filter(item => {
+    const expiresAt = new Date(item.deletedAt).getTime() + DRAFT_TRASH_DAYS * 24 * 60 * 60 * 1000;
+    return Number.isFinite(expiresAt) && expiresAt <= now;
+  });
+  const audit = trashRetentionAuditSnapshot(activeDraftItems, fileItems);
+  const expiredDraftBytes = expiredDraftItems.reduce((sum, item) => sum + byteSize(item.content || ''), 0);
+  const expiredFileBytes = visibleExpiredFileItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  return {
+    type: 'markpad-trash-cleanup-profile',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    retentionDays: DRAFT_TRASH_DAYS,
+    retained: {
+      total: audit.total,
+      drafts: audit.drafts,
+      files: audit.files,
+      bytes: audit.totalBytes,
+      draftBytes: audit.draftBytes,
+      fileBytes: audit.fileBytes,
+      urgent: audit.urgent,
+      soon: audit.soon,
+      safe: audit.safe,
+      nextExpiry: audit.nextExpiry,
+      nextTitle: audit.nextTitle,
+    },
+    cleanupCandidates: {
+      expiredDrafts: expiredDraftItems.length,
+      visibleExpiredFiles: visibleExpiredFileItems.length,
+      draftBytes: expiredDraftBytes,
+      fileBytes: expiredFileBytes,
+      totalBytes: expiredDraftBytes + expiredFileBytes,
+    },
+    backend: {
+      fileTrashList: !!window.go?.main?.App?.ListFileTrash,
+      cleanupExpiredFileTrash: !!window.go?.main?.App?.CleanupExpiredFileTrash,
+      emptyFileTrash: !!window.go?.main?.App?.EmptyFileTrash,
+    },
+    actions: {
+      cleanExpired: 'Deletes only expired local Trash items where cleanup support exists.',
+      emptyTrash: 'Deletes every retained Trash item after confirmation.',
+      restore: 'Restores individual drafts or saved files before permanent cleanup.',
+    },
+    note: 'Cleanup profile is metadata-only and does not export deleted draft contents.',
+  };
+}
+
+async function currentTrashCleanupProfileSnapshot() {
+  const rawDraftItems = readDraftTrashRaw();
+  const activeDraftItems = activeTrashItems(rawDraftItems);
+  const fileItems = await loadFileTrash();
+  return trashCleanupProfileSnapshot(rawDraftItems, activeDraftItems, fileItems);
+}
+
+function trashCleanupProfileMarkdown(snapshot) {
+  return [
+    '# Markpad Trash Cleanup Profile',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    `Retention: ${snapshot.retentionDays} days`,
+    '',
+    '## Retained Trash',
+    '',
+    `- Items: ${snapshot.retained.total} (${snapshot.retained.drafts} drafts, ${snapshot.retained.files} files)`,
+    `- Bytes: ${formatBytes(snapshot.retained.bytes || 0)} (${formatBytes(snapshot.retained.draftBytes || 0)} drafts, ${formatBytes(snapshot.retained.fileBytes || 0)} files)`,
+    `- Expiring today: ${snapshot.retained.urgent}`,
+    `- Expiring soon: ${snapshot.retained.soon}`,
+    `- Safe window: ${snapshot.retained.safe}`,
+    `- Next expiry: ${snapshot.retained.nextExpiry || 'None'}${snapshot.retained.nextTitle ? ` (${snapshot.retained.nextTitle})` : ''}`,
+    '',
+    '## Cleanup candidates',
+    '',
+    `- Expired drafts: ${snapshot.cleanupCandidates.expiredDrafts}`,
+    `- Visible expired files: ${snapshot.cleanupCandidates.visibleExpiredFiles}`,
+    `- Candidate bytes: ${formatBytes(snapshot.cleanupCandidates.totalBytes || 0)}`,
+    '',
+    '## Backend support',
+    '',
+    `- File Trash list: ${snapshot.backend.fileTrashList ? 'available' : 'unavailable'}`,
+    `- Clean expired files: ${snapshot.backend.cleanupExpiredFileTrash ? 'available' : 'unavailable'}`,
+    `- Empty file Trash: ${snapshot.backend.emptyFileTrash ? 'available' : 'unavailable'}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function trashCleanupProfileJson(snapshot) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function trashCleanupProfileCsv(snapshot) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['retention_days', Number(snapshot.retentionDays || DRAFT_TRASH_DAYS)],
+    ['retained_total', Number(snapshot.retained.total || 0)],
+    ['retained_drafts', Number(snapshot.retained.drafts || 0)],
+    ['retained_files', Number(snapshot.retained.files || 0)],
+    ['retained_bytes', Number(snapshot.retained.bytes || 0)],
+    ['retained_draft_bytes', Number(snapshot.retained.draftBytes || 0)],
+    ['retained_file_bytes', Number(snapshot.retained.fileBytes || 0)],
+    ['retained_urgent', Number(snapshot.retained.urgent || 0)],
+    ['retained_soon', Number(snapshot.retained.soon || 0)],
+    ['retained_safe', Number(snapshot.retained.safe || 0)],
+    ['expired_drafts', Number(snapshot.cleanupCandidates.expiredDrafts || 0)],
+    ['visible_expired_files', Number(snapshot.cleanupCandidates.visibleExpiredFiles || 0)],
+    ['candidate_bytes', Number(snapshot.cleanupCandidates.totalBytes || 0)],
+    ['file_trash_list_available', snapshot.backend.fileTrashList ? 'true' : 'false'],
+    ['cleanup_expired_file_trash_available', snapshot.backend.cleanupExpiredFileTrash ? 'true' : 'false'],
+    ['empty_file_trash_available', snapshot.backend.emptyFileTrash ? 'true' : 'false'],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+async function showTrashCleanupProfile() {
+  const snapshot = await currentTrashCleanupProfileSnapshot();
+  showModal('Trash Cleanup Profile', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${snapshot.retained.total}</strong><span>Retained items</span><small>${snapshot.retained.drafts} drafts · ${snapshot.retained.files} files</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.retained.bytes || 0)}</strong><span>Retained size</span><small>${formatBytes(snapshot.retained.draftBytes || 0)} drafts · ${formatBytes(snapshot.retained.fileBytes || 0)} files</small></div>
+      <div class="diag-card"><strong>${snapshot.cleanupCandidates.expiredDrafts}</strong><span>Expired drafts</span><small>${formatBytes(snapshot.cleanupCandidates.draftBytes || 0)} cleanup candidate</small></div>
+      <div class="diag-card"><strong>${snapshot.cleanupCandidates.visibleExpiredFiles}</strong><span>Expired files</span><small>${formatBytes(snapshot.cleanupCandidates.fileBytes || 0)} visible candidate</small></div>
+      <div class="diag-card"><strong>${snapshot.retained.urgent}</strong><span>Expiring today</span><small>${snapshot.retained.soon} soon · ${snapshot.retained.safe} safe</small></div>
+      <div class="diag-card"><strong>${snapshot.backend.cleanupExpiredFileTrash ? 'yes' : 'no'}</strong><span>File cleanup bridge</span><small>${snapshot.backend.emptyFileTrash ? 'empty supported' : 'empty unavailable'}</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-trash-cleanup-md>Copy MD</button>
+      <button data-export-trash-cleanup-md>Export MD</button>
+      <button data-copy-trash-cleanup-json>Copy JSON</button>
+      <button data-export-trash-cleanup-json>Export JSON</button>
+      <button data-copy-trash-cleanup-csv>Copy CSV</button>
+      <button data-export-trash-cleanup-csv>Export CSV</button>
+      <button data-trash-clean-expired>Clean Expired</button>
+      <button data-trash-audit>Audit Retention</button>
+      <button data-trash-guide>Guide</button>
+    </div>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+  `);
+}
+
+async function copyTrashCleanupProfileMarkdown() {
+  await navigator.clipboard.writeText(trashCleanupProfileMarkdown(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile copied as Markdown';
+}
+
+async function exportTrashCleanupProfileMarkdown() {
+  downloadText('markpad-trash-cleanup-profile.md', 'text/markdown', trashCleanupProfileMarkdown(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile exported as Markdown';
+}
+
+async function copyTrashCleanupProfileJson() {
+  await navigator.clipboard.writeText(trashCleanupProfileJson(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile copied as JSON';
+}
+
+async function exportTrashCleanupProfileJson() {
+  downloadText('markpad-trash-cleanup-profile.json', 'application/json', trashCleanupProfileJson(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile exported as JSON';
+}
+
+async function copyTrashCleanupProfileCsv() {
+  await navigator.clipboard.writeText(trashCleanupProfileCsv(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile copied as CSV';
+}
+
+async function exportTrashCleanupProfileCsv() {
+  downloadText('markpad-trash-cleanup-profile.csv', 'text/csv', trashCleanupProfileCsv(await currentTrashCleanupProfileSnapshot()));
+  statusText.textContent = 'Trash cleanup profile exported as CSV';
+}
+
 async function copyTrashReportMarkdown() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -5221,6 +5398,7 @@ function showTrashGuide() {
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-trash-audit>Audit Retention</button>
+      <button data-trash-cleanup-profile>Cleanup Profile</button>
       <button data-trash-copy-report>Copy Report</button>
       <button data-trash-export-report>Export Report</button>
       <button data-trash-copy-json>Copy JSON</button>
@@ -5289,6 +5467,7 @@ async function showTrashView() {
       <button data-trash-copy-json ${total ? '' : 'disabled'}>Copy JSON</button>
       <button data-trash-export-json ${total ? '' : 'disabled'}>Export JSON</button>
       <button data-trash-audit>Audit</button>
+      <button data-trash-cleanup-profile>Profile</button>
       <button data-trash-guide>Guide</button>
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
@@ -12568,6 +12747,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (trashGuide) showTrashGuide();
   const trashAudit = e.target.closest('[data-trash-audit]');
   if (trashAudit) await showTrashRetentionAudit();
+  const trashCleanupProfile = e.target.closest('[data-trash-cleanup-profile]');
+  if (trashCleanupProfile) await showTrashCleanupProfile();
+  const copyTrashCleanupMd = e.target.closest('[data-copy-trash-cleanup-md]');
+  if (copyTrashCleanupMd) await copyTrashCleanupProfileMarkdown();
+  const exportTrashCleanupMd = e.target.closest('[data-export-trash-cleanup-md]');
+  if (exportTrashCleanupMd) await exportTrashCleanupProfileMarkdown();
+  const copyTrashCleanupJson = e.target.closest('[data-copy-trash-cleanup-json]');
+  if (copyTrashCleanupJson) await copyTrashCleanupProfileJson();
+  const exportTrashCleanupJson = e.target.closest('[data-export-trash-cleanup-json]');
+  if (exportTrashCleanupJson) await exportTrashCleanupProfileJson();
+  const copyTrashCleanupCsv = e.target.closest('[data-copy-trash-cleanup-csv]');
+  if (copyTrashCleanupCsv) await copyTrashCleanupProfileCsv();
+  const exportTrashCleanupCsv = e.target.closest('[data-export-trash-cleanup-csv]');
+  if (exportTrashCleanupCsv) await exportTrashCleanupProfileCsv();
   const trashCopyReport = e.target.closest('[data-trash-copy-report]');
   if (trashCopyReport && !trashCopyReport.disabled) await copyTrashReportMarkdown();
   const trashExportReport = e.target.closest('[data-trash-export-report]');
