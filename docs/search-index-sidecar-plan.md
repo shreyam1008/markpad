@@ -70,6 +70,7 @@ The database lives in app cache or app data. Deleting it must not lose user work
 
 - Search popover should show index state: cold, indexing, ready, stale, fallback.
 - Local Footprint should show index database bytes and row count.
+- Search Profile should show query operators, result sources, loaded-search cache bytes, bridge availability, and sidecar state.
 - Local Folder panel should offer:
   - Rebuild search index.
   - Pause indexing.
@@ -82,6 +83,7 @@ The database lives in app cache or app data. Deleting it must not lose user work
 2. Add bounded file extractor and document fingerprinting.
 3. Add incremental indexer with manual rebuild command.
 4. Add FTS query endpoint returning paged snippets.
-5. Wire frontend search to use index when ready and fallback when not.
-6. Add Local Footprint index bytes and row counts.
-7. Add rebuild/clear controls in Local Folder and Search help.
+5. Extend Search Profile with sidecar state, row count, database bytes, and last-indexed timestamp.
+6. Wire frontend search to use index when ready and fallback when not.
+7. Add Local Footprint index bytes and row counts.
+8. Add rebuild/clear controls in Local Folder and Search help.
