@@ -2264,6 +2264,7 @@ function showSearchPerformanceGuide() {
     <div class="local-actions" style="margin-top:10px;">
       <button data-open-local-footprint>Open Local Footprint</button>
       <button data-clear-loaded-search-cache>Clear Search Cache</button>
+      <button data-search-profile-open>Search Profile</button>
       <button data-workspace-search-plan>Workspace Search Plan</button>
     </div>
     <p class="diag-note">Search should stay local-first and memory-bounded. The current loaded-file path is intentionally small; broader workspace search should stream from disk and expose its cache/index cost in diagnostics.</p>
@@ -2282,11 +2283,188 @@ function showWorkspaceSearchPlan() {
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-search-performance-open>Search Performance</button>
+      <button data-search-profile-open>Search Profile</button>
       <button data-open-local-footprint>Local Footprint</button>
       <button data-local-workspace-setup>Workspace Setup</button>
     </div>
     <p class="diag-note">Workspace search should remain local, cancellable, measurable, and derived from files. Current-file and loaded-file search stay as zero-index fast paths.</p>
   `);
+}
+
+function searchProfileSnapshot(query = searchLastQuery, results = searchLastResults) {
+  const plan = parseSearchQuery(query || '');
+  const resultItems = Array.isArray(results) ? results : [];
+  const sources = resultItems.reduce((acc, result) => {
+    const source = result.source || 'loaded';
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {});
+  return {
+    type: 'markpad-search-profile',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    scope: searchScope,
+    query: plan.raw,
+    backendQuery: plan.backendQuery || '',
+    resultCount: resultItems.length,
+    sources,
+    operators: {
+      terms: plan.terms || [],
+      phrases: plan.phrases || [],
+      wildcards: plan.wildcards || [],
+      fuzzyTerms: plan.fuzzyTerms || [],
+      filters: plan.filters,
+      excludes: plan.excludes,
+      excludeTerms: plan.excludeTerms || [],
+      excludePhrases: plan.excludePhrases || [],
+      excludeWildcards: plan.excludeWildcards || [],
+      excludeFuzzyTerms: plan.excludeFuzzyTerms || [],
+    },
+    capabilities: {
+      loadedBackend: !!window.go?.main?.App?.SearchLoadedDocuments,
+      localFolderSearch: !!window.go?.main?.App?.SearchLocalFolder,
+      plannedSidecar: 'SQLite FTS5 rebuildable cache',
+      currentIndex: 'none',
+      sourceOfTruth: 'local files and loaded editor buffers',
+    },
+    cache: loadedSearchCacheFootprint(),
+    limits: {
+      loadedCacheMaxEntries: SEARCH_CACHE_MAX_ENTRIES,
+      loadedCacheMaxBytes: SEARCH_CACHE_MAX_BYTES,
+      contentCapBytes: SEARCH_CONTENT_CAP,
+    },
+    note: 'Profile samples current search state only; it does not scan files or build an index.',
+  };
+}
+
+function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
+  const sources = Object.entries(snapshot.sources || {}).map(([source, count]) => `${source}: ${count}`).join(', ') || 'none';
+  const filters = Object.entries(snapshot.operators.filters || {})
+    .flatMap(([key, values]) => (values || []).map(value => `${key}:${value}`));
+  const excludes = [
+    ...Object.entries(snapshot.operators.excludes || {}).flatMap(([key, values]) => (values || []).map(value => `-${key}:${value}`)),
+    ...(snapshot.operators.excludeTerms || []).map(value => `-${value}`),
+    ...(snapshot.operators.excludePhrases || []).map(value => `-"${value}"`),
+    ...(snapshot.operators.excludeWildcards || []).map(value => `-${value}`),
+    ...(snapshot.operators.excludeFuzzyTerms || []).map(value => `-~${value}`),
+  ];
+  return [
+    '# Markpad Search Profile',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    `Scope: ${snapshot.scope}`,
+    `Query: ${snapshot.query || '(empty)'}`,
+    `Backend query: ${snapshot.backendQuery || '(none)'}`,
+    `Results: ${snapshot.resultCount}`,
+    `Sources: ${sources}`,
+    '',
+    '## Operators',
+    '',
+    `- Terms: ${(snapshot.operators.terms || []).join(', ') || 'none'}`,
+    `- Phrases: ${(snapshot.operators.phrases || []).join(', ') || 'none'}`,
+    `- Wildcards: ${(snapshot.operators.wildcards || []).join(', ') || 'none'}`,
+    `- Fuzzy: ${(snapshot.operators.fuzzyTerms || []).map(value => `~${value}`).join(', ') || 'none'}`,
+    `- Filters: ${filters.join(', ') || 'none'}`,
+    `- Excludes: ${excludes.join(', ') || 'none'}`,
+    '',
+    '## Local performance',
+    '',
+    `- Loaded search cache: ${formatBytes(snapshot.cache.bytes || 0)} (${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries)`,
+    `- Cache cap: ${formatBytes(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)}`,
+    `- Per-file content cap: ${formatBytes(snapshot.limits.contentCapBytes || SEARCH_CONTENT_CAP)}`,
+    `- Loaded backend bridge: ${snapshot.capabilities.loadedBackend ? 'available' : 'unavailable'}`,
+    `- Local folder search bridge: ${snapshot.capabilities.localFolderSearch ? 'available' : 'unavailable'}`,
+    `- Planned index: ${snapshot.capabilities.plannedSidecar}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function searchProfileJson(snapshot = searchProfileSnapshot()) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function searchProfileCsv(snapshot = searchProfileSnapshot()) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['scope', snapshot.scope],
+    ['query', snapshot.query || ''],
+    ['backend_query', snapshot.backendQuery || ''],
+    ['result_count', Number(snapshot.resultCount || 0)],
+    ['cache_bytes', Number(snapshot.cache.bytes || 0)],
+    ['cache_entries', Number(snapshot.cache.entries || 0)],
+    ['cache_max_bytes', Number(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)],
+    ['cache_max_entries', Number(snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES)],
+    ['content_cap_bytes', Number(snapshot.limits.contentCapBytes || SEARCH_CONTENT_CAP)],
+    ['loaded_backend_available', snapshot.capabilities.loadedBackend ? 'true' : 'false'],
+    ['local_folder_search_available', snapshot.capabilities.localFolderSearch ? 'true' : 'false'],
+    ['planned_index', snapshot.capabilities.plannedSidecar],
+    ['current_index', snapshot.capabilities.currentIndex],
+  ];
+  Object.entries(snapshot.sources || {}).forEach(([source, count]) => rows.push([`source_${source}`, Number(count || 0)]));
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function showSearchProfile() {
+  const snapshot = searchProfileSnapshot();
+  const sourceText = Object.entries(snapshot.sources || {}).map(([source, count]) => `${source} ${count}`).join(' · ') || 'No results yet';
+  showModal('Search Profile', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${escapeHtml(snapshot.scope)}</strong><span>Scope</span><small>loaded / local / all</small></div>
+      <div class="diag-card"><strong>${snapshot.resultCount}</strong><span>Current results</span><small>${escapeHtml(sourceText)}</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.cache.bytes || 0)}</strong><span>Loaded cache</span><small>${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries</small></div>
+      <div class="diag-card"><strong>${(snapshot.operators.terms || []).length}</strong><span>Text terms</span><small>${escapeHtml((snapshot.operators.terms || []).join(', ') || 'none')}</small></div>
+      <div class="diag-card"><strong>${(snapshot.operators.phrases || []).length}</strong><span>Phrases</span><small>${escapeHtml((snapshot.operators.phrases || []).join(', ') || 'none')}</small></div>
+      <div class="diag-card"><strong>${(snapshot.operators.wildcards || []).length}</strong><span>Wildcards</span><small>${escapeHtml((snapshot.operators.wildcards || []).join(', ') || 'none')}</small></div>
+      <div class="diag-card"><strong>${(snapshot.operators.fuzzyTerms || []).length}</strong><span>Fuzzy terms</span><small>${escapeHtml((snapshot.operators.fuzzyTerms || []).map(value => `~${value}`).join(', ') || 'none')}</small></div>
+      <div class="diag-card"><strong>${snapshot.capabilities.loadedBackend ? 'yes' : 'no'}</strong><span>Loaded bridge</span><small>Go search fast path</small></div>
+      <div class="diag-card"><strong>${snapshot.capabilities.localFolderSearch ? 'yes' : 'no'}</strong><span>Local bridge</span><small>Current folder search path</small></div>
+      <div class="diag-card"><strong>planned</strong><span>SQLite FTS5 sidecar</span><small>Rebuildable cache, not source of truth</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-search-profile-md>Copy MD</button>
+      <button data-export-search-profile-md>Export MD</button>
+      <button data-copy-search-profile-json>Copy JSON</button>
+      <button data-export-search-profile-json>Export JSON</button>
+      <button data-copy-search-profile-csv>Copy CSV</button>
+      <button data-export-search-profile-csv>Export CSV</button>
+      <button data-clear-loaded-search-cache>Clear Search Cache</button>
+      <button data-workspace-search-plan>Workspace Search Plan</button>
+    </div>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+  `);
+}
+
+async function copySearchProfileMarkdown() {
+  await navigator.clipboard.writeText(searchProfileMarkdown());
+  statusText.textContent = 'Search profile copied as Markdown';
+}
+
+function exportSearchProfileMarkdown() {
+  downloadText('markpad-search-profile.md', 'text/markdown', searchProfileMarkdown());
+  statusText.textContent = 'Search profile exported as Markdown';
+}
+
+async function copySearchProfileJson() {
+  await navigator.clipboard.writeText(searchProfileJson());
+  statusText.textContent = 'Search profile copied as JSON';
+}
+
+function exportSearchProfileJson() {
+  downloadText('markpad-search-profile.json', 'application/json', searchProfileJson());
+  statusText.textContent = 'Search profile exported as JSON';
+}
+
+async function copySearchProfileCsv() {
+  await navigator.clipboard.writeText(searchProfileCsv());
+  statusText.textContent = 'Search profile copied as CSV';
+}
+
+function exportSearchProfileCsv() {
+  downloadText('markpad-search-profile.csv', 'text/csv', searchProfileCsv());
+  statusText.textContent = 'Search profile exported as CSV';
 }
 
 function currentFileSearchDefaultQuery() {
@@ -4114,6 +4292,11 @@ function commandItems() {
     { id: 'search-export-active-result', icon: 'EAR', title: 'Export active search result', hint: 'Download the highlighted search result as Markdown', run: exportActiveSearchResultMarkdown },
     { id: 'search-export-active-result-json', icon: 'EAJ', title: 'Export active search result JSON', hint: 'Download the highlighted search result as JSON', run: exportActiveSearchResultJson },
     { id: 'search-export-active-result-csv', icon: 'EAC', title: 'Export active search result CSV', hint: 'Download the highlighted search result as CSV', run: exportActiveSearchResultCsv },
+    { id: 'search-profile', icon: 'SP', title: 'Search profile', hint: 'Show current query operators, result sources, cache footprint, and index readiness', run: showSearchProfile },
+    { id: 'copy-search-profile', icon: 'SPM', title: 'Copy search profile Markdown', hint: 'Copy current search diagnostics as Markdown', run: copySearchProfileMarkdown },
+    { id: 'export-search-profile', icon: 'SPE', title: 'Export search profile Markdown', hint: 'Download current search diagnostics as Markdown', run: exportSearchProfileMarkdown },
+    { id: 'copy-search-profile-json', icon: 'SPJ', title: 'Copy search profile JSON', hint: 'Copy current search diagnostics as JSON', run: copySearchProfileJson },
+    { id: 'export-search-profile-json', icon: 'SEJ', title: 'Export search profile JSON', hint: 'Download current search diagnostics as JSON', run: exportSearchProfileJson },
     { id: 'copy-search-query', icon: 'CQ', title: 'Copy search query', hint: 'Copy the current search query, scope, and result count as Markdown', run: copySearchQuerySummary },
     { id: 'search-query-inspector', icon: 'SQI', title: 'Search query inspector', hint: 'Show parsed search terms, filters, exclusions, wildcards, fuzzy terms, and backend anchor query', run: showSearchQueryInspector },
     { id: 'find', icon: 'F', title: 'Find in current file', hint: 'Open inline find bar', kbd: 'Ctrl+F', run: toggleFind },
@@ -4160,6 +4343,7 @@ function commandItems() {
   { id: 'tasks-agenda-export-todo', icon: 'EAT', title: 'Export task agenda Todo.txt', hint: 'Download agenda tasks as portable Todo.txt lines', run: exportTaskAgendaTodoTxt },
   { id: 'search-cache-clear', icon: 'RAM', title: 'Clear loaded search cache', hint: 'Release cached loaded-note text used by search', run: clearLoadedSearchCacheAction },
   { id: 'search-performance-guide', icon: 'SPG', title: 'Search performance guide', hint: 'Explain loaded search, cache caps, footprint metrics, and the local-first index path', run: showSearchPerformanceGuide },
+  { id: 'search-profile-open', icon: 'SP', title: 'Search profile', hint: 'Show query operators, result sources, cache footprint, and index readiness', run: showSearchProfile },
   { id: 'workspace-search-plan', icon: 'WSP', title: 'Workspace search plan', hint: 'Show bounded worker, cancellation, diagnostics, and optional-index design notes', run: showWorkspaceSearchPlan },
   { id: 'search-current-file', icon: 'CFS', title: 'Search current file', hint: 'Show all exact matches in the active editor buffer with line and column jumps', run: () => showCurrentFileSearch() },
   { id: 'current-file-search-to-canvas', icon: 'F2C', title: 'Send current-file search to canvas', hint: 'Create a lightweight canvas board from active-file search matches', run: () => insertCurrentFileSearchCanvasBoard() },
@@ -11657,6 +11841,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (searchQueryInspectorOpenBtn) showSearchQueryInspector();
   const searchPerformanceOpenBtn = e.target.closest('[data-search-performance-open]');
   if (searchPerformanceOpenBtn) showSearchPerformanceGuide();
+  const searchProfileOpenBtn = e.target.closest('[data-search-profile-open]');
+  if (searchProfileOpenBtn) showSearchProfile();
+  const copySearchProfileMdBtn = e.target.closest('[data-copy-search-profile-md]');
+  if (copySearchProfileMdBtn) await copySearchProfileMarkdown();
+  const exportSearchProfileMdBtn = e.target.closest('[data-export-search-profile-md]');
+  if (exportSearchProfileMdBtn) exportSearchProfileMarkdown();
+  const copySearchProfileJsonBtn = e.target.closest('[data-copy-search-profile-json]');
+  if (copySearchProfileJsonBtn) await copySearchProfileJson();
+  const exportSearchProfileJsonBtn = e.target.closest('[data-export-search-profile-json]');
+  if (exportSearchProfileJsonBtn) exportSearchProfileJson();
+  const copySearchProfileCsvBtn = e.target.closest('[data-copy-search-profile-csv]');
+  if (copySearchProfileCsvBtn) await copySearchProfileCsv();
+  const exportSearchProfileCsvBtn = e.target.closest('[data-export-search-profile-csv]');
+  if (exportSearchProfileCsvBtn) exportSearchProfileCsv();
   const workspaceSearchPlanBtn = e.target.closest('[data-workspace-search-plan]');
   if (workspaceSearchPlanBtn) showWorkspaceSearchPlan();
   const searchResultsCanvasBtn = e.target.closest('[data-search-results-canvas]');
