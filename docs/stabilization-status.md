@@ -38,7 +38,7 @@ Updated: 2026-06-24
 - Runtime: keep watching native startup because one parallel perf run exited before the DOM probe even though validation and memory reruns passed.
 - UI: keep direct visual checks in the loop; static browser screenshots do not prove Wails/WebKit runtime behavior.
 - Search: field exclusions are implemented and discoverable; local-folder scans are serialized so fast repeated searches do not publish stale older results.
-- Tasks: rendering should be paged or virtualized before task features expand further.
+- Tasks: list/calendar/kanban render through a paged modal with a 1000-task DOM ceiling; exports and source profiles remain available for full visible task sets.
 - Trash: draft trash has a localStorage byte cap and guardrail coverage; keep manual UI checks around restore/copy before expanding Trash reports.
 - Canvas: import caps now guard JSON size, element count, path points, and embedded files before imported data mutates the canvas.
 - Canvas: bounds caching, viewport culling, requestAnimationFrame render scheduling, and visual-only redraws for continuous interactions are guarded; export/import round-trip tests should come before richer adapters.

@@ -122,6 +122,28 @@ func TestTaskSystemKeepsPortableMarkdownContract(t *testing.T) {
 	})
 }
 
+func TestTaskRenderingBoundsAreGuarded(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"const TASK_RENDER_INITIAL = 200;",
+		"const TASK_RENDER_STEP = 200;",
+		"const TASK_RENDER_MAX = 1000;",
+		"const limit = Math.min(TASK_RENDER_MAX, requestedLimit);",
+		"capped: total > shown && shown >= TASK_RENDER_MAX",
+		"if (page.capped) {",
+		"Refine filters or export all visible tasks to keep the modal responsive.",
+		"taskRenderLimit = Math.min(TASK_RENDER_MAX, taskRenderLimit + TASK_RENDER_STEP);",
+		"renderTaskCalendar(visibleTasks, page)",
+		"renderTaskBoard(visibleTasks, page)",
+		"renderTaskList(visibleTasks, page)",
+	})
+}
+
 func TestFrontendAvoidsHeavyBundledAssets(t *testing.T) {
 	var total int64
 	walkFrontendAssetFiles(t, func(path string, info fs.FileInfo) {

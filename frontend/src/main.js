@@ -48,6 +48,7 @@ let taskQuery = localStorage.getItem('markpad-task-query') || '';
 let taskSourceFilter = normalizeTaskSourceFilter(localStorage.getItem('markpad-task-source-filter') || 'all');
 const TASK_RENDER_INITIAL = 200;
 const TASK_RENDER_STEP = 200;
+const TASK_RENDER_MAX = 1000;
 let taskRenderLimit = TASK_RENDER_INITIAL;
 let localFolderQuery = '';
 let latestTasks = [];
@@ -8581,19 +8582,28 @@ function resetTaskRenderLimit() {
 
 function taskRenderPage(tasks) {
   const total = Array.isArray(tasks) ? tasks.length : 0;
-  const limit = Math.max(TASK_RENDER_INITIAL, Number(taskRenderLimit || TASK_RENDER_INITIAL));
+  const requestedLimit = Math.max(TASK_RENDER_INITIAL, Number(taskRenderLimit || TASK_RENDER_INITIAL));
+  const limit = Math.min(TASK_RENDER_MAX, requestedLimit);
   const shown = Math.min(total, limit);
   return {
     total,
     shown,
     hidden: Math.max(0, total - shown),
     limit,
+    capped: total > shown && shown >= TASK_RENDER_MAX,
     items: (Array.isArray(tasks) ? tasks : []).slice(0, shown),
   };
 }
 
 function renderTaskPageFooter(page) {
   if (!page || !page.hidden) return '';
+  if (page.capped) {
+    return `
+      <div class="task-page-footer">
+        <span>Rendering ${page.shown} of ${page.total} matching tasks. Refine filters or export all visible tasks to keep the modal responsive.</span>
+      </div>
+    `;
+  }
   const next = Math.min(page.total, page.shown + TASK_RENDER_STEP);
   return `
     <div class="task-page-footer">
@@ -15299,7 +15309,7 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskExport) await exportTasksIcs();
   const taskShowMore = e.target.closest('[data-task-show-more]');
   if (taskShowMore) {
-    taskRenderLimit += TASK_RENDER_STEP;
+    taskRenderLimit = Math.min(TASK_RENDER_MAX, taskRenderLimit + TASK_RENDER_STEP);
     await showTasksView(taskViewMode, { preserveTaskLimit: true });
   }
   const taskFilterBtn = e.target.closest('[data-task-filter]');
