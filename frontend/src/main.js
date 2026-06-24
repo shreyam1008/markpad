@@ -299,6 +299,7 @@ const MARKPAD_CANVAS_SCHEMA = 'https://markpad.local/schemas/canvas-v1.json';
 const CANVAS_DPR_CAP = 1.5;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
+const CANVAS_HISTORY_TOTAL_BYTES = 3 * 1024 * 1024;
 const CANVAS_SAVE_DEBOUNCE_MS = 220;
 const CANVAS_ZOOM_MIN = 0.12;
 const CANVAS_ZOOM_MAX = 4;
@@ -7419,7 +7420,7 @@ function undoHistoryFootprint() {
     }
   });
   const canvasStates = canvasHistory.length;
-  const canvasBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  const canvasBytes = canvasHistoryByteSize();
   return { editorStates, editorBytes, canvasStates, canvasBytes };
 }
 
@@ -10910,9 +10911,19 @@ function rememberCanvasHistory(force) {
   if (!force && canvasHistory[canvasHistoryIndex] === snap) return;
   if (canvasHistoryIndex < canvasHistory.length - 1) canvasHistory.splice(canvasHistoryIndex + 1);
   canvasHistory.push(snap);
-  while (canvasHistory.length > CANVAS_HISTORY_LIMIT) canvasHistory.shift();
+  pruneCanvasHistoryBudget();
   canvasHistoryIndex = canvasHistory.length - 1;
   updateCanvasHistoryButtons();
+}
+
+function canvasHistoryByteSize() {
+  return canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+}
+
+function pruneCanvasHistoryBudget() {
+  while (canvasHistory.length > CANVAS_HISTORY_LIMIT) canvasHistory.shift();
+  while (canvasHistory.length > 1 && canvasHistoryByteSize() > CANVAS_HISTORY_TOTAL_BYTES) canvasHistory.shift();
+  if (canvasHistoryIndex >= canvasHistory.length) canvasHistoryIndex = canvasHistory.length - 1;
 }
 
 function restoreCanvasHistory(index) {
@@ -13175,7 +13186,7 @@ function canvasStorageProfileSnapshot() {
   const sessionText = localStorage.getItem(CANVAS_SESSION_KEY) || JSON.stringify(canvasSession || { camera: { x: 0, y: 0, scale: 1 } });
   const doc = canvasDoc || newCanvasDoc();
   const session = canvasSession || { camera: { x: 0, y: 0, scale: 1 } };
-  const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  const historyBytes = canvasHistoryByteSize();
   const totalElements = (doc.elements || []).length;
   const visibleElements = canvasVisibleElementCount();
   const view = canvasViewportBounds();
@@ -13239,6 +13250,7 @@ function canvasStorageProfileSnapshot() {
       bytes: historyBytes,
       limit: CANVAS_HISTORY_LIMIT,
       maxBytes: CANVAS_HISTORY_BYTES,
+      maxTotalBytes: CANVAS_HISTORY_TOTAL_BYTES,
     },
     exports: {
       native: '.markcanvas.json',
@@ -13294,7 +13306,8 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     '## Undo',
     '',
     `- Snapshots: ${snapshot.undo.snapshots}/${snapshot.undo.limit}`,
-    `- Bytes: ${formatBytes(snapshot.undo.bytes || 0)} / ${formatBytes(snapshot.undo.maxBytes || 0)}`,
+    `- Bytes: ${formatBytes(snapshot.undo.bytes || 0)} / ${formatBytes(snapshot.undo.maxTotalBytes || 0)} total`,
+    `- Per-snapshot cap: ${formatBytes(snapshot.undo.maxBytes || 0)}`,
     `- Current index: ${snapshot.undo.currentIndex}`,
     '',
     '## Exports',
@@ -13350,6 +13363,7 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['undo_bytes', Number(snapshot.undo.bytes || 0)],
     ['undo_limit', Number(snapshot.undo.limit || 0)],
     ['undo_max_bytes', Number(snapshot.undo.maxBytes || 0)],
+    ['undo_max_total_bytes', Number(snapshot.undo.maxTotalBytes || 0)],
   ];
   Object.entries(snapshot.document.elementTypes || {}).forEach(([type, count]) => rows.push([`element_type_${type}`, Number(count || 0)]));
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
@@ -13367,7 +13381,7 @@ function showCanvasStorageProfile() {
       <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
       <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
-      <div class="diag-card"><strong>${formatBytes(snapshot.undo.bytes || 0)}</strong><span>Canvas undo</span><small>${snapshot.undo.snapshots}/${snapshot.undo.limit} snapshots</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.undo.bytes || 0)}</strong><span>Canvas undo</span><small>${snapshot.undo.snapshots}/${snapshot.undo.limit} snapshots · ${formatBytes(snapshot.undo.maxTotalBytes || 0)} cap</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.format)}</strong><span>Native format</span><small>${escapeHtml(snapshot.exports.native)}</small></div>
       <div class="diag-card"><strong>plain</strong><span>Interop exports</span><small>${escapeHtml(snapshot.exports.obsidian)} · ${escapeHtml(snapshot.exports.excalidraw)}</small></div>
     </div>
