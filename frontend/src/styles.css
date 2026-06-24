@@ -377,6 +377,7 @@ body.writing-empty #viewer::first-line {
 .icon-btn:focus-visible,
 .tb:focus-visible,
 .view-btn:focus-visible,
+.create-menu button:focus-visible,
 .theme-chip:focus-visible,
 .pref-theme:focus-visible,
 .search-scope button:focus-visible,
@@ -399,9 +400,65 @@ body.writing-empty #viewer::first-line {
 
 .search-palette,
 .command-palette,
+.create-menu,
 .canvas-shell,
 #modal-overlay > div {
   box-shadow: 0 24px 70px var(--shadow), 0 1px 0 rgba(255,255,255,.22) inset;
+}
+
+.create-menu {
+  position: fixed;
+  z-index: 80;
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 38%),
+    var(--surface);
+  color: var(--text);
+  padding: 9px;
+}
+.create-menu.hidden {
+  display: none;
+}
+.create-menu-kicker {
+  padding: 2px 4px 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.create-menu button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.create-menu button:hover,
+.create-menu button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: var(--hover);
+}
+.create-menu button:disabled {
+  cursor: not-allowed;
+  opacity: .52;
+}
+.create-menu strong {
+  font-size: 13px;
+  font-weight: 950;
+}
+.create-menu span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .search-row,

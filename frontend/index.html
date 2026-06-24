@@ -17,7 +17,7 @@
       <!-- Sidebar expanded content -->
       <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
         <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)" aria-label="New note">+ New</button>
+          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="Create note, task, canvas, or file (Ctrl+N)" aria-label="Create note, task, canvas, or file" aria-haspopup="menu" aria-expanded="false">+ New ▾</button>
           <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
 
@@ -50,7 +50,26 @@
       <!-- Sidebar collapsed content -->
       <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
         <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note" aria-label="New note">+</button>
+        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="Create" aria-label="Create note, task, canvas, or file" aria-haspopup="menu" aria-expanded="false">+</button>
+      </div>
+      <div id="create-menu" class="create-menu hidden" role="menu" aria-label="Create local file">
+        <div class="create-menu-kicker">Files first</div>
+        <button type="button" role="menuitem" data-create-kind="note">
+          <strong>Note</strong>
+          <span>Markdown file, split preview, editor tools</span>
+        </button>
+        <button type="button" role="menuitem" data-create-kind="task">
+          <strong>Task file</strong>
+          <span>Open Tasks.md setup, list, calendar, kanban</span>
+        </button>
+        <button type="button" role="menuitem" data-create-kind="canvas">
+          <strong>Canvas</strong>
+          <span>Native .markcanvas.json board</span>
+        </button>
+        <button type="button" role="menuitem" data-create-kind="other" disabled>
+          <strong>Other file</strong>
+          <span>Coming next: choose extension and template</span>
+        </button>
       </div>
     </aside>
 

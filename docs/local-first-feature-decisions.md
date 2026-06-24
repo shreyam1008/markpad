@@ -10,6 +10,7 @@ Updated: 2026-06-24
 | Tasks | Markdown task list items as source of truth, with visible metadata tokens | Calendar-grade VTODO sync, hidden IDs until line-hash identity is insufficient |
 | Canvas | Markpad-owned versioned JSON canvas files | Bundling tldraw/Excalidraw/InfiniPaint as the primary engine before measurement |
 | Theme/Icon assets | CSS variables plus tiny self-contained SVG only; keep the existing asset budgets as hard guardrails | Theme screenshots, texture packs, icon webfonts, framework-scale icon bundles |
+| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and later Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |
 
 ## Search direction
 
@@ -94,6 +95,18 @@ Initial implementation constraints:
 - Keep theme differentiation in variables, borders, shadows, and typography scale instead of separate image assets.
 - Keep shipped SVG assets self-contained: no external hrefs, embedded raster payloads, scripts, or font-face rules.
 - Treat the asset byte caps in `assets_test.go` as hard release guardrails, not soft goals.
+
+## Create workflow direction
+
+Markpad should keep a files-first creation surface in the sidebar. The `New` action is a typed create menu, not a tab launcher and not a folder-first project browser.
+
+Initial implementation constraints:
+
+- `Note` creates a local Markdown note when a default folder is configured, otherwise it falls back to an unsaved Markdown draft.
+- `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
+- `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend, separate from the top-bar canvas draft.
+- `Other file` must stay disabled until extension validation, template choice, and collision behavior are explicit.
+- Keep the sidebar as the main place for creation and navigation. Do not introduce a tab system or make folder loading the default mental model.
 
 ## Phase order
 

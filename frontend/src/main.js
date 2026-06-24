@@ -15005,6 +15005,100 @@ async function doNew() {
   } catch (err) { statusText.textContent = 'Error: ' + err; }
 }
 
+let createMenuAnchor = null;
+
+function setCreateMenuExpanded(expanded) {
+  ['btn-new', 'btn-new-mini'].forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+}
+
+function closeCreateMenu() {
+  const menu = $('create-menu');
+  if (!menu) return;
+  menu.classList.add('hidden');
+  setCreateMenuExpanded(false);
+  createMenuAnchor = null;
+}
+
+function positionCreateMenu(anchor) {
+  const menu = $('create-menu');
+  if (!menu || !anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const menuWidth = Math.min(286, window.innerWidth - 18);
+  const left = Math.max(9, Math.min(window.innerWidth - menuWidth - 9, rect.left));
+  const top = Math.max(9, Math.min(window.innerHeight - 260, rect.bottom + 8));
+  menu.style.width = `${menuWidth}px`;
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function openCreateMenu(anchor) {
+  const menu = $('create-menu');
+  if (!menu || !anchor) return;
+  createMenuAnchor = anchor;
+  positionCreateMenu(anchor);
+  menu.classList.remove('hidden');
+  setCreateMenuExpanded(true);
+  requestAnimationFrame(() => menu.querySelector('button:not(:disabled)')?.focus());
+}
+
+function toggleCreateMenu(anchor) {
+  const menu = $('create-menu');
+  if (!menu) return;
+  if (!menu.classList.contains('hidden') && createMenuAnchor === anchor) {
+    closeCreateMenu();
+    return;
+  }
+  openCreateMenu(anchor);
+}
+
+async function hasReadyLocalFolder() {
+  try {
+    if (!window.go?.main?.App?.GetLocalFolder) return false;
+    const info = await window.go.main.App.GetLocalFolder();
+    return !!info?.path && !info?.missing;
+  } catch {
+    return false;
+  }
+}
+
+async function createNoteFromMenu() {
+  if (await hasReadyLocalFolder()) {
+    await createLocalFolderNote();
+    return;
+  }
+  await doNew();
+}
+
+async function createCanvasFromMenu() {
+  if (await hasReadyLocalFolder()) {
+    await createLocalFolderCanvas();
+    return;
+  }
+  await showLocalWorkspaceSetup();
+  statusText.textContent = 'Choose a local folder before creating canvas files';
+}
+
+async function runCreateMenuAction(kind) {
+  closeCreateMenu();
+  switch (kind) {
+    case 'note':
+      await createNoteFromMenu();
+      break;
+    case 'task':
+      showTaskFileSetup();
+      statusText.textContent = 'Task file setup';
+      break;
+    case 'canvas':
+      await createCanvasFromMenu();
+      break;
+    case 'other':
+      statusText.textContent = 'Other file creation is coming next';
+      break;
+    default:
+      break;
+  }
+}
+
 async function doOpen() {
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
@@ -15017,8 +15111,30 @@ async function doOpen() {
 }
 
 // ── Buttons ──────────────────────────────────────────────
-$('btn-new').addEventListener('click', doNew);
-$('btn-new-mini').addEventListener('click', doNew);
+$('btn-new').addEventListener('click', event => {
+  event.stopPropagation();
+  toggleCreateMenu(event.currentTarget);
+});
+$('btn-new-mini').addEventListener('click', event => {
+  event.stopPropagation();
+  toggleCreateMenu(event.currentTarget);
+});
+$('create-menu')?.addEventListener('click', event => {
+  event.stopPropagation();
+  const btn = event.target.closest('[data-create-kind]');
+  if (!btn || btn.disabled) return;
+  runCreateMenuAction(btn.dataset.createKind);
+});
+document.addEventListener('click', event => {
+  if ($('create-menu')?.contains(event.target) || event.target.closest?.('#btn-new, #btn-new-mini')) return;
+  closeCreateMenu();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeCreateMenu();
+});
+window.addEventListener('resize', () => {
+  if (createMenuAnchor && !$('create-menu')?.classList.contains('hidden')) positionCreateMenu(createMenuAnchor);
+});
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
 $('btn-command').addEventListener('click', openCommandPalette);

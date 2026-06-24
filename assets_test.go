@@ -210,6 +210,48 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 	})
 }
 
+func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`id="create-menu"`,
+		`data-create-kind="note"`,
+		`data-create-kind="task"`,
+		`data-create-kind="canvas"`,
+		`data-create-kind="other" disabled`,
+		"Files first",
+		"Native .markcanvas.json board",
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		"function createNoteFromMenu()",
+		"function createCanvasFromMenu()",
+		"function hasReadyLocalFolder()",
+		"await createLocalFolderNote()",
+		"await doNew()",
+		"showTaskFileSetup()",
+		"await createLocalFolderCanvas()",
+		"Choose a local folder before creating canvas files",
+		"Other file creation is coming next",
+	})
+
+	featureDecisions, err := os.ReadFile("docs/local-first-feature-decisions.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "docs/local-first-feature-decisions.md", string(featureDecisions), []string{
+		"| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and later Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |",
+		"Markpad should keep a files-first creation surface in the sidebar.",
+		"Do not introduce a tab system or make folder loading the default mental model.",
+	})
+}
+
 func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {
