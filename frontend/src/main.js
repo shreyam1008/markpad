@@ -5065,6 +5065,9 @@ function lightweightAssetSnapshot() {
     height: img.naturalHeight || 0,
     loading: img.loading || '',
   }));
+  const imagePixels = images.reduce((sum, image) => sum + Math.max(0, Number(image.width || 0) * Number(image.height || 0)), 0);
+  const remoteImages = images.filter(image => /^https?:\/\//i.test(image.src || '')).length;
+  const embeddedImages = images.filter(image => /^data:/i.test(image.src || '')).length;
   const commandIcons = commandIconMetrics();
   return {
     type: 'markpad-lightweight-assets',
@@ -5085,6 +5088,10 @@ function lightweightAssetSnapshot() {
       lightThemes: LIGHT_THEMES.length,
       darkThemes: DARK_THEMES.length,
       domImages: images.length,
+      remoteImages,
+      embeddedImages,
+      imagePixels,
+      estimatedDecodedImageBytes: imagePixels * 4,
       inlineSvg: document.querySelectorAll('svg').length,
       canvasElements: document.querySelectorAll('canvas').length,
       stylesheets: document.styleSheets.length,
@@ -5097,6 +5104,7 @@ function lightweightAssetSnapshot() {
     images: images.slice(0, 20),
     notes: [
       'DOM image count reflects the current rendered view only.',
+      'Decoded image bytes are estimated from rendered image natural dimensions at 4 bytes per pixel.',
       'Inline SVG count reflects visible toolbar/document icons in the current view.',
       'Command icons are measured as short text labels instead of font or bitmap assets.',
       'Themes are built-in CSS-variable themes and do not load image packs.',
@@ -5117,7 +5125,8 @@ function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
     '',
     `- Generated: ${snapshot.generatedAt}`,
     `- Themes: ${snapshot.counts.themes} (${snapshot.counts.lightThemes} light, ${snapshot.counts.darkThemes} dark)`,
-    `- DOM images: ${snapshot.counts.domImages}`,
+    `- DOM images: ${snapshot.counts.domImages} (${snapshot.counts.remoteImages} remote, ${snapshot.counts.embeddedImages} embedded)`,
+    `- Estimated decoded image bytes: ${formatBytes(snapshot.counts.estimatedDecodedImageBytes || 0)}`,
     `- Inline SVG elements: ${snapshot.counts.inlineSvg}`,
     `- Canvas elements: ${snapshot.counts.canvasElements}`,
     `- Stylesheets: ${snapshot.counts.stylesheets}`,
@@ -5167,7 +5176,8 @@ function showLightweightAssetReport() {
   showModal('Lightweight Assets', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${snapshot.counts.themes}</strong><span>CSS themes</span><small>${snapshot.counts.lightThemes} light · ${snapshot.counts.darkThemes} dark</small></div>
-      <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>Current rendered view only</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>${snapshot.counts.remoteImages} remote · ${snapshot.counts.embeddedImages} embedded</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.counts.estimatedDecodedImageBytes || 0)}</strong><span>Image decode est.</span><small>${snapshot.counts.imagePixels} rendered pixels</small></div>
       <div class="diag-card"><strong>${snapshot.counts.inlineSvg}</strong><span>Inline SVG</span><small>Current toolbar/document DOM</small></div>
       <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview, PDF, or drawing surfaces</small></div>
       <div class="diag-card"><strong>${snapshot.commandIcons.total}</strong><span>Command text icons</span><small>${snapshot.commandIcons.unique} unique labels</small></div>
