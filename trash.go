@@ -74,37 +74,78 @@ func (a *App) MoveFileToTrash(id string) (SessionState, error) {
 	if info.IsDir() {
 		return a.GetSession(), errors.New("folders are not supported")
 	}
-
-	trashID := newTrashID()
-	trashRel := filepath.Join(fileTrashDir, trashID+filepath.Ext(doc.Path))
-	trashPath := filepath.Join(a.store.Root(), trashRel)
-	if err := os.MkdirAll(filepath.Dir(trashPath), 0o755); err != nil {
+	if _, err := a.movePathToFileTrash(doc.Path, doc.Title, info); err != nil {
 		return a.GetSession(), err
 	}
-	if err := copyFile(doc.Path, trashPath); err != nil {
-		return a.GetSession(), err
-	}
-	if err := os.Remove(doc.Path); err != nil {
-		_ = os.Remove(trashPath)
-		return a.GetSession(), err
-	}
-
-	state, _ := a.readFileTrashState()
-	state.Items = append([]FileTrashItem{{
-		ID:           trashID,
-		Title:        doc.Title,
-		OriginalPath: doc.Path,
-		TrashPath:    trashPath,
-		DeletedAt:    time.Now(),
-		Size:         info.Size(),
-		Kind:         fileKind(doc.Path),
-	}}, state.Items...)
-	_ = a.writeFileTrashState(state)
-
 	a.removeDocumentFromSession(id)
 	a.removeRecentPath(doc.Path)
 	_ = a.store.Save(a.sess)
 	return a.GetSession(), nil
+}
+
+func (a *App) MoveLocalFolderFileToTrash(path string) ([]FileTrashItem, error) {
+	if a == nil || a.store == nil {
+		return []FileTrashItem{}, errors.New("app is not ready")
+	}
+	source, info, err := a.validateLocalFolderFilePath(path)
+	if err != nil {
+		return a.ListFileTrash(), err
+	}
+	if _, err := a.movePathToFileTrash(source, filepath.Base(source), info); err != nil {
+		return a.ListFileTrash(), err
+	}
+	if a.sess != nil {
+		a.removeRecentPath(source)
+		_ = a.store.Save(a.sess)
+	}
+	return a.ListFileTrash(), nil
+}
+
+func (a *App) movePathToFileTrash(source string, title string, info os.FileInfo) (FileTrashItem, error) {
+	if a == nil || a.store == nil {
+		return FileTrashItem{}, errors.New("app is not ready")
+	}
+	source, err := filepath.Abs(source)
+	if err != nil {
+		return FileTrashItem{}, err
+	}
+	if info == nil {
+		info, err = os.Stat(source)
+		if err != nil {
+			return FileTrashItem{}, err
+		}
+	}
+	if strings.TrimSpace(title) == "" {
+		title = filepath.Base(source)
+	}
+	trashID := newTrashID()
+	trashRel := filepath.Join(fileTrashDir, trashID+filepath.Ext(source))
+	trashPath := filepath.Join(a.store.Root(), trashRel)
+	if err := os.MkdirAll(filepath.Dir(trashPath), 0o755); err != nil {
+		return FileTrashItem{}, err
+	}
+	if err := copyFile(source, trashPath); err != nil {
+		return FileTrashItem{}, err
+	}
+	if err := os.Remove(source); err != nil {
+		_ = os.Remove(trashPath)
+		return FileTrashItem{}, err
+	}
+	item := FileTrashItem{
+		ID:           trashID,
+		Title:        title,
+		OriginalPath: source,
+		TrashPath:    trashPath,
+		DeletedAt:    time.Now(),
+		Size:         info.Size(),
+		Kind:         fileKind(source),
+	}
+	state, _ := a.readFileTrashState()
+	state.Items = append([]FileTrashItem{item}, state.Items...)
+	if err := a.writeFileTrashState(state); err != nil {
+		return FileTrashItem{}, err
+	}
+	return item, nil
 }
 
 func (a *App) RestoreFileTrash(id string) (SessionState, error) {

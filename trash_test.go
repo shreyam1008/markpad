@@ -120,3 +120,80 @@ func TestCleanupExpiredFileTrashKeepsUnremovableEntries(t *testing.T) {
 		t.Fatalf("cleanup blocked result = removed %d remaining %#v, want blocked entry retained", result.Removed, result.Remaining)
 	}
 }
+
+func TestMoveLocalFolderFileToTrashMovesConfiguredFile(t *testing.T) {
+	app := newTrashTestApp(t)
+	root := t.TempDir()
+	path := filepath.Join(root, "notes", "Plan.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("# Plan"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+
+	items, err := app.MoveLocalFolderFileToTrash(path)
+	if err != nil {
+		t.Fatalf("move local file to trash: %v", err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("source still exists or unexpected stat error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("trash items = %d, want 1", len(items))
+	}
+	if items[0].Title != "Plan.md" || items[0].OriginalPath != path {
+		t.Fatalf("trash item metadata = %#v, want Plan.md at original path", items[0])
+	}
+	if data, err := os.ReadFile(items[0].TrashPath); err != nil || string(data) != "# Plan" {
+		t.Fatalf("trash content = %q err=%v, want original content", string(data), err)
+	}
+}
+
+func TestMoveLocalFolderFileToTrashRejectsOutsidePath(t *testing.T) {
+	app := newTrashTestApp(t)
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	if err := os.WriteFile(outside, []byte("outside"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := app.MoveLocalFolderFileToTrash(outside); err == nil {
+		t.Fatal("MoveLocalFolderFileToTrash outside path succeeded, want error")
+	}
+	if _, err := os.Stat(outside); err != nil {
+		t.Fatalf("outside file was changed: %v", err)
+	}
+	if items := app.ListFileTrash(); len(items) != 0 {
+		t.Fatalf("trash items = %d, want 0", len(items))
+	}
+}
+
+func TestMoveLocalFolderFileToTrashRejectsSymlinkFile(t *testing.T) {
+	app := newTrashTestApp(t)
+	root := t.TempDir()
+	target := filepath.Join(root, "target.md")
+	link := filepath.Join(root, "link.md")
+	if err := os.WriteFile(target, []byte("target"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := app.MoveLocalFolderFileToTrash(link); err == nil {
+		t.Fatal("MoveLocalFolderFileToTrash symlink succeeded, want error")
+	}
+	if _, err := os.Lstat(link); err != nil {
+		t.Fatalf("symlink was changed: %v", err)
+	}
+}

@@ -142,6 +142,71 @@ func (a *App) ClearLocalFolder() LocalFolderInfo {
 	return LocalFolderInfo{}
 }
 
+func (a *App) validateLocalFolderFilePath(path string) (string, os.FileInfo, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return "", nil, errors.New("local folder is not set")
+	}
+	source := strings.TrimSpace(path)
+	if source == "" {
+		return "", nil, errors.New("empty local file path")
+	}
+	rootAbs, err := filepath.Abs(root.Path)
+	if err != nil {
+		return "", nil, err
+	}
+	sourceAbs, err := filepath.Abs(source)
+	if err != nil {
+		return "", nil, err
+	}
+	rootAbs = filepath.Clean(rootAbs)
+	sourceAbs = filepath.Clean(sourceAbs)
+	rel, err := filepath.Rel(rootAbs, sourceAbs)
+	if err != nil || rel == "." || rel == ".." || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", nil, errors.New("file is outside the local folder")
+	}
+	info, err := os.Lstat(sourceAbs)
+	if err != nil {
+		return "", nil, err
+	}
+	if info.IsDir() {
+		return "", nil, errors.New("folders are not supported")
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return "", nil, errors.New("symlink files are not supported")
+	}
+	for cur := filepath.Dir(sourceAbs); cur != rootAbs && cur != filepath.Dir(cur); cur = filepath.Dir(cur) {
+		ancestor, err := os.Lstat(cur)
+		if err != nil {
+			return "", nil, err
+		}
+		if ancestor.Mode()&os.ModeSymlink != 0 {
+			return "", nil, errors.New("symlink paths are not supported")
+		}
+	}
+	rootReal, err := filepath.EvalSymlinks(rootAbs)
+	if err != nil {
+		return "", nil, err
+	}
+	parentReal, err := filepath.EvalSymlinks(filepath.Dir(sourceAbs))
+	if err != nil {
+		return "", nil, err
+	}
+	realSource := filepath.Join(parentReal, filepath.Base(sourceAbs))
+	realRel, err := filepath.Rel(rootReal, realSource)
+	if err != nil || realRel == "." || realRel == ".." || filepath.IsAbs(realRel) || strings.HasPrefix(realRel, ".."+string(os.PathSeparator)) {
+		return "", nil, errors.New("file resolves outside the local folder")
+	}
+	statInfo, err := os.Stat(sourceAbs)
+	if err != nil {
+		return "", nil, err
+	}
+	if statInfo.IsDir() {
+		return "", nil, errors.New("folders are not supported")
+	}
+	return sourceAbs, statInfo, nil
+}
+
 func (a *App) ListLocalFolderFiles(limit int) []LocalFolderFile {
 	root := a.GetLocalFolder()
 	if root.Path == "" || root.Missing {

@@ -14066,7 +14066,9 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
-    ctxMenu.querySelector('[data-ctx="delete"]').style.display = canTrash ? '' : 'none';
+    const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.style.display = canTrash ? '' : 'none';
     showContextMenuAt(e);
   });
 
@@ -14316,7 +14318,9 @@ function showLocalFileContextMenu(event, path) {
   ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = getFileType(path) === 'md' ? '' : 'none';
   ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="close"]').style.display = 'none';
-  ctxMenu.querySelector('[data-ctx="delete"]').style.display = 'none';
+  const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
+  deleteBtn.textContent = 'Move to Trash';
+  deleteBtn.style.display = window.go?.main?.App?.MoveLocalFolderFileToTrash ? '' : 'none';
   showContextMenuAt(event);
 }
 
@@ -14402,6 +14406,17 @@ ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () =
   await requestCloseNote(note);
 });
 ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
+  if (ctxLocalPath) {
+    try {
+      await window.go.main.App.MoveLocalFolderFileToTrash(ctxLocalPath);
+      ctxMenu.classList.add('hidden');
+      await showLocalFolder(localFolderQuery);
+      statusText.textContent = 'Local file moved to Trash for 30 days';
+    } catch (err) {
+      statusText.textContent = 'Trash failed: ' + err;
+    }
+    return;
+  }
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
   if (!note) return;
