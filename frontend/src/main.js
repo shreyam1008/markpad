@@ -2796,6 +2796,7 @@ function searchEmptyHtml(message, query = searchLastQuery) {
   const actionButtons = [
     ['profile', 'Search Profile'],
     ['inspector', 'Query Inspector'],
+    ['guide', 'Search Guide'],
     ['current', 'Current File'],
     ['cache', 'Clear Cache'],
   ].map(([action, label]) => `<button type="button" class="search-empty-chip action" data-search-empty-action="${action}">${label}</button>`)
@@ -3976,6 +3977,9 @@ searchResults?.addEventListener('click', (event) => {
       break;
     case 'inspector':
       showSearchQueryInspector();
+      break;
+    case 'guide':
+      showSearchPerformanceGuide();
       break;
     case 'current':
       showCurrentFileSearch(searchLastQuery || '');
