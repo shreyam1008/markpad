@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"markpad/internal/session"
 )
@@ -130,5 +132,90 @@ func TestSearchLocalFolderSupportsExclusions(t *testing.T) {
 				t.Fatalf("query %q did not return expected path %q in %#v", tc.query, rel, paths)
 			}
 		}
+	}
+}
+
+func TestSearchLocalFolderDropsStaleOverlappingSearch(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "alpha.md"), []byte("alpha first search\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "beta.md"), []byte("beta latest search\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	baseSearchID := localFolderSearches.currentID()
+	firstScanning := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	var firstScanningOnce sync.Once
+	var releaseOnce sync.Once
+	previousHook := localFolderSearchTestYieldHook
+	localFolderSearchTestYieldHook = func() {
+		firstScanningOnce.Do(func() {
+			close(firstScanning)
+			<-releaseFirst
+		})
+	}
+	t.Cleanup(func() {
+		localFolderSearchTestYieldHook = previousHook
+		releaseOnce.Do(func() {
+			close(releaseFirst)
+		})
+	})
+
+	firstDone := make(chan LocalFolderSearchResult, 1)
+	go func() {
+		firstDone <- app.SearchLocalFolderWithStats("alpha", 10)
+	}()
+	select {
+	case <-firstScanning:
+	case <-time.After(2 * time.Second):
+		t.Fatal("first search did not start scanning")
+	}
+
+	secondDone := make(chan LocalFolderSearchResult, 1)
+	go func() {
+		secondDone <- app.SearchLocalFolderWithStats("beta", 10)
+	}()
+	deadline := time.Now().Add(2 * time.Second)
+	for localFolderSearches.currentID() < baseSearchID+2 {
+		if time.Now().After(deadline) {
+			t.Fatal("second search did not supersede first search")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	releaseOnce.Do(func() {
+		close(releaseFirst)
+	})
+
+	var first LocalFolderSearchResult
+	select {
+	case first = <-firstDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("first search did not finish")
+	}
+	if len(first.Hits) != 0 {
+		t.Fatalf("stale first search returned %d hits, want 0", len(first.Hits))
+	}
+
+	var second LocalFolderSearchResult
+	select {
+	case second = <-secondDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("second search did not finish")
+	}
+	if len(second.Hits) != 1 {
+		t.Fatalf("latest search hits = %d, want 1", len(second.Hits))
+	}
+	if second.Hits[0].RelPath != "beta.md" {
+		t.Fatalf("latest search hit = %q, want beta.md", second.Hits[0].RelPath)
 	}
 }

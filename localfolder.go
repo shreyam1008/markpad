@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -19,6 +20,43 @@ const (
 	localFolderSearchCap    = 1024 * 1024
 	localFolderSearchPool   = 300
 )
+
+var (
+	localFolderSearches            localFolderSearchGate
+	localFolderSearchTestYieldHook func()
+)
+
+type localFolderSearchGate struct {
+	mu      sync.Mutex
+	current uint64
+	scan    sync.Mutex
+}
+
+func (g *localFolderSearchGate) begin() uint64 {
+	g.mu.Lock()
+	g.current++
+	id := g.current
+	g.mu.Unlock()
+
+	g.scan.Lock()
+	return id
+}
+
+func (g *localFolderSearchGate) end() {
+	g.scan.Unlock()
+}
+
+func (g *localFolderSearchGate) isLatest(id uint64) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.current == id
+}
+
+func (g *localFolderSearchGate) currentID() uint64 {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.current
+}
 
 type LocalFolderInfo struct {
 	Path    string `json:"path"`
@@ -172,8 +210,16 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 	if candidateLimit > localFolderSearchPool {
 		candidateLimit = localFolderSearchPool
 	}
+	searchID := localFolderSearches.begin()
+	defer localFolderSearches.end()
+	if !localFolderSearches.isLatest(searchID) {
+		return
+	}
 	hits := make([]LocalFolderSearchHit, 0, candidateLimit)
 	_ = filepath.WalkDir(root.Path, func(path string, entry os.DirEntry, err error) error {
+		if !localFolderSearches.isLatest(searchID) {
+			return filepath.SkipAll
+		}
 		if err != nil {
 			return nil
 		}
@@ -201,6 +247,12 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 			return nil
 		}
 		result.Searchable++
+		if localFolderSearchTestYieldHook != nil {
+			localFolderSearchTestYieldHook()
+		}
+		if !localFolderSearches.isLatest(searchID) {
+			return filepath.SkipAll
+		}
 		hit, ok := searchLocalFile(root.Path, path, kind, plan)
 		if ok {
 			result.Candidates++
@@ -213,6 +265,9 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 		}
 		return nil
 	})
+	if !localFolderSearches.isLatest(searchID) {
+		return
+	}
 	sortLocalFolderSearchHits(hits)
 	if len(hits) > limit {
 		hits = hits[:limit]
