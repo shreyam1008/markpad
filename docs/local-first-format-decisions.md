@@ -83,6 +83,7 @@ Trash remains local and predictable.
 - Draft trash: may live in local app state while drafts are not real files.
 - Saved file trash: store recoverable file copies outside localStorage.
 - Reports: footprint exports should include trash bytes, item counts, retention buckets, and next expiry.
+- Diagnostics: Trash Cleanup Profile must show retained bytes, expired candidates, backend cleanup support, and safe cleanup actions before destructive cleanup.
 - Cleanup: automatic cleanup can run opportunistically on startup or when opening Trash.
 
 ## Future sync layer
