@@ -14064,6 +14064,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="delete"]').style.display = canTrash ? '' : 'none';
     showContextMenuAt(e);
@@ -14286,6 +14287,13 @@ function contextWikilinkTitle() {
   return name.replace(/\.(md|markdown)$/i, '') || name;
 }
 
+function contextEmbedTarget() {
+  const path = contextTargetPath();
+  if (!path) return '';
+  if (getFileType(path) === 'md') return contextWikilinkTitle();
+  return basename(path);
+}
+
 function showContextMenuAt(event) {
   ctxMenu.style.left = event.clientX + 'px';
   ctxMenu.style.top = event.clientY + 'px';
@@ -14306,6 +14314,7 @@ function showLocalFileContextMenu(event, path) {
   ctxMenu.querySelector('[data-ctx="folder"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="copypath"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = getFileType(path) === 'md' ? '' : 'none';
+  ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="close"]').style.display = 'none';
   ctxMenu.querySelector('[data-ctx="delete"]').style.display = 'none';
   showContextMenuAt(event);
@@ -14376,6 +14385,14 @@ ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', asy
   if (contextTargetPath()) {
     await navigator.clipboard.writeText(`[[${contextWikilinkTitle()}]]`);
     statusText.textContent = 'Wikilink copied';
+  } else statusText.textContent = 'No file path to copy';
+  ctxMenu.classList.add('hidden');
+});
+ctxMenu.querySelector('[data-ctx="copyembed"]').addEventListener('click', async () => {
+  const target = contextEmbedTarget();
+  if (target) {
+    await navigator.clipboard.writeText(`![[${target}]]`);
+    statusText.textContent = 'Embed copied';
   } else statusText.textContent = 'No file path to copy';
   ctxMenu.classList.add('hidden');
 });
