@@ -4209,56 +4209,33 @@ function searchResultsToCsv(results, query) {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-async function copySearchResultsMarkdown() {
+function searchResultsReportStatus(action, format) {
+  return `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} ${action} as ${format}`;
+}
+
+async function copySearchResultsReport(build, format) {
   if (!searchLastResults.length) {
     statusText.textContent = 'No search results to copy';
     return;
   }
   if (!canWriteClipboard()) return;
-  await copyGeneratedText(() => searchResultsToMarkdown(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`);
+  await copyGeneratedText(() => build(searchLastResults, searchLastQuery), searchResultsReportStatus('copied', format));
 }
 
-function exportSearchResultsMarkdown() {
+function exportSearchResultsReport(filename, mime, build, format) {
   if (!searchLastResults.length) {
     statusText.textContent = 'No search results to export';
     return;
   }
-  exportGeneratedText('markpad-search-results.md', 'text/markdown', () => searchResultsToMarkdown(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as Markdown`);
+  exportGeneratedText(filename, mime, () => build(searchLastResults, searchLastQuery), searchResultsReportStatus('exported', format));
 }
 
-async function copySearchResultsJson() {
-  if (!searchLastResults.length) {
-    statusText.textContent = 'No search results to copy';
-    return;
-  }
-  if (!canWriteClipboard()) return;
-  await copyGeneratedText(() => searchResultsToJson(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as JSON`);
-}
-
-function exportSearchResultsJson() {
-  if (!searchLastResults.length) {
-    statusText.textContent = 'No search results to export';
-    return;
-  }
-  exportGeneratedText('markpad-search-results.json', 'application/json', () => searchResultsToJson(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`);
-}
-
-async function copySearchResultsCsv() {
-  if (!searchLastResults.length) {
-    statusText.textContent = 'No search results to copy';
-    return;
-  }
-  if (!canWriteClipboard()) return;
-  await copyGeneratedText(() => searchResultsToCsv(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as CSV`);
-}
-
-function exportSearchResultsCsv() {
-  if (!searchLastResults.length) {
-    statusText.textContent = 'No search results to export';
-    return;
-  }
-  exportGeneratedText('markpad-search-results.csv', 'text/csv', () => searchResultsToCsv(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as CSV`);
-}
+async function copySearchResultsMarkdown() { return copySearchResultsReport(searchResultsToMarkdown, 'Markdown'); }
+function exportSearchResultsMarkdown() { exportSearchResultsReport('markpad-search-results.md', 'text/markdown', searchResultsToMarkdown, 'Markdown'); }
+async function copySearchResultsJson() { return copySearchResultsReport(searchResultsToJson, 'JSON'); }
+function exportSearchResultsJson() { exportSearchResultsReport('markpad-search-results.json', 'application/json', searchResultsToJson, 'JSON'); }
+async function copySearchResultsCsv() { return copySearchResultsReport(searchResultsToCsv, 'CSV'); }
+function exportSearchResultsCsv() { exportSearchResultsReport('markpad-search-results.csv', 'text/csv', searchResultsToCsv, 'CSV'); }
 
 async function copySearchResultPaths() {
   if (!searchLastResults.length) {
@@ -7054,13 +7031,32 @@ async function exportTrashCleanupProfileCsv() {
   statusText.textContent = 'Trash cleanup profile exported as CSV';
 }
 
-async function copyTrashReportMarkdown() {
+async function currentTrashReportSnapshot() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
-  await navigator.clipboard.writeText(trashReportToMarkdown(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as Markdown`;
+  return { draftItems, fileItems, total: draftItems.length + fileItems.length };
 }
+
+function trashReportStatus(total, action, format) {
+  return `${total} Trash item${total === 1 ? '' : 's'} ${action} as ${format}`;
+}
+
+async function copyTrashReport(build, format) {
+  const report = await currentTrashReportSnapshot();
+  return copyGeneratedText(() => build(report.draftItems, report.fileItems), trashReportStatus(report.total, 'copied', format));
+}
+
+async function exportTrashReport(filename, mime, build, format) {
+  const report = await currentTrashReportSnapshot();
+  exportGeneratedText(filename, mime, () => build(report.draftItems, report.fileItems), trashReportStatus(report.total, 'exported', format));
+}
+
+async function copyTrashReportMarkdown() { return copyTrashReport(trashReportToMarkdown, 'Markdown'); }
+async function exportTrashReportMarkdown() { return exportTrashReport('markpad-trash-report.md', 'text/markdown', trashReportToMarkdown, 'Markdown'); }
+async function copyTrashReportCsv() { return copyTrashReport(trashReportToCsv, 'CSV'); }
+async function exportTrashReportCsv() { return exportTrashReport('markpad-trash-report.csv', 'text/csv', trashReportToCsv, 'CSV'); }
+async function copyTrashReportJson() { return copyTrashReport(trashReportToJson, 'JSON'); }
+async function exportTrashReportJson() { return exportTrashReport('markpad-trash-report.json', 'application/json', trashReportToJson, 'JSON'); }
 
 async function copyFileTrashPath(itemId) {
   const item = (await loadFileTrash()).find(entry => entry.id === itemId);
@@ -7076,46 +7072,6 @@ async function copyFileTrashItemJson(itemId) {
   if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify(trashItemJson('File', item), null, 2) + '\n');
   statusText.textContent = 'Trash file metadata copied as JSON';
-}
-
-async function exportTrashReportMarkdown() {
-  const draftItems = loadDraftTrash();
-  const fileItems = await loadFileTrash();
-  downloadText('markpad-trash-report.md', 'text/markdown', trashReportToMarkdown(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as Markdown`;
-}
-
-async function copyTrashReportCsv() {
-  const draftItems = loadDraftTrash();
-  const fileItems = await loadFileTrash();
-  await navigator.clipboard.writeText(trashReportToCsv(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as CSV`;
-}
-
-async function copyTrashReportJson() {
-  const draftItems = loadDraftTrash();
-  const fileItems = await loadFileTrash();
-  await navigator.clipboard.writeText(trashReportToJson(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} copied as JSON`;
-}
-
-async function exportTrashReportCsv() {
-  const draftItems = loadDraftTrash();
-  const fileItems = await loadFileTrash();
-  downloadText('markpad-trash-report.csv', 'text/csv', trashReportToCsv(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as CSV`;
-}
-
-async function exportTrashReportJson() {
-  const draftItems = loadDraftTrash();
-  const fileItems = await loadFileTrash();
-  downloadText('markpad-trash-report.json', 'application/json', trashReportToJson(draftItems, fileItems));
-  const total = draftItems.length + fileItems.length;
-  statusText.textContent = `${total} Trash item${total === 1 ? '' : 's'} exported as JSON`;
 }
 
 function showTrashGuide() {
