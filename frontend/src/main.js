@@ -4112,6 +4112,19 @@ async function upgradeMapSnapshot() {
   const searchCache = loadedSearchCacheFootprint();
   const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
   const localResults = searchLastResults.length - loadedResults;
+  const searchPlan = parseSearchQuery(searchLastQuery || '');
+  const searchFilterCount = Object.values(searchPlan.filters || {}).reduce((sum, values) => sum + (values || []).length, 0);
+  const searchExcludeCount = Object.values(searchPlan.excludes || {}).reduce((sum, values) => sum + (values || []).length, 0)
+    + (searchPlan.excludeTerms || []).length
+    + (searchPlan.excludePhrases || []).length
+    + (searchPlan.excludeWildcards || []).length
+    + (searchPlan.excludeFuzzyTerms || []).length;
+  const searchOperatorCount = (searchPlan.terms || []).length
+    + (searchPlan.phrases || []).length
+    + (searchPlan.wildcards || []).length
+    + (searchPlan.fuzzyTerms || []).length
+    + searchFilterCount
+    + searchExcludeCount;
   const commandIcons = commandIconMetrics();
   const taskItems = Array.isArray(latestTasks) ? latestTasks : [];
   const visibleTaskItems = visibleTasksForView(taskItems);
@@ -4145,6 +4158,22 @@ async function upgradeMapSnapshot() {
       localResults,
       cacheBytes: searchCache.bytes || 0,
       cacheEntries: searchCache.entries || 0,
+      query: searchPlan.raw || '',
+      backendQuery: searchPlan.backendQuery || '',
+      operators: {
+        total: searchOperatorCount,
+        terms: (searchPlan.terms || []).length,
+        phrases: (searchPlan.phrases || []).length,
+        wildcards: (searchPlan.wildcards || []).length,
+        fuzzyTerms: (searchPlan.fuzzyTerms || []).length,
+        filters: searchFilterCount,
+        excludes: searchExcludeCount,
+        typeFilters: (searchPlan.filters?.type || []).length,
+        pathFilters: (searchPlan.filters?.path || []).length,
+        titleFilters: (searchPlan.filters?.title || []).length,
+        tagFilters: (searchPlan.filters?.tag || []).length,
+        taskFilters: (searchPlan.filters?.task || []).length,
+      },
       plannedIndex: 'SQLite FTS5 sidecar, rebuildable later',
     },
     theme: {
@@ -4240,7 +4269,7 @@ function upgradeMapMarkdown(snapshot) {
     '',
     '## Feature coverage',
     '',
-    `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache`,
+    `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache, ${snapshot.search.operators?.total || 0} query operators (${snapshot.search.operators?.filters || 0} filters, ${snapshot.search.operators?.excludes || 0} excludes)`,
     `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
     `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
@@ -4268,6 +4297,20 @@ function upgradeMapCsv(snapshot) {
     ['search_loaded_results', Number(snapshot.search.loadedResults || 0)],
     ['search_local_results', Number(snapshot.search.localResults || 0)],
     ['search_cache_bytes', Number(snapshot.search.cacheBytes || 0)],
+    ['search_query', snapshot.search.query || ''],
+    ['search_backend_query', snapshot.search.backendQuery || ''],
+    ['search_operator_total', Number(snapshot.search.operators?.total || 0)],
+    ['search_operator_terms', Number(snapshot.search.operators?.terms || 0)],
+    ['search_operator_phrases', Number(snapshot.search.operators?.phrases || 0)],
+    ['search_operator_wildcards', Number(snapshot.search.operators?.wildcards || 0)],
+    ['search_operator_fuzzy_terms', Number(snapshot.search.operators?.fuzzyTerms || 0)],
+    ['search_operator_filters', Number(snapshot.search.operators?.filters || 0)],
+    ['search_operator_excludes', Number(snapshot.search.operators?.excludes || 0)],
+    ['search_filter_type', Number(snapshot.search.operators?.typeFilters || 0)],
+    ['search_filter_path', Number(snapshot.search.operators?.pathFilters || 0)],
+    ['search_filter_title', Number(snapshot.search.operators?.titleFilters || 0)],
+    ['search_filter_tag', Number(snapshot.search.operators?.tagFilters || 0)],
+    ['search_filter_task', Number(snapshot.search.operators?.taskFilters || 0)],
     ['theme_id', snapshot.theme.id],
     ['theme_mode', snapshot.theme.mode],
     ['layout_view_mode', snapshot.layout.viewMode],
@@ -4356,7 +4399,7 @@ async function showUpgradeMap() {
   showModal('Upgrade Map', `
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
-      <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${snapshot.search.operators.total} ops · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.lightThemes} light · ${snapshot.theme.darkThemes} dark · CSS variables only</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
