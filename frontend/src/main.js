@@ -10869,6 +10869,7 @@ async function copySelectedCanvasDetails() {
     `Stroke: ${element.stroke || 'none'}`,
     `Width: ${element.width || 'n/a'}`,
   ];
+  if (element.fill) lines.push(`Fill: ${element.fill}`);
   if (canvasElementHasText(element)) {
     lines.push('', 'Text:', '```', String(element.text || ''), '```');
   }
@@ -10897,6 +10898,7 @@ function selectedCanvasElementMarkdownBlock() {
     `- Bounds: x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}, w ${Math.round(Number(bounds.w || 0))}, h ${Math.round(Number(bounds.h || 0))}`,
     `- Stroke: ${element.stroke || 'none'}`,
   ];
+  if (element.fill) lines.push(`- Fill: ${element.fill}`);
   if (!canvasElementHasText(element)) lines.push(`- Width: ${element.width || 'n/a'}`);
   if (element.type === 'path') lines.push(`- Points: ${(element.points || []).length}`);
   if (canvasElementHasText(element)) {
@@ -10949,6 +10951,7 @@ function showSelectedCanvasElementInspector() {
       <div class="diag-card"><strong>${escapeHtml(element.type || 'element')}</strong><span>Type</span><small>${escapeHtml(label || 'Selected element')}</small></div>
       <div class="diag-card"><strong>${Math.round(Number(bounds.w || 0))}x${Math.round(Number(bounds.h || 0))}</strong><span>Size</span><small>x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}</small></div>
       <div class="diag-card"><strong>${escapeHtml(element.stroke || 'none')}</strong><span>Stroke</span><small>Width ${escapeHtml(String(element.width || 'n/a'))}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(element.fill || 'none')}</strong><span>Fill</span><small>${element.fill ? 'Native element fill' : 'Transparent / stroke-only'}</small></div>
       <div class="diag-card"><strong>${element.type === 'path' ? (element.points || []).length : canvasSelectedIndex + 1}</strong><span>${element.type === 'path' ? 'Points' : 'Layer'}</span><small>Lightweight JSON element</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
