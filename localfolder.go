@@ -483,9 +483,24 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	textPhrases := make(map[string]bool, len(plan.Phrases))
 	matchedTags := make(map[string]bool, len(plan.TagFilters))
 	matchedTasks := make(map[string]bool, len(plan.TaskFilters))
+	inFence := false
+	fenceMarker := ""
 	for scanner.Scan() {
 		line := scanner.Text()
 		lower := strings.ToLower(line)
+		taskFilterLine := true
+		if marker, ok := localFenceMarker(line); ok {
+			if !inFence {
+				inFence = true
+				fenceMarker = marker
+			} else if marker == fenceMarker {
+				inFence = false
+				fenceMarker = ""
+			}
+			taskFilterLine = false
+		} else if inFence {
+			taskFilterLine = false
+		}
 		if len(plan.Terms) > 0 || len(plan.Phrases) > 0 {
 			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases) && textLine < 0 {
 				textLine = lineNo
@@ -496,7 +511,7 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 			textLine = lineNo
 			textSnippet = strings.TrimSpace(line)
 		}
-		if localFolderLineMatchesContentFilters(lower, plan, matchedTags, matchedTasks) && filterLine < 0 {
+		if localFolderLineMatchesContentFilters(lower, plan, matchedTags, matchedTasks, taskFilterLine) && filterLine < 0 {
 			filterLine = lineNo
 			filterSnippet = strings.TrimSpace(line)
 		}
@@ -619,7 +634,7 @@ func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]
 	return true
 }
 
-func localFolderLineMatchesContentFilters(line string, plan localFolderSearchPlan, tags map[string]bool, tasks map[string]bool) bool {
+func localFolderLineMatchesContentFilters(line string, plan localFolderSearchPlan, tags map[string]bool, tasks map[string]bool, taskFilterLine bool) bool {
 	matched := false
 	for _, tag := range plan.TagFilters {
 		if strings.Contains(line, "#"+tag) {
@@ -628,7 +643,7 @@ func localFolderLineMatchesContentFilters(line string, plan localFolderSearchPla
 		}
 	}
 	for _, task := range plan.TaskFilters {
-		if localFolderTaskFilterMatchesLine(line, task) {
+		if taskFilterLine && localFolderTaskFilterMatchesLine(line, task) {
 			tasks[task] = true
 			matched = true
 		}
@@ -652,9 +667,8 @@ func localFolderContentFiltersMatched(plan localFolderSearchPlan, tags map[strin
 
 func localFolderTaskFilterMatchesLine(line string, filter string) bool {
 	trimmed := strings.TrimSpace(line)
-	open := strings.HasPrefix(trimmed, "- [ ]") || strings.HasPrefix(trimmed, "* [ ]") || strings.HasPrefix(trimmed, "+ [ ]")
-	done := strings.HasPrefix(trimmed, "- [x]") || strings.HasPrefix(trimmed, "* [x]") || strings.HasPrefix(trimmed, "+ [x]")
-	if !open && !done {
+	open, done, ok := localTaskLineStatus(trimmed)
+	if !ok {
 		return false
 	}
 	switch filter {

@@ -38,3 +38,27 @@ func TestLocalTaskAppendPathCreatesLowercaseTaskFileByDefault(t *testing.T) {
 		t.Fatalf("localTaskAppendPath() = %q, want %q", got, want)
 	}
 }
+
+func TestLocalTaskLineStatusMatchesPortableMarkdownTasks(t *testing.T) {
+	cases := []struct {
+		line string
+		open bool
+		done bool
+		ok   bool
+	}{
+		{line: "- [ ] bullet", open: true, ok: true},
+		{line: "* [x] bullet done", done: true, ok: true},
+		{line: "+ [X] bullet done uppercase", done: true, ok: true},
+		{line: "1. [ ] ordered", open: true, ok: true},
+		{line: "2) [x] ordered done", done: true, ok: true},
+		{line: "> - [ ] quoted", open: true, ok: true},
+		{line: "plain [ ] text", ok: false},
+	}
+
+	for _, tc := range cases {
+		open, done, ok := localTaskLineStatus(tc.line)
+		if open != tc.open || done != tc.done || ok != tc.ok {
+			t.Fatalf("localTaskLineStatus(%q) = open %v done %v ok %v, want open %v done %v ok %v", tc.line, open, done, ok, tc.open, tc.done, tc.ok)
+		}
+	}
+}

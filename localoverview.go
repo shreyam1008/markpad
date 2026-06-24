@@ -104,42 +104,31 @@ func localOverviewCountTasks(path string, size int64, overview *LocalFolderOverv
 		overview.SkippedFiles++
 		return
 	}
+	inFence := false
+	fenceMarker := ""
 	for _, line := range strings.Split(string(data), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if localOverviewOpenTask(trimmed) {
+		if marker, ok := localFenceMarker(line); ok {
+			if !inFence {
+				inFence = true
+				fenceMarker = marker
+			} else if marker == fenceMarker {
+				inFence = false
+				fenceMarker = ""
+			}
+			continue
+		}
+		if inFence {
+			continue
+		}
+		open, done, ok := localTaskLineStatus(line)
+		if open && ok {
 			overview.Tasks++
 			overview.OpenTasks++
-		} else if localOverviewDoneTask(trimmed) {
+		} else if done && ok {
 			overview.Tasks++
 			overview.DoneTasks++
 		}
 	}
-}
-
-func localOverviewOpenTask(line string) bool {
-	return strings.Contains(line, "[ ]") && localOverviewTaskPrefix(line)
-}
-
-func localOverviewDoneTask(line string) bool {
-	return (strings.Contains(line, "[x]") || strings.Contains(line, "[X]")) && localOverviewTaskPrefix(line)
-}
-
-func localOverviewTaskPrefix(line string) bool {
-	line = strings.TrimLeft(line, "> \t")
-	return strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* ") || strings.HasPrefix(line, "+ ") || localOverviewOrderedTaskPrefix(line)
-}
-
-func localOverviewOrderedTaskPrefix(line string) bool {
-	dot := strings.IndexAny(line, ".)")
-	if dot <= 0 || dot+1 >= len(line) || line[dot+1] != ' ' {
-		return false
-	}
-	for _, r := range line[:dot] {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }
 
 func localOverviewRel(root string, path string) string {

@@ -231,6 +231,17 @@ func toggleLocalTaskAtIndex(markdown string, taskIndex int, checked bool) string
 	return markdown
 }
 
+func localTaskLineStatus(line string) (open bool, done bool, ok bool) {
+	match := localTaskLineRE.FindStringSubmatch(line)
+	if match == nil {
+		return false, false, false
+	}
+	if strings.EqualFold(match[2], "x") {
+		return false, true, true
+	}
+	return true, false, true
+}
+
 func parseLocalTaskMetadata(raw string) (string, string, string, bool, []string) {
 	parts := strings.Fields(raw)
 	kept := make([]string, 0, len(parts))
