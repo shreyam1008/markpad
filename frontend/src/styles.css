@@ -1235,6 +1235,9 @@ body.markpad-compact #modal-body {
   gap: 6px;
   margin-top: 2px;
 }
+.command-empty-cats.shortcuts {
+  margin-top: 0;
+}
 .command-empty-chip {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -1251,6 +1254,12 @@ body.markpad-compact #modal-body {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
   background: color-mix(in srgb, var(--accent) 10%, var(--editor));
   color: var(--accent);
+}
+.command-empty-chip.shortcut {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--editor));
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .search-row {

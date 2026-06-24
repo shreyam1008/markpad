@@ -5570,8 +5570,17 @@ function commandEmptyHtml(query) {
   const chips = categories
     .map(category => `<button class="command-empty-chip" data-command-empty-category="${escapeHtml(category.label)}" type="button">${escapeHtml(category.label)}</button>`)
     .join('');
+  const shortcuts = [
+    ['local-upgrade-map', 'Upgrade Map'],
+    ['search-profile', 'Search Profile'],
+    ['task-source-profile', 'Task Source'],
+    ['canvas-storage-profile', 'Canvas Storage'],
+    ['footprint', 'Footprint'],
+    ['local-first-guide', 'Local Guide'],
+  ].map(([id, label]) => `<button class="command-empty-chip shortcut" data-command-empty-action="${escapeHtml(id)}" type="button">${escapeHtml(label)}</button>`)
+    .join('');
   const suffix = query ? ` for &quot;${escapeHtml(query)}&quot;` : '';
-  return `<div class="command-empty"><strong>No command matched${suffix}.</strong><span>Try a command category:</span><div class="command-empty-cats">${chips}</div></div>`;
+  return `<div class="command-empty"><strong>No command matched${suffix}.</strong><span>Try a command category:</span><div class="command-empty-cats">${chips}</div><span>Or open a local diagnostic:</span><div class="command-empty-cats shortcuts">${shortcuts}</div></div>`;
 }
 
 function commandPaletteCategories(items = commandItems()) {
@@ -5698,8 +5707,14 @@ commandResults?.addEventListener('click', (event) => {
     return;
   }
   const category = event.target.closest('[data-command-empty-category]');
-  if (!category) return;
-  openCommandPaletteQuery(category.dataset.commandEmptyCategory || '');
+  if (category) {
+    openCommandPaletteQuery(category.dataset.commandEmptyCategory || '');
+    return;
+  }
+  const action = event.target.closest('[data-command-empty-action]');
+  if (!action) return;
+  const item = commandItems().find(command => command.id === action.dataset.commandEmptyAction);
+  if (item) runCommand(item);
 });
 commandInput?.addEventListener('keydown', (e) => {
   const rows = [...commandResults.querySelectorAll('.command-row')];
