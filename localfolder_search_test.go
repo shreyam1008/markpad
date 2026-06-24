@@ -314,6 +314,43 @@ func TestSearchLocalFolderSupportsFrontendFilterAliases(t *testing.T) {
 	}
 }
 
+func TestSearchLocalFolderSupportsWildcardTerms(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"match.md":   "roadmap alpha planning budget guardrail\n",
+		"reverse.md": "budget first, then alpha later\n",
+		"solo.md":    "alpha only note\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(folder, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result := app.SearchLocalFolderWithStats("alpha*budget", 10)
+	if len(result.Hits) != 1 {
+		t.Fatalf("wildcard hits = %d, want 1: %#v", len(result.Hits), result.Hits)
+	}
+	if result.Hits[0].RelPath != "match.md" {
+		t.Fatalf("wildcard top hit = %q, want match.md; hits=%#v", result.Hits[0].RelPath, result.Hits)
+	}
+
+	excluded := app.SearchLocalFolderWithStats("alpha -alpha*budget", 10)
+	for _, hit := range excluded.Hits {
+		if hit.RelPath == "match.md" {
+			t.Fatalf("excluded wildcard returned match.md: %#v", excluded.Hits)
+		}
+	}
+}
+
 func TestSearchLocalFolderDropsStaleOverlappingSearch(t *testing.T) {
 	store, err := session.NewStoreAt(t.TempDir())
 	if err != nil {

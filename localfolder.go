@@ -275,7 +275,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 		return
 	}
 	plan := parseLocalFolderSearchQuery(query)
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 && !plan.HasFilters {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 && len(plan.Wildcards) == 0 && !plan.HasFilters {
 		return
 	}
 	if limit <= 0 || limit > 100 {
@@ -652,9 +652,11 @@ type localFolderSearchPlan struct {
 	TagFilters           []string
 	TaskFilters          []string
 	FuzzyTerms           []string
+	Wildcards            []string
 	ExcludedTerms        []string
 	ExcludedPhrases      []string
 	ExcludedFuzzyTerms   []string
+	ExcludedWildcards    []string
 	ExcludedPathFilters  []string
 	ExcludedTitleFilters []string
 	ExcludedTypeFilters  []string
@@ -715,6 +717,16 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 				plan.TagFilters = append(plan.TagFilters, strings.TrimPrefix(lower, "#"))
 			}
 			plan.HasFilters = true
+			plan.NeedsContent = true
+			continue
+		}
+		if strings.Contains(lower, "*") && strings.Trim(lower, "*") != "" && !strings.Contains(lower, ":") {
+			if negated {
+				plan.ExcludedWildcards = append(plan.ExcludedWildcards, lower)
+				plan.NeedsExclusionScan = true
+			} else {
+				plan.Wildcards = append(plan.Wildcards, lower)
+			}
 			plan.NeedsContent = true
 			continue
 		}
@@ -857,7 +869,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 			MatchKind: matchKind,
 		}
 	}
-	hasTextQuery := len(plan.Terms) > 0 || len(plan.Phrases) > 0 || len(plan.FuzzyTerms) > 0
+	hasTextQuery := len(plan.Terms) > 0 || len(plan.Phrases) > 0 || len(plan.FuzzyTerms) > 0 || len(plan.Wildcards) > 0
 	metadataTextMatch := hasTextQuery && localFolderTextMatches(titleLower+"\n"+relLower, plan)
 	metadataScore := localFolderMetadataScore(titleLower, relLower, plan)
 	if metadataTextMatch && !plan.NeedsContent {
@@ -882,6 +894,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 	textTerms := make(map[string]bool, len(plan.Terms))
 	textPhrases := make(map[string]bool, len(plan.Phrases))
 	textFuzzy := make(map[string]bool, len(plan.FuzzyTerms))
+	textWildcards := make(map[string]bool, len(plan.Wildcards))
 	matchedTags := make(map[string]bool, len(plan.TagFilters))
 	matchedTasks := make(map[string]bool, len(plan.TaskFilters))
 	inFence := false
@@ -903,7 +916,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 			taskFilterLine = false
 		}
 		if hasTextQuery {
-			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases, textFuzzy) {
+			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases, textFuzzy, textWildcards) {
 				lineScore := localFolderLineTextScore(lower, lineNo, plan)
 				if textLine < 0 || lineScore > textLineScore {
 					textLineScore = lineScore
@@ -924,12 +937,12 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 		if localFolderTextHasExcluded(lower, plan) || localFolderLineMatchesExcludedContentFilters(lower, plan, taskFilterLine) {
 			return LocalFolderSearchHit{}, false
 		}
-		if !plan.NeedsExclusionScan && (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy) || !hasTextQuery) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
+		if !plan.NeedsExclusionScan && (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy, textWildcards) || !hasTextQuery) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
 			break
 		}
 		lineNo++
 	}
-	if !metadataTextMatch && !localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy) && hasTextQuery {
+	if !metadataTextMatch && !localFolderTextFiltersMatched(plan, textTerms, textPhrases, textFuzzy, textWildcards) && hasTextQuery {
 		return LocalFolderSearchHit{}, false
 	}
 	if !localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
@@ -957,7 +970,7 @@ func searchLocalFile(root string, path string, kind string, info os.FileInfo, pl
 }
 
 func localFolderMetadataScore(titleLower string, relLower string, plan localFolderSearchPlan) int {
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 && len(plan.Wildcards) == 0 {
 		return 90
 	}
 	query := strings.TrimSpace(plan.Text)
@@ -998,6 +1011,13 @@ func localFolderMetadataScore(titleLower string, relLower string, plan localFold
 			score += 4
 		}
 	}
+	for _, pattern := range plan.Wildcards {
+		if wildcardContains(titleLower, pattern) {
+			score += 8
+		} else if wildcardContains(relLower, pattern) {
+			score += 4
+		}
+	}
 	depth := strings.Count(relLower, "/")
 	if depth > 0 {
 		score -= minInt(depth*2, 14)
@@ -1029,6 +1049,11 @@ func localFolderLineTextScore(lineLower string, lineNo int, plan localFolderSear
 			score += 3
 		}
 	}
+	for _, pattern := range plan.Wildcards {
+		if wildcardContains(lineLower, pattern) {
+			score += 3
+		}
+	}
 	return score
 }
 
@@ -1049,6 +1074,12 @@ func localFolderLineSnippet(line string, lineLower string, plan localFolderSearc
 		if idx := strings.Index(lineLower, term); idx >= 0 && (matchIndex < 0 || idx < matchIndex) {
 			matchIndex = idx
 			matchLength = len(term)
+		}
+	}
+	for _, pattern := range plan.Wildcards {
+		if idx, length, ok := wildcardFirstMatch(lineLower, pattern); ok && (matchIndex < 0 || idx < matchIndex) {
+			matchIndex = idx
+			matchLength = length
 		}
 	}
 	if matchIndex < 0 {
@@ -1116,11 +1147,16 @@ func localFolderTextHasExcluded(value string, plan localFolderSearchPlan) bool {
 			return true
 		}
 	}
+	for _, pattern := range plan.ExcludedWildcards {
+		if wildcardContains(value, pattern) {
+			return true
+		}
+	}
 	return false
 }
 
 func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
-	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 && len(plan.FuzzyTerms) == 0 && len(plan.Wildcards) == 0 {
 		return true
 	}
 	if len(plan.Terms) > 0 && !termsContain(value, plan.Terms) {
@@ -1136,10 +1172,15 @@ func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
 			return false
 		}
 	}
+	for _, pattern := range plan.Wildcards {
+		if !wildcardContains(value, pattern) {
+			return false
+		}
+	}
 	return true
 }
 
-func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool) bool {
+func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool, wildcards map[string]bool) bool {
 	matched := false
 	for _, term := range plan.Terms {
 		if strings.Contains(line, term) {
@@ -1159,10 +1200,16 @@ func localFolderTrackTextMatches(line string, plan localFolderSearchPlan, terms 
 			matched = true
 		}
 	}
+	for _, pattern := range plan.Wildcards {
+		if wildcardContains(line, pattern) {
+			wildcards[pattern] = true
+			matched = true
+		}
+	}
 	return matched
 }
 
-func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool) bool {
+func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]bool, phrases map[string]bool, fuzzy map[string]bool, wildcards map[string]bool) bool {
 	for _, term := range plan.Terms {
 		if !terms[term] {
 			return false
@@ -1178,7 +1225,51 @@ func localFolderTextFiltersMatched(plan localFolderSearchPlan, terms map[string]
 			return false
 		}
 	}
+	for _, pattern := range plan.Wildcards {
+		if !wildcards[pattern] {
+			return false
+		}
+	}
 	return true
+}
+
+func wildcardContains(value string, pattern string) bool {
+	_, _, ok := wildcardFirstMatch(value, pattern)
+	return ok
+}
+
+func wildcardFirstMatch(value string, pattern string) (int, int, bool) {
+	pattern = strings.TrimSpace(pattern)
+	if pattern == "" || strings.Trim(pattern, "*") == "" {
+		return 0, 0, false
+	}
+	if !strings.Contains(pattern, "*") {
+		idx := strings.Index(value, pattern)
+		return idx, len(pattern), idx >= 0
+	}
+	parts := strings.Split(pattern, "*")
+	offset := 0
+	matchIndex := -1
+	matchLength := 0
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		idx := strings.Index(value[offset:], part)
+		if idx < 0 {
+			return 0, 0, false
+		}
+		absolute := offset + idx
+		if matchIndex < 0 {
+			matchIndex = absolute
+			matchLength = len(part)
+		}
+		offset = absolute + len(part)
+	}
+	if matchIndex < 0 {
+		return 0, 0, false
+	}
+	return matchIndex, matchLength, true
 }
 
 func fuzzyContains(value string, pattern string) bool {
