@@ -15220,7 +15220,7 @@ async function runCreateMenuAction(kind) {
       if (await ensureReadyLocalFolder('Choose a local folder before creating weekly notes')) await createLocalFolderWeeklyNote();
       break;
     case 'task':
-      await openTaskFileFromMenu();
+      openTaskFileSetup();
       break;
     case 'canvas':
       await createCanvasFromMenu();
