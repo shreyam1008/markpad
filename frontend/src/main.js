@@ -10853,7 +10853,7 @@ async function copySelectedCanvasDetails() {
     `Stroke: ${element.stroke || 'none'}`,
     `Width: ${element.width || 'n/a'}`,
   ];
-  if (element.type === 'text') {
+  if (canvasElementHasText(element)) {
     lines.push('', 'Text:', '```', String(element.text || ''), '```');
   }
   if (element.type === 'path') {
@@ -10863,11 +10863,15 @@ async function copySelectedCanvasDetails() {
   statusText.textContent = 'Canvas element details copied';
 }
 
+function canvasElementHasText(element) {
+  return ['text', 'sticky'].includes(element?.type);
+}
+
 function selectedCanvasElementMarkdownBlock() {
   if (!hasCanvasSelection()) return '';
   const element = canvasDoc.elements[canvasSelectedIndex];
   const bounds = canvasElementBounds(element);
-  const title = element.type === 'text'
+  const title = canvasElementHasText(element)
     ? String(element.text || 'Text').replace(/\s+/g, ' ').trim().slice(0, 64)
     : `${element.type || 'element'} ${element.id || ''}`.trim();
   const lines = [
@@ -10877,9 +10881,9 @@ function selectedCanvasElementMarkdownBlock() {
     `- Bounds: x ${Math.round(Number(bounds.x || 0))}, y ${Math.round(Number(bounds.y || 0))}, w ${Math.round(Number(bounds.w || 0))}, h ${Math.round(Number(bounds.h || 0))}`,
     `- Stroke: ${element.stroke || 'none'}`,
   ];
-  if (element.type !== 'text') lines.push(`- Width: ${element.width || 'n/a'}`);
+  if (!canvasElementHasText(element)) lines.push(`- Width: ${element.width || 'n/a'}`);
   if (element.type === 'path') lines.push(`- Points: ${(element.points || []).length}`);
-  if (element.type === 'text') {
+  if (canvasElementHasText(element)) {
     lines.push('', '```text', String(element.text || ''), '```');
   }
   return lines.join('\n') + '\n';
@@ -10921,7 +10925,7 @@ function showSelectedCanvasElementInspector() {
   }
   const element = canvasDoc.elements[canvasSelectedIndex];
   const bounds = canvasElementBounds(element);
-  const label = element.type === 'text'
+  const label = canvasElementHasText(element)
     ? String(element.text || 'Text').replace(/\s+/g, ' ').trim().slice(0, 80)
     : `${element.type || 'element'} ${element.id || ''}`.trim();
   showModal('Canvas Element Inspector', `
