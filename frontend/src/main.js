@@ -4103,6 +4103,12 @@ async function upgradeMapSnapshot() {
   if (!canvasDoc || !canvasSession) loadCanvasState();
   const canvasElements = (canvasDoc?.elements || []).length;
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '');
+  const canvasElementTypes = (canvasDoc?.elements || []).reduce((acc, element) => {
+    const key = String(element?.type || 'element');
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const canvasCamera = canvasSession?.camera || { x: 0, y: 0, scale: 1 };
   const searchCache = loadedSearchCacheFootprint();
   const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
   const localResults = searchLastResults.length - loadedResults;
@@ -4191,7 +4197,20 @@ async function upgradeMapSnapshot() {
     },
     canvas: {
       elements: canvasElements,
+      elementTypes: canvasElementTypes,
+      elementTypeCount: Object.keys(canvasElementTypes).length,
       bytes: canvasBytes,
+      background: canvasDoc?.appState?.viewBackgroundColor || '#ffffff',
+      tool: canvasTool,
+      gridVisible: !!canvasGridVisible,
+      gridSize: canvasGridSize,
+      snapToGrid: !!canvasSnapToGrid,
+      minimapVisible: !!canvasMinimapVisible,
+      camera: {
+        x: Math.round(Number(canvasCamera.x || 0)),
+        y: Math.round(Number(canvasCamera.y || 0)),
+        zoomPercent: Math.round(Number(canvasCamera.scale || 1) * 100),
+      },
       undoSnapshots: canvasHistory.length,
       undoLimit: CANVAS_HISTORY_LIMIT,
       format: MARKPAD_CANVAS_FORMAT,
@@ -4226,7 +4245,7 @@ function upgradeMapMarkdown(snapshot) {
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
     `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
     `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.visible}/${snapshot.tasks.known} visible, ${snapshot.tasks.open} open / ${snapshot.tasks.done} done, ${snapshot.tasks.loaded} loaded / ${snapshot.tasks.local} local, due today ${snapshot.tasks.dueBuckets?.today || 0}, overdue ${snapshot.tasks.dueBuckets?.overdue || 0}, ${snapshot.tasks.sourceOfTruth}`,
-    `- Canvas: ${snapshot.canvas.elements} elements, ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
+    `- Canvas: ${snapshot.canvas.elements} elements (${canvasElementTypeSummary(snapshot.canvas.elementTypes)}), ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.tool}, zoom ${snapshot.canvas.camera?.zoomPercent || 100}%, grid ${snapshot.canvas.gridVisible ? `${snapshot.canvas.gridSize}px` : 'off'}, snap ${snapshot.canvas.snapToGrid ? 'on' : 'off'}, minimap ${snapshot.canvas.minimapVisible ? 'on' : 'off'}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
     `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
     '',
     snapshot.note,
@@ -4284,7 +4303,17 @@ function upgradeMapCsv(snapshot) {
     ['task_due_later', Number(snapshot.tasks.dueBuckets?.later || 0)],
     ['task_due_unscheduled', Number(snapshot.tasks.dueBuckets?.unscheduled || 0)],
     ['canvas_elements', Number(snapshot.canvas.elements || 0)],
+    ['canvas_element_type_count', Number(snapshot.canvas.elementTypeCount || 0)],
     ['canvas_bytes', Number(snapshot.canvas.bytes || 0)],
+    ['canvas_background', snapshot.canvas.background || ''],
+    ['canvas_tool', snapshot.canvas.tool || ''],
+    ['canvas_grid_visible', snapshot.canvas.gridVisible ? 'true' : 'false'],
+    ['canvas_grid_size', Number(snapshot.canvas.gridSize || 0)],
+    ['canvas_snap_to_grid', snapshot.canvas.snapToGrid ? 'true' : 'false'],
+    ['canvas_minimap_visible', snapshot.canvas.minimapVisible ? 'true' : 'false'],
+    ['canvas_camera_x', Number(snapshot.canvas.camera?.x || 0)],
+    ['canvas_camera_y', Number(snapshot.canvas.camera?.y || 0)],
+    ['canvas_camera_zoom_percent', Number(snapshot.canvas.camera?.zoomPercent || 100)],
     ['canvas_undo_snapshots', Number(snapshot.canvas.undoSnapshots || 0)],
     ['command_text_icons', Number(snapshot.assets.commandTextIcons || 0)],
     ['unique_command_text_icons', Number(snapshot.assets.uniqueCommandTextIcons || 0)],
@@ -4334,7 +4363,8 @@ async function showUpgradeMap() {
       <div class="diag-card"><strong>${snapshot.trash.urgent}</strong><span>Trash expiry</span><small>${snapshot.trash.soon} soon · ${snapshot.trash.safe} safe · next ${escapeHtml(snapshot.trash.nextExpiry || 'None')}</small></div>
       <div class="diag-card"><strong>${snapshot.tasks.visible}/${snapshot.tasks.known}</strong><span>Tasks</span><small>${snapshot.tasks.open} open · ${snapshot.tasks.done} done · ${snapshot.tasks.loaded} loaded/${snapshot.tasks.local} local</small></div>
       <div class="diag-card"><strong>${snapshot.tasks.dueBuckets.today || 0}</strong><span>Task due today</span><small>${snapshot.tasks.dueBuckets.overdue || 0} overdue · ${snapshot.tasks.dueBuckets.week || 0} this week · ${escapeHtml(snapshot.tasks.sourceState)}</small></div>
-      <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
+      <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${snapshot.canvas.elementTypeCount} types · ${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
+      <div class="diag-card"><strong>${snapshot.canvas.camera.zoomPercent}%</strong><span>Canvas view</span><small>${escapeHtml(snapshot.canvas.tool)} · grid ${snapshot.canvas.gridVisible ? `${snapshot.canvas.gridSize}px` : 'off'} · snap ${snapshot.canvas.snapToGrid ? 'on' : 'off'} · minimap ${snapshot.canvas.minimapVisible ? 'on' : 'off'}</small></div>
       <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
