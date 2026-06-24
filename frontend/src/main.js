@@ -9573,7 +9573,8 @@ function updateCanvasStatus() {
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
   const bytes = byteSize(JSON.stringify(canvasDoc || newCanvasDoc()));
   const bg = canvasDoc?.appState?.viewBackgroundColor || '#ffffff';
-  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}% · ${formatBytes(bytes)} · bg ${bg}${canvasSelectionStatus(count)}`;
+  const mode = `${canvasToolLabel(canvasTool)} · ${canvasGridVisible ? 'grid' : 'no grid'} · ${canvasSnapToGrid ? 'snap' : 'free'}`;
+  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}% · ${mode} · ${formatBytes(bytes)} · bg ${bg}${canvasSelectionStatus(count)}`;
   updateCanvasHint(count);
   updateCanvasSelectionButtons();
 }
@@ -10457,6 +10458,7 @@ function setCanvasTool(tool) {
   localStorage.setItem('markpad-canvas-tool', tool);
   document.querySelectorAll('[data-canvas-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.canvasTool === tool));
   if (canvasStage) canvasStage.style.cursor = tool === 'select' ? 'default' : tool === 'pan' ? 'grab' : 'crosshair';
+  updateCanvasStatus();
 }
 
 function setCanvasStrokePreset(value, label) {
