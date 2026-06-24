@@ -48,6 +48,7 @@ Use plain JSON snapshots with document and session split.
 - Autosave: write document changes atomically, and keep session state separate.
 - Export: support `.excalidraw` JSON for broad compatibility.
 - Import: accept `.excalidraw` JSON where practical and convert to Markpad elements.
+- Diagnostics: Canvas Storage Profile must expose document bytes, session bytes, undo snapshot bytes, format version, and export targets.
 
 Minimal shape:
 
@@ -68,6 +69,8 @@ Minimal shape:
 ```
 
 The webview should not keep heavyweight raster previews in memory unless the user is exporting or actively viewing them.
+
+Current v1 implementation note: Markpad's native export stores `elements`, `appState`, `files`, `meta`, and schema metadata in plain JSON, while local camera/tool/grid state is stored separately as session state. This keeps the exported drawing portable and the active viewport device-local.
 
 ## Trash
 
