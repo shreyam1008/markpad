@@ -79,6 +79,8 @@ let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
 let canvasSaveTimer = null;
+let canvasBoundsCache = new WeakMap();
+let canvasRenderFrame = 0;
 let loadedSearchCacheBytes = 0;
 const loadedSearchCache = new Map();
 
@@ -10323,7 +10325,12 @@ function canvasPathBounds(points = []) {
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
-function canvasElementBounds(el) {
+function resetCanvasBoundsCache() {
+  canvasBoundsCache = new WeakMap();
+}
+
+function calculateCanvasElementBounds(el) {
+  if (!el || typeof el !== 'object') return { x: 0, y: 0, w: 0, h: 0 };
   if (el.type === 'path' && el.points?.length) return canvasPathBounds(el.points);
   if (el.type === 'text') {
     const lines = String(el.text || '').split('\n');
@@ -10336,6 +10343,15 @@ function canvasElementBounds(el) {
     w: Math.abs(el.w || 0),
     h: Math.abs(el.h || 0),
   };
+}
+
+function canvasElementBounds(el) {
+  if (!el || typeof el !== 'object') return { x: 0, y: 0, w: 0, h: 0 };
+  const cached = canvasBoundsCache.get(el);
+  if (cached) return cached;
+  const bounds = calculateCanvasElementBounds(el);
+  canvasBoundsCache.set(el, bounds);
+  return bounds;
 }
 
 function canvasViewportBounds() {
@@ -10568,6 +10584,7 @@ function loadCanvasState() {
   try { canvasSession = JSON.parse(localStorage.getItem(CANVAS_SESSION_KEY) || ''); } catch { canvasSession = null; }
   if (!canvasDoc || !Array.isArray(canvasDoc.elements)) canvasDoc = newCanvasDoc();
   if (!canvasSession) canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
+  resetCanvasBoundsCache();
   canvasSelectedIndex = -1;
   canvasMoveStart = null;
   canvasHistory = [];
@@ -10577,6 +10594,7 @@ function loadCanvasState() {
 
 function saveCanvasState() {
   if (!canvasDoc || !canvasSession) return;
+  resetCanvasBoundsCache();
   localStorage.setItem(CANVAS_DOC_KEY, JSON.stringify(canvasDoc));
   localStorage.setItem(CANVAS_SESSION_KEY, JSON.stringify(canvasSession));
 }
@@ -10653,6 +10671,7 @@ function restoreCanvasHistory(index) {
     canvasDoc = normalizeCanvasDoc(JSON.parse(canvasHistory[index]));
     canvasHistoryIndex = index;
     if (canvasSelectedIndex >= canvasDoc.elements.length) canvasSelectedIndex = -1;
+    resetCanvasBoundsCache();
     saveCanvasState();
     renderCanvas();
     updateCanvasHistoryButtons();
@@ -11267,7 +11286,23 @@ function panCanvasView(dx, dy) {
   statusText.textContent = 'Canvas view moved';
 }
 
-function renderCanvas() {
+function renderCanvas(options = {}) {
+  if (options.immediate) {
+    if (canvasRenderFrame) {
+      cancelAnimationFrame(canvasRenderFrame);
+      canvasRenderFrame = 0;
+    }
+    renderCanvasNow();
+    return;
+  }
+  if (canvasRenderFrame) return;
+  canvasRenderFrame = requestAnimationFrame(() => {
+    canvasRenderFrame = 0;
+    renderCanvasNow();
+  });
+}
+
+function renderCanvasNow() {
   updateCanvasStatus();
   if (!canvasStage || !canvasDoc || !canvasActive) return;
   const ctx = canvasStage.getContext('2d', { alpha: false });
@@ -12015,6 +12050,7 @@ canvasStage?.addEventListener('pointermove', (e) => {
     canvasDrawing.h = drawPoint.y - canvasDrawing.y;
   }
   canvasDraftElement = canvasDrawing;
+  resetCanvasBoundsCache();
   renderCanvas();
 });
 
@@ -12239,7 +12275,7 @@ async function exportCanvasPngViewport() {
   if (!canvasActive) openCanvas();
   await new Promise(resolve => requestAnimationFrame(resolve));
   resizeCanvasStage();
-  renderCanvas();
+  renderCanvas({ immediate: true });
   if (!canvasStage?.toBlob || !canvasStage.width || !canvasStage.height) {
     statusText.textContent = 'Canvas PNG export unavailable';
     return;
