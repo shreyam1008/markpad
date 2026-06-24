@@ -237,7 +237,12 @@ function applyTheme(id, silent) {
   document.documentElement.dataset.theme = id;
   localStorage.setItem('markpad-theme', id);
   const theme = THEMES.find(t => t.id === id);
-  if (themeBtn) themeBtn.textContent = theme.label;
+  if (themeBtn) {
+    themeBtn.textContent = theme.label;
+    themeBtn.dataset.themeMode = theme.mode;
+    themeBtn.title = `${theme.label} (${theme.mode}) - ${theme.hint}`;
+    themeBtn.setAttribute('aria-label', `Theme: ${theme.label}, ${theme.mode}. ${theme.hint}`);
+  }
   if (!silent && statusText) statusText.textContent = `Theme: ${theme.label}`;
 }
 
