@@ -18,9 +18,9 @@ Markpad is a **tiny native Markdown notepad/viewer** built with Go + Wails v2 (O
 | Rule | Why |
 |------|-----|
 | **No Electron, Tauri, or CEF** | Native webview only. Binary must stay under 10 MB. |
-| **No React, Vue, Svelte, or any JS framework** | Frontend is vanilla JS. Bundle must stay under 80 KB raw. |
+| **No React, Vue, Svelte, or any JS framework** | Frontend is vanilla JS. `make budget` enforces an 800 KiB warning and 900 KiB hard limit for `frontend/src/main.js`. |
 | **No Redux, Zustand, or state management libraries** | State is managed by Go backend + simple JS variables. |
-| **No new synchronous CDN scripts** | New libraries MUST use `defer` or on-demand loading. |
+| **No runtime CDN scripts or styles** | Production must be fully local. New libraries must be vendored locally, measured, and deferred or loaded on demand when not needed for first paint. |
 | **No heavy Go dependencies** | Only `wails/v2` as direct dependency. Prefer stdlib. |
 | **No cloud, no telemetry, no external API calls** | All data is local. Privacy is non-negotiable. |
 | **No inline `onclick` or `onXxx` handlers in HTML** | Use `addEventListener` or event delegation. |
@@ -36,10 +36,10 @@ Markpad is a **tiny native Markdown notepad/viewer** built with Go + Wails v2 (O
 | Layer | Technology | Size impact |
 |-------|-----------|-------------|
 | Backend | Go 1.24 + Wails v2 | ~7 MB binary |
-| Frontend | Vanilla HTML/CSS/JS | ~85 KB embedded |
-| Styling | Tailwind CSS (CDN) | ~110 KB gzip runtime |
-| Markdown | marked.js + highlight.js + DOMPurify | ~93 KB gzip runtime |
-| PDF | pdf.js (CDN, deferred) | ~490 KB gzip on-demand |
+| Frontend | Vanilla HTML/CSS/JS | ~0.9 MB embedded frontend source |
+| Styling | Precompiled local Tailwind CSS + custom CSS variables | 0 KB runtime CDN |
+| Markdown | Local marked.js + DOMPurify, bounded code view without highlighter runtime | 0 KB runtime CDN |
+| PDF | Local read-only card with Open Externally | 0 KB runtime CDN, no bundled PDF engine |
 | Icons | Inline SVG in toolbar buttons | 0 KB extra |
 | Session | Go JSON persistence in app config dir | 0 KB extra |
 
@@ -58,10 +58,11 @@ markpad/
       session.go           # Document, Bookmark, RecentFile, Session, Store, draft I/O, atomic writes
       history.go           # Snapshot storage, listing, restore, pruning (max 50 per note)
   frontend/
-    index.html             # App shell: Tailwind config, CDN scripts, HTML structure
+    index.html             # App shell: local scripts/styles, HTML structure
     src/
-      main.js              # ALL frontend logic (~1300 lines): editor, preview, split, toolbar, sidebar, history, find, shortcuts, modals, PDF, image, scroll position
-      styles.css            # Minimal custom CSS (~116 lines): toolbar, views, context menu, diff, markdown overrides
+      main.js              # ALL frontend logic: editor, preview, split, toolbar, sidebar, history, find, shortcuts, modals, PDF cards, image, tasks, canvas, scroll position
+      styles.css            # Custom CSS: layout, toolbar, views, menus, markdown, tasks, canvas, themes
+      tailwind.css          # Precompiled local utility CSS; regenerate with `make css`
   BUNDLE_BUDGET.md         # Size/memory budget per feature (update when adding features)
   agents.md                # THIS FILE — agent contract
   TODO.md                  # Forward-looking roadmap

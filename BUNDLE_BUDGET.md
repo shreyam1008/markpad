@@ -70,7 +70,7 @@ between the main, network, and web processes.
 ## Budget rules
 
 - **Binary must stay under 10 MB.** Do not add heavy Go dependencies.
-- **Frontend JS growth must be intentional and measured.** The current monolith is already ~743 KB raw;
+- **Frontend JS growth must be intentional and measured.** The current monolith is already close to the 800 KiB warning threshold;
   prefer pruning, splitting, or lazy paths before adding large new features.
 - **Automated guard:** run `make budget` from the repo root. It checks `dist/markpad` against a
   10 MiB hard limit and `frontend/src/main.js` against an 800 KiB warning threshold and 900 KiB
@@ -88,6 +88,6 @@ between the main, network, and web processes.
 
 1. Will it add a Go dependency? Check `go.sum` impact.
 2. Will it add a third-party frontend library? Prefer avoiding it; if needed, vendor locally, avoid first-paint blocking, and document size/load behavior here.
-3. Will it increase `main.js` significantly? Keep under 80 KB.
+3. Will it increase `main.js` significantly? Keep below the 800 KiB warning threshold and 900 KiB hard limit, or prune/split first.
 4. Will it hold data in memory? Document expected RSS impact.
 5. Update this file with the new row in the appropriate table.

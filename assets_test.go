@@ -64,6 +64,25 @@ var hostedTaskVendorMarkers = []string{
 	"trello.com/1/",
 }
 
+var referenceAppRuntimeMarkers = []string{
+	"@excalidraw",
+	"@tldraw",
+	"browserwindow",
+	"codemirror",
+	"createRoot(",
+	"electron-builder",
+	"electron-forge",
+	"from \"react\"",
+	"from \"electron\"",
+	"from 'react'",
+	"from 'electron'",
+	"react-dom",
+	"require(\"electron\")",
+	"require('electron')",
+	"temp/zennotes",
+	"zennotes",
+}
+
 var selfContainedSVGForbiddenMarkers = []string{
 	"<script",
 	"<foreignobject",
@@ -116,6 +135,104 @@ func TestDocsPageAvoidsCDNFirstPaintDependencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertTextOmits(t, "docs/index.html", string(data), remoteCDNAndFontHosts)
+}
+
+func TestGuardrailDocsAgreeOnRuntimePolicy(t *testing.T) {
+	agents, err := os.ReadFile("agents.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	readme, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	budget, err := os.ReadFile("BUNDLE_BUDGET.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertTextIncludesAll(t, "agents.md", string(agents), []string{
+		"No runtime CDN scripts or styles",
+		"800 KiB warning and 900 KiB hard limit",
+		"Precompiled local Tailwind CSS",
+		"Local read-only card with Open Externally",
+	})
+	assertTextIncludesAll(t, "README.md", string(readme), []string{
+		"do not require runtime CDN fetches",
+		"Local read-only PDF cards with Open Externally.",
+		"No runtime pdf.js/CDN renderer or bundled PDF engine",
+	})
+	assertTextIncludesAll(t, "BUNDLE_BUDGET.md", string(budget), []string{
+		"800 KiB warning threshold and 900 KiB",
+		"No runtime CDN scripts or styles.",
+		"PDF: keep read-only cards with Open Externally",
+	})
+	assertTextOmits(t, "agents.md", strings.ToLower(string(agents)), []string{
+		"tailwind css (cdn)",
+		"pdf.js (cdn",
+		"bundle must stay under 80 kb raw",
+	})
+}
+
+func TestReferenceAppStaysQuarantinedFromRuntime(t *testing.T) {
+	walkRuntimeTextFiles(t, func(path, text string) {
+		assertTextOmits(t, path, strings.ToLower(text), referenceAppRuntimeMarkers)
+	})
+}
+
+func walkRuntimeTextFiles(t *testing.T, visit func(path, text string)) {
+	t.Helper()
+	for _, root := range []string{"frontend", "internal"} {
+		if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				switch entry.Name() {
+				case "dist", "node_modules", "temp":
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if !isRuntimeTextFile(path) {
+				return nil
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			visit(path, string(data))
+			return nil
+		}); err != nil {
+			t.Fatalf("walk %s: %v", root, err)
+		}
+	}
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !isRuntimeTextFile(entry.Name()) {
+			continue
+		}
+		data, err := os.ReadFile(entry.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+		visit(entry.Name(), string(data))
+	}
+}
+
+func isRuntimeTextFile(path string) bool {
+	if strings.HasSuffix(path, "_test.go") {
+		return false
+	}
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".css", ".go", ".html", ".js", ".json":
+		return true
+	default:
+		return false
+	}
 }
 
 func TestTaskSystemKeepsPortableMarkdownContract(t *testing.T) {
