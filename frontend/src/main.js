@@ -3201,7 +3201,9 @@ async function runAllSearch(query, token) {
 
 function updateSearchScopeButtons() {
   document.querySelectorAll('[data-search-scope]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.searchScope === searchScope);
+    const active = btn.dataset.searchScope === searchScope;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
   if (searchInput) {
     searchInput.placeholder = searchScope === 'local'
