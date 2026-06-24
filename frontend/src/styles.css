@@ -2533,6 +2533,52 @@ body.markpad-compact #modal-body {
 .task-row.priority-high { box-shadow: inset 3px 0 0 #c54b33; }
 .task-row.priority-medium { box-shadow: inset 3px 0 0 #c57933; }
 .task-row.priority-low { box-shadow: inset 3px 0 0 #6f8f61; }
+.task-board-row {
+  display: grid;
+  gap: 6px;
+}
+.task-board-row .task-row {
+  margin: 0;
+}
+.task-board-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 2px 2px 34px;
+}
+.task-board-actions span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.task-board-actions button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor) 78%, var(--surface));
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 5px 7px;
+}
+.task-board-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
+.task-board-actions button.active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--editor));
+  color: var(--accent);
+}
+.task-board-actions button:disabled {
+  cursor: default;
+  opacity: .48;
+}
 .task-check {
   width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 6px;
   display: inline-flex; align-items: center; justify-content: center; background: var(--surface);

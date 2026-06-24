@@ -8904,6 +8904,32 @@ function renderTaskRow(task, compact) {
     </div>`;
 }
 
+const TASK_BOARD_ACTIONS = [
+  ['today', 'Today'],
+  ['upcoming', 'Upcoming'],
+  ['waiting', 'Waiting'],
+  ['done', 'Done'],
+];
+
+function renderTaskBoardActions(task) {
+  const current = taskStatus(task);
+  return `
+    <div class="task-board-actions" aria-label="Move task column">
+      <span>Move</span>
+      ${TASK_BOARD_ACTIONS.map(([status, label]) => {
+        const isCurrent = status === current;
+        const disabled = task.local || isCurrent;
+        const title = task.local ? 'Open the local task source to move this task' : isCurrent ? 'Current column' : `Move to ${label}`;
+        const attrs = disabled ? 'disabled' : `data-task-move="${escapeAttr(task.id)}" data-task-move-status="${status}"`;
+        return `<button type="button" class="${isCurrent ? 'active' : ''}" ${attrs} title="${escapeAttr(title)}">${escapeHtml(label)}</button>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderTaskBoardRow(task) {
+  return `<div class="task-board-row">${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
+}
+
 function renderTaskList(tasks, page = taskRenderPage(tasks)) {
   if (!page.total) return taskEmptyStateHtml('No Markdown tasks matched this task view.');
   return `<div class="task-list">${page.items.map(task => renderTaskRow(task)).join('')}</div>${renderTaskPageFooter(page)}`;
@@ -9230,7 +9256,7 @@ function renderTaskBoardGroups(tasks) {
     return `
       <div class="task-board-group ${id}">
         <div class="task-board-group-title">${label} <span>${groupTasks.length}</span></div>
-        ${groupTasks.map(task => renderTaskRow(task, true)).join('')}
+        ${groupTasks.map(task => renderTaskBoardRow(task)).join('')}
       </div>
     `;
   }).join('');
@@ -10476,6 +10502,75 @@ function toggleTaskAtIndex(markdown, taskIndex, checked) {
     current++;
   }
   return markdown;
+}
+
+function taskLineWithStatus(line, status) {
+  const match = line.match(TASK_LINE_RE);
+  if (!match) return line;
+  const checked = status === 'done';
+  let body = match[3]
+    .replace(/^\]\s*/, '')
+    .replace(/\bdue:\d{4}-\d{2}-\d{2}\b/g, ' ')
+    .replace(/(^|\s)@waiting\b/ig, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (status === 'today') body = [body, `due:${todayKey()}`].filter(Boolean).join(' ');
+  if (status === 'upcoming') body = [body, `due:${tomorrowKey()}`].filter(Boolean).join(' ');
+  if (status === 'waiting') body = [body, '@waiting'].filter(Boolean).join(' ');
+  return `${match[1]}${checked ? 'x' : ' '}]${body ? ` ${body}` : ''}`;
+}
+
+function setTaskStatusAtIndex(markdown, taskIndex, status) {
+  const lines = markdown.split('\n');
+  let current = 0;
+  let inFence = false;
+  let fenceMarker = '';
+  for (let i = 0; i < lines.length; i++) {
+    const fence = lines[i].match(FENCE_LINE_RE);
+    if (fence) {
+      const marker = fence[2];
+      if (!inFence) { inFence = true; fenceMarker = marker; }
+      else if (marker === fenceMarker) { inFence = false; fenceMarker = ''; }
+      continue;
+    }
+    if (inFence) continue;
+    if (!lines[i].match(TASK_LINE_RE)) continue;
+    if (current === taskIndex) {
+      lines[i] = taskLineWithStatus(lines[i], status);
+      return lines.join('\n');
+    }
+    current++;
+  }
+  return markdown;
+}
+
+async function moveLoadedTask(taskId, status) {
+  const task = latestTasks.find(item => item.id === taskId);
+  if (!task || !TASK_BOARD_ACTIONS.some(([id]) => id === status)) return;
+  if (task.local) {
+    statusText.textContent = 'Open the local task source to move this task';
+    return;
+  }
+  const content = task.noteId === activeId ? currentContent : await window.go.main.App.GetNoteContent(task.noteId);
+  const next = setTaskStatusAtIndex(content, task.index, status);
+  if (next === content) {
+    statusText.textContent = 'Task column was unchanged';
+    return;
+  }
+  if (task.noteId === activeId) {
+    currentContent = next;
+    editor.value = next;
+    await window.go.main.App.UpdateContent(activeId, currentContent, true);
+    if (viewMode !== 'markdown') renderViewer(currentContent, cachedNotes.find(n => n.id === activeId));
+    updateStats();
+    updateOutline();
+  } else {
+    await window.go.main.App.UpdateContent(task.noteId, next, true);
+  }
+  renderSession(await window.go.main.App.GetSession());
+  await showTasksView('kanban', { preserveTaskLimit: true });
+  const label = TASK_BOARD_ACTIONS.find(([id]) => id === status)?.[1] || status;
+  statusText.textContent = `Task moved to ${label}`;
 }
 
 async function toggleLoadedTask(taskId) {
@@ -15698,6 +15793,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   }
   const taskToggle = e.target.closest('[data-task-toggle]');
   if (taskToggle) await toggleLoadedTask(taskToggle.dataset.taskToggle);
+  const taskMove = e.target.closest('[data-task-move]');
+  if (taskMove && !taskMove.disabled) await moveLoadedTask(taskMove.dataset.taskMove, taskMove.dataset.taskMoveStatus);
   const taskOpen = e.target.closest('[data-task-open]');
   if (taskOpen) await openLoadedTask(taskOpen.dataset.taskOpen);
   const singleTaskCopy = e.target.closest('[data-task-copy]');

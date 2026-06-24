@@ -157,6 +157,38 @@ func TestTaskRenderingBoundsAreGuarded(t *testing.T) {
 	})
 }
 
+func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"const TASK_BOARD_ACTIONS = [",
+		"function renderTaskBoardActions(task)",
+		"function renderTaskBoardRow(task)",
+		"data-task-move=",
+		"data-task-move-status=",
+		"function setTaskStatusAtIndex(markdown, taskIndex, status)",
+		"function taskLineWithStatus(line, status)",
+		"`due:${todayKey()}`",
+		"`due:${tomorrowKey()}`",
+		"'@waiting'",
+		"await moveLoadedTask(taskMove.dataset.taskMove, taskMove.dataset.taskMoveStatus)",
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".task-board-row",
+		".task-board-actions",
+		".task-board-actions button.active",
+		".task-board-actions button:disabled",
+	})
+}
+
 func TestFrontendAvoidsHeavyBundledAssets(t *testing.T) {
 	var total int64
 	walkFrontendAssetFiles(t, func(path string, info fs.FileInfo) {
