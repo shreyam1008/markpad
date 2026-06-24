@@ -4111,6 +4111,10 @@ function commandItems() {
     { id: 'tasks-starter-project', icon: 'TSP', title: 'Task starter: project kickoff', hint: 'Append a portable Markdown project kickoff checklist', run: () => addTaskStarterTemplate('project', 'Project kickoff') },
     { id: 'tasks-starter-weekly', icon: 'TSW', title: 'Task starter: weekly plan', hint: 'Append a portable Markdown weekly planning checklist', run: () => addTaskStarterTemplate('weekly', 'Weekly plan') },
     { id: 'tasks-starter-review', icon: 'TSR', title: 'Task starter: review queue', hint: 'Append a portable Markdown review checklist', run: () => addTaskStarterTemplate('review', 'Review queue') },
+    { id: 'tasks-copy-source-md', icon: 'CSM', title: 'Copy task source Markdown', hint: 'Copy visible tasks as a clean editable tasks.md source file', run: copyVisibleTasksSourceMarkdown },
+    { id: 'tasks-export-source-md', icon: 'ESM', title: 'Export task source Markdown', hint: 'Download visible tasks as a clean editable tasks.md source file', run: exportTasksSourceMarkdown },
+    { id: 'tasks-copy-starter-md', icon: 'CSF', title: 'Copy tasks.md starter', hint: 'Copy a portable Markdown task-file starter', run: copyTaskFileStarterMarkdown },
+    { id: 'tasks-export-starter-md', icon: 'ESF', title: 'Export tasks.md starter', hint: 'Download a portable Markdown task-file starter', run: exportTaskFileStarterMarkdown },
     { id: 'tasks-to-canvas', icon: 'T2C', title: 'Send visible tasks to canvas', hint: 'Append the current filtered task view as a lightweight canvas board', run: insertVisibleTasksCanvasBoard },
     { id: 'task-agenda-to-canvas', icon: 'A2C', title: 'Send task agenda to canvas', hint: 'Append overdue, today, waiting, and high-priority tasks as a lightweight canvas board', run: insertTaskAgendaCanvasBoard },
     { id: 'tasks-to-canvas-guide', icon: 'TCG', title: 'Task canvas guide', hint: 'Explain task-to-canvas filters, 24-task cap, local JSON cards, and Markdown source of truth', run: showTaskCanvasGuide },
@@ -6005,6 +6009,8 @@ function showTaskSyntaxHelp() {
       <button data-task-file-setup>Task file setup</button>
       <button data-task-file-inbox>Create inbox starter</button>
       <button data-task-file-weekly>Weekly starter</button>
+      <button data-task-file-copy-starter>Copy tasks.md starter</button>
+      <button data-task-file-export-starter>Export tasks.md starter</button>
       <button data-task-agenda>Agenda</button>
       <button data-copy-task-agenda-json>Copy Agenda JSON</button>
       <button data-export-task-agenda-csv>Export Agenda CSV</button>
@@ -6036,6 +6042,10 @@ function showTaskFileSetup() {
       <button data-task-file-review>Review starter</button>
       <button data-task-file-quick>Quick task</button>
       <button data-task-file-open-view>Open task views</button>
+      <button data-task-file-copy-starter>Copy tasks.md starter</button>
+      <button data-task-file-export-starter>Export tasks.md starter</button>
+      <button data-task-copy-source-md>Copy source MD</button>
+      <button data-task-export-source-md>Export source MD</button>
     </div>
     <p class="diag-note">The contained task-file workflow is still plain Markdown. If the local-folder backend is available, starters go to local Tasks.md; otherwise Markpad creates an unsaved Tasks draft.</p>
   `, true);
@@ -6671,6 +6681,8 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
         <button class="task-tab" data-task-export-md>Export MD</button>
+        <button class="task-tab" data-task-copy-source-md>Copy Source MD</button>
+        <button class="task-tab" data-task-export-source-md>Export Source MD</button>
         <button class="task-tab" data-task-copy-json>Copy JSON</button>
         <button class="task-tab" data-task-export-json>Export JSON</button>
         <button class="task-tab" data-task-copy-csv>Copy CSV</button>
@@ -6774,6 +6786,41 @@ function taskStarterLines(kind) {
     `- [ ] Draft first milestone !high due:${dateKeyOffset(3)} #project`,
     `- [ ] List risks @waiting #project`,
   ];
+}
+
+function taskFileStarterMarkdown() {
+  return [
+    '# Tasks',
+    '',
+    '## Inbox',
+    `- [ ] Capture a task !medium due:${todayKey()} #inbox`,
+    '- [ ] Add project context #inbox',
+    '',
+    '## Waiting',
+    '- [ ] Follow up on a delegated item @waiting #waiting',
+    '',
+    '## This week',
+    `- [ ] Pick top three outcomes !high due:${todayKey()} #weekly`,
+    `- [ ] Schedule one deep-work block !medium due:${dateKeyOffset(1)} #weekly`,
+    '',
+    '## Done',
+    '- [x] Create portable Markdown task file #example',
+    '',
+  ].join('\n');
+}
+
+async function copyTaskFileStarterMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(taskFileStarterMarkdown());
+  statusText.textContent = 'tasks.md starter copied';
+}
+
+function exportTaskFileStarterMarkdown() {
+  downloadText('tasks.md', 'text/markdown', taskFileStarterMarkdown());
+  statusText.textContent = 'tasks.md starter exported';
 }
 
 async function addTaskStarterTemplate(kind, label) {
@@ -6963,6 +7010,23 @@ function tasksToMarkdown(tasks) {
   return lines.join('\n') + '\n';
 }
 
+function tasksToSourceMarkdown(tasks) {
+  const open = tasks.filter(task => !task.checked);
+  const done = tasks.filter(task => task.checked);
+  const groups = [
+    ['Open', open],
+    ['Done', done],
+  ].filter(([, items]) => items.length);
+  const lines = ['# Tasks', ''];
+  if (!groups.length) return `${lines.join('\n')}\n`;
+  for (const [label, items] of groups) {
+    lines.push(`## ${label}`);
+    for (const task of items) lines.push(taskMarkdownExportLine(task));
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
 function tasksToJson(tasks) {
   return JSON.stringify({
     type: 'markpad-visible-tasks',
@@ -7020,6 +7084,16 @@ async function exportTasksMarkdown() {
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} exported as Markdown`;
 }
 
+async function exportTasksSourceMarkdown() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to export';
+    return;
+  }
+  downloadText('tasks.md', 'text/markdown', tasksToSourceMarkdown(tasks));
+  statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} exported as editable tasks.md`;
+}
+
 async function exportTasksJson() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
   if (!tasks.length) {
@@ -7052,6 +7126,20 @@ async function copyVisibleTasksMarkdown() {
   }
   await navigator.clipboard.writeText(tasksToMarkdown(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as Markdown`;
+}
+
+async function copyVisibleTasksSourceMarkdown() {
+  const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
+  if (!tasks.length) {
+    statusText.textContent = 'No visible tasks to copy';
+    return;
+  }
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(tasksToSourceMarkdown(tasks));
+  statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as editable tasks.md`;
 }
 
 async function copyVisibleTasksJson() {
@@ -11477,6 +11565,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskFileQuickBtn) await addQuickTask();
   const taskFileOpenViewBtn = e.target.closest('[data-task-file-open-view]');
   if (taskFileOpenViewBtn) await showTasksView(taskViewMode);
+  const taskFileCopyStarterBtn = e.target.closest('[data-task-file-copy-starter]');
+  if (taskFileCopyStarterBtn) await copyTaskFileStarterMarkdown();
+  const taskFileExportStarterBtn = e.target.closest('[data-task-file-export-starter]');
+  if (taskFileExportStarterBtn) exportTaskFileStarterMarkdown();
   const viewModeButton = e.target.closest('[data-view-mode]');
   if (viewModeButton) setView(viewModeButton.dataset.viewMode);
   const splitPresetButton = e.target.closest('[data-split-preset]');
@@ -11562,6 +11654,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskFormat) showTaskSyntaxHelp();
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
+  const taskCopySourceMd = e.target.closest('[data-task-copy-source-md]');
+  if (taskCopySourceMd) await copyVisibleTasksSourceMarkdown();
+  const taskExportSourceMd = e.target.closest('[data-task-export-source-md]');
+  if (taskExportSourceMd) await exportTasksSourceMarkdown();
   const taskCopyJson = e.target.closest('[data-task-copy-json]');
   if (taskCopyJson && !taskCopyJson.dataset.taskCopyJson) await copyVisibleTasksJson();
   const taskExportJson = e.target.closest('[data-task-export-json]');
