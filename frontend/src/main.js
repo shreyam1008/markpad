@@ -15020,106 +15020,69 @@ async function doNew() {
   } catch (err) { statusText.textContent = 'Error: ' + err; }
 }
 
-let createMenuAnchor = null;
-let workflowMenuAnchor = null;
-let workflowMenuId = '';
+const MENU_TRIGGERS = {
+  'create-menu': ['btn-new', 'btn-new-mini'],
+  'task-workflow-menu': ['side-tasks', 'side-tasks-mini'],
+  'canvas-workflow-menu': ['side-canvas', 'side-canvas-mini'],
+};
+let activeMenuId = '';
+let activeMenuAnchor = null;
 
-function setCreateMenuExpanded(expanded) {
-  ['btn-new', 'btn-new-mini'].forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+function setMenuExpanded(menuId, expanded) {
+  (MENU_TRIGGERS[menuId] || []).forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
 }
 
-function workflowMenuButtonIds(menuId) {
-  return menuId === 'task-workflow-menu'
-    ? ['side-tasks', 'side-tasks-mini']
-    : ['side-canvas', 'side-canvas-mini'];
+function closeMenu(menuId) {
+  $(menuId)?.classList.add('hidden');
+  setMenuExpanded(menuId, false);
+  if (activeMenuId === menuId) {
+    activeMenuId = '';
+    activeMenuAnchor = null;
+  }
 }
 
-function setWorkflowMenuExpanded(menuId, expanded) {
-  workflowMenuButtonIds(menuId).forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+function closeAllMenus() {
+  Object.keys(MENU_TRIGGERS).forEach(closeMenu);
 }
 
-function closeWorkflowMenu() {
-  ['task-workflow-menu', 'canvas-workflow-menu'].forEach(id => {
-    $(id)?.classList.add('hidden');
-    setWorkflowMenuExpanded(id, false);
-  });
-  workflowMenuAnchor = null;
-  workflowMenuId = '';
-}
-
-function closeCreateMenu() {
-  const menu = $('create-menu');
-  if (!menu) return;
-  menu.classList.add('hidden');
-  setCreateMenuExpanded(false);
-  createMenuAnchor = null;
-}
-
-function positionCreateMenu(anchor) {
-  const menu = $('create-menu');
+function positionMenu(menu, anchor) {
   if (!menu || !anchor) return;
   const rect = anchor.getBoundingClientRect();
-  const menuWidth = Math.min(286, window.innerWidth - 18);
-  const left = Math.max(9, Math.min(window.innerWidth - menuWidth - 9, rect.left));
-  const top = Math.max(9, Math.min(window.innerHeight - 260, rect.bottom + 8));
-  menu.style.width = `${menuWidth}px`;
+  const width = Math.min(menu.id === 'create-menu' ? 286 : 304, window.innerWidth - 18);
+  const maxHeight = Math.max(160, window.innerHeight - 18);
+  menu.style.width = `${width}px`;
+  menu.style.maxHeight = `${maxHeight}px`;
+  menu.style.overflowY = 'auto';
+  const height = Math.min(menu.offsetHeight || 260, maxHeight);
+  const left = Math.max(9, Math.min(window.innerWidth - width - 9, rect.left));
+  let top = rect.bottom + 8;
+  if (top + height > window.innerHeight - 9) top = rect.top - height - 8;
   menu.style.left = `${left}px`;
-  menu.style.top = `${top}px`;
+  menu.style.top = `${Math.max(9, top)}px`;
 }
 
-function openCreateMenu(anchor) {
-  const menu = $('create-menu');
+function openMenu(menuId, anchor) {
+  const menu = $(menuId);
   if (!menu || !anchor) return;
-  closeWorkflowMenu();
-  createMenuAnchor = anchor;
-  positionCreateMenu(anchor);
+  closeAllMenus();
+  activeMenuId = menuId;
+  activeMenuAnchor = anchor;
+  menu.style.visibility = 'hidden';
   menu.classList.remove('hidden');
-  setCreateMenuExpanded(true);
+  positionMenu(menu, anchor);
+  menu.style.visibility = '';
+  setMenuExpanded(menuId, true);
   requestAnimationFrame(() => menu.querySelector('button:not(:disabled)')?.focus());
 }
 
-function toggleCreateMenu(anchor) {
-  const menu = $('create-menu');
-  if (!menu) return;
-  if (!menu.classList.contains('hidden') && createMenuAnchor === anchor) {
-    closeCreateMenu();
-    return;
-  }
-  openCreateMenu(anchor);
-}
-
-function positionWorkflowMenu(menu, anchor) {
-  if (!menu || !anchor) return;
-  const rect = anchor.getBoundingClientRect();
-  const menuWidth = Math.min(304, window.innerWidth - 18);
-  const left = Math.max(9, Math.min(window.innerWidth - menuWidth - 9, rect.left));
-  const top = Math.max(9, Math.min(window.innerHeight - 330, rect.bottom + 8));
-  menu.style.width = `${menuWidth}px`;
-  menu.style.left = `${left}px`;
-  menu.style.top = `${top}px`;
-}
-
-function openWorkflowMenu(menuId, anchor) {
-  const menu = $(menuId);
-  if (!menu || !anchor) return;
-  closeCreateMenu();
-  closeWorkflowMenu();
-  workflowMenuAnchor = anchor;
-  workflowMenuId = menuId;
-  positionWorkflowMenu(menu, anchor);
-  menu.classList.remove('hidden');
-  setWorkflowMenuExpanded(menuId, true);
-  requestAnimationFrame(() => menu.querySelector('button:not(:disabled)')?.focus());
-}
-
-function toggleWorkflowMenu(menuId, anchor) {
+function toggleMenu(menuId, anchor) {
   const menu = $(menuId);
   if (!menu) return;
-  if (!menu.classList.contains('hidden') && workflowMenuId === menuId && workflowMenuAnchor === anchor) {
-    closeWorkflowMenu();
+  if (!menu.classList.contains('hidden') && activeMenuId === menuId && activeMenuAnchor === anchor) {
+    closeMenu(menuId);
     return;
   }
-  openWorkflowMenu(menuId, anchor);
+  openMenu(menuId, anchor);
 }
 
 async function hasReadyLocalFolder() {
@@ -15150,7 +15113,7 @@ async function createCanvasFromMenu() {
 }
 
 async function runCreateMenuAction(kind) {
-  closeCreateMenu();
+  closeAllMenus();
   switch (kind) {
     case 'note':
       await createNoteFromMenu();
@@ -15171,7 +15134,7 @@ async function runCreateMenuAction(kind) {
 }
 
 async function runTaskWorkflowAction(kind) {
-  closeWorkflowMenu();
+  closeAllMenus();
   switch (kind) {
     case 'list':
     case 'calendar':
@@ -15191,7 +15154,7 @@ async function runTaskWorkflowAction(kind) {
 }
 
 async function runCanvasWorkflowAction(kind) {
-  closeWorkflowMenu();
+  closeAllMenus();
   switch (kind) {
     case 'draft':
       openCanvas();
@@ -15231,11 +15194,11 @@ function bindSidebarWorkflowButtons() {
   bind(['side-files', 'side-files-mini'], () => { showLocalFolder(); });
   bind(['side-tasks', 'side-tasks-mini'], event => {
     event.stopPropagation();
-    toggleWorkflowMenu('task-workflow-menu', event.currentTarget);
+    toggleMenu('task-workflow-menu', event.currentTarget);
   });
   bind(['side-canvas', 'side-canvas-mini'], event => {
     event.stopPropagation();
-    toggleWorkflowMenu('canvas-workflow-menu', event.currentTarget);
+    toggleMenu('canvas-workflow-menu', event.currentTarget);
   });
   bind(['side-search', 'side-search-mini'], openSearchPalette);
   bind(['side-command', 'side-command-mini'], openCommandPalette);
@@ -15246,11 +15209,11 @@ function bindSidebarWorkflowButtons() {
 // ── Buttons ──────────────────────────────────────────────
 $('btn-new').addEventListener('click', event => {
   event.stopPropagation();
-  toggleCreateMenu(event.currentTarget);
+  toggleMenu('create-menu', event.currentTarget);
 });
 $('btn-new-mini').addEventListener('click', event => {
   event.stopPropagation();
-  toggleCreateMenu(event.currentTarget);
+  toggleMenu('create-menu', event.currentTarget);
 });
 $('create-menu')?.addEventListener('click', event => {
   event.stopPropagation();
@@ -15277,20 +15240,13 @@ document.addEventListener('click', event => {
     || $('canvas-workflow-menu')?.contains(event.target)
     || event.target.closest?.('#btn-new, #btn-new-mini, #side-tasks, #side-tasks-mini, #side-canvas, #side-canvas-mini')
   ) return;
-  closeCreateMenu();
-  closeWorkflowMenu();
+  closeAllMenus();
 });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') {
-    closeCreateMenu();
-    closeWorkflowMenu();
-  }
+  if (event.key === 'Escape') closeAllMenus();
 });
 window.addEventListener('resize', () => {
-  if (createMenuAnchor && !$('create-menu')?.classList.contains('hidden')) positionCreateMenu(createMenuAnchor);
-  if (workflowMenuAnchor && workflowMenuId && !$(workflowMenuId)?.classList.contains('hidden')) {
-    positionWorkflowMenu($(workflowMenuId), workflowMenuAnchor);
-  }
+  if (activeMenuId && activeMenuAnchor && !$(activeMenuId)?.classList.contains('hidden')) positionMenu($(activeMenuId), activeMenuAnchor);
 });
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
