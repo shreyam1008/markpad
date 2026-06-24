@@ -1326,6 +1326,7 @@ function showLayoutProfile() {
     <div class="diag-grid">
       <div class="diag-card"><strong>${escapeHtml(snapshot.view.mode)}</strong><span>View mode</span><small>${snapshot.view.editorVisible ? 'editor' : 'no editor'} · ${snapshot.view.previewVisible ? 'preview' : 'no preview'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.view.splitLabel)}</strong><span>Split ratio</span><small>${snapshot.activeFile.markdownSplitAvailable ? 'Markdown split available' : 'Split unavailable for active type'}</small></div>
+      <div class="diag-card"><strong>keys</strong><span>Split keyboard</span><small>Arrows resize · Shift+arrows jump · Enter resets</small></div>
       <div class="diag-card"><strong>${snapshot.editor.zoomPercent}%</strong><span>Editor zoom</span><small>${snapshot.editor.fontSize}px · ${snapshot.editor.softWrap ? 'wrap' : 'no wrap'}</small></div>
       <div class="diag-card"><strong>${snapshot.editor.readingWidth ? 'on' : 'off'}</strong><span>Reading width</span><small>Constrained editor and preview lane</small></div>
       <div class="diag-card"><strong>${snapshot.chrome.focusMode ? 'on' : 'off'}</strong><span>Focus mode</span><small>${snapshot.chrome.compactMode ? 'compact on' : 'compact off'}</small></div>
