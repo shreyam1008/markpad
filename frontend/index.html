@@ -283,15 +283,15 @@
           <span>Portable local JSON. Camera, grid, and tool state stay on this device.</span>
         </div>
         <div class="canvas-actions">
-          <button data-canvas-tool="select" class="canvas-tool">Select</button>
-          <button data-canvas-tool="pan" class="canvas-tool active">Pan</button>
-          <button data-canvas-tool="pen" class="canvas-tool">Pen</button>
-          <button data-canvas-tool="rect" class="canvas-tool">Rect</button>
-          <button data-canvas-tool="ellipse" class="canvas-tool">Oval</button>
-          <button data-canvas-tool="line" class="canvas-tool">Line</button>
-          <button data-canvas-tool="arrow" class="canvas-tool">Arrow</button>
-          <button data-canvas-tool="text" class="canvas-tool">Text</button>
-          <button data-canvas-tool="erase" class="canvas-tool">Erase</button>
+          <button data-canvas-tool="select" class="canvas-tool" aria-pressed="false">Select</button>
+          <button data-canvas-tool="pan" class="canvas-tool active" aria-pressed="true">Pan</button>
+          <button data-canvas-tool="pen" class="canvas-tool" aria-pressed="false">Pen</button>
+          <button data-canvas-tool="rect" class="canvas-tool" aria-pressed="false">Rect</button>
+          <button data-canvas-tool="ellipse" class="canvas-tool" aria-pressed="false">Oval</button>
+          <button data-canvas-tool="line" class="canvas-tool" aria-pressed="false">Line</button>
+          <button data-canvas-tool="arrow" class="canvas-tool" aria-pressed="false">Arrow</button>
+          <button data-canvas-tool="text" class="canvas-tool" aria-pressed="false">Text</button>
+          <button data-canvas-tool="erase" class="canvas-tool" aria-pressed="false">Erase</button>
           <input id="canvas-color" type="color" value="#2f6f61" title="Stroke color" />
           <input id="canvas-width" type="range" min="1" max="14" value="3" title="Stroke width" />
           <button id="canvas-undo" class="canvas-tool" title="Canvas undo">Undo</button>
@@ -305,10 +305,10 @@
           <button id="canvas-zoom-out" class="canvas-tool" title="Zoom canvas out">-</button>
           <button id="canvas-zoom-reset" class="canvas-tool" title="Reset canvas zoom">100%</button>
           <button id="canvas-zoom-in" class="canvas-tool" title="Zoom canvas in">+</button>
-          <button id="canvas-grid" class="canvas-tool">Grid</button>
-          <button id="canvas-snap" class="canvas-tool">Snap</button>
+          <button id="canvas-grid" class="canvas-tool active" aria-pressed="true">Grid</button>
+          <button id="canvas-snap" class="canvas-tool" aria-pressed="false">Snap</button>
           <button id="canvas-snap-selected" class="canvas-tool" title="Snap selected element to grid">Snap selected</button>
-          <button id="canvas-minimap-toggle" class="canvas-tool">Mini</button>
+          <button id="canvas-minimap-toggle" class="canvas-tool active" aria-pressed="true">Mini</button>
           <button id="canvas-layer-back" class="canvas-tool">Back</button>
           <button id="canvas-layer-front" class="canvas-tool">Front</button>
           <button id="canvas-import" class="canvas-tool">Import</button>

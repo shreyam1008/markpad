@@ -10488,7 +10488,11 @@ function setCanvasTool(tool) {
   if (!allowed.has(tool)) tool = 'pan';
   canvasTool = tool;
   localStorage.setItem('markpad-canvas-tool', tool);
-  document.querySelectorAll('[data-canvas-tool]').forEach(btn => btn.classList.toggle('active', btn.dataset.canvasTool === tool));
+  document.querySelectorAll('[data-canvas-tool]').forEach(btn => {
+    const active = btn.dataset.canvasTool === tool;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
   if (canvasStage) canvasStage.style.cursor = tool === 'select' ? 'default' : tool === 'pan' ? 'grab' : 'crosshair';
   updateCanvasStatus();
 }
@@ -10555,9 +10559,15 @@ function centerSelectedCanvasElementInView() {
 }
 
 function updateCanvasOptionButtons() {
-  $('canvas-grid')?.classList.toggle('active', canvasGridVisible);
-  $('canvas-snap')?.classList.toggle('active', canvasSnapToGrid);
-  $('canvas-minimap-toggle')?.classList.toggle('active', canvasMinimapVisible);
+  const grid = $('canvas-grid');
+  const snap = $('canvas-snap');
+  const minimap = $('canvas-minimap-toggle');
+  grid?.classList.toggle('active', canvasGridVisible);
+  grid?.setAttribute('aria-pressed', canvasGridVisible ? 'true' : 'false');
+  snap?.classList.toggle('active', canvasSnapToGrid);
+  snap?.setAttribute('aria-pressed', canvasSnapToGrid ? 'true' : 'false');
+  minimap?.classList.toggle('active', canvasMinimapVisible);
+  minimap?.setAttribute('aria-pressed', canvasMinimapVisible ? 'true' : 'false');
 }
 
 function toggleCanvasGrid() {
