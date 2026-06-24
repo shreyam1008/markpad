@@ -17,7 +17,7 @@
       <!-- Sidebar expanded content -->
       <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
         <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="Create note, task, canvas, or file (Ctrl+N)" aria-label="Create note, task, canvas, or file" aria-haspopup="menu" aria-expanded="false">+ New ▾</button>
+          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="Create note (.md), canvas, tasks, or text file (Ctrl+N)" aria-label="Create note (.md), canvas, tasks, or text file" aria-haspopup="menu" aria-expanded="false">+ New ▾</button>
           <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
 
@@ -74,7 +74,7 @@
       <!-- Sidebar collapsed content -->
       <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
         <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="Create" aria-label="Create note, task, canvas, or file" aria-haspopup="menu" aria-expanded="false">+</button>
+        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="Create note (.md), canvas, tasks, or text file" aria-label="Create note (.md), canvas, tasks, or text file" aria-haspopup="menu" aria-expanded="false">+</button>
         <button id="side-files-mini" class="icon-btn sidebar-rail-btn" title="Local workspace" aria-label="Local workspace"><span>F</span></button>
         <button id="side-tasks-mini" class="icon-btn sidebar-rail-btn" title="Task workflows" aria-label="Task workflows" aria-haspopup="menu" aria-expanded="false"><span>T</span></button>
         <button id="side-canvas-mini" class="icon-btn sidebar-rail-btn" title="Canvas workflows" aria-label="Canvas workflows" aria-haspopup="menu" aria-expanded="false"><span>C</span></button>
@@ -82,12 +82,25 @@
         <button id="side-command-mini" class="icon-btn sidebar-rail-btn" title="Commands" aria-label="Commands"><span>⌘</span></button>
       </div>
       <div id="create-menu" class="create-menu hidden" role="menu" aria-label="Create local file">
-        <div class="create-menu-kicker">Files first</div>
-        <div class="create-menu-section-label">Create</div>
-        <button type="button" role="menuitem" data-create-kind="note" data-menu-chip="MD">
+        <div class="create-menu-kicker">Local-first</div>
+        <div class="create-menu-section-label">Primary files</div>
+        <button type="button" role="menuitem" data-create-kind="note" data-menu-chip=".MD">
           <strong>Note</strong>
-          <span>Create Markdown in the local folder, or a draft</span>
+          <span>Default Markdown note. Uses the local folder when ready, otherwise an unsaved draft</span>
         </button>
+        <button type="button" role="menuitem" data-create-kind="canvas" data-menu-chip="CANVAS">
+          <strong>Canvas</strong>
+          <span>Start a scratch board now, then save to <code>.markcanvas.json</code> when ready</span>
+        </button>
+        <button type="button" role="menuitem" data-create-kind="task" data-menu-chip="TASKS">
+          <strong>Tasks</strong>
+          <span>Open <code>Tasks.md</code> when it exists, otherwise start the task-file setup</span>
+        </button>
+        <button type="button" role="menuitem" data-create-kind="other" data-menu-chip="TXT">
+          <strong>Other text file</strong>
+          <span>Create <code>.txt</code>, JSON, CSV, code, or config text files in the local folder</span>
+        </button>
+        <div class="create-menu-section-label">Markdown templates</div>
         <button type="button" role="menuitem" data-create-kind="daily" data-menu-chip="TODAY">
           <strong>Daily note</strong>
           <span>Today in the local folder</span>
@@ -95,14 +108,6 @@
         <button type="button" role="menuitem" data-create-kind="weekly" data-menu-chip="WEEK">
           <strong>Weekly note</strong>
           <span>This week in the local folder</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="task" data-menu-chip="TASK">
-          <strong>Task file</strong>
-          <span>Open Tasks.md or setup list, calendar, kanban</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="canvas" data-menu-chip="DRAW">
-          <strong>Canvas</strong>
-          <span>Start scratch canvas; save as .markcanvas.json when ready</span>
         </button>
         <div class="create-menu-section-label">Workspace</div>
         <button type="button" role="menuitem" data-create-kind="open-folder" data-menu-chip="DIR">
@@ -112,11 +117,6 @@
         <button type="button" role="menuitem" data-create-kind="search-folder" data-menu-chip="FIND">
           <strong>Search folder</strong>
           <span>Find text in the configured local workspace</span>
-        </button>
-        <div class="create-menu-section-label">More</div>
-        <button type="button" role="menuitem" data-create-kind="other" data-menu-chip="FILE">
-          <strong>Other file</strong>
-          <span>Choose extension and lightweight text template</span>
         </button>
       </div>
       <div id="task-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Task workflows">

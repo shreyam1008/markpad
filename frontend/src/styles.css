@@ -590,6 +590,18 @@ body.writing-empty #viewer::first-line {
   font-size: 10px;
   font-weight: 850;
 }
+.other-file-summary {
+  margin: 2px 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.other-file-row {
+  grid-template-columns: minmax(160px, 1fr) minmax(96px, 118px) auto auto;
+}
+.other-file-row input[data-other-file-custom] {
+  text-transform: lowercase;
+}
 
 .sidebar-workflow {
   display: grid;

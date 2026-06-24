@@ -7883,12 +7883,13 @@ function promptOtherFileModal() {
         <span>${extension === 'custom' ? 'type ext' : `.${extension}`}</span>
       </button>
     `).join('');
-    showModal('New Other File', `
-      <p class="diag-note"><b>Text-safe local files.</b> Blocks executable extensions, adds tiny starters, and preserves collisions with numbered names.</p>
+    showModal('New Text File', `
+      <p class="diag-note"><b>For non-Markdown text files.</b> Notes already default to <code>.md</code> from New. Use this for <code>.txt</code>, JSON, CSV, code, config, or another lightweight text extension.</p>
       <div class="other-file-presets">${presetButtons}</div>
-      <div class="local-search-row" style="margin-top:10px;">
+      <p class="other-file-summary">Plain-text only. Executable and binary extensions stay blocked, starter content stays lightweight, and files are created in the local folder.</p>
+      <div class="local-search-row other-file-row" style="margin-top:10px;">
         <input data-other-file-title type="text" placeholder="File name" />
-        <input data-other-file-custom type="text" placeholder="ext" disabled />
+        <input data-other-file-custom type="text" placeholder="custom ext" disabled />
         <button data-other-file-create type="button">Create</button>
         <button data-other-file-cancel type="button">Cancel</button>
       </div>
@@ -15324,7 +15325,7 @@ function closeAllMenus() {
 function positionMenu(menu, anchor) {
   if (!menu || !anchor) return;
   const rect = anchor.getBoundingClientRect();
-  const width = Math.min(menu.id === 'create-menu' ? 286 : 304, window.innerWidth - 18);
+  const width = Math.min(menu.id === 'create-menu' ? 320 : 304, window.innerWidth - 18);
   const maxHeight = Math.max(160, window.innerHeight - 18);
   menu.style.width = `${width}px`;
   menu.style.maxHeight = `${maxHeight}px`;
@@ -15545,7 +15546,7 @@ async function runCreateMenuAction(kind) {
       if (await ensureReadyLocalFolder('Choose a local folder before creating weekly notes')) await createLocalFolderWeeklyNote();
       break;
     case 'task':
-      openTaskFileSetup();
+      await openTaskFileFromMenu();
       break;
     case 'canvas':
       startScratchCanvasFromMenu();
