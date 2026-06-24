@@ -9980,12 +9980,28 @@ function excalidrawPointToCanvas(point, x, y) {
   return { x: x + Number(px || 0), y: y + Number(py || 0) };
 }
 
-function canvasElementBounds(el) {
-  if (el.type === 'path' && el.points?.length) {
-    const xs = el.points.map(p => p.x);
-    const ys = el.points.map(p => p.y);
-    return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+function canvasPathBounds(points = []) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of points) {
+    const x = Number(point?.x || 0);
+    const y = Number(point?.y || 0);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
   }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return { x: 0, y: 0, w: 0, h: 0 };
+  }
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function canvasElementBounds(el) {
+  if (el.type === 'path' && el.points?.length) return canvasPathBounds(el.points);
   if (el.type === 'text') {
     const lines = String(el.text || '').split('\n');
     const size = el.size || 16;
@@ -10014,7 +10030,6 @@ function canvasViewportBounds() {
 
 function canvasElementInViewport(el, view, pad = 100) {
   if (!view) return true;
-  if (el.type === 'path') return true;
   const bounds = canvasElementBounds(el);
   return bounds.x + bounds.w >= view.x - pad
     && bounds.y + bounds.h >= view.y - pad
@@ -12602,7 +12617,8 @@ function canvasStorageProfileSnapshot() {
       totalElements,
       culledElements: Math.max(0, totalElements - visibleElements),
       viewportPadding: 100,
-      pathElementsAlwaysDrawn: true,
+      pathElementsAlwaysDrawn: false,
+      pathBounds: 'single-pass',
     },
     undo: {
       snapshots: canvasHistory.length,
@@ -12644,6 +12660,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Elements: ${snapshot.document.elements || 0}`,
     `- Element JSON: ${formatBytes(snapshot.document.elementBytes || 0)} (${formatBytes(snapshot.document.averageElementBytes || 0)} average)`,
     `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? snapshot.document.elements || 0}/${snapshot.virtualization?.totalElements ?? snapshot.document.elements || 0}`,
+    `- Path bounds: ${snapshot.virtualization?.pathBounds || 'single-pass'}; paths always drawn: ${snapshot.virtualization?.pathElementsAlwaysDrawn ? 'yes' : 'no'}`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
     `- Files/assets: ${formatBytes(snapshot.document.filesBytes || 0)}`,
@@ -12697,6 +12714,8 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['viewport_visible_elements', Number(snapshot.virtualization?.visibleElements || 0)],
     ['viewport_culled_elements', Number(snapshot.virtualization?.culledElements || 0)],
     ['viewport_padding', Number(snapshot.virtualization?.viewportPadding || 0)],
+    ['path_elements_always_drawn', snapshot.virtualization?.pathElementsAlwaysDrawn ? 'true' : 'false'],
+    ['path_bounds', snapshot.virtualization?.pathBounds || ''],
     ['document_appstate_bytes', Number(snapshot.document.appStateBytes || 0)],
     ['document_files_bytes', Number(snapshot.document.filesBytes || 0)],
     ['document_background', snapshot.document.background || ''],
