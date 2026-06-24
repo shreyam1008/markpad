@@ -143,11 +143,11 @@
       </div>
 
       <!-- Find bar -->
-      <div id="find-bar" class="hidden flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover">
+      <div id="find-bar" class="hidden flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover" role="search" aria-label="Find in current editor">
         <svg class="w-3.5 h-3.5 text-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
-        <input id="find-input" type="text" placeholder="Find in editor..." class="flex-1 bg-transparent border-none outline-none text-[13px] text-[#1a1c1b] placeholder:text-muted" />
-        <span id="find-info" class="text-[11px] text-muted"></span>
-        <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1">&times;</button>
+        <input id="find-input" type="text" placeholder="Find in editor..." aria-label="Find in current editor" aria-describedby="find-info" class="flex-1 bg-transparent border-none outline-none text-[13px] text-[#1a1c1b] placeholder:text-muted" />
+        <span id="find-info" class="text-[11px] text-muted" role="status" aria-live="polite"></span>
+        <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1" title="Close find" aria-label="Close find">&times;</button>
       </div>
 
       <div id="content-wrapper" class="flex-1 flex overflow-hidden">
