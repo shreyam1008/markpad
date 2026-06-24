@@ -36,7 +36,7 @@ let searchActiveIndex = 0;
 let searchLastResults = [];
 let searchLastQuery = '';
 let searchLastDedupe = { input: 0, output: 0, removed: 0 };
-let searchLastTelemetry = { scope: 'loaded', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
+let searchLastDiagnostics = { scope: 'loaded', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
@@ -1453,7 +1453,7 @@ function showUiStateSummary() {
       <div class="diag-card"><strong>${escapeHtml(viewMode)}</strong><span>View</span><small>${Math.round(splitRatio)}/${Math.round(100 - splitRatio)} split</small></div>
       <div class="diag-card"><strong>${focusMode ? 'On' : 'Off'} / ${compactMode ? 'On' : 'Off'}</strong><span>Focus / Compact</span><small>local UI chrome</small></div>
       <div class="diag-card"><strong>${editorSoftWrap ? 'Wrap' : 'No wrap'}</strong><span>Editor</span><small>${editorReadingWidth ? 'reading width' : 'full width'} · ${Math.round(fontSize / ZOOM_DEFAULT * 100)}% zoom</small></div>
-      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search scope</span><small>${searchLastResults.length} results · ${escapeHtml(searchTelemetrySummary())}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search scope</span><small>${searchLastResults.length} results · ${escapeHtml(searchDiagnosticsSummary())}</small></div>
       <div class="diag-card"><strong>${escapeHtml(taskViewMode)}</strong><span>Tasks</span><small>${escapeHtml(taskSourceFilter)} · ${escapeHtml(taskFilter)}${taskQuery ? ` · ${escapeHtml(taskQuery)}` : ''}</small></div>
       <div class="diag-card"><strong>${escapeHtml(canvasTool)}</strong><span>Canvas tool</span><small>${canvasZoom} · grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'} · snap ${canvasSnapToGrid ? 'on' : 'off'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(canvasBg)}</strong><span>Canvas background</span><small>stored with canvas exports</small></div>
@@ -1481,7 +1481,7 @@ function uiStateSummaryMarkdown() {
     `- Focus: ${focusMode ? 'on' : 'off'}`,
     `- Compact: ${compactMode ? 'on' : 'off'}`,
     `- Editor: ${editorSoftWrap ? 'soft wrap' : 'no wrap'}, ${editorReadingWidth ? 'reading width' : 'full width'}, ${Math.round(fontSize / ZOOM_DEFAULT * 100)}% zoom`,
-    `- Search scope: ${searchScope} (${searchLastResults.length} results, ${searchTelemetrySummary()})`,
+    `- Search scope: ${searchScope} (${searchLastResults.length} results, ${searchDiagnosticsSummary()})`,
     `- Tasks: ${taskViewMode}, ${taskSourceFilter}, ${taskFilter}${taskQuery ? `, ${taskQuery}` : ''}`,
     `- Canvas: ${canvasTool}, ${canvasZoom}, grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'}, snap ${canvasSnapToGrid ? 'on' : 'off'}, background ${canvasBg}`,
     '',
@@ -1514,7 +1514,7 @@ function uiStateSummaryJson() {
       scope: searchScope,
       lastQuery: searchLastQuery || '',
       resultCount: searchLastResults.length,
-      diagnostics: { ...searchLastTelemetry },
+      diagnostics: { ...searchLastDiagnostics },
     },
     tasks: {
       viewMode: taskViewMode,
@@ -2670,7 +2670,7 @@ async function runLoadedSearch(query) {
   }
   const results = await collectLoadedSearchResults(query, token, 40);
   if (token !== searchToken) return;
-  setSearchTelemetry({ scope: 'loaded', startedAt, searched: cachedNotes.length, scanned: cachedNotes.length, resultCount: results.length, capped: results.length >= 40 });
+  setSearchDiagnostics({ scope: 'loaded', startedAt, searched: cachedNotes.length, scanned: cachedNotes.length, resultCount: results.length, capped: results.length >= 40 });
   renderSearchResults(results, query);
 }
 
@@ -2754,9 +2754,9 @@ function searchElapsedMs(startedAt, fallback) {
   return 0;
 }
 
-function setSearchTelemetry(stats = {}) {
+function setSearchDiagnostics(stats = {}) {
   const backendElapsedMs = Number.isFinite(Number(stats.elapsedMs)) ? Math.max(0, Math.round(Number(stats.elapsedMs))) : null;
-  searchLastTelemetry = {
+  searchLastDiagnostics = {
     scope: stats.scope || searchScope,
     elapsedMs: Number.isFinite(Number(stats.startedAt)) ? searchElapsedMs(stats.startedAt) : searchElapsedMs(null, stats.elapsedMs),
     backendElapsedMs,
@@ -2767,10 +2767,10 @@ function setSearchTelemetry(stats = {}) {
     capped: !!stats.capped,
     resultCount: Math.max(0, Number(stats.resultCount || 0)),
   };
-  return searchLastTelemetry;
+  return searchLastDiagnostics;
 }
 
-function searchTelemetrySummary(telemetry = searchLastTelemetry) {
+function searchDiagnosticsSummary(telemetry = searchLastDiagnostics) {
   const stats = telemetry || {};
   const skipped = Number(stats.skipped || 0) + Number(stats.oversize || 0);
   const parts = [`${Number(stats.elapsedMs || 0)} ms`];
@@ -2801,7 +2801,7 @@ function searchProfileSnapshot(query = searchLastQuery, results = searchLastResu
     backendQuery: plan.backendQuery || '',
     resultCount: resultItems.length,
     sources,
-    diagnostics: { ...searchLastTelemetry },
+    diagnostics: { ...searchLastDiagnostics },
     dedupe: searchScope === 'all' ? searchLastDedupe : { input: resultItems.length, output: resultItems.length, removed: 0 },
     operators: {
       terms: plan.terms || [],
@@ -2866,7 +2866,7 @@ function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
     '',
     '## Local performance',
     '',
-    `- Last run: ${searchTelemetrySummary(snapshot.diagnostics)}`,
+    `- Last run: ${searchDiagnosticsSummary(snapshot.diagnostics)}`,
     `- Loaded search cache: ${formatBytes(snapshot.cache.bytes || 0)} (${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries)`,
     `- Current result page: ${formatBytes(snapshot.resultPage?.bytes || 0)} (${snapshot.resultPage?.count || 0} results, ${formatBytes(snapshot.resultPage?.snippetBytes || 0)} snippets)`,
     `- Cache cap: ${formatBytes(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)}`,
@@ -2927,7 +2927,7 @@ function showSearchProfile() {
     <div class="diag-grid">
       <div class="diag-card"><strong>${escapeHtml(snapshot.scope)}</strong><span>Scope</span><small>loaded / local / all</small></div>
       <div class="diag-card"><strong>${snapshot.resultCount}</strong><span>Current results</span><small>${escapeHtml(sourceText)}</small></div>
-      <div class="diag-card"><strong>${Number(snapshot.diagnostics?.elapsedMs || 0)} ms</strong><span>Last run</span><small>${escapeHtml(searchTelemetrySummary(snapshot.diagnostics))}</small></div>
+      <div class="diag-card"><strong>${Number(snapshot.diagnostics?.elapsedMs || 0)} ms</strong><span>Last run</span><small>${escapeHtml(searchDiagnosticsSummary(snapshot.diagnostics))}</small></div>
       <div class="diag-card"><strong>${snapshot.dedupe.removed || 0}</strong><span>De-duplicated</span><small>${snapshot.dedupe.input || snapshot.resultCount} merged hits</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.resultPage.bytes || 0)}</strong><span>Result page</span><small>${formatBytes(snapshot.resultPage.snippetBytes || 0)} snippets · avg ${formatBytes(snapshot.resultPage.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.cache.bytes || 0)}</strong><span>Loaded cache</span><small>${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries</small></div>
@@ -3495,7 +3495,7 @@ async function runAllSearch(query, token) {
   const results = deduped
     .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
     .slice(0, 70);
-  setSearchTelemetry({
+  setSearchDiagnostics({
     scope: 'all',
     startedAt,
     searched: cachedNotes.length + Number(localPack.stats?.searched ?? localPack.stats?.searchable ?? 0),
@@ -3746,7 +3746,7 @@ async function runLocalFolderSearch(query, token) {
     };
   }
   if (token !== searchToken) return;
-  setSearchTelemetry({ ...(pack.stats || {}), scope: 'local', startedAt, resultCount: (pack.results || []).length });
+  setSearchDiagnostics({ ...(pack.stats || {}), scope: 'local', startedAt, resultCount: (pack.results || []).length });
   if (pack.message) {
     searchLastResults = [];
     searchLastQuery = String(query || '').trim();
