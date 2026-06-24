@@ -3853,6 +3853,7 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>wildcard</strong><span>plan*</span><small>Prefix, suffix, or middle matching</small></div>
       <div class="diag-card"><strong>fuzzy</strong><span>~pln -~tmp</span><small>Opt-in approximate matching without a heavy index</small></div>
       <div class="diag-card"><strong>exclude</strong><span>-archive -"old draft"</span><small>Hide noisy matches</small></div>
+      <div class="diag-card"><strong>field exclude</strong><span>-path:archive -task:done -#blocked</span><small>Remove folders, tasks, or tags from results</small></div>
       <div class="diag-card"><strong>type</strong><span>type:md type:canvas</span><small>Limit results by file kind</small></div>
       <div class="diag-card"><strong>path/title</strong><span>path:work title:idea</span><small>Focus a folder or note name</small></div>
       <div class="diag-card"><strong>tasks/tags</strong><span>task:open #urgent</span><small>Find Markdown checkboxes and tags</small></div>
