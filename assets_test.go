@@ -485,6 +485,19 @@ func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
 		"anchor?.focus?.();",
 		"if (handleWorkflowMenuKeydown(event)) return;",
 	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".create-menu button::before",
+		".workflow-menu button::before",
+		".create-menu button:focus-visible::before",
+		".workflow-menu button:focus-visible::before",
+		".create-menu button:focus-visible strong",
+		".workflow-menu button:focus-visible strong",
+	})
 }
 
 func TestNativeCanvasFilesOpenCanvasSurface(t *testing.T) {

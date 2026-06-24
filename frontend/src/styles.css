@@ -438,6 +438,7 @@ body.writing-empty #viewer::first-line {
 }
 .create-menu button,
 .workflow-menu button {
+  position: relative;
   display: grid;
   gap: 2px;
   width: 100%;
@@ -455,6 +456,31 @@ body.writing-empty #viewer::first-line {
 .workflow-menu button:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   background: var(--hover);
+}
+.create-menu button::before,
+.workflow-menu button::before {
+  content: "";
+  position: absolute;
+  inset: 8px auto 8px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background .12s ease;
+}
+.create-menu button:hover::before,
+.create-menu button:focus-visible::before,
+.workflow-menu button:hover::before,
+.workflow-menu button:focus-visible::before {
+  background: var(--accent);
+}
+.create-menu button:focus-visible,
+.workflow-menu button:focus-visible {
+  outline-offset: -2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.create-menu button:focus-visible strong,
+.workflow-menu button:focus-visible strong {
+  color: var(--accent);
 }
 .create-menu button:disabled,
 .workflow-menu button:disabled {
