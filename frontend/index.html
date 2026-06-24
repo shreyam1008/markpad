@@ -79,15 +79,15 @@
         </div>
         <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
           <button data-mode="markdown" class="view-btn" title="Editor only" aria-pressed="false">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
             <span>Editor</span>
           </button>
           <button data-mode="split" class="view-btn" title="Split view" aria-pressed="false">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
             <span>Split</span>
           </button>
           <button data-mode="viewer" class="view-btn active" title="Preview only" aria-pressed="true">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
             <span>Preview</span>
           </button>
         </div>
@@ -108,7 +108,7 @@
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes" aria-label="Revert changes">Cancel</button>
           <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)" aria-label="Save current file">Save</button>
           <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           </button>
           <button id="btn-theme" class="theme-chip" data-theme-mode="light" title="Paper (light) - Default low-glare writing surface" aria-label="Theme: Paper, light. Default low-glare writing surface">Paper</button>
         </div>
@@ -117,34 +117,34 @@
 
       <!-- Formatting toolbar -->
       <div id="toolbar" class="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
-        <button data-action="bold" title="Bold (Ctrl+B)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h4.5a3 3 0 011.93 5.3A3.5 3.5 0 019 14H4V2zm2 5h2.5a1 1 0 000-2H6v2zm0 2v3h3a1.5 1.5 0 000-3H6z"/></svg></button>
-        <button data-action="italic" title="Italic (Ctrl+I)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 2h6v2h-2.2l-2.6 8H9v2H3v-2h2.2l2.6-8H6V2z"/></svg></button>
-        <button data-action="strikethrough" title="Strikethrough" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 8h14v1.5H1V8zm4.3-4.8A3.2 3.2 0 018 2c1.6 0 3 .9 3.3 2.3l-1.5.3C9.5 3.6 8.8 3.2 8 3.2c-.7 0-1.4.3-1.5 1 0 .3.1.5.3.7H5a2.5 2.5 0 01.3-1.7zM8 12.8c.8 0 1.5-.4 1.7-1.1l1.5.3C10.8 13.3 9.5 14 8 14a3.5 3.5 0 01-2.8-1.3h1.6c.3.1.7.1 1.2.1z"/></svg></button>
+        <button data-action="bold" title="Bold (Ctrl+B)" aria-label="Bold" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M4 2h4.5a3 3 0 011.93 5.3A3.5 3.5 0 019 14H4V2zm2 5h2.5a1 1 0 000-2H6v2zm0 2v3h3a1.5 1.5 0 000-3H6z"/></svg></button>
+        <button data-action="italic" title="Italic (Ctrl+I)" aria-label="Italic" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M6 2h6v2h-2.2l-2.6 8H9v2H3v-2h2.2l2.6-8H6V2z"/></svg></button>
+        <button data-action="strikethrough" title="Strikethrough" aria-label="Strikethrough" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M1 8h14v1.5H1V8zm4.3-4.8A3.2 3.2 0 018 2c1.6 0 3 .9 3.3 2.3l-1.5.3C9.5 3.6 8.8 3.2 8 3.2c-.7 0-1.4.3-1.5 1 0 .3.1.5.3.7H5a2.5 2.5 0 01.3-1.7zM8 12.8c.8 0 1.5-.4 1.7-1.1l1.5.3C10.8 13.3 9.5 14 8 14a3.5 3.5 0 01-2.8-1.3h1.6c.3.1.7.1 1.2.1z"/></svg></button>
         <span class="tb-sep"></span>
         <button data-action="h1" title="Heading 1" class="tb txt">H1</button>
         <button data-action="h2" title="Heading 2" class="tb txt">H2</button>
         <button data-action="h3" title="Heading 3" class="tb txt">H3</button>
         <span class="tb-sep"></span>
-        <button data-action="code" title="Inline code" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.9 3.4L1.3 8l4.6 4.6 1.1-1.1L3.5 8 7 4.5 5.9 3.4zm4.2 0L9 4.5 12.5 8 9 11.5l1.1 1.1L14.7 8l-4.6-4.6z"/></svg></button>
+        <button data-action="code" title="Inline code" aria-label="Inline code" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M5.9 3.4L1.3 8l4.6 4.6 1.1-1.1L3.5 8 7 4.5 5.9 3.4zm4.2 0L9 4.5 12.5 8 9 11.5l1.1 1.1L14.7 8l-4.6-4.6z"/></svg></button>
         <button data-action="codeblock" title="Code block" class="tb txt">```</button>
         <span class="tb-sep"></span>
-        <button data-action="link" title="Link (Ctrl+K)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.9 11.1a3.1 3.1 0 010-4.4l.7.7a2 2 0 000 3l1.5 1.5a2 2 0 003 0l1.5-1.5a2 2 0 000-3l-.7-.7.7-.7.7.7a3.1 3.1 0 010 4.4l-1.5 1.5a3.1 3.1 0 01-4.4 0L6.9 11.1zM9.1 4.9a3.1 3.1 0 010 4.4l-.7-.7a2 2 0 000-3L6.9 4.1a2 2 0 00-3 0L2.4 5.6a2 2 0 000 3l.7.7-.7.7-.7-.7a3.1 3.1 0 010-4.4l1.5-1.5a3.1 3.1 0 014.4 0l1.5 1.5z"/></svg></button>
-        <button data-action="image" title="Image" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 00-1 1v8a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H2zm0 1h12v5.6L11.3 7 8 10.3 5.7 8 2 11.7V4zm3 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg></button>
+        <button data-action="link" title="Link (Ctrl+K)" aria-label="Link" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M6.9 11.1a3.1 3.1 0 010-4.4l.7.7a2 2 0 000 3l1.5 1.5a2 2 0 003 0l1.5-1.5a2 2 0 000-3l-.7-.7.7-.7.7.7a3.1 3.1 0 010 4.4l-1.5 1.5a3.1 3.1 0 01-4.4 0L6.9 11.1zM9.1 4.9a3.1 3.1 0 010 4.4l-.7-.7a2 2 0 000-3L6.9 4.1a2 2 0 00-3 0L2.4 5.6a2 2 0 000 3l.7.7-.7.7-.7-.7a3.1 3.1 0 010-4.4l1.5-1.5a3.1 3.1 0 014.4 0l1.5 1.5z"/></svg></button>
+        <button data-action="image" title="Image" aria-label="Image" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M2 3a1 1 0 00-1 1v8a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H2zm0 1h12v5.6L11.3 7 8 10.3 5.7 8 2 11.7V4zm3 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg></button>
         <span class="tb-sep"></span>
-        <button data-action="ul" title="Bullet list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="2.5" cy="4" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="3" width="10" height="2" rx=".5"/><rect x="5" y="7" width="10" height="2" rx=".5"/><rect x="5" y="11" width="10" height="2" rx=".5"/></svg></button>
+        <button data-action="ul" title="Bullet list" aria-label="Bullet list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="2.5" cy="4" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="3" width="10" height="2" rx=".5"/><rect x="5" y="7" width="10" height="2" rx=".5"/><rect x="5" y="11" width="10" height="2" rx=".5"/></svg></button>
         <button data-action="ol" title="Numbered list" class="tb txt">1.</button>
-        <button data-action="task" title="Task list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button data-action="task" title="Task list" aria-label="Task list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <span class="tb-sep"></span>
-        <button data-action="table" title="Table" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2" x2="6" y2="14" stroke="currentColor" stroke-width="1.3"/></svg></button>
-        <button data-action="hr" title="Horizontal rule" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg></button>
-        <button data-action="quote" title="Blockquote" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h3v4H4v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1zm7 0h3v4h-2v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1z"/></svg></button>
+        <button data-action="table" title="Table" aria-label="Table" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2" x2="6" y2="14" stroke="currentColor" stroke-width="1.3"/></svg></button>
+        <button data-action="hr" title="Horizontal rule" aria-label="Horizontal rule" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="7" width="14" height="2" rx="1"/></svg></button>
+        <button data-action="quote" title="Blockquote" aria-label="Blockquote" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3 3h3v4H4v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1zm7 0h3v4h-2v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1z"/></svg></button>
         <span class="tb-sep"></span>
         <button id="btn-wrap" title="Toggle soft wrap" class="tb txt">Wrap</button>
       </div>
 
       <!-- Find bar -->
       <div id="find-bar" class="hidden flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover">
-        <svg class="w-3.5 h-3.5 text-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
+        <svg class="w-3.5 h-3.5 text-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
         <input id="find-input" type="text" placeholder="Find in editor..." class="flex-1 bg-transparent border-none outline-none text-[13px] text-[#1a1c1b] placeholder:text-muted" />
         <span id="find-info" class="text-[11px] text-muted"></span>
         <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1">&times;</button>
@@ -181,7 +181,7 @@
     <aside id="history-panel" class="hidden w-72 min-w-[288px] bg-sidebar border-l border-border flex-col">
       <div class="flex items-center justify-between p-3 border-b border-border">
         <div class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+          <svg class="w-4 h-4 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           <span class="text-xs font-bold uppercase tracking-widest text-muted">History</span>
         </div>
         <button id="history-close" class="text-muted hover:text-[#1a1c1b] text-lg leading-none px-1">&times;</button>
