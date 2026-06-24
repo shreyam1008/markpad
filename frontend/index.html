@@ -310,16 +310,16 @@
           <button id="canvas-snap-selected" class="canvas-tool" title="Snap selected element to grid" aria-label="Snap selected canvas element to grid">Snap selected</button>
           <button id="canvas-minimap-toggle" class="canvas-tool active" aria-pressed="true" title="Toggle canvas minimap" aria-label="Toggle canvas minimap">Mini</button>
           <button id="canvas-layer-back" class="canvas-tool" title="Send selected canvas element backward" aria-label="Send selected canvas element backward">Back</button>
-          <button id="canvas-layer-front" class="canvas-tool">Front</button>
-          <button id="canvas-import" class="canvas-tool">Import</button>
-          <button id="canvas-export" class="canvas-tool">JSON</button>
-          <button id="canvas-export-svg" class="canvas-tool">SVG</button>
-          <button id="canvas-export-obsidian" class="canvas-tool">Obsidian</button>
-          <button id="canvas-save-active" class="canvas-tool">Write</button>
-          <button id="canvas-save-draft" class="canvas-tool">Draft</button>
-          <button id="canvas-clear" class="canvas-tool danger">Clear</button>
-          <button id="canvas-close" class="canvas-close" title="Close canvas">&times;</button>
-          <input id="canvas-import-file" class="hidden" type="file" accept=".json,.canvas,application/json" />
+          <button id="canvas-layer-front" class="canvas-tool" title="Bring selected canvas element forward" aria-label="Bring selected canvas element forward">Front</button>
+          <button id="canvas-import" class="canvas-tool" title="Import canvas JSON" aria-label="Import canvas JSON">Import</button>
+          <button id="canvas-export" class="canvas-tool" title="Export Markpad canvas JSON" aria-label="Export Markpad canvas JSON">JSON</button>
+          <button id="canvas-export-svg" class="canvas-tool" title="Export canvas as SVG" aria-label="Export canvas as SVG">SVG</button>
+          <button id="canvas-export-obsidian" class="canvas-tool" title="Export Obsidian JSON Canvas" aria-label="Export Obsidian JSON Canvas">Obsidian</button>
+          <button id="canvas-save-active" class="canvas-tool" title="Write canvas to active local canvas document" aria-label="Write canvas to active local canvas document">Write</button>
+          <button id="canvas-save-draft" class="canvas-tool" title="Save canvas as local draft JSON" aria-label="Save canvas as local draft JSON">Draft</button>
+          <button id="canvas-clear" class="canvas-tool danger" title="Clear local canvas draft" aria-label="Clear local canvas draft">Clear</button>
+          <button id="canvas-close" class="canvas-close" title="Close canvas" aria-label="Close canvas">&times;</button>
+          <input id="canvas-import-file" class="hidden" type="file" accept=".json,.canvas,application/json" aria-label="Import canvas file" />
           <span id="canvas-status" class="canvas-status" role="status" aria-live="polite">0 elements · 100%</span>
         </div>
       </div>
