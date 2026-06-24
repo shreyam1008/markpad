@@ -3568,13 +3568,21 @@ function renderSearchResults(results, query) {
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!results.length) {
+    searchInput?.removeAttribute('aria-activedescendant');
     searchResults.insertAdjacentHTML('beforeend', searchEmptyHtml(searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.', trimmedQuery));
     return;
   }
+  searchResults.setAttribute('role', 'listbox');
   results.forEach((result, index) => {
     const row = el('button', `search-row${index === searchActiveIndex ? ' active' : ''}`);
     const matchLabel = searchResultMatchLabel(result);
+    const rowLabel = searchResultKeyboardLabel(result, index, results.length);
     row.type = 'button';
+    row.id = `search-result-${index}`;
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', index === searchActiveIndex ? 'true' : 'false');
+    row.setAttribute('aria-label', rowLabel);
+    row.title = rowLabel;
     row.dataset.searchId = result.id;
     row.dataset.matchIndex = String(result.matchIndex);
     row.dataset.matchLength = String(result.matchLength);
@@ -3595,6 +3603,7 @@ function renderSearchResults(results, query) {
     row.addEventListener('click', () => openSearchResult(result));
     searchResults.appendChild(row);
   });
+  setSearchActive(searchActiveIndex);
 }
 
 function searchResultsToMarkdown(results, query) {
@@ -3959,9 +3968,52 @@ function searchResultMatchLabel(result) {
   }
 }
 
-function setSearchActive(index) {
-  searchActiveIndex = index;
-  [...searchResults.querySelectorAll('.search-row')].forEach((row, i) => row.classList.toggle('active', i === index));
+function searchResultKeyboardLabel(result, index, total) {
+  const parts = [
+    `Result ${index + 1} of ${total}`,
+    result.source === 'local' ? 'local folder' : 'loaded file',
+    result.title || basename(result.path) || 'Untitled',
+  ];
+  if (Number.isFinite(Number(result.line))) parts.push(`line ${Number(result.line) + 1}`);
+  const matchLabel = searchResultMatchLabel(result);
+  if (matchLabel) parts.push(matchLabel);
+  if (Number.isFinite(Number(result.score))) parts.push(`score ${Number(result.score)}`);
+  if (result.path) parts.push(result.path);
+  return parts.join(' · ');
+}
+
+function searchActiveMetaLine(result, index, total) {
+  const source = result.source === 'local' ? 'local' : 'loaded';
+  const line = Number.isFinite(Number(result.line)) ? ` · line ${Number(result.line) + 1}` : '';
+  const score = Number.isFinite(Number(result.score)) ? ` · score ${Number(result.score)}` : '';
+  const path = String(result.path || 'Draft').replace(/\s+/g, ' ').trim();
+  const compactPath = path.length > 54 ? `...${path.slice(-51)}` : path;
+  return `${index + 1}/${total} · ${source}${line}${score} · ${compactPath} · Enter opens`;
+}
+
+function setSearchActive(index, options = {}) {
+  const rows = [...searchResults.querySelectorAll('.search-row')];
+  if (!rows.length) {
+    searchActiveIndex = 0;
+    searchInput?.removeAttribute('aria-activedescendant');
+    return;
+  }
+  searchActiveIndex = Math.max(0, Math.min(rows.length - 1, Number(index) || 0));
+  let activeRow = null;
+  rows.forEach((row, i) => {
+    const active = i === searchActiveIndex;
+    row.classList.toggle('active', active);
+    row.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) activeRow = row;
+  });
+  if (activeRow) {
+    searchInput?.setAttribute('aria-activedescendant', activeRow.id);
+    if (options.scroll) activeRow.scrollIntoView({ block: 'nearest' });
+  }
+  const activeResult = searchLastResults[searchActiveIndex];
+  if (activeResult && searchMeta) {
+    searchMeta.textContent = searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length);
+  }
 }
 
 searchResults?.addEventListener('click', (event) => {
@@ -4092,12 +4144,22 @@ searchInput?.addEventListener('keydown', (e) => {
     runLoadedSearch(searchInput.value);
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 1));
-    rows[searchActiveIndex]?.scrollIntoView({ block: 'nearest' });
+    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 1), { scroll: true });
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    setSearchActive(Math.max(0, searchActiveIndex - 1));
-    rows[searchActiveIndex]?.scrollIntoView({ block: 'nearest' });
+    setSearchActive(Math.max(0, searchActiveIndex - 1), { scroll: true });
+  } else if (e.key === 'PageDown') {
+    e.preventDefault();
+    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 5), { scroll: true });
+  } else if (e.key === 'PageUp') {
+    e.preventDefault();
+    setSearchActive(Math.max(0, searchActiveIndex - 5), { scroll: true });
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    setSearchActive(0, { scroll: true });
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    setSearchActive(rows.length - 1, { scroll: true });
   } else if (e.key === 'Enter') {
     e.preventDefault();
     rows[searchActiveIndex]?.click();
