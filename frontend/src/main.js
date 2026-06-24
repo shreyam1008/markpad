@@ -6514,6 +6514,9 @@ async function showTrashView() {
   const fileItems = await loadFileTrash();
   const total = items.length + fileItems.length;
   const audit = trashRetentionAuditSnapshot(items, fileItems);
+  const cleanupProfile = await currentTrashCleanupProfileSnapshot();
+  const expiredCleanupCandidates = Number(cleanupProfile.cleanupCandidates?.expiredDrafts || 0)
+    + Number(cleanupProfile.cleanupCandidates?.visibleExpiredFiles || 0);
   showModal('Trash', `
     <div class="trash-head">
       <span>${escapeHtml(trashRetentionSummaryText(items, fileItems))}</span>
@@ -6526,7 +6529,7 @@ async function showTrashView() {
       <button data-trash-audit>Audit</button>
       <button data-trash-cleanup-profile>Profile</button>
       <button data-trash-guide>Guide</button>
-      <button data-trash-clean-expired>Clean Expired</button>
+      <button data-trash-clean-expired ${expiredCleanupCandidates ? '' : 'disabled'}>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
     ${trashRetentionMeter(audit)}
