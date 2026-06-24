@@ -1774,7 +1774,8 @@ function updateSplitRatioBadge(value = splitRatio) {
   divider.setAttribute('title', `Split ${text}. Drag, use arrow keys, or double-click for 50/50.`);
   if (liveChip) {
     liveChip.textContent = text;
-    liveChip.setAttribute('title', `Current split ratio ${text}`);
+    liveChip.setAttribute('title', `Current split ratio ${text}. Click to reset to 50/50.`);
+    liveChip.setAttribute('aria-label', `Current split ratio ${text}. Reset split view to 50/50.`);
   }
 }
 

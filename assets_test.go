@@ -684,7 +684,8 @@ func TestSplitViewControlsStayPolishedAndLightweight(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
 		`id="split-preset-group"`,
-		`id="split-live-chip"`,
+		`<button id="split-live-chip"`,
+		`aria-label="Reset split view to 50/50"`,
 		`data-split-ratio="38"`,
 		`data-split-ratio="50"`,
 		`data-split-ratio="62"`,
@@ -703,6 +704,15 @@ func TestSplitViewControlsStayPolishedAndLightweight(t *testing.T) {
 		"#resize-divider[data-split-label]::before",
 		"#resize-divider::after",
 		"repeating-linear-gradient(",
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		"Click to reset to 50/50",
+		"Reset split view to 50/50",
 	})
 }
 
