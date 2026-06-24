@@ -693,6 +693,8 @@ func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
 		`id="ctx-menu"`,
+		`data-ctx="canvas"`,
+		"Open Canvas",
 		`data-ctx="saveas"`,
 		"Save As...",
 		`data-ctx="folder"`,
@@ -705,7 +707,12 @@ func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
 		`ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';`,
+		`ctxMenu.querySelector('[data-ctx="canvas"]').style.display = isCanvas ? '' : 'none';`,
 		`ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () => {`,
+		`ctxMenu.querySelector('[data-ctx="canvas"]').addEventListener('click', async () => {`,
+		"if (!note || getFileType(note.path, note.kind) !== 'canvas') {",
+		"await openActiveCanvasOrDraft();",
+		"statusText.textContent = 'Canvas file opened';",
 		"if (!note || note.path) return;",
 		"await window.go.main.App.SetActive(ctxNoteId);",
 		"loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));",
