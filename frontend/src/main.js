@@ -4517,6 +4517,9 @@ function commandItems() {
     { id: 'copy-canvas-json', icon: 'CJ', title: 'Copy canvas JSON', hint: 'Copy the current Markpad canvas document as portable JSON', run: copyCanvasJson },
     { id: 'copy-markcanvas-json', icon: 'CMJ', title: 'Copy .markcanvas.json', hint: 'Copy the current native Markpad canvas JSON with elements and appState', run: copyMarkcanvasJson },
     { id: 'export-markcanvas-json', icon: 'EMJ', title: 'Export .markcanvas.json', hint: 'Download the current native Markpad canvas as a portable .markcanvas.json file', run: exportMarkcanvasJson },
+    { id: 'canvas-storage-profile', icon: 'CSP', title: 'Canvas storage profile', hint: 'Show document/session bytes, undo snapshots, format version, and export targets', run: showCanvasStorageProfile },
+    { id: 'copy-canvas-storage-profile', icon: 'CSD', title: 'Copy canvas storage profile', hint: 'Copy canvas document/session storage diagnostics as Markdown', run: copyCanvasStorageProfileMarkdown },
+    { id: 'export-canvas-storage-profile', icon: 'CSE', title: 'Export canvas storage profile', hint: 'Download canvas document/session storage diagnostics as Markdown', run: exportCanvasStorageProfileMarkdown },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'copy-canvas-svg', icon: 'CSV', title: 'Copy canvas SVG', hint: 'Copy the current canvas as lightweight SVG markup', run: copyCanvasSvg },
     { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
@@ -10106,6 +10109,7 @@ function showCanvasHelp() {
       <button data-canvas-clear-undo>Clear Undo</button>
       <button data-export-markcanvas-json>Export .markcanvas.json</button>
       <button data-copy-markcanvas-json>Copy .markcanvas.json</button>
+      <button data-canvas-storage-profile-open>Storage Profile</button>
       <button data-export-excalidraw-canvas>Export .excalidraw</button>
       <button data-copy-excalidraw-canvas>Copy Excalidraw JSON</button>
     </div>
@@ -10401,6 +10405,197 @@ function exportCanvasViewStateJson() {
 function exportCanvasViewStateCsv() {
   downloadText('markpad-canvas-view-state.csv', 'text/csv', canvasViewStateCsv());
   statusText.textContent = 'Canvas view state exported as CSV';
+}
+
+function canvasStorageProfileSnapshot() {
+  if (!canvasDoc || !canvasSession) loadCanvasState();
+  const documentText = localStorage.getItem(CANVAS_DOC_KEY) || JSON.stringify(canvasDoc || newCanvasDoc());
+  const sessionText = localStorage.getItem(CANVAS_SESSION_KEY) || JSON.stringify(canvasSession || { camera: { x: 0, y: 0, scale: 1 } });
+  const doc = canvasDoc || newCanvasDoc();
+  const session = canvasSession || { camera: { x: 0, y: 0, scale: 1 } };
+  const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  return {
+    type: 'markpad-canvas-storage-profile',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    format: MARKPAD_CANVAS_FORMAT,
+    schema: MARKPAD_CANVAS_SCHEMA,
+    document: {
+      key: CANVAS_DOC_KEY,
+      bytes: byteSize(documentText),
+      elements: (doc.elements || []).length,
+      appStateBytes: byteSize(JSON.stringify(doc.appState || {})),
+      filesBytes: byteSize(JSON.stringify(doc.files || {})),
+      background: doc.appState?.viewBackgroundColor || '#ffffff',
+      source: doc.source || 'markpad',
+    },
+    session: {
+      key: CANVAS_SESSION_KEY,
+      bytes: byteSize(sessionText),
+      camera: {
+        x: Math.round(Number(session.camera?.x || 0)),
+        y: Math.round(Number(session.camera?.y || 0)),
+        scale: Number(session.camera?.scale || 1),
+      },
+      gridVisible: !!canvasGridVisible,
+      snapToGrid: !!canvasSnapToGrid,
+      gridSize: canvasGridSize,
+      minimapVisible: !!canvasMinimapVisible,
+      tool: canvasTool,
+    },
+    undo: {
+      snapshots: canvasHistory.length,
+      currentIndex: canvasHistoryIndex,
+      bytes: historyBytes,
+      limit: CANVAS_HISTORY_LIMIT,
+      maxBytes: CANVAS_HISTORY_BYTES,
+    },
+    exports: {
+      native: '.markcanvas.json',
+      obsidian: '.canvas',
+      excalidraw: '.excalidraw',
+      images: ['svg', 'png viewport', 'png full'],
+      summaries: ['markdown', 'csv', 'inventory json'],
+    },
+    note: 'Canvas document and session are stored separately locally; exports are plain text JSON unless explicitly exporting SVG/PNG.',
+  };
+}
+
+function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot()) {
+  const camera = snapshot.session.camera || {};
+  return [
+    '# Markpad Canvas Storage Profile',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    `Format: ${snapshot.format}`,
+    `Schema: ${snapshot.schema}`,
+    '',
+    '## Document',
+    '',
+    `- Key: ${snapshot.document.key}`,
+    `- Bytes: ${formatBytes(snapshot.document.bytes || 0)}`,
+    `- Elements: ${snapshot.document.elements || 0}`,
+    `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
+    `- Files/assets: ${formatBytes(snapshot.document.filesBytes || 0)}`,
+    `- Background: ${snapshot.document.background}`,
+    `- Source: ${snapshot.document.source}`,
+    '',
+    '## Session',
+    '',
+    `- Key: ${snapshot.session.key}`,
+    `- Bytes: ${formatBytes(snapshot.session.bytes || 0)}`,
+    `- Camera: x ${camera.x || 0}, y ${camera.y || 0}, zoom ${Math.round(Number(camera.scale || 1) * 100)}%`,
+    `- Tool: ${snapshot.session.tool}`,
+    `- Grid: ${snapshot.session.gridVisible ? `${snapshot.session.gridSize}px` : 'off'}`,
+    `- Snap: ${snapshot.session.snapToGrid ? 'on' : 'off'}`,
+    `- Minimap: ${snapshot.session.minimapVisible ? 'on' : 'off'}`,
+    '',
+    '## Undo',
+    '',
+    `- Snapshots: ${snapshot.undo.snapshots}/${snapshot.undo.limit}`,
+    `- Bytes: ${formatBytes(snapshot.undo.bytes || 0)} / ${formatBytes(snapshot.undo.maxBytes || 0)}`,
+    `- Current index: ${snapshot.undo.currentIndex}`,
+    '',
+    '## Exports',
+    '',
+    `- Native: ${snapshot.exports.native}`,
+    `- Obsidian/JSON Canvas: ${snapshot.exports.obsidian}`,
+    `- Excalidraw: ${snapshot.exports.excalidraw}`,
+    `- Images: ${(snapshot.exports.images || []).join(', ')}`,
+    `- Summaries: ${(snapshot.exports.summaries || []).join(', ')}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function canvasStorageProfileJson(snapshot = canvasStorageProfileSnapshot()) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['format', snapshot.format],
+    ['schema', snapshot.schema],
+    ['document_key', snapshot.document.key],
+    ['document_bytes', Number(snapshot.document.bytes || 0)],
+    ['document_elements', Number(snapshot.document.elements || 0)],
+    ['document_appstate_bytes', Number(snapshot.document.appStateBytes || 0)],
+    ['document_files_bytes', Number(snapshot.document.filesBytes || 0)],
+    ['document_background', snapshot.document.background || ''],
+    ['session_key', snapshot.session.key],
+    ['session_bytes', Number(snapshot.session.bytes || 0)],
+    ['session_camera_x', Number(snapshot.session.camera?.x || 0)],
+    ['session_camera_y', Number(snapshot.session.camera?.y || 0)],
+    ['session_camera_scale', Number(snapshot.session.camera?.scale || 1)],
+    ['session_tool', snapshot.session.tool || ''],
+    ['session_grid_visible', snapshot.session.gridVisible ? 'true' : 'false'],
+    ['session_snap_to_grid', snapshot.session.snapToGrid ? 'true' : 'false'],
+    ['undo_snapshots', Number(snapshot.undo.snapshots || 0)],
+    ['undo_bytes', Number(snapshot.undo.bytes || 0)],
+    ['undo_limit', Number(snapshot.undo.limit || 0)],
+    ['undo_max_bytes', Number(snapshot.undo.maxBytes || 0)],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function showCanvasStorageProfile() {
+  const snapshot = canvasStorageProfileSnapshot();
+  const camera = snapshot.session.camera || {};
+  showModal('Canvas Storage Profile', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${formatBytes(snapshot.document.bytes || 0)}</strong><span>Document JSON</span><small>${snapshot.document.elements || 0} elements · ${escapeHtml(snapshot.document.key)}</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
+      <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.undo.bytes || 0)}</strong><span>Canvas undo</span><small>${snapshot.undo.snapshots}/${snapshot.undo.limit} snapshots</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.format)}</strong><span>Native format</span><small>${escapeHtml(snapshot.exports.native)}</small></div>
+      <div class="diag-card"><strong>plain</strong><span>Interop exports</span><small>${escapeHtml(snapshot.exports.obsidian)} · ${escapeHtml(snapshot.exports.excalidraw)}</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-canvas-storage-md>Copy MD</button>
+      <button data-export-canvas-storage-md>Export MD</button>
+      <button data-copy-canvas-storage-json>Copy JSON</button>
+      <button data-export-canvas-storage-json>Export JSON</button>
+      <button data-copy-canvas-storage-csv>Copy CSV</button>
+      <button data-export-canvas-storage-csv>Export CSV</button>
+      <button data-copy-markcanvas-json>Copy .markcanvas.json</button>
+      <button data-export-markcanvas-json>Export .markcanvas.json</button>
+      <button data-canvas-clear-undo>Clear Undo</button>
+    </div>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+  `);
+}
+
+async function copyCanvasStorageProfileMarkdown() {
+  await navigator.clipboard.writeText(canvasStorageProfileMarkdown());
+  statusText.textContent = 'Canvas storage profile copied as Markdown';
+}
+
+function exportCanvasStorageProfileMarkdown() {
+  downloadText('markpad-canvas-storage-profile.md', 'text/markdown', canvasStorageProfileMarkdown());
+  statusText.textContent = 'Canvas storage profile exported as Markdown';
+}
+
+async function copyCanvasStorageProfileJson() {
+  await navigator.clipboard.writeText(canvasStorageProfileJson());
+  statusText.textContent = 'Canvas storage profile copied as JSON';
+}
+
+function exportCanvasStorageProfileJson() {
+  downloadText('markpad-canvas-storage-profile.json', 'application/json', canvasStorageProfileJson());
+  statusText.textContent = 'Canvas storage profile exported as JSON';
+}
+
+async function copyCanvasStorageProfileCsv() {
+  await navigator.clipboard.writeText(canvasStorageProfileCsv());
+  statusText.textContent = 'Canvas storage profile copied as CSV';
+}
+
+function exportCanvasStorageProfileCsv() {
+  downloadText('markpad-canvas-storage-profile.csv', 'text/csv', canvasStorageProfileCsv());
+  statusText.textContent = 'Canvas storage profile exported as CSV';
 }
 
 async function restoreCanvasViewStateFromClipboard() {
@@ -11787,6 +11982,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyMarkcanvasJsonBtn) await copyMarkcanvasJson();
   const exportMarkcanvasJsonBtn = e.target.closest('[data-export-markcanvas-json]');
   if (exportMarkcanvasJsonBtn) exportMarkcanvasJson();
+  const canvasStorageProfileOpenBtn = e.target.closest('[data-canvas-storage-profile-open]');
+  if (canvasStorageProfileOpenBtn) showCanvasStorageProfile();
+  const copyCanvasStorageMdBtn = e.target.closest('[data-copy-canvas-storage-md]');
+  if (copyCanvasStorageMdBtn) await copyCanvasStorageProfileMarkdown();
+  const exportCanvasStorageMdBtn = e.target.closest('[data-export-canvas-storage-md]');
+  if (exportCanvasStorageMdBtn) exportCanvasStorageProfileMarkdown();
+  const copyCanvasStorageJsonBtn = e.target.closest('[data-copy-canvas-storage-json]');
+  if (copyCanvasStorageJsonBtn) await copyCanvasStorageProfileJson();
+  const exportCanvasStorageJsonBtn = e.target.closest('[data-export-canvas-storage-json]');
+  if (exportCanvasStorageJsonBtn) exportCanvasStorageProfileJson();
+  const copyCanvasStorageCsvBtn = e.target.closest('[data-copy-canvas-storage-csv]');
+  if (copyCanvasStorageCsvBtn) await copyCanvasStorageProfileCsv();
+  const exportCanvasStorageCsvBtn = e.target.closest('[data-export-canvas-storage-csv]');
+  if (exportCanvasStorageCsvBtn) exportCanvasStorageProfileCsv();
   const copyCanvasViewStateBtn = e.target.closest('[data-copy-canvas-view-state]');
   if (copyCanvasViewStateBtn) await copyCanvasViewStateMarkdown();
   const exportCanvasViewStateBtn = e.target.closest('[data-export-canvas-view-state]');
