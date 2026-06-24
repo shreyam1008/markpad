@@ -73,7 +73,7 @@ func (a *App) CreateLocalFolderLinksCanvas(limit int) (SessionState, error) {
 		return a.GetSession(), err
 	}
 	path := localCollisionPath(filepath.Join(root.Path, "Local Links"+markpadCanvasExtension))
-	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
+	if err := localFolderAtomicWrite(path, append(data, '\n'), 0o644); err != nil {
 		return a.GetSession(), err
 	}
 	return a.openPath(path)
@@ -218,10 +218,10 @@ func localGraphBuildCanvas(nodes map[string]*localGraphNode, edges []localGraphE
 		}
 	}
 	return localGraphCanvasDoc{
-		Type:     "markpad-canvas",
-		Version:  1,
-		Schema:   "https://markpad.local/schemas/canvas-v1.json",
-		Source:   "markpad-local-links",
+		Type:    "markpad-canvas",
+		Version: 1,
+		Schema:  "https://markpad.local/schemas/canvas-v1.json",
+		Source:  "markpad-local-links",
 		Meta: &localGraphCanvasMeta{
 			Format:    "markpad-canvas-v1",
 			Generator: "markpad-local-links",

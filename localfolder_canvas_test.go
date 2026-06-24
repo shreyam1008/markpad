@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -39,6 +40,33 @@ func TestMarkpadCanvasDocumentJSONIncludesNativeSchema(t *testing.T) {
 	}
 	if doc["source"] != "markpad-test" {
 		t.Fatalf("source = %v, want markpad-test", doc["source"])
+	}
+}
+
+func TestLocalFolderAtomicWriteReplacesInPlaceWithoutTempResidue(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "Board.markcanvas.json")
+	if err := os.WriteFile(path, []byte("old"), 0o644); err != nil {
+		t.Fatalf("seed canvas file: %v", err)
+	}
+
+	if err := localFolderAtomicWrite(path, []byte("new"), 0o644); err != nil {
+		t.Fatalf("atomic write canvas file: %v", err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read replaced canvas file: %v", err)
+	}
+	if string(data) != "new" {
+		t.Fatalf("canvas file content = %q, want new", string(data))
+	}
+	matches, err := filepath.Glob(path + ".tmp.*")
+	if err != nil {
+		t.Fatalf("glob temp files: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("left temp files after atomic write: %v", matches)
 	}
 }
 

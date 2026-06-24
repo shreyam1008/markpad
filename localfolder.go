@@ -328,7 +328,7 @@ func (a *App) CreateLocalFolderCanvas(title string) (SessionState, error) {
 	}
 	name := localCanvasFileName(title)
 	path := localCollisionPath(filepath.Join(root.Path, name))
-	if err := os.WriteFile(path, []byte(markpadCanvasDocumentJSON("markpad")), 0o644); err != nil {
+	if err := localFolderAtomicWrite(path, []byte(markpadCanvasDocumentJSON("markpad")), 0o644); err != nil {
 		return a.GetSession(), err
 	}
 	return a.openPath(path)
@@ -1100,5 +1100,9 @@ func localFolderAtomicWrite(path string, data []byte, perm os.FileMode) error {
 	if err := os.WriteFile(tmp, data, perm); err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return nil
 }
