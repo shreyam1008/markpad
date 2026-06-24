@@ -22,6 +22,7 @@ Use a rebuildable SQLite FTS5 sidecar index for workspace-wide search.
 - Controls: Loaded, Local folder, and All scope buttons should expose labels, live result metadata, controlled result regions, and active pressed state while remaining local-only search modes.
 - Phase 2 sync scope: index remains local per device; sync transfers files and metadata, not search cache.
 - Main view: summarize result count, loaded/local distribution, and parsed operator counts from the current result page only.
+- Search Profile: report current result-page bytes and snippet bytes from already-rendered results only.
 
 Implementation bias:
 
