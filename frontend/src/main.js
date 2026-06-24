@@ -15518,24 +15518,17 @@ $('btn-new-mini').addEventListener('click', event => {
   event.stopPropagation();
   toggleMenu('create-menu', event.currentTarget);
 });
-$('create-menu')?.addEventListener('click', event => {
-  event.stopPropagation();
-  const btn = event.target.closest('[data-create-kind]');
-  if (!btn || btn.disabled) return;
-  runCreateMenuAction(btn.dataset.createKind);
-});
-$('task-workflow-menu')?.addEventListener('click', event => {
-  event.stopPropagation();
-  const btn = event.target.closest('[data-task-workflow]');
-  if (!btn || btn.disabled) return;
-  runTaskWorkflowAction(btn.dataset.taskWorkflow);
-});
-$('canvas-workflow-menu')?.addEventListener('click', event => {
-  event.stopPropagation();
-  const btn = event.target.closest('[data-canvas-workflow]');
-  if (!btn || btn.disabled) return;
-  runCanvasWorkflowAction(btn.dataset.canvasWorkflow);
-});
+function bindWorkflowMenuAction(menuId, selector, run) {
+  $(menuId)?.addEventListener('click', event => {
+    event.stopPropagation();
+    const btn = event.target.closest(selector);
+    if (!btn || btn.disabled) return;
+    run(btn);
+  });
+}
+bindWorkflowMenuAction('create-menu', '[data-create-kind]', btn => runCreateMenuAction(btn.dataset.createKind));
+bindWorkflowMenuAction('task-workflow-menu', '[data-task-workflow]', btn => runTaskWorkflowAction(btn.dataset.taskWorkflow));
+bindWorkflowMenuAction('canvas-workflow-menu', '[data-canvas-workflow]', btn => runCanvasWorkflowAction(btn.dataset.canvasWorkflow));
 document.addEventListener('click', event => {
   if (
     $('create-menu')?.contains(event.target)
