@@ -375,6 +375,20 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 	})
 }
 
+func TestFileBadgesStayTextOnly(t *testing.T) {
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		"function fileIcon(path)",
+		"if (!path) return 'MD';",
+		"return (ext || 'TXT').slice(0, 3);",
+		"ico.textContent = fileIcon(note.path);",
+		"ico.textContent = fileIcon(recent.path);",
+	})
+}
+
 func TestCommandPaletteGeneratedEntriesKeepBundleHeadroom(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {
