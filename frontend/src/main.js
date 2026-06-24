@@ -8371,7 +8371,7 @@ function taskProvenanceTitle(task) {
 function renderTaskRow(task, compact) {
   const priorityClass = taskPriorityClass(task);
   return `
-    <div class="task-row${task.checked ? ' done' : ''}${priorityClass ? ` priority-${priorityClass}` : ''}">
+    <div class="task-row${task.checked ? ' done' : ''}${priorityClass ? ` priority-${priorityClass}` : ''}" title="${escapeAttr(taskProvenanceTitle(task))}">
       <button class="task-check" data-task-toggle="${escapeHtml(task.id)}" title="Toggle task">${task.checked ? '✓' : ''}</button>
       <div class="task-body">
         <div class="task-text">${escapeHtml(task.text)}</div>
