@@ -5383,6 +5383,10 @@ function commandItems() {
     { id: 'canvas-pen-tool', icon: 'PEN', title: 'Canvas pen tool', hint: 'Draw freehand paths on the canvas', run: () => { openCanvas(); setCanvasTool('pen'); } },
     { id: 'canvas-text-tool', icon: 'TXT', title: 'Canvas text tool', hint: 'Place or edit canvas text', run: () => { openCanvas(); setCanvasTool('text'); } },
     { id: 'canvas-sticky-tool', icon: 'STK', title: 'Canvas sticky note tool', hint: 'Place a local sticky note card and edit its text immediately', run: () => { openCanvas(); setCanvasTool('sticky'); } },
+    { id: 'canvas-sticky-yellow', icon: 'SNY', title: 'Canvas sticky: yellow', hint: 'Use a warm yellow sticky note preset', run: () => setCanvasStickyPreset('#8a6f00', 'yellow') },
+    { id: 'canvas-sticky-blue', icon: 'SNB', title: 'Canvas sticky: blue', hint: 'Use a cool blue sticky note preset', run: () => setCanvasStickyPreset('#2563eb', 'blue') },
+    { id: 'canvas-sticky-green', icon: 'SNG', title: 'Canvas sticky: green', hint: 'Use a green sticky note preset', run: () => setCanvasStickyPreset('#16a34a', 'green') },
+    { id: 'canvas-sticky-red', icon: 'SNR', title: 'Canvas sticky: red', hint: 'Use a red sticky note preset', run: () => setCanvasStickyPreset('#dc2626', 'red') },
     { id: 'canvas-rect-tool', icon: 'BOX', title: 'Canvas rectangle tool', hint: 'Draw lightweight rectangle shapes', run: () => { openCanvas(); setCanvasTool('rect'); } },
     { id: 'canvas-ellipse-tool', icon: 'ELL', title: 'Canvas ellipse tool', hint: 'Draw lightweight ellipse shapes', run: () => { openCanvas(); setCanvasTool('ellipse'); } },
     { id: 'canvas-line-tool', icon: 'LIN', title: 'Canvas line tool', hint: 'Draw straight line connectors', run: () => { openCanvas(); setCanvasTool('line'); } },
@@ -10579,6 +10583,19 @@ function applyCanvasDrawingPreset(tool, color, width, label) {
   statusText.textContent = selected
     ? `Selected canvas element styled for ${label}`
     : `Canvas ${label} preset ready`;
+}
+
+function setCanvasStickyPreset(color, label) {
+  openCanvas();
+  if (canvasColor) canvasColor.value = color;
+  setCanvasTool('sticky');
+  const selected = hasCanvasSelection();
+  if (selected && canvasDoc.elements[canvasSelectedIndex]?.type === 'sticky') {
+    applySelectedCanvasStyle('stroke');
+    statusText.textContent = `Selected sticky note set to ${label}`;
+    return;
+  }
+  statusText.textContent = `Sticky note preset ready: ${label}`;
 }
 
 function nudgeSelectedCanvasElement(dx, dy, label) {
