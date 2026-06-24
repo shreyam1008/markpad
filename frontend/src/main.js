@@ -728,8 +728,12 @@ function searchRecentsCsv() {
 
 async function copyGeneratedText(build, message, guard = false) {
   if (guard && !canWriteClipboard()) return;
-  await navigator.clipboard.writeText(build());
-  statusText.textContent = message;
+  try {
+    await navigator.clipboard.writeText(build());
+    statusText.textContent = message;
+  } catch {
+    statusText.textContent = 'Clipboard write failed';
+  }
 }
 
 function exportGeneratedText(filename, mime, build, message) {
@@ -3184,48 +3188,27 @@ function searchEmptyHtml(message, query = searchLastQuery) {
 }
 
 async function copySearchProfileMarkdown() {
-  if (!canWriteClipboard()) return;
-  try {
-    await navigator.clipboard.writeText(searchProfileMarkdown());
-    statusText.textContent = 'Search profile copied as Markdown';
-  } catch {
-    statusText.textContent = 'Clipboard write failed';
-  }
+  return copyGeneratedText(searchProfileMarkdown, 'Search profile copied as Markdown', true);
 }
 
 function exportSearchProfileMarkdown() {
-  downloadText('markpad-search-profile.md', 'text/markdown', searchProfileMarkdown());
-  statusText.textContent = 'Search profile exported as Markdown';
+  exportGeneratedText('markpad-search-profile.md', 'text/markdown', searchProfileMarkdown, 'Search profile exported as Markdown');
 }
 
 async function copySearchProfileJson() {
-  if (!canWriteClipboard()) return;
-  try {
-    await navigator.clipboard.writeText(searchProfileJson());
-    statusText.textContent = 'Search profile copied as JSON';
-  } catch {
-    statusText.textContent = 'Clipboard write failed';
-  }
+  return copyGeneratedText(searchProfileJson, 'Search profile copied as JSON', true);
 }
 
 function exportSearchProfileJson() {
-  downloadText('markpad-search-profile.json', 'application/json', searchProfileJson());
-  statusText.textContent = 'Search profile exported as JSON';
+  exportGeneratedText('markpad-search-profile.json', 'application/json', searchProfileJson, 'Search profile exported as JSON');
 }
 
 async function copySearchProfileCsv() {
-  if (!canWriteClipboard()) return;
-  try {
-    await navigator.clipboard.writeText(searchProfileCsv());
-    statusText.textContent = 'Search profile copied as CSV';
-  } catch {
-    statusText.textContent = 'Clipboard write failed';
-  }
+  return copyGeneratedText(searchProfileCsv, 'Search profile copied as CSV', true);
 }
 
 function exportSearchProfileCsv() {
-  downloadText('markpad-search-profile.csv', 'text/csv', searchProfileCsv());
-  statusText.textContent = 'Search profile exported as CSV';
+  exportGeneratedText('markpad-search-profile.csv', 'text/csv', searchProfileCsv, 'Search profile exported as CSV');
 }
 
 function currentFileSearchDefaultQuery() {
@@ -3424,8 +3407,7 @@ async function copyCurrentFileSearchMarkdown(query = currentFileSearchDefaultQue
     statusText.textContent = 'Enter text to copy current-file search results';
     return;
   }
-  await navigator.clipboard.writeText(currentFileSearchMarkdown(q));
-  statusText.textContent = 'Current-file search copied as Markdown';
+  await copyGeneratedText(() => currentFileSearchMarkdown(q), 'Current-file search copied as Markdown');
 }
 
 async function copyCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
@@ -3435,8 +3417,7 @@ async function copyCurrentFileSearchJson(query = currentFileSearchDefaultQuery()
     statusText.textContent = 'Enter text to copy current-file search JSON';
     return;
   }
-  await navigator.clipboard.writeText(currentFileSearchJson(q));
-  statusText.textContent = 'Current-file search copied as JSON';
+  await copyGeneratedText(() => currentFileSearchJson(q), 'Current-file search copied as JSON');
 }
 
 async function copyCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
@@ -3446,8 +3427,7 @@ async function copyCurrentFileSearchCsv(query = currentFileSearchDefaultQuery())
     statusText.textContent = 'Enter text to copy current-file search CSV';
     return;
   }
-  await navigator.clipboard.writeText(currentFileSearchCsv(q));
-  statusText.textContent = 'Current-file search copied as CSV';
+  await copyGeneratedText(() => currentFileSearchCsv(q), 'Current-file search copied as CSV');
 }
 
 function exportCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()) {
@@ -3456,8 +3436,7 @@ function exportCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()
     statusText.textContent = 'Enter text to export current-file search results';
     return;
   }
-  downloadText('markpad-current-file-search.md', 'text/markdown', currentFileSearchMarkdown(q));
-  statusText.textContent = 'Current-file search exported as Markdown';
+  exportGeneratedText('markpad-current-file-search.md', 'text/markdown', () => currentFileSearchMarkdown(q), 'Current-file search exported as Markdown');
 }
 
 function exportCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
@@ -3466,8 +3445,7 @@ function exportCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
     statusText.textContent = 'Enter text to export current-file search JSON';
     return;
   }
-  downloadText('markpad-current-file-search.json', 'application/json', currentFileSearchJson(q));
-  statusText.textContent = 'Current-file search exported as JSON';
+  exportGeneratedText('markpad-current-file-search.json', 'application/json', () => currentFileSearchJson(q), 'Current-file search exported as JSON');
 }
 
 function exportCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
@@ -3476,8 +3454,7 @@ function exportCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
     statusText.textContent = 'Enter text to export current-file search results';
     return;
   }
-  downloadText('markpad-current-file-search.csv', 'text/csv', currentFileSearchCsv(q));
-  statusText.textContent = 'Current-file search exported as CSV';
+  exportGeneratedText('markpad-current-file-search.csv', 'text/csv', () => currentFileSearchCsv(q), 'Current-file search exported as CSV');
 }
 
 function jumpToCurrentFileSearchMatch(offset, length) {
@@ -4240,8 +4217,7 @@ async function copySearchResultsMarkdown() {
     return;
   }
   if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchResultsToMarkdown(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`;
+  await copyGeneratedText(() => searchResultsToMarkdown(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`);
 }
 
 function exportSearchResultsMarkdown() {
@@ -4249,8 +4225,7 @@ function exportSearchResultsMarkdown() {
     statusText.textContent = 'No search results to export';
     return;
   }
-  downloadText('markpad-search-results.md', 'text/markdown', searchResultsToMarkdown(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as Markdown`;
+  exportGeneratedText('markpad-search-results.md', 'text/markdown', () => searchResultsToMarkdown(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as Markdown`);
 }
 
 async function copySearchResultsJson() {
@@ -4259,8 +4234,7 @@ async function copySearchResultsJson() {
     return;
   }
   if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchResultsToJson(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as JSON`;
+  await copyGeneratedText(() => searchResultsToJson(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as JSON`);
 }
 
 function exportSearchResultsJson() {
@@ -4268,8 +4242,7 @@ function exportSearchResultsJson() {
     statusText.textContent = 'No search results to export';
     return;
   }
-  downloadText('markpad-search-results.json', 'application/json', searchResultsToJson(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`;
+  exportGeneratedText('markpad-search-results.json', 'application/json', () => searchResultsToJson(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as JSON`);
 }
 
 async function copySearchResultsCsv() {
@@ -4278,8 +4251,7 @@ async function copySearchResultsCsv() {
     return;
   }
   if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchResultsToCsv(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as CSV`;
+  await copyGeneratedText(() => searchResultsToCsv(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as CSV`);
 }
 
 function exportSearchResultsCsv() {
@@ -4287,8 +4259,7 @@ function exportSearchResultsCsv() {
     statusText.textContent = 'No search results to export';
     return;
   }
-  downloadText('markpad-search-results.csv', 'text/csv', searchResultsToCsv(searchLastResults, searchLastQuery));
-  statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as CSV`;
+  exportGeneratedText('markpad-search-results.csv', 'text/csv', () => searchResultsToCsv(searchLastResults, searchLastQuery), `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} exported as CSV`);
 }
 
 async function copySearchResultPaths() {
