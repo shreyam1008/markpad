@@ -13939,21 +13939,10 @@ function makeNoteRow(note) {
     ctxNoteId = note.id;
     ctxLocalPath = '';
     const hasPath = !!note.path;
-    const isCanvas = getFileType(note.path, note.kind) === 'canvas';
-    const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
+    const type = getFileType(note.path, note.kind);
     setCtxText('star', note.star ? 'Unstar' : 'Star');
-    starBtn.style.display = hasPath ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="open"]').style.display = 'none';
-    ctxMenu.querySelector('[data-ctx="search"]').style.display = 'none';
-    ctxMenu.querySelector('[data-ctx="info"]').style.display = '';
-    ctxMenu.querySelector('[data-ctx="canvas"]').style.display = isCanvas ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';
-    ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = hasPath ? '' : 'none';
-    ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
-    const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
+    setCtxVisible({ star: hasPath, open: 0, search: 0, info: 1, canvas: type === 'canvas', saveas: !hasPath, folder: hasPath, copypath: hasPath, copywikilink: hasPath && type === 'md', copyembed: hasPath, close: 1 });
+    const deleteBtn = ctxBtn('delete');
     setCtxText('delete', 'Delete');
     deleteBtn.style.display = canTrash ? '' : 'none';
     openContextMenuAt(e, row);
@@ -14167,11 +14156,12 @@ async function requestCloseNote(note) {
 
 // ── Context menu ─────────────────────────────────────────
 let ctxPreviousFocus = null;
+const ctxBtn = action => ctxMenu.querySelector(`[data-ctx="${action}"]`);
+const onCtx = (action, handler) => ctxBtn(action).addEventListener('click', handler);
 
-document.addEventListener('click', () => hideContextMenu({ restoreFocus: false }));
 document.addEventListener('click', (event) => {
-  if (canvasContextMenu?.contains(event.target)) return;
-  hideCanvasContextMenu();
+  hideContextMenu({ restoreFocus: false });
+  if (!canvasContextMenu?.contains(event.target)) hideCanvasContextMenu();
 });
 window.addEventListener('blur', () => hideContextMenu({ restoreFocus: false }));
 ctxMenu.addEventListener('contextmenu', (event) => event.preventDefault());
@@ -14213,6 +14203,10 @@ function contextRelatedSearchQuery() {
   if (title) return `name:${title}`;
   if (folder) return `file:${folder}`;
   return '';
+}
+
+function setCtxVisible(items) {
+  Object.entries(items).forEach(([action, visible]) => { ctxBtn(action).style.display = visible ? '' : 'none'; });
 }
 
 function visibleCtxButtons() {
@@ -14265,7 +14259,7 @@ function handleContextMenuKeydown(event) {
 
 function hideContextMenu({ restoreFocus = true } = {}) {
   if (ctxMenu.classList.contains('hidden')) return;
-  hideContextMenu({ restoreFocus: false });
+  ctxMenu.classList.add('hidden');
   document.removeEventListener('keydown', handleContextMenuKeydown);
   if (restoreFocus && ctxPreviousFocus && document.contains(ctxPreviousFocus)) ctxPreviousFocus.focus();
   ctxPreviousFocus = null;
@@ -14288,8 +14282,18 @@ function showContextMenuAt(event) {
   openContextMenuAt(event);
 }
 
+async function activateContextNote() {
+  if (ctxNoteId === activeId) return;
+  if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
+  await window.go.main.App.SetActive(ctxNoteId);
+  activeId = ctxNoteId;
+  loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));
+  renderSession(await window.go.main.App.GetSession());
+  restoreNoteView();
+}
+
 function setCtxText(action, label) {
-  const btn = ctxMenu.querySelector(`[data-ctx="${action}"]`);
+  const btn = ctxBtn(action);
   const text = btn?.querySelector('span:first-child');
   if (text) text.textContent = label;
   else if (btn) btn.textContent = label;
@@ -14302,39 +14306,29 @@ function showLocalFileContextMenu(event, path) {
   event.stopPropagation();
   ctxNoteId = null;
   ctxLocalPath = path;
-  ctxMenu.querySelector('[data-ctx="star"]').style.display = 'none';
-  ctxMenu.querySelector('[data-ctx="open"]').style.display = '';
-  ctxMenu.querySelector('[data-ctx="search"]').style.display = '';
-  ctxMenu.querySelector('[data-ctx="info"]').style.display = 'none';
-  ctxMenu.querySelector('[data-ctx="canvas"]').style.display = 'none';
-  ctxMenu.querySelector('[data-ctx="saveas"]').style.display = 'none';
-  ctxMenu.querySelector('[data-ctx="folder"]').style.display = '';
-  ctxMenu.querySelector('[data-ctx="copypath"]').style.display = '';
-  ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = getFileType(path) === 'md' ? '' : 'none';
-  ctxMenu.querySelector('[data-ctx="copyembed"]').style.display = '';
-  ctxMenu.querySelector('[data-ctx="close"]').style.display = 'none';
-  const deleteBtn = ctxMenu.querySelector('[data-ctx="delete"]');
+  setCtxVisible({ star: 0, open: 1, search: 1, info: 0, canvas: 0, saveas: 0, folder: 1, copypath: 1, copywikilink: getFileType(path) === 'md', copyembed: 1, close: 0 });
+  const deleteBtn = ctxBtn('delete');
   setCtxText('delete', 'Move to Trash');
   deleteBtn.style.display = window.go?.main?.App?.MoveLocalFolderFileToTrash ? '' : 'none';
   openContextMenuAt(event, event.target.closest?.('[data-local-open]'));
 }
 
-ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
+onCtx('star', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
 });
-ctxMenu.querySelector('[data-ctx="open"]').addEventListener('click', async () => {
+onCtx('open', async () => {
   const path = contextTargetPath();
   hideContextMenu({ restoreFocus: false });
   if (path) await openLocalFolderFile(path);
   else statusText.textContent = 'No file path to open';
 });
-ctxMenu.querySelector('[data-ctx="search"]').addEventListener('click', async () => {
+onCtx('search', async () => {
   const query = contextRelatedSearchQuery();
   hideContextMenu({ restoreFocus: false });
   if (query) await showLocalFolder(query);
   else statusText.textContent = 'No file path to search';
 });
-ctxMenu.querySelector('[data-ctx="info"]').addEventListener('click', async () => {
+onCtx('info', async () => {
   if (ctxNoteId) {
     const prevId = activeId;
     if (ctxNoteId !== activeId) {
@@ -14348,58 +14342,44 @@ ctxMenu.querySelector('[data-ctx="info"]').addEventListener('click', async () =>
     }
   }
 });
-ctxMenu.querySelector('[data-ctx="canvas"]').addEventListener('click', async () => {
+onCtx('canvas', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
   if (!note || getFileType(note.path, note.kind) !== 'canvas') {
     statusText.textContent = 'No canvas file selected';
     return;
   }
-  if (ctxNoteId !== activeId) {
-    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
-    await window.go.main.App.SetActive(ctxNoteId);
-    activeId = ctxNoteId;
-    loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));
-    renderSession(await window.go.main.App.GetSession());
-    restoreNoteView();
-  }
+  await activateContextNote();
   await openActiveCanvasOrDraft();
   statusText.textContent = 'Canvas file opened';
 });
-ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () => {
+onCtx('saveas', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
   if (!note || note.path) return;
-  if (ctxNoteId !== activeId) {
-    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
-    await window.go.main.App.SetActive(ctxNoteId);
-    activeId = ctxNoteId;
-    loadContent(await window.go.main.App.GetNoteContent(ctxNoteId));
-    renderSession(await window.go.main.App.GetSession());
-    restoreNoteView();
-  }
+  await activateContextNote();
   await doSaveAs();
 });
-ctxMenu.querySelector('[data-ctx="folder"]').addEventListener('click', () => {
+onCtx('folder', () => {
   const path = contextTargetPath();
   if (path) window.go.main.App.OpenContainingFolder(path);
   else statusText.textContent = 'No file path';
 });
-ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', async () => {
+onCtx('copypath', async () => {
   const path = contextTargetPath();
   if (path) {
     await navigator.clipboard.writeText(path);
     statusText.textContent = 'Path copied';
   } else statusText.textContent = 'No file path to copy';
 });
-ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', async () => {
+onCtx('copywikilink', async () => {
   if (contextTargetPath()) {
     await navigator.clipboard.writeText(`[[${contextWikilinkTitle()}]]`);
     statusText.textContent = 'Wikilink copied';
   } else statusText.textContent = 'No file path to copy';
   hideContextMenu({ restoreFocus: false });
 });
-ctxMenu.querySelector('[data-ctx="copyembed"]').addEventListener('click', async () => {
+onCtx('copyembed', async () => {
   const target = contextEmbedTarget();
   if (target) {
     await navigator.clipboard.writeText(`![[${target}]]`);
@@ -14407,12 +14387,12 @@ ctxMenu.querySelector('[data-ctx="copyembed"]').addEventListener('click', async 
   } else statusText.textContent = 'No file path to copy';
   hideContextMenu({ restoreFocus: false });
 });
-ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
+onCtx('close', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
   await requestCloseNote(note);
 });
-ctxMenu.querySelector('[data-ctx="delete"]').addEventListener('click', async () => {
+onCtx('delete', async () => {
   if (ctxLocalPath) {
     try {
       await window.go.main.App.MoveLocalFolderFileToTrash(ctxLocalPath);
@@ -15145,7 +15125,6 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('italic'); }
   else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('link'); }
   else if (key === 'Escape') {
-    hideCanvasContextMenu();
     if (canvasActive) closeCanvas();
     if (commandOpen) closeCommandPalette();
     if (searchOpen) closeSearchPalette();
