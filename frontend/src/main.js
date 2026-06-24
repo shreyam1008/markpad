@@ -35,6 +35,7 @@ let searchToken = 0;
 let searchActiveIndex = 0;
 let searchLastResults = [];
 let searchLastQuery = '';
+let searchLastDedupe = { input: 0, output: 0, removed: 0 };
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
@@ -2688,6 +2689,7 @@ function searchProfileSnapshot(query = searchLastQuery, results = searchLastResu
     backendQuery: plan.backendQuery || '',
     resultCount: resultItems.length,
     sources,
+    dedupe: searchScope === 'all' ? searchLastDedupe : { input: resultItems.length, output: resultItems.length, removed: 0 },
     operators: {
       terms: plan.terms || [],
       phrases: plan.phrases || [],
@@ -2738,6 +2740,7 @@ function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
     `Backend query: ${snapshot.backendQuery || '(none)'}`,
     `Results: ${snapshot.resultCount}`,
     `Sources: ${sources}`,
+    `De-duplicated: ${snapshot.dedupe?.removed || 0} removed from ${snapshot.dedupe?.input || snapshot.resultCount} merged hits`,
     '',
     '## Operators',
     '',
@@ -2775,6 +2778,9 @@ function searchProfileCsv(snapshot = searchProfileSnapshot()) {
     ['query', snapshot.query || ''],
     ['backend_query', snapshot.backendQuery || ''],
     ['result_count', Number(snapshot.resultCount || 0)],
+    ['dedupe_input', Number(snapshot.dedupe?.input || 0)],
+    ['dedupe_output', Number(snapshot.dedupe?.output || 0)],
+    ['dedupe_removed', Number(snapshot.dedupe?.removed || 0)],
     ['result_page_bytes', Number(snapshot.resultPage?.bytes || 0)],
     ['result_page_snippet_bytes', Number(snapshot.resultPage?.snippetBytes || 0)],
     ['result_page_metadata_bytes', Number(snapshot.resultPage?.metadataBytes || 0)],
@@ -2800,6 +2806,7 @@ function showSearchProfile() {
     <div class="diag-grid">
       <div class="diag-card"><strong>${escapeHtml(snapshot.scope)}</strong><span>Scope</span><small>loaded / local / all</small></div>
       <div class="diag-card"><strong>${snapshot.resultCount}</strong><span>Current results</span><small>${escapeHtml(sourceText)}</small></div>
+      <div class="diag-card"><strong>${snapshot.dedupe.removed || 0}</strong><span>De-duplicated</span><small>${snapshot.dedupe.input || snapshot.resultCount} merged hits</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.resultPage.bytes || 0)}</strong><span>Result page</span><small>${formatBytes(snapshot.resultPage.snippetBytes || 0)} snippets · avg ${formatBytes(snapshot.resultPage.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.cache.bytes || 0)}</strong><span>Loaded cache</span><small>${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries</small></div>
       <div class="diag-card"><strong>${(snapshot.operators.terms || []).length}</strong><span>Text terms</span><small>${escapeHtml((snapshot.operators.terms || []).join(', ') || 'none')}</small></div>
@@ -3312,7 +3319,14 @@ async function runAllSearch(query, token) {
   ]);
   if (token !== searchToken) return;
   const local = (localPack.results || []).filter(result => searchResultMatchesPlan(result, plan));
-  const results = dedupeSearchResults([...loaded, ...local])
+  const merged = [...loaded, ...local];
+  const deduped = dedupeSearchResults(merged);
+  searchLastDedupe = {
+    input: merged.length,
+    output: deduped.length,
+    removed: Math.max(0, merged.length - deduped.length),
+  };
+  const results = deduped
     .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
     .slice(0, 70);
   renderSearchResults(results, query);
