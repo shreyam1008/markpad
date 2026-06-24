@@ -10719,11 +10719,24 @@ function syncCanvasControlsFromSelection() {
   if (canvasWidth && el.type !== 'text' && Number.isFinite(Number(el.width))) canvasWidth.value = String(el.width);
 }
 
+function canvasStickyFillForStroke(value) {
+  const match = /^#?([0-9a-fA-F]{6})$/.exec(String(value || '').trim());
+  if (!match) return '#fff4a8';
+  const int = parseInt(match[1], 16);
+  const channels = [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+  return `#${channels.map(channel => Math.round(channel * 0.16 + 255 * 0.84).toString(16).padStart(2, '0')).join('')}`;
+}
+
+function syncStickyFillFromStroke(element) {
+  if (element?.type === 'sticky') element.fill = canvasStickyFillForStroke(element.stroke);
+}
+
 function applySelectedCanvasStyle(kind) {
   if (!canvasActive || !hasCanvasSelection()) return false;
   const el = canvasDoc.elements[canvasSelectedIndex];
   if ((kind === 'stroke' || kind === 'all') && canvasColor) {
     el.stroke = canvasColor.value;
+    syncStickyFillFromStroke(el);
   }
   if ((kind === 'width' || kind === 'all') && canvasWidth && el.type !== 'text') {
     el.width = Number(canvasWidth.value || el.width || 3);
@@ -10767,6 +10780,7 @@ function copySelectedCanvasStyle() {
   canvasStyleClipboard = {
     stroke: element.stroke || '#1f2937',
     width: Number(element.width || 3),
+    fill: element.fill || '',
   };
   statusText.textContent = 'Canvas style copied';
   return true;
@@ -10784,6 +10798,7 @@ function applyCopiedCanvasStyle() {
   }
   const element = canvasDoc.elements[canvasSelectedIndex];
   element.stroke = canvasStyleClipboard.stroke;
+  if (element.type === 'sticky') element.fill = canvasStyleClipboard.fill || canvasStickyFillForStroke(element.stroke);
   if (element.type !== 'text') element.width = canvasStyleClipboard.width;
   if (canvasColor && /^#[0-9a-fA-F]{6}$/.test(String(element.stroke || ''))) canvasColor.value = element.stroke;
   if (canvasWidth && element.type !== 'text') canvasWidth.value = String(element.width || 3);
@@ -11191,7 +11206,7 @@ canvasStage?.addEventListener('pointerdown', (e) => {
   }
   const base = { id: canvasId(), stroke: canvasColor.value, width: Number(canvasWidth.value || 3) };
   if (canvasTool === 'pen') canvasDrawing = { ...base, type: 'path', points: [point] };
-  else if (canvasTool === 'sticky') canvasDrawing = { ...base, type: 'sticky', x: point.x, y: point.y, w: 220, h: 140, fill: '#fff4a8', text: 'Sticky note', size: 15 };
+  else if (canvasTool === 'sticky') canvasDrawing = { ...base, type: 'sticky', x: point.x, y: point.y, w: 220, h: 140, fill: canvasStickyFillForStroke(base.stroke), text: 'Sticky note', size: 15 };
   else canvasDrawing = { ...base, type: canvasTool, x: point.x, y: point.y, w: 0, h: 0 };
 });
 
