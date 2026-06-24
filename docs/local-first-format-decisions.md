@@ -117,6 +117,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Let Upgrade Map theme/asset metrics use built-in theme constants and current rendered DOM counters only; do not load asset packs to report them.
 - Keep editor layout polish as local UI state; Layout Profile should expose split, focus, compact, wrap, reading width, and zoom without writing to documents.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
+- Keep split divider keyboard controls local and semantic: separator ARIA, arrow/Home/End/Enter resizing, and no document metadata writes.
 - Keep Upgrade Map as a metadata dashboard over existing diagnostics; it must not scan workspaces, load assets, or become a new source of truth.
 - Keep Upgrade Map exports limited to Markdown, JSON, and CSV metadata snapshots; do not include document bodies or deleted draft contents.
 - Let Upgrade Map search metrics use the last parsed query/result state only; opening the map must not execute a new search.
