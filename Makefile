@@ -4,7 +4,7 @@ APP := markpad
 DIST := dist
 TAGS := production,webkit2_41
 
-.PHONY: run dev build css test test-core vet js-check validate fmt clean
+.PHONY: run dev build css budget test test-core vet js-check validate fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -18,6 +18,9 @@ build:
 
 css:
 	npx --yes tailwindcss@3.4.17 -c tailwind.config.cjs -i frontend/src/tailwind.input.css -o frontend/src/tailwind.css --minify
+
+budget:
+	sh scripts/budget.sh
 
 test:
 	$(GO) test ./internal/session ./tests

@@ -11,13 +11,13 @@ This file tracks what each layer costs so new features stay within budget.
 | Wails v2 framework | ~2.5 MB | Webview bindings, IPC, menus, dialogs |
 | Embedded frontend (`frontend/`) | ~0.9 MB raw source | HTML + JS + precompiled CSS (see below) |
 | Session/history logic (`internal/`) | ~15 KB | Pure Go, no heavy deps |
-| **Total binary** | **9.4 MB** | Confirmed June 24, 2026 via `make build` and Wails CLI |
+| **Total binary** | **9,839,400 bytes / 9.38 MiB** | `dist/markpad`, measured June 24, 2026 via `make budget` |
 
 ## Frontend assets (embedded in binary)
 
 | File | Raw size | Lines | Role |
 |------|---------|-------|------|
-| `frontend/src/main.js` | ~743 KB | ~15000 | All frontend logic |
+| `frontend/src/main.js` | 766,385 bytes / 748.4 KiB | ~15000 | All frontend logic |
 | `frontend/index.html` | ~16 KB | ~230 | App shell |
 | `frontend/src/tailwind.css` | ~21 KB | generated | Precompiled utility CSS |
 | `frontend/src/styles.css` | measured in repo | custom | Custom CSS overrides |
@@ -71,6 +71,9 @@ between the main, network, and web processes.
 - **Binary must stay under 10 MB.** Do not add heavy Go dependencies.
 - **Frontend JS growth must be intentional and measured.** The current monolith is already ~743 KB raw;
   prefer pruning, splitting, or lazy paths before adding large new features.
+- **Automated guard:** run `make budget` from the repo root. It checks `dist/markpad` against a
+  10 MiB hard limit and `frontend/src/main.js` against an 800 KiB warning threshold and 900 KiB
+  hard limit. Override the binary path with `MARKPAD_BUDGET_BINARY=/path/to/markpad make budget`.
 - **Tailwind is precompiled.** Never restore the browser CDN compiler; regenerate with `make css`.
 - **No new sync CDN scripts.** Any new library must load with `defer` or on-demand.
 - **Syntax highlighting capped at 5000 lines.** Prevents webview OOM on huge files.
