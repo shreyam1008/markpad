@@ -2,9 +2,9 @@ GO ?= /usr/local/go/bin/go
 WAILS ?= $(HOME)/go/bin/wails
 APP := markpad
 DIST := dist
-TAGS := production,webkit2_41
+TAGS := desktop,production,webkit2_41
 
-.PHONY: run dev build css budget test test-core vet js-check validate fmt clean
+.PHONY: run dev build css budget smoke-desktop test test-core vet js-check validate fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -21,6 +21,9 @@ css:
 
 budget:
 	sh scripts/budget.sh
+
+smoke-desktop: build
+	sh scripts/smoke-desktop.sh
 
 test:
 	$(GO) test ./internal/session ./tests

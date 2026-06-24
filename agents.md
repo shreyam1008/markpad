@@ -200,7 +200,7 @@ Frontend calls these as `window.go.main.App.MethodName()`.
   - macOS: `open`
   - Windows: `explorer`
 - `OpenURL` uses Wails `runtime.BrowserOpenURL` (works cross-platform for HTTP URLs).
-- Build tags: `production,webkit2_41` for Linux production builds.
+- Build tags: `desktop,production,webkit2_41` for Linux production desktop builds.
 
 ### Testing
 - Tests live in `tests/` (integration) and can be added as `_test.go` files in `internal/session/`.

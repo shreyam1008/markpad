@@ -1863,6 +1863,7 @@ function activeType() { const active = cachedNotes.find(n => n.id === activeId);
 function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'archive'].includes(type); }
 function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
 function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function slugifyHeading(value) { return String(value || '').toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '') || 'section'; }
 
 const CODE_LINE_CAP = 5000;
 function renderCode(content, path) {
@@ -2026,28 +2027,140 @@ function renderViewer(content, active) {
 }
 
 // ── Markdown ─────────────────────────────────────────────
-const markedRenderer = new marked.Renderer();
-markedRenderer.heading = function(text, level) {
-  const slug = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
-  return `<h${level} id="${slug}">${text}</h${level}>`;
-};
-marked.setOptions({
-  renderer: markedRenderer,
-  gfm: true,
-  breaks: true,
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try { return hljs.highlight(code, { language: lang }).value; } catch {}
+const markedAvailable = !!(window.marked?.Renderer && window.marked?.parse && window.DOMPurify?.sanitize);
+if (markedAvailable) {
+  const markedRenderer = new marked.Renderer();
+  markedRenderer.heading = function(text, level) {
+    return `<h${level} id="${slugifyHeading(text)}">${text}</h${level}>`;
+  };
+  marked.setOptions({
+    renderer: markedRenderer,
+    gfm: true,
+    breaks: true,
+    highlight(code, lang) {
+      if (window.hljs && lang && hljs.getLanguage(lang)) {
+        try { return hljs.highlight(code, { language: lang }).value; } catch {}
+      }
+      if (window.hljs) {
+        try { return hljs.highlightAuto(code).value; } catch {}
+      }
+      return escapeHtml(code);
     }
-    try { return hljs.highlightAuto(code).value; } catch {}
-    return code;
+  });
+}
+
+function renderMarkdownInline(value) {
+  return escapeHtml(value)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+function renderMarkdownFallback(md) {
+  const lines = String(md || '').split('\n');
+  const out = [];
+  let paragraph = [];
+  let list = '';
+  let inCode = false;
+  let codeLang = '';
+  let codeLines = [];
+
+  const closeParagraph = () => {
+    if (!paragraph.length) return;
+    out.push(`<p>${renderMarkdownInline(paragraph.join(' '))}</p>`);
+    paragraph = [];
+  };
+  const closeList = () => {
+    if (!list) return;
+    out.push(list === 'ol' ? '</ol>' : '</ul>');
+    list = '';
+  };
+  const openList = (kind) => {
+    if (list === kind) return;
+    closeParagraph();
+    closeList();
+    list = kind;
+    out.push(kind === 'ol' ? '<ol>' : '<ul>');
+  };
+  const closeCode = () => {
+    out.push(`<pre class="hljs"><code class="language-${escapeAttr(codeLang)}">${escapeHtml(codeLines.join('\n'))}</code></pre>`);
+    inCode = false;
+    codeLang = '';
+    codeLines = [];
+  };
+
+  for (const line of lines) {
+    const fence = /^```\s*([\w-]+)?\s*$/.exec(line);
+    if (fence) {
+      if (inCode) closeCode();
+      else {
+        closeParagraph();
+        closeList();
+        inCode = true;
+        codeLang = fence[1] || '';
+      }
+      continue;
+    }
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+    if (!line.trim()) {
+      closeParagraph();
+      closeList();
+      continue;
+    }
+    const heading = /^(#{1,6})\s+(.+)$/.exec(line);
+    if (heading) {
+      closeParagraph();
+      closeList();
+      const level = heading[1].length;
+      const text = renderMarkdownInline(heading[2]);
+      out.push(`<h${level} id="${slugifyHeading(heading[2])}">${text}</h${level}>`);
+      continue;
+    }
+    const task = /^[-*]\s+\[([ xX])\]\s+(.+)$/.exec(line);
+    if (task) {
+      openList('ul');
+      out.push(`<li><input type="checkbox" disabled${task[1].toLowerCase() === 'x' ? ' checked' : ''}> ${renderMarkdownInline(task[2])}</li>`);
+      continue;
+    }
+    const bullet = /^[-*]\s+(.+)$/.exec(line);
+    if (bullet) {
+      openList('ul');
+      out.push(`<li>${renderMarkdownInline(bullet[1])}</li>`);
+      continue;
+    }
+    const ordered = /^\d+\.\s+(.+)$/.exec(line);
+    if (ordered) {
+      openList('ol');
+      out.push(`<li>${renderMarkdownInline(ordered[1])}</li>`);
+      continue;
+    }
+    const quote = /^>\s?(.+)$/.exec(line);
+    if (quote) {
+      closeParagraph();
+      closeList();
+      out.push(`<blockquote>${renderMarkdownInline(quote[1])}</blockquote>`);
+      continue;
+    }
+    paragraph.push(line);
   }
-});
+
+  if (inCode) closeCode();
+  closeParagraph();
+  closeList();
+  return out.join('\n');
+}
 
 function renderMd(md) {
-  return DOMPurify.sanitize(marked.parse(md || ''), {
-    ADD_TAGS: ['input'], ADD_ATTR: ['type', 'checked', 'disabled']
-  });
+  if (markedAvailable) {
+    const html = marked.parse(md || '');
+    return DOMPurify.sanitize(html, {
+      ADD_TAGS: ['input'], ADD_ATTR: ['type', 'checked', 'disabled']
+    });
+  }
+  return renderMarkdownFallback(md);
 }
 
 function updateOutline() {

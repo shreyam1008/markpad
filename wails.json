@@ -3,7 +3,7 @@
   "name": "markpad",
   "outputfilename": "markpad",
   "build:dir": "dist",
-  "build:tags": "webkit2_41",
+  "build:tags": "desktop,production,webkit2_41",
   "frontend:dir": "frontend",
   "assetdir": "frontend",
   "wailsjsdir": "dist"

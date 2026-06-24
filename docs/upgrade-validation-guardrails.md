@@ -9,10 +9,11 @@ Run these before calling a validation checkpoint green:
 ```sh
 make test
 /usr/local/go/bin/go test ./...
-/usr/local/go/bin/go test -tags production,webkit2_41 ./...
+/usr/local/go/bin/go test -tags desktop,production,webkit2_41 ./...
 /usr/local/go/bin/go vet ./...
 node --check frontend/src/main.js
 make build
+make smoke-desktop
 stat -c '%s' dist/markpad
 du -h dist/markpad
 ```
@@ -21,8 +22,8 @@ Current validated baseline:
 
 - Date: 2026-06-24
 - Binary: `dist/markpad`
-- Binary size: `9,777,960` bytes (`9.4M`)
-- Idle native smoke RSS observed by perf agent: about `188 MB` on this Linux/WebKit machine.
+- Binary size budget: under `10.00 MiB` via `make budget`.
+- Idle native smoke PSS observed by perf agent: about `184 MiB` across the Wails/WebKit process tree on this Linux/WebKit machine.
 
 ## Perf guardrails
 
@@ -54,4 +55,6 @@ Main orchestrator owns integration, fixes, commits, and scope control.
 - Canvas frame time with minimap on/off at 100, 1000, and 5000 elements.
 - Canvas undo heap growth near the snapshot cap.
 - Full PNG export peak RSS near the 4096 px cap.
+- Desktop build tags must remain `desktop,production,webkit2_41`; builds without `desktop` can open a blank Wails shell.
+- Desktop smoke should prefer the `MARKPAD_DEBUG_BOOT=1` DOM probe over XWD screenshots on Linux; XWD can capture WebKit accelerated surfaces as blank white even when DOM is live.
 - Windows installer VM smoke for file associations before shipping NSIS changes.

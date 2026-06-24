@@ -36,7 +36,7 @@ The local validation checkpoint is:
 make validate
 ```
 
-That expands to core tests, full Go tests, production-tag Go tests, `go vet`, frontend syntax checking, and production-style build.
+That expands to core tests, full Go tests, desktop production-tag Go tests, `go vet`, frontend syntax checking, and production-style build.
 
 CI should mirror these checks so the long-running upgrade does not drift from buildable, testable, lightweight behavior.
 

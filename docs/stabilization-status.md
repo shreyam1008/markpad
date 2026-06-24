@@ -4,12 +4,13 @@ Updated: 2026-06-24
 
 ## Current baseline
 
-- `make validate` passes: core tests, all Go tests, production-tag tests, `go vet`, `node --check frontend/src/main.js`, and `make build`.
+- `make validate` passes: core tests, all Go tests, desktop production-tag tests, `go vet`, `node --check frontend/src/main.js`, and `make build`.
 - Wails CLI build now works with the committed `wails.json`: `go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 build -nopackage -nosyncgomod -m`.
 - Release binary remains lightweight: `dist/markpad` is about 9.4 MiB.
 - Wails CLI binary output is about 9.5 MiB at `dist/bin/markpad`.
-- Runtime process tree sample from the recovery pass: about 426.1 MiB summed RSS and 173.5 MiB PSS after 3 seconds.
-- UI evidence captured from a real app window at 1180x760 showed the editor, sidebar, top toolbar, and status bar.
+- Runtime process tree sample from the recovery pass: about 432 MiB summed RSS and 184 MiB PSS across the main Wails/WebKit process tree.
+- UI evidence from the desktop-tag recovery found that builds without `desktop` can open a blank Wails shell; build tags are now guarded.
+- Desktop smoke now uses an env-gated DOM probe because Linux XWD screenshots can show WebKit surfaces as blank white even when Markpad's DOM is live and sized.
 
 ## Recent stabilization commits
 

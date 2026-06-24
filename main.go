@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -118,7 +120,13 @@ func main() {
 	}
 	app.pendingFiles = cliFiles
 
-	err := wails.Run(&options.App{
+	frontendAssets, err := fs.Sub(assets, "frontend")
+	if err != nil {
+		println("Error:", err.Error())
+		os.Exit(1)
+	}
+
+	err = wails.Run(&options.App{
 		Title:     "Markpad",
 		Width:     1180,
 		Height:    760,
@@ -126,7 +134,7 @@ func main() {
 		MinHeight: 480,
 		Menu:      appMenu,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets: frontendAssets,
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
@@ -136,7 +144,29 @@ func main() {
 			UniqueId:               "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single",
 			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
-		OnStartup:     app.startup,
+		OnStartup: app.startup,
+		OnDomReady: func(ctx context.Context) {
+			if os.Getenv("MARKPAD_DEBUG_BOOT") == "1" {
+				println("Markpad DOM ready")
+				runtime.WindowExecJS(ctx, `setTimeout(() => {
+					try {
+						const app = document.getElementById('app');
+						const rect = app ? app.getBoundingClientRect() : null;
+						window.runtime?.LogPrint?.('Markpad DOM probe ' + JSON.stringify({
+							title: document.title,
+							bodyText: document.body?.innerText?.slice(0, 120) || '',
+							appFound: !!app,
+							appChildren: app?.children?.length || 0,
+							appRect: rect ? { width: Math.round(rect.width), height: Math.round(rect.height) } : null,
+							bodyBg: getComputedStyle(document.body).backgroundColor,
+							appDisplay: app ? getComputedStyle(app).display : ''
+						}));
+					} catch (err) {
+						window.runtime?.LogPrint?.('Markpad DOM probe error ' + (err?.message || err));
+					}
+				}, 200);`)
+			}
+		},
 		OnShutdown:    app.shutdown,
 		OnBeforeClose: app.beforeClose,
 		Bind: []interface{}{

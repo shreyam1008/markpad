@@ -34,7 +34,7 @@ modules:
         CGO_ENABLED: "1"
     build-commands:
       # Wails v2 embeds the frontend at build time. The gnome runtime provides WebKitGTK.
-      - go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o markpad .
+      - go build -tags "desktop,production,webkit2_41" -trimpath -ldflags="-s -w" -o markpad .
       - install -Dm755 markpad /app/bin/markpad
       # Desktop file
       - install -Dm644 packaging/linux/markpad.desktop /app/share/applications/io.github.markpad.desktop
