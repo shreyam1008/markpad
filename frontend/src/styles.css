@@ -596,7 +596,20 @@ body.markpad-compact #modal-body {
 .pref-theme {
   border: 1px solid var(--border); border-radius: 10px; background: var(--editor);
   color: var(--muted); padding: 8px 6px; font-size: 11px; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
+.pref-theme::after {
+  content: attr(data-theme-mode);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 1px 5px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.pref-theme[data-theme-mode="dark"]::after { border-color: color-mix(in srgb, var(--accent) 42%, var(--border)); color: var(--accent); }
 .pref-theme:hover, .pref-theme.active { border-color: var(--accent); color: var(--text); background: var(--hover); }
 .pref-inline-action,
 .theme-lab-actions button {

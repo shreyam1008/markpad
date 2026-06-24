@@ -14265,7 +14265,7 @@ function applyImportedLocalSettings() {
 async function showPreferences() {
   const storagePath = await window.go.main.App.GetStoragePath();
   const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
-  const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}">${theme.label}</button>`).join('');
+  const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" data-theme-mode="${theme.mode}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}">${theme.label}</button>`).join('');
   showModal('Preferences', `
     <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
