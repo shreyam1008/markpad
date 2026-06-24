@@ -10056,7 +10056,16 @@ function taskVisiblePageFootprint(tasks) {
   };
 }
 
-function taskSourceProfileSnapshot(allTasks, visibleTasks) {
+async function getLocalTaskScanProfile() {
+  if (!window.go?.main?.App?.GetLocalFolderTaskScanProfile) return null;
+  try {
+    return await window.go.main.App.GetLocalFolderTaskScanProfile(1000);
+  } catch {
+    return null;
+  }
+}
+
+function taskSourceProfileSnapshot(allTasks, visibleTasks, scanProfile = null) {
   const tasks = Array.isArray(allTasks) ? allTasks : [];
   const visible = Array.isArray(visibleTasks) ? visibleTasks : visibleTasksForView(tasks);
   const sourceFiles = new Set(tasks.map(task => task.path || 'Draft'));
@@ -10123,6 +10132,42 @@ function taskSourceProfileSnapshot(allTasks, visibleTasks) {
     backend: {
       localFolderTasks: !!window.go?.main?.App?.ListLocalFolderTasks,
       appendLocalFolderTask: !!window.go?.main?.App?.AppendLocalFolderTask,
+      taskScanProfile: !!window.go?.main?.App?.GetLocalFolderTaskScanProfile,
+    },
+    scan: scanProfile ? {
+      available: true,
+      path: scanProfile.path || '',
+      missing: !!scanProfile.missing,
+      limit: Number(scanProfile.limit || 0),
+      fileCapBytes: Number(scanProfile.fileCapBytes || 0),
+      filesScanned: Number(scanProfile.filesScanned || 0),
+      markdownFiles: Number(scanProfile.markdownFiles || 0),
+      taskFiles: Number(scanProfile.taskFiles || 0),
+      skippedFiles: Number(scanProfile.skippedFiles || 0),
+      skippedDirs: Number(scanProfile.skippedDirs || 0),
+      oversizeFiles: Number(scanProfile.oversizeFiles || 0),
+      readErrors: Number(scanProfile.readErrors || 0),
+      tasks: Number(scanProfile.tasks || 0),
+      openTasks: Number(scanProfile.openTasks || 0),
+      doneTasks: Number(scanProfile.doneTasks || 0),
+      truncated: !!scanProfile.truncated,
+    } : {
+      available: false,
+      path: '',
+      missing: false,
+      limit: 0,
+      fileCapBytes: 0,
+      filesScanned: 0,
+      markdownFiles: 0,
+      taskFiles: 0,
+      skippedFiles: 0,
+      skippedDirs: 0,
+      oversizeFiles: 0,
+      readErrors: 0,
+      tasks: 0,
+      openTasks: 0,
+      doneTasks: 0,
+      truncated: false,
     },
     note: 'Task views are derived from Markdown checkbox lines; Markpad does not create a hidden task database.',
   };
@@ -10130,7 +10175,7 @@ function taskSourceProfileSnapshot(allTasks, visibleTasks) {
 
 async function currentTaskSourceProfileSnapshot() {
   const allTasks = await collectLoadedTasks();
-  return taskSourceProfileSnapshot(allTasks, visibleTasksForView(allTasks));
+  return taskSourceProfileSnapshot(allTasks, visibleTasksForView(allTasks), await getLocalTaskScanProfile());
 }
 
 function taskSourceProfileMarkdown(snapshot) {
@@ -10174,10 +10219,22 @@ function taskSourceProfileMarkdown(snapshot) {
     `- Generated visible Todo.txt size: ${formatBytes(snapshot.formats.generatedTodoBytes || 0)}`,
     `- Visible task page footprint: ${formatBytes(snapshot.footprint?.bytes || 0)} (${snapshot.footprint?.count || 0} tasks, ${formatBytes(snapshot.footprint?.textBytes || 0)} text)`,
     '',
+    '## Local folder scan',
+    '',
+    `- Scan profile: ${snapshot.scan.available ? 'available' : 'unavailable'}`,
+    `- Path: ${snapshot.scan.path || '(none)'}`,
+    `- Limit: ${snapshot.scan.limit || 0} tasks`,
+    `- File cap: ${formatBytes(snapshot.scan.fileCapBytes || 0)} per Markdown file`,
+    `- Files scanned: ${snapshot.scan.filesScanned || 0} (${snapshot.scan.markdownFiles || 0} Markdown, ${snapshot.scan.taskFiles || 0} with tasks)`,
+    `- Tasks counted: ${snapshot.scan.tasks || 0} (${snapshot.scan.openTasks || 0} open, ${snapshot.scan.doneTasks || 0} done)`,
+    `- Skipped: ${snapshot.scan.skippedFiles || 0} files, ${snapshot.scan.skippedDirs || 0} dirs, ${snapshot.scan.oversizeFiles || 0} oversize, ${snapshot.scan.readErrors || 0} read errors`,
+    `- Truncated at limit: ${snapshot.scan.truncated ? 'yes' : 'no'}`,
+    '',
     '## Backend bridges',
     '',
     `- Local folder task scan: ${snapshot.backend.localFolderTasks ? 'available' : 'unavailable'}`,
     `- Append local folder task: ${snapshot.backend.appendLocalFolderTask ? 'available' : 'unavailable'}`,
+    `- Local scan diagnostics: ${snapshot.backend.taskScanProfile ? 'available' : 'unavailable'}`,
     '',
     snapshot.note,
     '',
@@ -10219,8 +10276,24 @@ function taskSourceProfileCsv(snapshot) {
     ['visible_page_text_bytes', Number(snapshot.footprint?.textBytes || 0)],
     ['visible_page_metadata_bytes', Number(snapshot.footprint?.metadataBytes || 0)],
     ['visible_page_average_bytes', Number(snapshot.footprint?.averageBytes || 0)],
+    ['scan_available', snapshot.scan.available ? 'true' : 'false'],
+    ['scan_path', snapshot.scan.path || ''],
+    ['scan_limit', Number(snapshot.scan.limit || 0)],
+    ['scan_file_cap_bytes', Number(snapshot.scan.fileCapBytes || 0)],
+    ['scan_files_scanned', Number(snapshot.scan.filesScanned || 0)],
+    ['scan_markdown_files', Number(snapshot.scan.markdownFiles || 0)],
+    ['scan_task_files', Number(snapshot.scan.taskFiles || 0)],
+    ['scan_skipped_files', Number(snapshot.scan.skippedFiles || 0)],
+    ['scan_skipped_dirs', Number(snapshot.scan.skippedDirs || 0)],
+    ['scan_oversize_files', Number(snapshot.scan.oversizeFiles || 0)],
+    ['scan_read_errors', Number(snapshot.scan.readErrors || 0)],
+    ['scan_tasks', Number(snapshot.scan.tasks || 0)],
+    ['scan_open_tasks', Number(snapshot.scan.openTasks || 0)],
+    ['scan_done_tasks', Number(snapshot.scan.doneTasks || 0)],
+    ['scan_truncated', snapshot.scan.truncated ? 'true' : 'false'],
     ['local_folder_task_scan', snapshot.backend.localFolderTasks ? 'true' : 'false'],
     ['append_local_folder_task', snapshot.backend.appendLocalFolderTask ? 'true' : 'false'],
+    ['local_folder_task_scan_profile', snapshot.backend.taskScanProfile ? 'true' : 'false'],
   ];
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
@@ -10239,6 +10312,8 @@ async function showTaskSourceProfile() {
       <div class="diag-card"><strong>${formatBytes(snapshot.footprint.bytes || 0)}</strong><span>Visible page</span><small>${formatBytes(snapshot.footprint.textBytes || 0)} text · avg ${formatBytes(snapshot.footprint.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${snapshot.taskFile.found ? 'found' : 'missing'}</strong><span>Task file</span><small>${escapeHtml(snapshot.taskFile.path || 'Use setup or starter')}</small></div>
       <div class="diag-card"><strong>${snapshot.backend.localFolderTasks ? 'yes' : 'no'}</strong><span>Local scan bridge</span><small>${snapshot.backend.appendLocalFolderTask ? 'append available' : 'append fallback to draft'}</small></div>
+      <div class="diag-card"><strong>${snapshot.scan.tasks || 0}/${snapshot.scan.limit || 0}</strong><span>Local scan cap</span><small>${snapshot.scan.truncated ? 'truncated' : 'not truncated'} · ${snapshot.scan.taskFiles || 0} task files</small></div>
+      <div class="diag-card"><strong>${snapshot.scan.skippedFiles || 0}</strong><span>Skipped files</span><small>${snapshot.scan.oversizeFiles || 0} oversize · cap ${formatBytes(snapshot.scan.fileCapBytes || 0)}</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-task-source-profile-md>Copy MD</button>

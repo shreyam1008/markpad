@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -60,5 +61,34 @@ func TestLocalTaskLineStatusMatchesPortableMarkdownTasks(t *testing.T) {
 		if open != tc.open || done != tc.done || ok != tc.ok {
 			t.Fatalf("localTaskLineStatus(%q) = open %v done %v ok %v, want open %v done %v ok %v", tc.line, open, done, ok, tc.open, tc.done, tc.ok)
 		}
+	}
+}
+
+func TestScanLocalFolderTasksReportsLimitsAndPortableCounts(t *testing.T) {
+	root := t.TempDir()
+	content := strings.Join([]string{
+		"- [ ] open task",
+		"- [x] done task",
+		"```",
+		"- [ ] ignored code task",
+		"```",
+		"1. [ ] ordered task",
+	}, "\n")
+	if err := os.WriteFile(filepath.Join(root, "tasks.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	profile, tasks := scanLocalFolderTasks(LocalFolderInfo{Path: root}, 2, true)
+	if len(tasks) != 2 {
+		t.Fatalf("len(tasks) = %d, want 2", len(tasks))
+	}
+	if profile.Tasks != 2 || profile.OpenTasks != 1 || profile.DoneTasks != 1 {
+		t.Fatalf("profile counts = tasks %d open %d done %d, want tasks 2 open 1 done 1", profile.Tasks, profile.OpenTasks, profile.DoneTasks)
+	}
+	if !profile.Truncated {
+		t.Fatalf("profile.Truncated = false, want true")
+	}
+	if profile.MarkdownFiles != 1 || profile.TaskFiles != 1 {
+		t.Fatalf("profile files = markdown %d task %d, want 1/1", profile.MarkdownFiles, profile.TaskFiles)
 	}
 }

@@ -34,47 +34,112 @@ type LocalFolderTask struct {
 	Tags       []string `json:"tags"`
 }
 
+type LocalFolderTaskScanProfile struct {
+	Path          string `json:"path"`
+	Missing       bool   `json:"missing"`
+	Limit         int    `json:"limit"`
+	FileCapBytes  int64  `json:"fileCapBytes"`
+	FilesScanned  int    `json:"filesScanned"`
+	MarkdownFiles int    `json:"markdownFiles"`
+	TaskFiles     int    `json:"taskFiles"`
+	SkippedFiles  int    `json:"skippedFiles"`
+	SkippedDirs   int    `json:"skippedDirs"`
+	OversizeFiles int    `json:"oversizeFiles"`
+	ReadErrors    int    `json:"readErrors"`
+	Tasks         int    `json:"tasks"`
+	OpenTasks     int    `json:"openTasks"`
+	DoneTasks     int    `json:"doneTasks"`
+	Truncated     bool   `json:"truncated"`
+}
+
 func (a *App) ListLocalFolderTasks(limit int) []LocalFolderTask {
-	root := a.GetLocalFolder()
-	if root.Path == "" || root.Missing {
-		return []LocalFolderTask{}
-	}
+	_, tasks := scanLocalFolderTasks(a.GetLocalFolder(), limit, true)
+	return tasks
+}
+
+func (a *App) GetLocalFolderTaskScanProfile(limit int) LocalFolderTaskScanProfile {
+	profile, _ := scanLocalFolderTasks(a.GetLocalFolder(), limit, false)
+	return profile
+}
+
+func normalizeLocalTaskLimit(limit int) int {
 	if limit <= 0 || limit > localTaskLimit {
-		limit = localTaskLimit
+		return localTaskLimit
+	}
+	return limit
+}
+
+func scanLocalFolderTasks(root LocalFolderInfo, limit int, collect bool) (LocalFolderTaskScanProfile, []LocalFolderTask) {
+	limit = normalizeLocalTaskLimit(limit)
+	profile := LocalFolderTaskScanProfile{
+		Path:         root.Path,
+		Missing:      root.Missing,
+		Limit:        limit,
+		FileCapBytes: localTaskFileCap,
 	}
 	tasks := make([]LocalFolderTask, 0, minInt(limit, 128))
+	if root.Path == "" || root.Missing {
+		return profile, tasks
+	}
 	_ = filepath.WalkDir(root.Path, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
+			profile.SkippedFiles++
 			return nil
 		}
 		if entry.IsDir() {
 			if shouldSkipLocalDir(entry.Name()) && path != root.Path {
+				profile.SkippedDirs++
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if len(tasks) >= limit {
-			return filepath.SkipAll
+		info, err := entry.Info()
+		if err != nil {
+			profile.SkippedFiles++
+			return nil
 		}
+		profile.FilesScanned++
 		if fileKind(path) != "markdown" {
 			return nil
 		}
-		info, err := entry.Info()
-		if err != nil || info.Size() > localTaskFileCap {
+		profile.MarkdownFiles++
+		if info.Size() > localTaskFileCap {
+			profile.SkippedFiles++
+			profile.OversizeFiles++
 			return nil
 		}
 		content, err := os.ReadFile(path)
 		if err != nil {
+			profile.SkippedFiles++
+			profile.ReadErrors++
 			return nil
 		}
-		tasks = append(tasks, parseLocalTasks(root.Path, path, string(content))...)
-		if len(tasks) >= limit {
-			tasks = tasks[:limit]
+		parsed := parseLocalTasks(root.Path, path, string(content))
+		if len(parsed) > 0 {
+			profile.TaskFiles++
+		}
+		for _, task := range parsed {
+			if profile.Tasks >= limit {
+				profile.Truncated = true
+				return filepath.SkipAll
+			}
+			profile.Tasks++
+			if task.Checked {
+				profile.DoneTasks++
+			} else {
+				profile.OpenTasks++
+			}
+			if collect {
+				tasks = append(tasks, task)
+			}
+		}
+		if profile.Tasks >= limit {
+			profile.Truncated = true
 			return filepath.SkipAll
 		}
 		return nil
 	})
-	return tasks
+	return profile, tasks
 }
 
 func (a *App) ToggleLocalFolderTask(id string, checked bool) []LocalFolderTask {
