@@ -2930,6 +2930,8 @@ function showSearchProfile() {
       <div class="diag-card"><strong>${(snapshot.operators.fuzzyTerms || []).length}</strong><span>Fuzzy terms</span><small>${escapeHtml((snapshot.operators.fuzzyTerms || []).map(value => `~${value}`).join(', ') || 'none')}</small></div>
       <div class="diag-card"><strong>${snapshot.capabilities.loadedBackend ? 'yes' : 'no'}</strong><span>Loaded bridge</span><small>Go search fast path</small></div>
       <div class="diag-card"><strong>${snapshot.capabilities.localFolderSearch ? 'yes' : 'no'}</strong><span>Local bridge</span><small>Current folder search path</small></div>
+      <div class="diag-card"><strong>pending</strong><span>Loaded cap</span><small>Cap large notes before Wails bridge</small></div>
+      <div class="diag-card"><strong>pending</strong><span>Scan cancel</span><small>Serialize or cancel older folder scans</small></div>
       <div class="diag-card"><strong>planned</strong><span>SQLite FTS5 sidecar</span><small>Rebuildable cache, not source of truth</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
