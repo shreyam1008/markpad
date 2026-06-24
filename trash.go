@@ -45,8 +45,11 @@ func (a *App) ListFileTrash() []FileTrashItem {
 	if a == nil || a.store == nil {
 		return []FileTrashItem{}
 	}
-	items, _ := a.pruneFileTrash()
-	return items
+	state, err := a.readFileTrashState()
+	if err != nil {
+		return []FileTrashItem{}
+	}
+	return state.Items
 }
 
 func (a *App) MoveFileToTrash(id string) (SessionState, error) {
@@ -150,7 +153,10 @@ func (a *App) DeleteFileTrash(id string) []FileTrashItem {
 	filtered := state.Items[:0]
 	for _, item := range state.Items {
 		if item.ID == id {
-			_ = os.Remove(item.TrashPath)
+			if removeTrashFile(item.TrashPath) {
+				continue
+			}
+			filtered = append(filtered, item)
 			continue
 		}
 		filtered = append(filtered, item)
@@ -169,12 +175,15 @@ func (a *App) EmptyFileTrash() []FileTrashItem {
 	if err != nil {
 		return []FileTrashItem{}
 	}
+	retained := state.Items[:0]
 	for _, item := range state.Items {
-		_ = os.Remove(item.TrashPath)
+		if !removeTrashFile(item.TrashPath) {
+			retained = append(retained, item)
+		}
 	}
-	state.Items = nil
+	state.Items = retained
 	_ = a.writeFileTrashState(state)
-	return []FileTrashItem{}
+	return state.Items
 }
 
 func (a *App) CleanupExpiredFileTrash() FileTrashCleanupResult {
@@ -191,13 +200,16 @@ func (a *App) CleanupExpiredFileTrash() FileTrashCleanupResult {
 	removed := 0
 	for _, item := range state.Items {
 		if item.DeletedAt.Before(cutoff) {
-			_ = os.Remove(item.TrashPath)
-			removed++
-			continue
+			if removeTrashFile(item.TrashPath) {
+				removed++
+				continue
+			}
 		}
 		if _, err := os.Stat(item.TrashPath); err != nil {
-			removed++
-			continue
+			if errors.Is(err, os.ErrNotExist) {
+				removed++
+				continue
+			}
 		}
 		filtered = append(filtered, item)
 	}
@@ -219,13 +231,16 @@ func (a *App) pruneFileTrash() ([]FileTrashItem, error) {
 	changed := false
 	for _, item := range state.Items {
 		if item.DeletedAt.Before(cutoff) {
-			_ = os.Remove(item.TrashPath)
-			changed = true
-			continue
+			if removeTrashFile(item.TrashPath) {
+				changed = true
+				continue
+			}
 		}
 		if _, err := os.Stat(item.TrashPath); err != nil {
-			changed = true
-			continue
+			if errors.Is(err, os.ErrNotExist) {
+				changed = true
+				continue
+			}
 		}
 		filtered = append(filtered, item)
 	}
@@ -234,6 +249,14 @@ func (a *App) pruneFileTrash() ([]FileTrashItem, error) {
 		_ = a.writeFileTrashState(state)
 	}
 	return state.Items, nil
+}
+
+func removeTrashFile(path string) bool {
+	if strings.TrimSpace(path) == "" {
+		return true
+	}
+	err := os.Remove(path)
+	return err == nil || errors.Is(err, os.ErrNotExist)
 }
 
 func (a *App) readFileTrashState() (fileTrashState, error) {
