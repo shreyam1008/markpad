@@ -104,12 +104,12 @@ Initial implementation constraints:
 
 - `Note` creates a local Markdown note when a default folder is configured, otherwise it falls back to an unsaved Markdown draft.
 - `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
-- `Canvas` in the sidebar `+ New` menu starts a scratch canvas immediately; the Canvas workflow `New canvas file` action creates a native `.markcanvas.json` file through Markpad's local canvas backend.
+- `Canvas` in the sidebar `+ New` menu creates a native `.markcanvas.json` file through Markpad's local canvas backend; the Canvas workflow `Open canvas` action can still fall back to scratch.
 - `Other file` creates only local text/code files with validated extensions, lightweight starters for known text formats, executable/binary-looking extensions blocked, and collision-safe numbering.
 - The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and Other file with validated text-safe extensions.
 - Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
 - Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.
-- File-backed canvas creation must produce a native `.markcanvas.json` document. The sidebar `+ New` Canvas action starts a scratch canvas immediately, while the Canvas workflow New canvas file action creates the local file-backed document.
+- File-backed canvas creation must produce a native `.markcanvas.json` document. The sidebar `+ New` Canvas action creates the local file-backed document, while the Canvas workflow Open canvas action can still fall back to scratch.
 - Canvas workflow menus should expose Open canvas, New canvas file, Save canvas file, Write active, Save draft JSON, and Loaded files map without adding a heavy drawing dependency.
 - Choosing a local folder is a storage prerequisite for file-backed note/canvas creation, not the default product narrative or startup mode.
 - If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.

@@ -15443,7 +15443,7 @@ async function runCreateMenuAction(kind) {
       await openTaskFileFromMenu();
       break;
     case 'canvas':
-      startScratchCanvasFromMenu();
+      await createCanvasFromMenu();
       break;
     case 'open-folder':
       if (await ensureReadyLocalFolder('Choose a local folder before opening the workspace')) await openConfiguredLocalFolder();
