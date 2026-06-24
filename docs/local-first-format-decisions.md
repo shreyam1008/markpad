@@ -42,6 +42,7 @@ Use a Markdown task file as the canonical format.
 - Views: list, calendar, and kanban are projections of the same file.
 - Controls: task view, source, status filters, and query examples should expose clear labels and active pressed state while remaining projections over Markdown.
 - Task rows: list, calendar, and kanban cards should show compact loaded/local, source line, and source-title provenance from parsed Markdown metadata only.
+- Full task provenance can live in the chip title for traceability without expanding every row or adding a second task store.
 - No lock-in: users can edit the task file in any Markdown editor.
 - Diagnostics: Task Source Profile must expose loaded/local counts, due buckets, active filters, generated `tasks.md` size, and export readiness.
 - Task Source Profile should report visible task page bytes and generated portable export sizes from already parsed task metadata only.
