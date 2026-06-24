@@ -10,6 +10,9 @@ let activeId = '';
 let cachedNotes = [];
 let draftTimer = null;
 let renderTimer = null;
+let splitScrollFrame = 0;
+let splitScrollSource = '';
+let splitScrollReleaseTimer = null;
 let draggedNoteId = null;
 let ctxNoteId = null;
 let findOpen = false;
@@ -2002,7 +2005,11 @@ function renderViewer(content, active) {
   viewerRenderKey = stableKey;
   if (ft === 'pdf') { renderPdf(active); return; }
   if (ft === 'image') { renderImagePreview(active); return; }
-  if (ft === 'md') { viewer.innerHTML = renderMd(content); return; }
+  if (ft === 'md') {
+    viewer.innerHTML = renderMd(content);
+    syncSplitScrollAfterRender();
+    return;
+  }
   if (isReadOnlyType(ft)) { viewer.innerHTML = renderDocumentCard(active); return; }
   viewer.innerHTML = renderCode(content, active?.path);
 }
@@ -13913,6 +13920,42 @@ function makeNoteRow(note) {
 
 function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
 
+function isMarkdownSplitActive() {
+  if (viewMode !== 'split') return false;
+  const active = cachedNotes.find(n => n.id === activeId);
+  return getFileType(active?.path, active?.kind) === 'md' && !editorCont.classList.contains('hidden') && !viewerCont.classList.contains('hidden');
+}
+
+function scrollableDistance(el) {
+  return Math.max(0, el.scrollHeight - el.clientHeight);
+}
+
+function syncSplitScroll(source) {
+  if (!isMarkdownSplitActive()) return;
+  if (splitScrollSource && splitScrollSource !== source) return;
+  splitScrollSource = source;
+  clearTimeout(splitScrollReleaseTimer);
+  splitScrollReleaseTimer = setTimeout(() => { splitScrollSource = ''; }, 120);
+  if (splitScrollFrame) return;
+  splitScrollFrame = requestAnimationFrame(() => {
+    splitScrollFrame = 0;
+    if (!isMarkdownSplitActive()) return;
+    const from = source === 'editor' ? editor : viewerCont;
+    const to = source === 'editor' ? viewerCont : editor;
+    const fromMax = scrollableDistance(from);
+    const toMax = scrollableDistance(to);
+    if (toMax <= 0) return;
+    const ratio = fromMax > 0 ? from.scrollTop / fromMax : 0;
+    const nextTop = Math.max(0, Math.min(toMax, ratio * toMax));
+    if (Math.abs(to.scrollTop - nextTop) > 1) to.scrollTop = nextTop;
+  });
+}
+
+function syncSplitScrollAfterRender() {
+  if (!isMarkdownSplitActive()) return;
+  requestAnimationFrame(() => syncSplitScroll('editor'));
+}
+
 function saveScrollPos() {
   if (!activeId) return;
   const pos = {
@@ -14138,7 +14181,10 @@ function setView(mode) {
     renderViewer(currentContent, active);
   }
   if (mode === 'split') {
-    requestAnimationFrame(applySplitRatio);
+    requestAnimationFrame(() => {
+      applySplitRatio();
+      syncSplitScroll('editor');
+    });
   }
   if (mode !== 'split') {
     editorCont.style.flex = '';
@@ -14268,14 +14314,20 @@ document.querySelectorAll('[data-section-toggle]').forEach(btn => {
 });
 
 // ── Editor ───────────────────────────────────────────────
-editor.addEventListener('scroll', queueReadPositionSave);
+editor.addEventListener('scroll', () => {
+  syncSplitScroll('editor');
+  queueReadPositionSave();
+});
 editor.addEventListener('keyup', () => {
   queueReadPositionSave();
   updateStats();
 });
 editor.addEventListener('click', updateStats);
 editor.addEventListener('select', updateStats);
-viewerCont.addEventListener('scroll', queueReadPositionSave);
+viewerCont.addEventListener('scroll', () => {
+  syncSplitScroll('viewer');
+  queueReadPositionSave();
+});
 window.addEventListener('beforeunload', saveScrollPos);
 
 function updateHistoryButtons() {

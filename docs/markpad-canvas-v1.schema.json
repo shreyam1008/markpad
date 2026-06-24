@@ -2,7 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://markpad.local/schemas/canvas-v1.json",
   "title": "Markpad Canvas v1",
-  "description": "Portable local-first Markpad canvas document. Content state only; transient view/session state should be stored separately.",
+  "description": "Portable local-first Markpad canvas document stored natively as .markcanvas.json. JSON Canvas / Obsidian .canvas compatibility must flow through explicit import/export adapters; transient view/session state should be stored separately.",
+  "x-markpad-nativeExtension": ".markcanvas.json",
+  "x-markpad-interchangeExtensions": [".canvas"],
+  "x-markpad-interchangeFormats": ["json-canvas", "obsidian-canvas"],
   "type": "object",
   "required": ["type", "version", "schema", "source", "elements", "appState", "files"],
   "additionalProperties": true,
@@ -23,15 +26,18 @@
   },
   "properties": {
     "type": {
+      "description": "Native Markpad discriminator for .markcanvas.json documents.",
       "const": "markpad-canvas"
     },
     "version": {
       "const": 1
     },
     "schema": {
+      "description": "Canonical native Markpad schema identifier.",
       "const": "https://markpad.local/schemas/canvas-v1.json"
     },
     "source": {
+      "description": "Markpad source or generator name, not an external format discriminator.",
       "type": "string",
       "minLength": 1
     },
@@ -40,9 +46,11 @@
       "additionalProperties": true,
       "properties": {
         "format": {
+          "description": "Native Markpad canvas format marker for .markcanvas.json documents.",
           "const": "markpad-canvas-v1"
         },
         "generator": {
+          "description": "Markpad generator or export pipeline identifier.",
           "type": "string"
         },
         "createdAt": {
@@ -52,6 +60,7 @@
           "type": "string"
         },
         "importedFrom": {
+          "description": "Optional provenance for content imported through JSON Canvas / Obsidian .canvas adapters.",
           "type": "string"
         }
       }

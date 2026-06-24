@@ -58,20 +58,25 @@ Primary references:
 
 Use Markpad-owned versioned JSON files for canvas persistence first.
 
-The current goal is a lightweight local infinite canvas, not a full whiteboard runtime. A small schema keeps binary size stable, keeps files readable/exportable, and lets Markpad add import/export adapters later.
+The current goal is a lightweight local infinite canvas, not a full whiteboard runtime. A small schema keeps binary size stable, keeps files readable/exportable, and makes the native `.markcanvas.json` format explicit before broader JSON Canvas / Obsidian interchange.
 
 Initial implementation constraints:
 
-- Store canvas files as versioned JSON with `type`, `version`, `schema`, `source`, `elements`, `appState`, and `files`.
+- Store native canvas files as `.markcanvas.json` versioned JSON with `type`, `version`, `schema`, `source`, `meta`, `elements`, `appState`, and `files`.
 - Do not store `camera`, `tool`, `selection`, `grid`, `snap`, `minimap`, `undo`, `history`, `cachedBounds`, `rasterPreview`, or `spatialIndex` in the portable document.
+- Treat `.canvas` as JSON Canvas / Obsidian interchange only: import into native `.markcanvas.json`, export from native on demand, and keep adapter logic explicit.
+- Preserve the Markpad `type`, schema URL, and `meta.format` in native files even after import; record external provenance in `meta.importedFrom`.
+- Assume JSON Canvas / Obsidian interchange can be lossy for app-specific metadata and transient state, so it must not replace the native working copy by default.
 - Keep embedded image assets external or separately capped; do not inline large blobs by default.
 - Cache element bounds and schedule renders with `requestAnimationFrame` before adding heavier features.
-- Add Excalidraw import/export later if users need interoperability.
+- Add JSON Canvas / Obsidian import/export before Excalidraw if users need interoperability.
 - Treat tldraw as deferred because current SDK production use requires a license key.
 - Treat InfiniPaint as inspiration only; its own docs warn image/GIF canvas content can use a lot of memory.
 
 Primary references:
 
+- JSON Canvas spec: https://jsoncanvas.org/spec/1.0/
+- Obsidian Canvas help: https://obsidian.md/help/plugins/canvas
 - Excalidraw JSON schema docs: https://docs.excalidraw.com/docs/codebase/json-schema
 - Excalidraw `serializeAsJSON` utility: https://docs.excalidraw.com/docs/@excalidraw/excalidraw/api/utils
 - tldraw persistence docs: https://tldraw.dev/docs/persistence

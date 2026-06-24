@@ -4,7 +4,7 @@ APP := markpad
 DIST := dist
 TAGS := desktop,production,webkit2_41
 
-.PHONY: run dev build css budget smoke-desktop memory test test-core vet js-check validate fmt clean
+.PHONY: run dev build profile-build profile-run profile-test css budget smoke-desktop memory test test-core vet js-check validate fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -15,6 +15,16 @@ dev:
 build:
 	mkdir -p $(DIST)
 	$(GO) build -tags $(TAGS) -trimpath -ldflags="-s -w" -o $(DIST)/$(APP) .
+
+profile-build:
+	mkdir -p $(DIST)
+	$(GO) build -tags "$(TAGS),profile" -trimpath -ldflags="-s -w" -o $(DIST)/$(APP)-profile .
+
+profile-run: profile-build
+	MARKPAD_PROFILE=1 ./$(DIST)/$(APP)-profile
+
+profile-test:
+	$(GO) test -tags "$(TAGS),profile" ./...
 
 css:
 	npx --yes tailwindcss@3.4.17 -c tailwind.config.cjs -i frontend/src/tailwind.input.css -o frontend/src/tailwind.css --minify

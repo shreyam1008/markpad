@@ -21,9 +21,15 @@ type localGraphCanvasDoc struct {
 	Version  int                       `json:"version"`
 	Schema   string                    `json:"schema"`
 	Source   string                    `json:"source"`
+	Meta     *localGraphCanvasMeta     `json:"meta,omitempty"`
 	Elements []localGraphCanvasElement `json:"elements"`
 	AppState map[string]string         `json:"appState"`
 	Files    map[string]any            `json:"files"`
+}
+
+type localGraphCanvasMeta struct {
+	Format    string `json:"format,omitempty"`
+	Generator string `json:"generator,omitempty"`
 }
 
 type localGraphCanvasElement struct {
@@ -216,6 +222,10 @@ func localGraphBuildCanvas(nodes map[string]*localGraphNode, edges []localGraphE
 		Version:  1,
 		Schema:   "https://markpad.local/schemas/canvas-v1.json",
 		Source:   "markpad-local-links",
+		Meta: &localGraphCanvasMeta{
+			Format:    "markpad-canvas-v1",
+			Generator: "markpad-local-links",
+		},
 		Elements: elements,
 		AppState: map[string]string{"viewBackgroundColor": "#ffffff"},
 		Files:    map[string]any{},

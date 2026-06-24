@@ -72,4 +72,38 @@ func TestLocalGraphCanvasUsesNativeSchema(t *testing.T) {
 	if doc.Schema != "https://markpad.local/schemas/canvas-v1.json" {
 		t.Fatalf("schema = %q, want canvas v1 schema", doc.Schema)
 	}
+	if doc.Meta == nil {
+		t.Fatal("meta = nil, want native format metadata")
+	}
+	if doc.Meta.Format != "markpad-canvas-v1" {
+		t.Fatalf("meta.format = %q, want markpad-canvas-v1", doc.Meta.Format)
+	}
+	if doc.Meta.Generator != "markpad-local-links" {
+		t.Fatalf("meta.generator = %q, want markpad-local-links", doc.Meta.Generator)
+	}
+}
+
+func TestLocalGraphCanvasJSONCarriesNativeMeta(t *testing.T) {
+	doc := localGraphBuildCanvas(map[string]*localGraphNode{}, nil)
+
+	data, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatalf("marshal local graph canvas: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("decode local graph canvas: %v", err)
+	}
+
+	meta, ok := decoded["meta"].(map[string]any)
+	if !ok {
+		t.Fatal("encoded canvas missing meta object")
+	}
+	if meta["format"] != "markpad-canvas-v1" {
+		t.Fatalf("encoded meta.format = %v, want markpad-canvas-v1", meta["format"])
+	}
+	if meta["generator"] != "markpad-local-links" {
+		t.Fatalf("encoded meta.generator = %v, want markpad-local-links", meta["generator"])
+	}
 }
