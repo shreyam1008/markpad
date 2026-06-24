@@ -14061,6 +14061,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="delete"]').style.display = canTrash ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
@@ -14327,6 +14328,14 @@ ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', () => {
   if (note && note.path) {
     navigator.clipboard.writeText(note.path).then(() => { statusText.textContent = 'Path copied'; });
   } else statusText.textContent = 'No file path to copy';
+});
+ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', async () => {
+  const note = cachedNotes.find(n => n.id === ctxNoteId);
+  if (note && note.path) {
+    await navigator.clipboard.writeText(`[[${note.title || basename(note.path)}]]`);
+    statusText.textContent = 'Wikilink copied';
+  } else statusText.textContent = 'No file path to copy';
+  ctxMenu.classList.add('hidden');
 });
 ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;

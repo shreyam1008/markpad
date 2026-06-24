@@ -862,6 +862,8 @@ func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
 		"Save As...",
 		`data-ctx="folder"`,
 		`data-ctx="copypath"`,
+		`data-ctx="copywikilink"`,
+		"Copy Wikilink",
 	})
 
 	mainJS, err := os.ReadFile("frontend/src/main.js")
@@ -871,8 +873,12 @@ func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
 	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
 		`ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';`,
 		`ctxMenu.querySelector('[data-ctx="canvas"]').style.display = isCanvas ? '' : 'none';`,
+		`ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';`,
 		`ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () => {`,
 		`ctxMenu.querySelector('[data-ctx="canvas"]').addEventListener('click', async () => {`,
+		`ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', async () => {`,
+		"await navigator.clipboard.writeText(`[[${note.title || basename(note.path)}]]`);",
+		"statusText.textContent = 'Wikilink copied';",
 		"if (!note || getFileType(note.path, note.kind) !== 'canvas') {",
 		"await openActiveCanvasOrDraft();",
 		"statusText.textContent = 'Canvas file opened';",
