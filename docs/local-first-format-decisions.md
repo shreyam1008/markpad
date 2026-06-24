@@ -113,6 +113,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Keep command empty-state shortcuts text-only and backed by existing command IDs; they should improve discoverability without adding new behavior.
 - Track command text-icon usage in Lightweight Assets so menu polish remains measurable without icon fonts or sprite sheets.
 - Keep Theme Lab summaries metadata-only: current theme, light/dark counts, preset matches, and zero theme assets.
+- Keep theme companion pairings as static theme IDs in metadata exports; do not add a runtime theme engine or asset pack for day/night switching.
 - Let Upgrade Map theme/asset metrics use built-in theme constants and current rendered DOM counters only; do not load asset packs to report them.
 - Keep editor layout polish as local UI state; Layout Profile should expose split, focus, compact, wrap, reading width, and zoom without writing to documents.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
