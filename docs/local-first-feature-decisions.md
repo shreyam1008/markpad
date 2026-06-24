@@ -106,7 +106,7 @@ Initial implementation constraints:
 - `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
 - `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend; the top-bar Canvas button opens that active canvas file when selected or falls back to the scratch canvas otherwise.
 - `Other file` must stay disabled until extension validation, template choice, and collision behavior are explicit.
-- The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Task file, Canvas, and a disabled Other file placeholder until the remaining rules are specified.
+- The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and a disabled Other file placeholder until the remaining rules are specified.
 - Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
 - Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.
 - Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas button opens the active native canvas file when selected, otherwise it falls back to the local scratch canvas.

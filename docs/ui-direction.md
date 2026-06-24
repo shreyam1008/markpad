@@ -11,7 +11,7 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 
 ## Layout direction
 
-- Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Task file, Canvas, and later Other file once validated; keep recents, favorites, local folder actions, and compact badges visible here.
+- Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and later Other file once validated; keep recents, favorites, local folder actions, and compact badges visible here.
 - Center: editor/preview split remains the primary mode, with presets for writing, review, and preview-heavy reading.
 - Bottom/status: practical local stats: file type, line/word/selection, cursor, read time, memory, and binary/runtime diagnostics.
 - Overlays: search, commands, tasks, trash, settings, and canvas should share focused modal treatment with strong keyboard access.
@@ -34,7 +34,7 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 
 ## Feature-specific polish
 
-- Create: keep the sidebar `+ New` menu explicit about Note, Task file, Canvas, and a disabled Other file placeholder until extension rules are defined.
+- Create: keep the sidebar `+ New` menu explicit about Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and a disabled Other file placeholder until extension rules are defined.
 - Search: keep source scopes visible, show operator hints, highlight matches, and make result source counts obvious.
 - Tasks: keep the affordance framed as "Tasks from loaded files" and "Tasks.md setup, list, calendar, kanban"; list/calendar/kanban are views over Markdown files, not a separate workspace type.
 - Task workflow: sidebar Task actions should expose List, Calendar, Kanban, Quick task, and Task setup without introducing virtual tabs.

@@ -15273,6 +15273,13 @@ async function hasReadyLocalFolder() {
   }
 }
 
+async function ensureReadyLocalFolder(message) {
+  if (await hasReadyLocalFolder()) return true;
+  await showLocalWorkspaceSetupGuide();
+  statusText.textContent = message;
+  return false;
+}
+
 async function createNoteFromMenu() {
   if (await hasReadyLocalFolder()) {
     await createLocalFolderNote();
@@ -15282,12 +15289,12 @@ async function createNoteFromMenu() {
 }
 
 async function createCanvasFromMenu() {
-  if (await hasReadyLocalFolder()) {
-    await createLocalFolderCanvas();
-    return;
-  }
-  await showLocalWorkspaceSetupGuide();
-  statusText.textContent = 'Choose a local folder before creating canvas files';
+  if (await ensureReadyLocalFolder('Choose a local folder before creating canvas files')) await createLocalFolderCanvas();
+}
+
+function openTaskFileSetup() {
+  showTaskFileSetup();
+  statusText.textContent = 'Task file setup';
 }
 
 async function runCreateMenuAction(kind) {
@@ -15296,12 +15303,23 @@ async function runCreateMenuAction(kind) {
     case 'note':
       await createNoteFromMenu();
       break;
+    case 'daily':
+      if (await ensureReadyLocalFolder('Choose a local folder before creating daily notes')) await createLocalFolderDailyNote();
+      break;
+    case 'weekly':
+      if (await ensureReadyLocalFolder('Choose a local folder before creating weekly notes')) await createLocalFolderWeeklyNote();
+      break;
     case 'task':
-      showTaskFileSetup();
-      statusText.textContent = 'Task file setup';
+      openTaskFileSetup();
       break;
     case 'canvas':
       await createCanvasFromMenu();
+      break;
+    case 'open-folder':
+      if (await ensureReadyLocalFolder('Choose a local folder before opening the workspace')) await openConfiguredLocalFolder();
+      break;
+    case 'search-folder':
+      if (await ensureReadyLocalFolder('Choose a local folder before searching files')) await searchLocalFolderPrompt();
       break;
     case 'other':
       statusText.textContent = 'Other file creation is coming next';
@@ -15323,8 +15341,7 @@ async function runTaskWorkflowAction(kind) {
       await addQuickTask();
       break;
     case 'setup':
-      showTaskFileSetup();
-      statusText.textContent = 'Task file setup';
+      openTaskFileSetup();
       break;
     default:
       break;
