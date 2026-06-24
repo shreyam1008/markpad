@@ -110,7 +110,7 @@ Initial implementation constraints:
 - Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
 - Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.
 - File-backed canvas creation must produce a native `.markcanvas.json` document. The sidebar `+ New` Canvas action starts a scratch canvas immediately, while the Canvas workflow New canvas file action creates the local file-backed document.
-- Canvas workflow menus should expose Open canvas, New canvas file, Write active, Save draft JSON, and Loaded files map without adding a heavy drawing dependency.
+- Canvas workflow menus should expose Open canvas, New canvas file, Save canvas file, Write active, Save draft JSON, and Loaded files map without adding a heavy drawing dependency.
 - Choosing a local folder is a storage prerequisite for file-backed note/canvas creation, not the default product narrative or startup mode.
 - If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.
 - Keep the sidebar as the main place for creation and navigation. Do not introduce a tab system or make folder loading the default mental model.
@@ -126,7 +126,7 @@ Borrow these patterns in Markpad's local-first shape:
 - Layered search: keep command search, file search, active-document find, and folder text search as distinct scopes with visible counts and truthful status.
 - Trash workflow: preserve explicit restore, report, clean-expired, empty, and permanent-delete confirmations with clear retention language.
 - Task views: keep list, calendar, and kanban as views over Markdown task lines, with visible file provenance and no hidden task database.
-- Canvas workflow: make native `.markcanvas.json` create/open/write actions first-class, and keep heavier library-style shape palettes deferred until measured.
+- Canvas workflow: make native `.markcanvas.json` create/open/save/write actions first-class, and keep heavier library-style shape palettes deferred until measured.
 
 Avoid these reference-app patterns in Phase 1:
 

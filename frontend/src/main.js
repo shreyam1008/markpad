@@ -15462,6 +15462,27 @@ async function createCanvasFromMenu() {
   if (await ensureReadyLocalFolder('Choose a local folder for canvas files')) await createLocalFolderCanvas();
 }
 
+async function saveCanvasAsLocalFile() {
+  if (!(await ensureReadyLocalFolder('Choose a local folder to save canvas files'))) return;
+  finishCanvasTextEdit();
+  if (!canvasDoc) loadCanvasState();
+  const title = await promptCanvasTitleModal();
+  if (title === null) return;
+  const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc()), null, 2) + '\n';
+  try {
+    if (!window.go?.main?.App?.CreateLocalFolderCanvasDocument) {
+      statusText.textContent = 'Canvas file backend unavailable';
+      return;
+    }
+    renderSession(await window.go.main.App.CreateLocalFolderCanvasDocument(title, json));
+    loadContent(await window.go.main.App.GetActiveContent());
+    await openActiveCanvasOrDraft();
+    statusText.textContent = 'Canvas saved as local file';
+  } catch (err) {
+    statusText.textContent = 'Save canvas file failed: ' + err;
+  }
+}
+
 function startScratchCanvasFromMenu() {
   openCanvas();
   statusText.textContent = 'Scratch canvas opened';
@@ -15570,6 +15591,9 @@ async function runCanvasWorkflowAction(kind) {
       break;
     case 'new':
       await createCanvasFromMenu();
+      break;
+    case 'save-file':
+      await saveCanvasAsLocalFile();
       break;
     case 'write':
       await openActiveCanvasOrDraft();

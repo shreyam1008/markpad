@@ -84,6 +84,35 @@ func TestMarkpadCanvasDocumentJSONIncludesNativeSchema(t *testing.T) {
 	}
 }
 
+func TestCreateLocalFolderCanvasDocumentWritesProvidedDocument(t *testing.T) {
+	root := t.TempDir()
+	content := markpadCanvasDocumentJSON("scratch-save")
+
+	if _, err := createLocalFolderCanvasDocumentFile(root, "Scratch Board", content); err != nil {
+		t.Fatalf("createLocalFolderCanvasDocumentFile error = %v", err)
+	}
+
+	path := filepath.Join(root, "Scratch Board.markcanvas.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read saved canvas: %v", err)
+	}
+	if string(data) != content {
+		t.Fatalf("saved canvas content = %q, want provided content", string(data))
+	}
+}
+
+func TestCreateLocalFolderCanvasDocumentRejectsInvalidDocument(t *testing.T) {
+	root := t.TempDir()
+
+	if _, err := createLocalFolderCanvasDocumentFile(root, "Bad", `{"type":"not-markpad"}`); err == nil {
+		t.Fatal("createLocalFolderCanvasDocumentFile accepted non-markpad canvas JSON")
+	}
+	if _, err := createLocalFolderCanvasDocumentFile(root, "Bad", `{`); err == nil {
+		t.Fatal("createLocalFolderCanvasDocumentFile accepted invalid JSON")
+	}
+}
+
 func TestLocalFolderAtomicWriteReplacesInPlaceWithoutTempResidue(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "Board.markcanvas.json")

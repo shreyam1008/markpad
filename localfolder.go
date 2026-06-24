@@ -20,6 +20,7 @@ const (
 	localFolderSettingsFile = "local-folder.json"
 	localFolderSearchCap    = 1024 * 1024
 	localFolderSearchPool   = 300
+	localCanvasCreateCap    = 2 * 1024 * 1024
 	markpadCanvasExtension  = ".markcanvas.json"
 )
 
@@ -418,6 +419,53 @@ func (a *App) CreateLocalFolderCanvas(title string) (SessionState, error) {
 		return a.GetSession(), err
 	}
 	return a.openPath(path)
+}
+
+func (a *App) CreateLocalFolderCanvasDocument(title string, content string) (SessionState, error) {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return a.GetSession(), errors.New("local folder is not set")
+	}
+	path, err := createLocalFolderCanvasDocumentFile(root.Path, title, content)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	return a.openPath(path)
+}
+
+func createLocalFolderCanvasDocumentFile(rootPath string, title string, content string) (string, error) {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		content = markpadCanvasDocumentJSON("markpad")
+	}
+	if len(content) > localCanvasCreateCap {
+		return "", errors.New("canvas document is too large")
+	}
+	if !json.Valid([]byte(content)) {
+		return "", errors.New("canvas document is not valid JSON")
+	}
+	var meta struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(content), &meta); err != nil {
+		return "", err
+	}
+	if meta.Type != "markpad-canvas" {
+		return "", errors.New("canvas document must be markpad-canvas")
+	}
+	if !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		title = "Canvas"
+	}
+	name := localCanvasFileName(title)
+	path := localCollisionPath(filepath.Join(rootPath, name))
+	if err := localFolderAtomicWrite(path, []byte(content), 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 func localCanvasFileName(title string) string {
