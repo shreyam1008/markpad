@@ -86,7 +86,7 @@
         <div class="create-menu-section-label">Create</div>
         <button type="button" role="menuitem" data-create-kind="note">
           <strong>Note</strong>
-          <span>Markdown file, split preview, editor tools</span>
+          <span>Create Markdown in the local folder, or a draft</span>
         </button>
         <button type="button" role="menuitem" data-create-kind="daily">
           <strong>Daily note</strong>
@@ -98,11 +98,11 @@
         </button>
         <button type="button" role="menuitem" data-create-kind="task">
           <strong>Task file</strong>
-          <span>Open Tasks.md setup, list, calendar, kanban</span>
+          <span>Open Tasks.md or setup list, calendar, kanban</span>
         </button>
         <button type="button" role="menuitem" data-create-kind="canvas">
-          <strong>Canvas</strong>
-          <span>Native .markcanvas.json board</span>
+          <strong>Canvas file</strong>
+          <span>Create native .markcanvas.json in the local folder</span>
         </button>
         <div class="create-menu-section-label">Workspace</div>
         <button type="button" role="menuitem" data-create-kind="open-folder">
@@ -146,7 +146,7 @@
         <div class="create-menu-kicker">Canvas files</div>
         <button type="button" role="menuitem" data-canvas-workflow="draft">
           <strong>Open canvas</strong>
-          <span>Open active .markcanvas.json or scratch canvas</span>
+          <span>Load active .markcanvas.json, otherwise scratch</span>
         </button>
         <button type="button" role="menuitem" data-canvas-workflow="new">
           <strong>New canvas file</strong>
@@ -154,7 +154,7 @@
         </button>
         <button type="button" role="menuitem" data-canvas-workflow="write">
           <strong>Write active</strong>
-          <span>Save canvas JSON to the active local document</span>
+          <span>Write canvas JSON to active .markcanvas.json/JSON/draft</span>
         </button>
         <button type="button" role="menuitem" data-canvas-workflow="draft-file">
           <strong>Save draft JSON</strong>
@@ -202,7 +202,7 @@
           <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
           <button id="btn-command" class="icon-btn" title="Command palette (Ctrl+P)" aria-label="Command palette"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/><path d="m16 10 3 2-3 2"/></svg></button>
           <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
-          <button id="btn-canvas" class="icon-btn" title="Open canvas" aria-label="Open canvas"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
+          <button id="btn-canvas" class="icon-btn" title="Open canvas" aria-label="Open canvas" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
           <button id="btn-focus" class="icon-btn" title="Focus mode (Ctrl+Shift+L)" aria-label="Focus mode"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg></button>
           <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
           <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>

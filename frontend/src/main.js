@@ -7952,7 +7952,7 @@ async function openLocalFolderFile(path) {
     const active = cachedNotes.find(n => n.id === activeId);
     setView(defaultViewForFileType(active?.path, active?.kind));
     modalOverlay.classList.add('hidden');
-    if (getFileType(active?.path, active?.kind) === 'canvas') openActiveCanvasOrDraft();
+    if (getFileType(active?.path, active?.kind) === 'canvas') await openActiveCanvasOrDraft();
     statusText.textContent = 'Opened local file';
   } catch (err) {
     statusText.textContent = 'Open failed: ' + err;
@@ -12078,6 +12078,7 @@ function toggleCanvasMinimap() {
 function openCanvas() {
   loadCanvasState();
   canvasActive = true;
+  updateCanvasButtonState();
   canvasOverlay.classList.remove('hidden');
   setCanvasTool(canvasTool);
   updateCanvasOptionButtons();
@@ -12088,6 +12089,7 @@ function closeCanvas() {
   finishCanvasTextEdit();
   flushCanvasStateSave();
   canvasActive = false;
+  updateCanvasButtonState();
   canvasOverlay.classList.add('hidden');
   saveCanvasSessionState();
 }
@@ -13945,10 +13947,18 @@ function loadCurrentDocumentIntoCanvas() {
   }
 }
 
-function openActiveCanvasOrDraft() {
+function updateCanvasButtonState() {
+  const btn = $('btn-canvas');
+  if (!btn) return;
+  btn.classList.toggle('active', !!canvasActive);
+  btn.setAttribute('aria-pressed', canvasActive ? 'true' : 'false');
+  btn.title = canvasActive ? 'Canvas open' : 'Open canvas';
+}
+
+async function openActiveCanvasOrDraft() {
   const active = cachedNotes.find(n => n.id === activeId);
   if (active && getFileType(active.path, active.kind) === 'canvas') {
-    loadCurrentDocumentIntoCanvas();
+    await loadCurrentDocumentIntoCanvas();
     return;
   }
   openCanvas();
@@ -14091,7 +14101,7 @@ function makeNoteRow(note) {
     loadContent(await window.go.main.App.GetNoteContent(note.id));
     renderSession(await window.go.main.App.GetSession());
     restoreNoteView();
-    if (getFileType(note.path, note.kind) === 'canvas') openActiveCanvasOrDraft();
+    if (getFileType(note.path, note.kind) === 'canvas') await openActiveCanvasOrDraft();
   });
 
   row.addEventListener('contextmenu', (e) => {
@@ -15337,6 +15347,25 @@ function openTaskFileSetup() {
   statusText.textContent = 'Task file setup';
 }
 
+async function openTaskFileFromMenu() {
+  const target = findTaskTargetNote();
+  if (!target) {
+    openTaskFileSetup();
+    return;
+  }
+  if (activeId && activeId !== target.id) {
+    noteViewModes[activeId] = viewMode;
+    saveScrollPos();
+  }
+  await window.go.main.App.SetActive(target.id);
+  activeId = target.id;
+  loadContent(await window.go.main.App.GetNoteContent(target.id));
+  renderSession(await window.go.main.App.GetSession());
+  restoreNoteView();
+  await showTasksView('list');
+  statusText.textContent = 'Task file opened';
+}
+
 async function runCreateMenuAction(kind) {
   closeAllMenus();
   switch (kind) {
@@ -15350,7 +15379,7 @@ async function runCreateMenuAction(kind) {
       if (await ensureReadyLocalFolder('Choose a local folder before creating weekly notes')) await createLocalFolderWeeklyNote();
       break;
     case 'task':
-      openTaskFileSetup();
+      await openTaskFileFromMenu();
       break;
     case 'canvas':
       await createCanvasFromMenu();
@@ -15392,13 +15421,13 @@ async function runCanvasWorkflowAction(kind) {
   closeAllMenus();
   switch (kind) {
     case 'draft':
-      openActiveCanvasOrDraft();
+      await openActiveCanvasOrDraft();
       break;
     case 'new':
       await createCanvasFromMenu();
       break;
     case 'write':
-      openCanvas();
+      await openActiveCanvasOrDraft();
       await saveCanvasToActiveDocument();
       break;
     case 'draft-file':
@@ -15420,7 +15449,7 @@ async function doOpen() {
     loadContent(await window.go.main.App.GetActiveContent());
     const active = cachedNotes.find(n => n.id === activeId);
     setView(defaultViewForFileType(active?.path, active?.kind));
-    if (getFileType(active?.path, active?.kind) === 'canvas') openActiveCanvasOrDraft();
+    if (getFileType(active?.path, active?.kind) === 'canvas') await openActiveCanvasOrDraft();
     statusText.textContent = `Opened ${typeLabel(getFileType(active?.path, active?.kind))}`;
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }

@@ -479,13 +479,15 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		`class="create-menu-section-label">Later</div>`,
 		"Today in the local folder",
 		"This week in the local folder",
-		"Open Tasks.md setup, list, calendar, kanban",
-		"Native .markcanvas.json board",
+		"Open Tasks.md or setup list, calendar, kanban",
+		"Create native .markcanvas.json in the local folder",
 		"Reveal the configured local workspace",
 		"Find text in the configured local workspace",
 		"Tasks from loaded files",
 		"Open canvas",
-		"Open active .markcanvas.json or scratch canvas",
+		"Load active .markcanvas.json, otherwise scratch",
+		"Write canvas JSON to active .markcanvas.json/JSON/draft",
+		`aria-pressed="false"`,
 		`id="task-workflow-menu"`,
 		`id="canvas-workflow-menu"`,
 		`data-task-workflow="list"`,
@@ -526,13 +528,19 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await searchLocalFolderPrompt()",
 		"await doNew()",
 		"function openTaskFileSetup()",
+		"async function openTaskFileFromMenu()",
+		"const target = findTaskTargetNote();",
+		"await showTasksView('list')",
+		"statusText.textContent = 'Task file opened'",
 		"showTaskFileSetup()",
 		"async function runTaskWorkflowAction(kind)",
-		"function openActiveCanvasOrDraft()",
+		"function updateCanvasButtonState()",
+		"async function openActiveCanvasOrDraft()",
 		"getFileType(active.path, active.kind) === 'canvas'",
 		"async function runCanvasWorkflowAction(kind)",
 		"await showTasksView(kind)",
 		"await addQuickTask()",
+		"await openActiveCanvasOrDraft()",
 		"await saveCanvasToActiveDocument()",
 		"await saveCanvasAsDraft()",
 		"insertLoadedWorkspaceCanvasMap()",
@@ -541,7 +549,6 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"const localTasks = e.target.closest('[data-local-folder-tasks]');",
 		"const localCanvas = e.target.closest('[data-local-folder-canvas]');",
 		"Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps",
-		"Write to active .markcanvas.json/JSON/draft",
 		"Choose a local folder before creating canvas files",
 		"Other file creation is coming next",
 	})
@@ -614,6 +621,8 @@ func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
 		".workflow-menu button:focus-visible strong",
 		".create-menu-section-label",
 		".create-menu-section-label::after",
+		".icon-btn.active",
+		`.icon-btn[aria-pressed="true"]`,
 	})
 }
 
@@ -653,12 +662,15 @@ func TestNativeCanvasFilesOpenCanvasSurface(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/src/main.js", string(data), []string{
 		"function isMarkpadCanvasPath(path)",
-		"function openActiveCanvasOrDraft()",
+		"function updateCanvasButtonState()",
+		"async function openActiveCanvasOrDraft()",
 		"getFileType(active.path, active.kind) === 'canvas'",
-		"loadCurrentDocumentIntoCanvas();",
+		"await loadCurrentDocumentIntoCanvas();",
 		"$('btn-canvas').addEventListener('click', openActiveCanvasOrDraft);",
-		"if (getFileType(note.path, note.kind) === 'canvas') openActiveCanvasOrDraft();",
-		"if (getFileType(active?.path, active?.kind) === 'canvas') openActiveCanvasOrDraft();",
+		"if (getFileType(note.path, note.kind) === 'canvas') await openActiveCanvasOrDraft();",
+		"if (getFileType(active?.path, active?.kind) === 'canvas') await openActiveCanvasOrDraft();",
+		"btn.classList.toggle('active', !!canvasActive);",
+		"btn.setAttribute('aria-pressed', canvasActive ? 'true' : 'false');",
 	})
 
 	indexHTML, err := os.ReadFile("frontend/index.html")
@@ -668,8 +680,9 @@ func TestNativeCanvasFilesOpenCanvasSurface(t *testing.T) {
 	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
 		`title="Open canvas"`,
 		`aria-label="Open canvas"`,
+		`aria-pressed="false"`,
 		"<strong>Open canvas</strong>",
-		"Open active .markcanvas.json or scratch canvas",
+		"Load active .markcanvas.json, otherwise scratch",
 	})
 }
 

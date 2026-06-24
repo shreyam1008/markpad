@@ -401,6 +401,14 @@ body.writing-empty #viewer::first-line {
   outline-offset: 2px;
 }
 
+.icon-btn.active,
+.icon-btn[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
 .search-palette,
 .command-palette,
 .create-menu,
