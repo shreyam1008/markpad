@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -132,6 +133,99 @@ func TestSearchLocalFolderSupportsExclusions(t *testing.T) {
 				t.Fatalf("query %q did not return expected path %q in %#v", tc.query, rel, paths)
 			}
 		}
+	}
+}
+
+func TestSearchLocalFolderRanksMetadataAndReturnsHitMetadata(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+
+	files := map[string]string{
+		"Project Alpha.md":              "planning note without the query in the body\n",
+		"body.md":                       "intro\n" + strings.Repeat("before ", 40) + "alpha target context " + strings.Repeat("after ", 40) + "\n",
+		"notes/team-alpha-reference.md": "nested path metadata\n",
+	}
+	for name, content := range files {
+		path := filepath.Join(folder, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	result := app.SearchLocalFolderWithStats("alpha", 10)
+	if len(result.Hits) < 2 {
+		t.Fatalf("hits = %d, want at least 2", len(result.Hits))
+	}
+	if result.Hits[0].RelPath != "Project Alpha.md" {
+		t.Fatalf("top hit = %q, want Project Alpha.md; hits=%#v", result.Hits[0].RelPath, result.Hits)
+	}
+	if result.Hits[0].MatchKind != "path" {
+		t.Fatalf("top MatchKind = %q, want path", result.Hits[0].MatchKind)
+	}
+	if result.Hits[0].Size == 0 {
+		t.Fatal("top hit Size should be populated")
+	}
+	if result.Hits[0].Modified == "" {
+		t.Fatal("top hit Modified should be populated")
+	}
+
+	var bodyHit LocalFolderSearchHit
+	for _, hit := range result.Hits {
+		if hit.RelPath == "body.md" {
+			bodyHit = hit
+			break
+		}
+	}
+	if bodyHit.RelPath == "" {
+		t.Fatalf("body.md was not returned in hits %#v", result.Hits)
+	}
+	if bodyHit.MatchKind != "content" {
+		t.Fatalf("body MatchKind = %q, want content", bodyHit.MatchKind)
+	}
+	if bodyHit.Line != 1 {
+		t.Fatalf("body Line = %d, want 1", bodyHit.Line)
+	}
+	if !strings.Contains(bodyHit.Snippet, "alpha target context") {
+		t.Fatalf("body Snippet = %q, want match context", bodyHit.Snippet)
+	}
+	if len(bodyHit.Snippet) >= len(files["body.md"]) {
+		t.Fatalf("body Snippet was not trimmed: got length %d, full length %d", len(bodyHit.Snippet), len(files["body.md"]))
+	}
+}
+
+func TestSearchLocalFolderFilterOnlyMatchKind(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "alpha.md"), []byte("plain note\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result := app.SearchLocalFolderWithStats("type:md", 10)
+	if len(result.Hits) != 1 {
+		t.Fatalf("hits = %d, want 1", len(result.Hits))
+	}
+	if result.Hits[0].MatchKind != "filter" {
+		t.Fatalf("MatchKind = %q, want filter", result.Hits[0].MatchKind)
+	}
+	if result.Hits[0].Snippet != "alpha.md" {
+		t.Fatalf("Snippet = %q, want alpha.md", result.Hits[0].Snippet)
 	}
 }
 

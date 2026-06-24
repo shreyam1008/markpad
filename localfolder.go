@@ -78,6 +78,8 @@ type LocalFolderSearchHit struct {
 	RelPath   string `json:"relPath"`
 	Title     string `json:"title"`
 	Kind      string `json:"kind"`
+	Size      int64  `json:"size"`
+	Modified  string `json:"modified"`
 	Line      int    `json:"line"`
 	Snippet   string `json:"snippet"`
 	Score     int    `json:"score"`
@@ -254,7 +256,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 		if !localFolderSearches.isLatest(searchID) {
 			return filepath.SkipAll
 		}
-		hit, ok := searchLocalFile(root.Path, path, kind, plan)
+		hit, ok := searchLocalFile(root.Path, path, kind, info, plan)
 		if ok {
 			result.Candidates++
 			hits = append(hits, hit)
@@ -595,14 +597,15 @@ func localSearchQueryTokens(query string) []localSearchQueryToken {
 	return tokens
 }
 
-func searchLocalFile(root string, path string, kind string, plan localFolderSearchPlan) (LocalFolderSearchHit, bool) {
+func searchLocalFile(root string, path string, kind string, info os.FileInfo, plan localFolderSearchPlan) (LocalFolderSearchHit, bool) {
 	rel, err := filepath.Rel(root, path)
 	if err != nil {
 		rel = filepath.Base(path)
 	}
 	title := filepath.Base(path)
+	relPath := filepath.ToSlash(rel)
 	titleLower := strings.ToLower(title)
-	relLower := strings.ToLower(filepath.ToSlash(rel))
+	relLower := strings.ToLower(relPath)
 	typeLower := strings.ToLower(kind + " " + localSearchExtension(path))
 	if !localFolderFiltersMatch(relLower, titleLower, typeLower, plan) {
 		return LocalFolderSearchHit{}, false
@@ -610,18 +613,34 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	if localFolderTextHasExcluded(titleLower+"\n"+relLower, plan) {
 		return LocalFolderSearchHit{}, false
 	}
-	metadataTextMatch := localFolderTextMatches(titleLower+"\n"+relLower, plan)
-	if metadataTextMatch && !plan.NeedsContent {
+	size := int64(0)
+	modified := ""
+	if info != nil {
+		size = info.Size()
+		modified = info.ModTime().Format("2006-01-02 15:04")
+	}
+	newHit := func(line int, snippet string, score int, matchKind string) LocalFolderSearchHit {
 		return LocalFolderSearchHit{
 			Path:      path,
-			RelPath:   filepath.ToSlash(rel),
+			RelPath:   relPath,
 			Title:     title,
 			Kind:      kind,
-			Line:      0,
-			Snippet:   filepath.ToSlash(rel),
-			Score:     localFolderSearchScore(120, plan),
-			MatchKind: "path",
-		}, true
+			Size:      size,
+			Modified:  modified,
+			Line:      line,
+			Snippet:   snippet,
+			Score:     localFolderSearchScore(score, plan),
+			MatchKind: matchKind,
+		}
+	}
+	hasTextQuery := len(plan.Terms) > 0 || len(plan.Phrases) > 0
+	metadataTextMatch := hasTextQuery && localFolderTextMatches(titleLower+"\n"+relLower, plan)
+	metadataScore := localFolderMetadataScore(titleLower, relLower, plan)
+	if metadataTextMatch && !plan.NeedsContent {
+		return newHit(0, relPath, metadataScore, "path"), true
+	}
+	if !plan.NeedsContent && !hasTextQuery && plan.HasFilters {
+		return newHit(0, relPath, 92, "filter"), true
 	}
 	file, err := os.Open(path)
 	if err != nil {
@@ -635,6 +654,7 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	filterLine := -1
 	textSnippet := ""
 	filterSnippet := ""
+	textLineScore := 0
 	textTerms := make(map[string]bool, len(plan.Terms))
 	textPhrases := make(map[string]bool, len(plan.Phrases))
 	matchedTags := make(map[string]bool, len(plan.TagFilters))
@@ -658,14 +678,19 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 			taskFilterLine = false
 		}
 		if len(plan.Terms) > 0 || len(plan.Phrases) > 0 {
-			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases) && textLine < 0 {
-				textLine = lineNo
-				textSnippet = strings.TrimSpace(line)
+			if localFolderTrackTextMatches(lower, plan, textTerms, textPhrases) {
+				lineScore := localFolderLineTextScore(lower, lineNo, plan)
+				if textLine < 0 || lineScore > textLineScore {
+					textLineScore = lineScore
+					textLine = lineNo
+					textSnippet = localFolderLineSnippet(line, lower, plan)
+				}
 			}
-		}
-		if textLine < 0 && localFolderTextMatches(lower, plan) && (len(plan.Terms) > 0 || len(plan.Phrases) > 0) {
-			textLine = lineNo
-			textSnippet = strings.TrimSpace(line)
+			if localFolderTextMatches(lower, plan) && (textLine < 0 || textLineScore < 120) {
+				textLine = lineNo
+				textLineScore = maxInt(textLineScore, localFolderLineTextScore(lower, lineNo, plan)+28)
+				textSnippet = localFolderLineSnippet(line, lower, plan)
+			}
 		}
 		if localFolderLineMatchesContentFilters(lower, plan, matchedTags, matchedTasks, taskFilterLine) && filterLine < 0 {
 			filterLine = lineNo
@@ -686,46 +711,122 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 		return LocalFolderSearchHit{}, false
 	}
 	if textLine >= 0 {
-		return LocalFolderSearchHit{
-			Path:      path,
-			RelPath:   filepath.ToSlash(rel),
-			Title:     title,
-			Kind:      kind,
-			Line:      textLine,
-			Snippet:   textSnippet,
-			Score:     localFolderSearchScore(maxInt(10, 80-textLine/50), plan),
-			MatchKind: "content",
-		}, true
+		if textLineScore <= 0 {
+			textLineScore = maxInt(10, 80-textLine/50)
+		}
+		return newHit(textLine, textSnippet, textLineScore, "content"), true
 	}
 	if filterLine >= 0 {
-		return LocalFolderSearchHit{
-			Path:      path,
-			RelPath:   filepath.ToSlash(rel),
-			Title:     title,
-			Kind:      kind,
-			Line:      filterLine,
-			Snippet:   filterSnippet,
-			Score:     localFolderSearchScore(maxInt(10, 76-filterLine/50), plan),
-			MatchKind: "filter",
-		}, true
+		return newHit(filterLine, filterSnippet, maxInt(10, 76-filterLine/50), "filter"), true
 	}
 	if metadataTextMatch || plan.HasFilters {
 		matchKind := "filter"
+		score := 90
 		if metadataTextMatch {
 			matchKind = "path"
+			score = metadataScore
 		}
-		return LocalFolderSearchHit{
-			Path:      path,
-			RelPath:   filepath.ToSlash(rel),
-			Title:     title,
-			Kind:      kind,
-			Line:      0,
-			Snippet:   filepath.ToSlash(rel),
-			Score:     localFolderSearchScore(90, plan),
-			MatchKind: matchKind,
-		}, true
+		return newHit(0, relPath, score, matchKind), true
 	}
 	return LocalFolderSearchHit{}, false
+}
+
+func localFolderMetadataScore(titleLower string, relLower string, plan localFolderSearchPlan) int {
+	if len(plan.Terms) == 0 && len(plan.Phrases) == 0 {
+		return 90
+	}
+	query := strings.TrimSpace(plan.Text)
+	titleStem := strings.TrimSuffix(titleLower, filepath.Ext(titleLower))
+	score := 104
+	if query != "" {
+		switch {
+		case titleLower == query || titleStem == query:
+			score = 180
+		case strings.HasPrefix(titleLower, query) || strings.HasPrefix(titleStem, query):
+			score = 164
+		case strings.Contains(titleLower, query):
+			score = 146
+		case strings.HasPrefix(relLower, query):
+			score = 132
+		case strings.Contains(relLower, query):
+			score = 120
+		}
+	}
+	for _, term := range plan.Terms {
+		if strings.Contains(titleLower, term) {
+			score += 12
+		} else if strings.Contains(relLower, term) {
+			score += 5
+		}
+	}
+	for _, phrase := range plan.Phrases {
+		if strings.Contains(titleLower, phrase) {
+			score += 18
+		} else if strings.Contains(relLower, phrase) {
+			score += 8
+		}
+	}
+	depth := strings.Count(relLower, "/")
+	if depth > 0 {
+		score -= minInt(depth*2, 14)
+	}
+	return maxInt(80, score)
+}
+
+func localFolderLineTextScore(lineLower string, lineNo int, plan localFolderSearchPlan) int {
+	score := maxInt(12, 82-lineNo/40)
+	if localFolderTextMatches(lineLower, plan) {
+		score += 34
+	}
+	trimmed := strings.TrimSpace(lineLower)
+	if strings.HasPrefix(trimmed, "#") {
+		score += 14
+	}
+	for _, phrase := range plan.Phrases {
+		if strings.Contains(lineLower, phrase) {
+			score += 12
+		}
+	}
+	for _, term := range plan.Terms {
+		if strings.Contains(lineLower, term) {
+			score += 4
+		}
+	}
+	return score
+}
+
+func localFolderLineSnippet(line string, lineLower string, plan localFolderSearchPlan) string {
+	trimmed := strings.TrimSpace(line)
+	if len(trimmed) <= 220 {
+		return trimmed
+	}
+	matchIndex := -1
+	matchLength := 0
+	for _, phrase := range plan.Phrases {
+		if idx := strings.Index(lineLower, phrase); idx >= 0 && (matchIndex < 0 || idx < matchIndex) {
+			matchIndex = idx
+			matchLength = len(phrase)
+		}
+	}
+	for _, term := range plan.Terms {
+		if idx := strings.Index(lineLower, term); idx >= 0 && (matchIndex < 0 || idx < matchIndex) {
+			matchIndex = idx
+			matchLength = len(term)
+		}
+	}
+	if matchIndex < 0 {
+		return strings.Join(strings.Fields(trimmed[:minInt(len(trimmed), 220)]), " ")
+	}
+	start := maxInt(0, matchIndex-80)
+	end := minInt(len(line), matchIndex+maxInt(matchLength, 1)+140)
+	snippet := strings.Join(strings.Fields(line[start:end]), " ")
+	if start > 0 {
+		snippet = "..." + snippet
+	}
+	if end < len(line) {
+		snippet += "..."
+	}
+	return snippet
 }
 
 func localFolderFiltersMatch(relLower string, titleLower string, typeLower string, plan localFolderSearchPlan) bool {

@@ -2697,6 +2697,33 @@ function renderSearchQueryChips(query) {
   `;
 }
 
+function searchScopePresentation(scope = searchScope) {
+  switch (scope) {
+    case 'local':
+      return { label: 'Folder', hint: 'Configured disk scan' };
+    case 'all':
+      return { label: 'All local', hint: 'Loaded plus folder' };
+    default:
+      return { label: 'Loaded', hint: 'Open notes only' };
+  }
+}
+
+function searchSourceLabel(result) {
+  return result?.source === 'local' ? 'Folder' : 'Loaded';
+}
+
+function searchKindLabel(result) {
+  const kind = String(result?.kind || '').trim();
+  if (!kind) return '';
+  return kind.length <= 4 ? kind.toUpperCase() : kind;
+}
+
+function setSearchMetaContent(summary, query = searchInput?.value || searchLastQuery || '') {
+  if (!searchMeta) return;
+  const text = String(summary || '').trim();
+  searchMeta.innerHTML = `${text ? `<span class="search-meta-summary">${escapeHtml(text)}</span>` : ''}${renderSearchQueryChips(query)}`;
+}
+
 function escapeAttr(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -2979,7 +3006,7 @@ function renderSearchIdleState(query, startedAt) {
   searchActiveIndex = 0;
   searchInput?.removeAttribute('aria-activedescendant');
   searchResults.innerHTML = searchEmptyHtml(message, trimmedQuery);
-  searchMeta.textContent = `${scopeName} search idle · no files scanned · Ctrl/Cmd+1/2/3 switches scope`;
+  setSearchMetaContent(`${scopeName} search idle · no files scanned · Ctrl/Cmd+1/2/3 switches scope`, trimmedQuery);
 }
 
 function searchProfileSnapshot(query = searchLastQuery, results = searchLastResults) {
@@ -3193,7 +3220,7 @@ function renderSearchResultStrip(results, query) {
       <div class="search-result-card">
         <strong>${snapshot.resultCount}</strong>
         <span>Results</span>
-        <small>${escapeHtml(snapshot.scope)} scope</small>
+        <small>${escapeHtml(searchScopePresentation(snapshot.scope).label)} scope</small>
       </div>
       <div class="search-result-card">
         <strong>${Number(telemetry.elapsedMs || 0)} ms</strong>
@@ -3204,16 +3231,16 @@ function renderSearchResultStrip(results, query) {
       <div class="search-result-card">
         <strong>${loadedCount}</strong>
         <span>Loaded</span>
-        <small>Open/session files</small>
+        <small>Open notes and drafts</small>
       </div>
       <div class="search-result-card">
         <strong>${localCount}</strong>
-        <span>Local folder</span>
-        <small>Bounded disk scan</small>
+        <span>Folder</span>
+        <small>Configured disk scan</small>
       </div>
       <div class="search-result-card">
         <strong>${termCount}</strong>
-        <span>Terms</span>
+        <span>Query plan</span>
         <small>${filters} filters · ${excludes} excludes</small>
       </div>
       <div class="search-source-meter">
@@ -3708,9 +3735,17 @@ async function runAllSearch(query, token) {
 
 function updateSearchScopeButtons() {
   document.querySelectorAll('[data-search-scope]').forEach(btn => {
-    const active = btn.dataset.searchScope === searchScope;
+    const scopeId = btn.dataset.searchScope;
+    const active = scopeId === searchScope;
+    const presentation = searchScopePresentation(scopeId);
+    btn.innerHTML = `
+      <span class="search-scope-label">${escapeHtml(presentation.label)}</span>
+      <span class="search-scope-hint">${escapeHtml(presentation.hint)}</span>
+    `;
+    btn.title = `${presentation.label}: ${presentation.hint}`;
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.setAttribute('aria-label', `${presentation.label}. ${presentation.hint}.`);
   });
   if (searchInput) {
     searchInput.placeholder = searchScope === 'local'
@@ -3719,12 +3754,12 @@ function updateSearchScopeButtons() {
         ? 'Search all with type:md tag:idea plan* ~pln -"old draft"...'
         : 'Search loaded files with type:md path:notes tag:idea task:open plan* ~pln...';
   }
-  if (searchMeta) {
-    const metaText = searchScope === 'local'
-      ? 'Local folder search supports phrases, wildcards, fuzzy ~term, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
-      : 'Filters: type:, path:, title:, tag:, task:open/task:done. Add phrases, wildcards like plan*, fuzzy ~term, or exclusions like -archive.';
-    searchMeta.innerHTML = `<span>${escapeHtml(metaText)}</span>${renderSearchQueryChips(searchInput?.value || searchLastQuery || '')}`;
-  }
+  const metaText = searchScope === 'local'
+    ? 'Folder scope supports phrases, wildcards, fuzzy ~term, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
+    : searchScope === 'all'
+      ? 'All local merges loaded notes with the configured folder. Use filters or exclusions to keep the result set tight.'
+      : 'Loaded scope stays in open notes only. Add type:, path:, title:, tag:, task:, phrases, wildcards, or fuzzy ~term.';
+  setSearchMetaContent(metaText, searchInput?.value || searchLastQuery || '');
 }
 
 function appendSearchExample(example) {
@@ -3953,10 +3988,9 @@ async function runLocalFolderSearch(query, token) {
     searchActiveIndex = 0;
     searchInput?.removeAttribute('aria-activedescendant');
     searchResults.innerHTML = searchEmptyHtml(pack.message, query);
-    searchMeta.textContent = pack.meta || 'Local folder search unavailable';
+    setSearchMetaContent(pack.meta || 'Local folder search unavailable', query);
     return;
   }
-  searchMeta.textContent = `${pack.meta || `${pack.results.length} local result${pack.results.length === 1 ? '' : 's'}`}${searchPlanMetaSuffix(query)}`;
   renderSearchResults(pack.results, query);
 }
 
@@ -4150,22 +4184,25 @@ function renderSearchResults(results, query, options = {}) {
   searchLastResults = allResults;
   searchLastQuery = trimmedQuery;
   searchResults.innerHTML = renderSearchResultStrip(allResults, trimmedQuery);
+  const loadedCount = allResults.filter(result => result.source !== 'local').length;
+  const localCount = allResults.length - loadedCount;
   if (visibleResults.length) {
     searchActiveIndex = Math.max(bounds.start, Math.min(searchActiveIndex, bounds.end - 1));
   } else {
     searchActiveIndex = 0;
   }
-  if (searchScope === 'all') {
-    const loadedCount = allResults.filter(result => result.source !== 'local').length;
-    const localCount = allResults.length - loadedCount;
-    searchMeta.textContent = trimmedQuery
-      ? `${allResults.length} result${allResults.length === 1 ? '' : 's'}${planMeta} · ${loadedCount} loaded · ${localCount} local${renderCapMeta}`
-      : `${allResults.length} item${allResults.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local${renderCapMeta}`;
-  } else if (searchScope !== 'local') {
-    searchMeta.textContent = trimmedQuery
-      ? `${allResults.length} result${allResults.length === 1 ? '' : 's'} across loaded files${planMeta}${renderCapMeta}`
-      : 'Type to search content. Empty state lists loaded files.';
-  }
+  const metaSummary = searchScope === 'all'
+    ? (trimmedQuery
+      ? `${allResults.length} result${allResults.length === 1 ? '' : 's'}${planMeta} · ${loadedCount} loaded · ${localCount} folder${renderCapMeta}`
+      : `${allResults.length} item${allResults.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} folder${renderCapMeta}`)
+    : searchScope === 'local'
+      ? (trimmedQuery
+        ? `${allResults.length} folder result${allResults.length === 1 ? '' : 's'}${planMeta}${renderCapMeta}`
+        : `${allResults.length} folder item${allResults.length === 1 ? '' : 's'}${renderCapMeta}`)
+      : (trimmedQuery
+        ? `${allResults.length} result${allResults.length === 1 ? '' : 's'} across loaded files${planMeta}${renderCapMeta}`
+        : 'Type to search content. Empty state lists loaded files.');
+  setSearchMetaContent(metaSummary, trimmedQuery);
   if (!allResults.length) {
     searchResultPageStart = 0;
     searchInput?.removeAttribute('aria-activedescendant');
@@ -4177,6 +4214,15 @@ function renderSearchResults(results, query, options = {}) {
     const resultIndex = bounds.start + index;
     const row = el('button', `search-row${resultIndex === searchActiveIndex ? ' active' : ''}`);
     const matchLabel = searchResultMatchLabel(result);
+    const lineNumber = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : null;
+    const kindLabel = searchKindLabel(result);
+    const metaChips = [
+      result.dirty ? '<span class="search-meta-chip warn">Unsaved</span>' : '',
+      `<span class="search-meta-chip source ${result.source === 'local' ? 'local' : 'loaded'}">${escapeHtml(searchSourceLabel(result))}</span>`,
+      kindLabel ? `<span class="search-meta-chip kind">${escapeHtml(kindLabel)}</span>` : '',
+      matchLabel ? `<span class="search-meta-chip match">${escapeHtml(matchLabel)}</span>` : '',
+      lineNumber ? `<span class="search-meta-chip line">L${lineNumber}</span>` : '',
+    ].filter(Boolean).join('');
     const rowLabel = searchResultKeyboardLabel(result, resultIndex, allResults.length);
     row.type = 'button';
     row.id = `search-result-${resultIndex}`;
@@ -4193,13 +4239,15 @@ function renderSearchResults(results, query, options = {}) {
       <span class="search-body">
         <span class="search-title-line">
           <strong>${highlightSearchText(result.title, highlightTerms)}</strong>
-          ${result.dirty ? '<em>Unsaved</em>' : ''}
-          ${result.source === 'local' ? '<em>Local</em>' : searchScope === 'all' ? '<em>Loaded</em>' : ''}
-          ${matchLabel ? `<em>${escapeHtml(matchLabel)}</em>` : ''}
-          ${result.matchIndex >= 0 ? `<small>Line ${result.line + 1}</small>` : ''}
         </span>
+        <span class="search-meta-line">${metaChips}</span>
         <span class="search-path">${highlightSearchText(result.path, highlightTerms)}</span>
-        ${result.snippet ? `<span class="search-snippet">${highlightSearchText(result.snippet, highlightTerms)}</span>` : ''}
+        ${result.snippet ? `
+          <span class="search-snippet">
+            <span class="search-snippet-label">${lineNumber ? `Line ${lineNumber} context` : (result.source === 'local' ? 'Matched text' : 'Preview context')}</span>
+            <span class="search-snippet-text">${highlightSearchText(result.snippet, highlightTerms)}</span>
+          </span>
+        ` : ''}
       </span>`;
     row.addEventListener('mousemove', () => setSearchActive(resultIndex));
     row.addEventListener('click', () => openSearchResult(result));
@@ -4581,7 +4629,7 @@ function searchResultMatchLabel(result) {
     case 'filter':
       return 'Filter match';
     case 'content':
-      return `Line ${Number(result.line || 0) + 1}`;
+      return 'Content match';
     default:
       return '';
   }
@@ -4590,9 +4638,11 @@ function searchResultMatchLabel(result) {
 function searchResultKeyboardLabel(result, index, total) {
   const parts = [
     `Result ${index + 1} of ${total}`,
-    result.source === 'local' ? 'local folder' : 'loaded file',
+    `${searchSourceLabel(result).toLowerCase()} result`,
     result.title || basename(result.path) || 'Untitled',
   ];
+  const kindLabel = searchKindLabel(result);
+  if (kindLabel) parts.push(`${kindLabel} file`);
   if (Number.isFinite(Number(result.line))) parts.push(`line ${Number(result.line) + 1}`);
   const matchLabel = searchResultMatchLabel(result);
   if (matchLabel) parts.push(matchLabel);
@@ -4602,12 +4652,14 @@ function searchResultKeyboardLabel(result, index, total) {
 }
 
 function searchActiveMetaLine(result, index, total) {
-  const source = result.source === 'local' ? 'local' : 'loaded';
+  const source = searchSourceLabel(result).toLowerCase();
+  const kind = searchKindLabel(result) ? ` · ${searchKindLabel(result)}` : '';
   const line = Number.isFinite(Number(result.line)) ? ` · line ${Number(result.line) + 1}` : '';
+  const match = searchResultMatchLabel(result) ? ` · ${searchResultMatchLabel(result).toLowerCase()}` : '';
   const score = Number.isFinite(Number(result.score)) ? ` · score ${Number(result.score)}` : '';
   const path = String(result.path || 'Draft').replace(/\s+/g, ' ').trim();
   const compactPath = path.length > 54 ? `...${path.slice(-51)}` : path;
-  return `${index + 1}/${total} · ${source}${line}${score} · ${compactPath} · Enter opens`;
+  return `${index + 1}/${total} · ${source}${kind}${line}${match}${score} · ${compactPath} · Enter opens`;
 }
 
 function setSearchActive(index, options = {}) {
@@ -4651,7 +4703,7 @@ function setSearchActive(index, options = {}) {
   const activeResult = searchLastResults[searchActiveIndex];
   if (activeResult && searchMeta) {
     const capMeta = searchLastResults.length > rows.length ? ` · showing ${bounds.start + 1}-${bounds.end}` : '';
-    searchMeta.textContent = `${searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length)}${capMeta}`;
+    setSearchMetaContent(`${searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length)}${capMeta}`, searchLastQuery);
   }
 }
 

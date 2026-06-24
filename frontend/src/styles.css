@@ -1134,6 +1134,13 @@ body.markpad-compact #modal-body {
   padding: 8px 16px; color: var(--muted); font-size: 11px; font-weight: 750;
   text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--border-soft);
 }
+.search-meta-summary {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0;
+}
 .search-scope {
   display: inline-flex;
   gap: 4px;
@@ -1149,11 +1156,26 @@ body.markpad-compact #modal-body {
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 850;
-  white-space: nowrap;
+  padding: 6px 10px 5px;
+  min-width: 92px;
+  display: grid;
+  gap: 1px;
+  justify-items: start;
+  text-align: left;
   cursor: pointer;
+}
+.search-scope-label {
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.search-scope-hint {
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.05;
+  opacity: .8;
+  white-space: nowrap;
 }
 .search-scope button.active,
 .search-scope button:hover {
@@ -1350,23 +1372,87 @@ body.markpad-compact #modal-body {
 .search-source-legend strong { color: var(--text); font-weight: 950; }
 .search-row {
   width: 100%; border: 1px solid transparent; border-radius: 14px; background: transparent;
-  color: var(--text); display: flex; gap: 10px; padding: 10px; text-align: left; cursor: pointer;
+  color: var(--text); display: flex; align-items: flex-start; gap: 10px; padding: 10px; text-align: left; cursor: pointer;
 }
 .search-row:hover, .search-row.active { background: var(--hover); border-color: var(--border); }
 .search-badge {
-  width: 34px; height: 30px; border: 1px solid var(--border); border-radius: 9px;
+  width: 38px; height: 34px; border: 1px solid var(--border); border-radius: 11px;
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
   background: var(--editor); color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase;
 }
-.search-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.search-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.search-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.search-title-line { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .search-title-line strong { font-size: 13px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.search-title-line em {
-  color: #c57933; font-size: 10px; font-style: normal; font-weight: 850; text-transform: uppercase;
+.search-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
 }
-.search-title-line small { color: var(--accent); font-size: 10px; font-weight: 800; }
-.search-path { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.search-snippet { color: var(--muted); font-size: 12px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.search-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--editor) 84%, var(--surface));
+  color: var(--muted);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.search-meta-chip.source.local,
+.search-meta-chip.line {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+}
+.search-meta-chip.match {
+  color: #a85f1d;
+  border-color: color-mix(in srgb, #c57933 44%, var(--border));
+}
+.search-meta-chip.warn {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--border));
+}
+.search-path {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 84%, var(--editor));
+}
+.search-snippet {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-soft));
+  border-left-width: 3px;
+  border-radius: 0 12px 12px 0;
+  background: color-mix(in srgb, var(--hover) 58%, var(--editor));
+}
+.search-snippet-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.search-snippet-text {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .search-row mark {
   border-radius: 4px;
   background: color-mix(in srgb, var(--accent) 20%, transparent);
@@ -3008,6 +3094,10 @@ button:hover .file-badge,
   background: linear-gradient(180deg, var(--panel-sheen), var(--surface));
 }
 
+.search-sub {
+  align-items: flex-start;
+}
+
 .search-palette input:focus,
 .search-palette textarea:focus {
   border-color: var(--accent);
@@ -3015,9 +3105,9 @@ button:hover .file-badge,
 }
 
 .search-row {
-  padding: 7px 9px;
+  padding: 9px 10px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .search-row:hover,
@@ -3025,6 +3115,30 @@ button:hover .file-badge,
   border-color: var(--lifted-border);
   background: color-mix(in srgb, var(--hover) 76%, var(--editor));
   box-shadow: 0 8px 22px color-mix(in srgb, var(--shadow) 18%, transparent);
+}
+
+.search-badge {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor) 74%, white 26%);
+}
+
+.search-body {
+  gap: 7px;
+}
+
+.search-meta-line {
+  gap: 5px;
+}
+
+.search-meta-chip {
+  background: color-mix(in srgb, var(--surface) 66%, var(--editor));
+}
+
+.search-path {
+  border-color: var(--lifted-border);
+}
+
+.search-snippet {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--editor) 74%, white 26%);
 }
 
 .search-row mark {
@@ -3161,7 +3275,7 @@ html[data-theme] .markdown-body code {
 
 .search-row strong,
 .search-path,
-.search-snippet {
+.search-snippet-text {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -3171,16 +3285,21 @@ html[data-theme] .markdown-body code {
   white-space: nowrap;
 }
 
-.search-snippet {
-  display: block;
-}
-
- (max-width: 580px) {
+@media (max-width: 580px) {
   .search-page-controls .search-empty-actions {
     flex-direction: column;
   }
 
   .search-page-controls .search-empty-chip {
     width: 100%;
+  }
+
+  .search-scope {
+    width: 100%;
+  }
+
+  .search-scope button {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
