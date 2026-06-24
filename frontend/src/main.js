@@ -2439,12 +2439,13 @@ function searchResultMatchesPlan(result, plan) {
   const snippet = String(result.snippet || '').toLowerCase();
   const haystack = `${title}\n${path}\n${snippet}`;
   const resultBody = searchResultFilterText(result);
+  const snippetOnlyLocal = result.source === 'local' && result.partialContent;
   const exclude = plan.excludes || { path: [], title: [], type: [], tag: [], task: [] };
   if (plan.filters.path.some(value => !path.includes(value))) return false;
   if (plan.filters.title.some(value => !title.includes(value))) return false;
   if (plan.filters.type.some(value => !typeText.includes(value))) return false;
-  if (plan.filters.tag.some(value => !resultBody.includes(`#${value}`))) return false;
-  if (!searchResultMatchesTaskFilters(result, plan.filters.task)) return false;
+  if (!snippetOnlyLocal && plan.filters.tag.some(value => !resultBody.includes(`#${value}`))) return false;
+  if (!snippetOnlyLocal && !searchResultMatchesTaskFilters(result, plan.filters.task)) return false;
   if (exclude.path.some(value => path.includes(value))) return false;
   if (exclude.title.some(value => title.includes(value))) return false;
   if (exclude.type.some(value => typeText.includes(value))) return false;
@@ -2562,15 +2563,18 @@ function searchResultMatchesTaskFilters(result, filters) {
 }
 
 function localSearchBackendQuery(plan, rawQuery) {
+  const anchors = [];
   const backend = String(plan?.backendQuery || '').trim();
-  if (backend) return backend;
+  if (backend) anchors.push(backend);
   const tagFilters = plan?.filters?.tag || [];
-  if (tagFilters.length) return tagFilters.map(tag => `#${tag}`).join(' ');
+  anchors.push(...tagFilters.map(tag => `#${tag}`));
   const taskFilters = plan?.filters?.task || [];
-  const firstTask = taskFilters[0] || '';
-  if (['open', 'todo', 'unchecked'].includes(firstTask)) return '[ ]';
-  if (['done', 'closed', 'checked'].includes(firstTask)) return '[x]';
-  if (firstTask) return firstTask;
+  taskFilters.forEach((task) => {
+    if (['open', 'todo', 'unchecked'].includes(task)) anchors.push('[ ]');
+    else if (['done', 'closed', 'checked'].includes(task)) anchors.push('[x]');
+    else if (task) anchors.push(task);
+  });
+  if (anchors.length) return anchors.join(' ');
   if (plan?.hasFilters || plan?.hasExcludes) return '';
   return String(rawQuery || '').trim();
 }
@@ -3059,8 +3063,12 @@ async function copySearchProfileMarkdown() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(searchProfileMarkdown());
-  statusText.textContent = 'Search profile copied as Markdown';
+  try {
+    await navigator.clipboard.writeText(searchProfileMarkdown());
+    statusText.textContent = 'Search profile copied as Markdown';
+  } catch {
+    statusText.textContent = 'Clipboard write failed';
+  }
 }
 
 function exportSearchProfileMarkdown() {
@@ -3073,8 +3081,12 @@ async function copySearchProfileJson() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(searchProfileJson());
-  statusText.textContent = 'Search profile copied as JSON';
+  try {
+    await navigator.clipboard.writeText(searchProfileJson());
+    statusText.textContent = 'Search profile copied as JSON';
+  } catch {
+    statusText.textContent = 'Clipboard write failed';
+  }
 }
 
 function exportSearchProfileJson() {
@@ -3087,8 +3099,12 @@ async function copySearchProfileCsv() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(searchProfileCsv());
-  statusText.textContent = 'Search profile copied as CSV';
+  try {
+    await navigator.clipboard.writeText(searchProfileCsv());
+    statusText.textContent = 'Search profile copied as CSV';
+  } catch {
+    statusText.textContent = 'Clipboard write failed';
+  }
 }
 
 function exportSearchProfileCsv() {
@@ -3718,7 +3734,17 @@ searchMeta?.addEventListener('click', (event) => {
 
 async function runLocalFolderSearch(query, token) {
   const startedAt = performance.now();
-  const pack = await collectLocalSearchResults(query, token, 60);
+  let pack;
+  try {
+    pack = await collectLocalSearchResults(query, token, 60);
+  } catch (err) {
+    pack = {
+      results: [],
+      message: 'Local folder search failed.',
+      meta: `Local search failed: ${err?.message || err}`,
+      stats: { searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 },
+    };
+  }
   if (token !== searchToken) return;
   setSearchTelemetry({ ...(pack.stats || {}), scope: 'local', startedAt, resultCount: (pack.results || []).length });
   if (pack.message) {
@@ -3750,7 +3776,8 @@ async function collectLocalSearchResults(query, token, limit) {
   }
   const q = localSearchBackendQuery(plan, query);
   if (!q) {
-    const files = await window.go.main.App.ListLocalFolderFiles(limit || 60);
+    const max = limit || 60;
+    const files = await window.go.main.App.ListLocalFolderFiles(max);
     if (token !== searchToken) return { results: [] };
     const results = (files || []).map(file => ({
       source: 'local',
@@ -3763,7 +3790,12 @@ async function collectLocalSearchResults(query, token, limit) {
       line: 0,
       snippet: `${typeLabel(getFileType(file.path, file.kind))} · ${formatBytes(file.size || 0)}${file.modified ? ' · ' + file.modified : ''}`,
     })).filter(result => searchResultMatchesPlan(result, plan));
-    return { results, meta: `${results.length} local file${results.length === 1 ? '' : 's'} from ${info.path}`, stats: { searched: results.length, scanned: results.length, resultCount: results.length } };
+    const capped = (files || []).length >= max;
+    return {
+      results,
+      meta: `${results.length} local file${results.length === 1 ? '' : 's'}${capped ? ' · top files shown' : ''} from ${info.path}`,
+      stats: { searched: results.length, scanned: (files || []).length, resultCount: results.length, capped },
+    };
   }
   let hits = [];
   let diagnostics = null;
@@ -3786,6 +3818,7 @@ async function collectLocalSearchResults(query, token, limit) {
     matchLength: 0,
     line: hit.line || 0,
     snippet: hit.snippet || '',
+    partialContent: true,
   })).filter(result => searchResultMatchesPlan(result, plan));
   const metaParts = [`${results.length} local hit${results.length === 1 ? '' : 's'}`];
   if (diagnostics) {
@@ -7446,7 +7479,7 @@ async function showRecentLocalFiles() {
 function renderLocalSearchHits(hits) {
   if (!hits.length) return '<div class="local-empty">No local folder matches.</div>';
   return `<div class="local-list">${hits.map(hit => `
-    <button class="local-row" data-local-open="${escapeHtml(hit.path)}">
+    <button class="local-row" data-local-open="${escapeAttr(hit.path)}">
       <span class="local-badge">${escapeHtml(fileIcon(hit.path))}</span>
       <span class="local-body">
         <strong>${escapeHtml(hit.relPath || hit.title)}</strong>
@@ -7483,7 +7516,7 @@ function renderLocalFolderSearchBox(query, enabled) {
   const disabled = enabled ? '' : 'disabled';
   return `
     <div class="local-search-row">
-      <input data-local-folder-query value="${escapeHtml(query || '')}" placeholder="Search local folder text files" ${disabled} />
+      <input data-local-folder-query value="${escapeAttr(query || '')}" placeholder="Search local folder text files" ${disabled} />
       <button data-local-folder-search-apply ${disabled}>Search</button>
       <button data-local-folder-search-clear ${(enabled && query) ? '' : 'disabled'}>Clear</button>
     </div>
@@ -7493,7 +7526,7 @@ function renderLocalFolderSearchBox(query, enabled) {
 function renderLocalTags(tags) {
   if (!tags.length) return '<div class="local-empty">No Markdown tags found in the local folder.</div>';
   return `<div class="tag-cloud">${tags.map(tag => `
-    <button class="tag-chip" data-local-tag-search="${escapeHtml('#' + tag.tag)}">
+    <button class="tag-chip" data-local-tag-search="${escapeAttr('#' + tag.tag)}">
       <strong>#${escapeHtml(tag.tag)}</strong>
       <span>${Number(tag.count || 0)} mention${Number(tag.count || 0) === 1 ? '' : 's'} · ${Number(tag.files || 0)} file${Number(tag.files || 0) === 1 ? '' : 's'}</span>
       ${tag.latestRel ? `<small>${escapeHtml(tag.latestRel)}</small>` : ''}
@@ -7521,7 +7554,7 @@ async function showLocalTags() {
 function renderLocalLinks(links) {
   if (!links.length) return '<div class="local-empty">No local Markdown links found in the local folder.</div>';
   return `<div class="tag-cloud">${links.map(link => `
-    <button class="tag-chip" data-local-link-search="${escapeHtml(link.target)}">
+    <button class="tag-chip" data-local-link-search="${escapeAttr(link.target)}">
       <strong>${escapeHtml(link.kind === 'wiki' ? '[[' + link.target + ']]' : link.target)}</strong>
       <span>${Number(link.count || 0)} link${Number(link.count || 0) === 1 ? '' : 's'} · ${Number(link.files || 0)} file${Number(link.files || 0) === 1 ? '' : 's'} · ${escapeHtml(link.kind || 'local')}</span>
       ${link.latestRel ? `<small>${escapeHtml(link.latestRel)}</small>` : ''}

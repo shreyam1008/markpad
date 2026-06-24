@@ -31,6 +31,7 @@ Implementation bias:
 - Prefer an external-content or contentless index pattern so the searchable text is not duplicated as another authoritative database.
 - Use incremental indexing from file modified time and size.
 - Keep direct folder scans bounded and dependency-free in Phase 1; copy ripgrep-style defaults such as skipping obvious binary files and keeping snippets small.
+- Local tag/task filters should use backend anchor queries, then avoid treating a returned snippet as full-file proof when the renderer has only partial local context.
 
 ## Tasks
 
