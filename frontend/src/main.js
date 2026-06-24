@@ -8968,7 +8968,9 @@ function renderTaskBoardActions(task) {
 }
 
 function renderTaskBoardRow(task) {
-  return `<div class="task-board-row">${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
+  const status = taskStatus(task);
+  const dragAttrs = task.local ? '' : ' draggable="true"';
+  return `<div class="task-board-row" data-task-board-card data-task-id="${escapeAttr(task.id)}" data-task-status="${escapeAttr(status)}"${dragAttrs}>${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
 }
 
 function renderTaskList(tasks, page = taskRenderPage(tasks)) {
@@ -9316,7 +9318,7 @@ function renderTaskBoard(tasks, page = taskRenderPage(tasks)) {
     const colTotal = tasks.filter(task => taskStatus(task) === id).length;
     const colTasks = pageTasks.filter(task => taskStatus(task) === id);
     const countLabel = page.hidden ? `${colTasks.length}/${colTotal}` : String(colTotal);
-    return `<section class="task-col"><h4>${label} (${countLabel})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
+    return `<section class="task-col" data-task-board-column="${id}"><h4>${label} (${countLabel})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
   }).join('')}</div>${renderTaskPageFooter(page)}`;
 }
 
@@ -16113,6 +16115,50 @@ modalBodyEl.addEventListener('click', async (e) => {
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
 });
+
+function clearTaskBoardDragState() {
+  modalBodyEl.querySelectorAll('[data-task-board-card].dragging').forEach(card => card.classList.remove('dragging'));
+  modalBodyEl.querySelectorAll('[data-task-board-column].drag-over').forEach(column => column.classList.remove('drag-over'));
+}
+
+modalBodyEl.addEventListener('dragstart', (e) => {
+  const card = e.target.closest('[data-task-board-card]');
+  if (!card || card.getAttribute('draggable') !== 'true') return;
+  card.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', card.dataset.taskId || '');
+});
+
+modalBodyEl.addEventListener('dragover', (e) => {
+  const dragging = modalBodyEl.querySelector('[data-task-board-card].dragging');
+  const column = e.target.closest('[data-task-board-column]');
+  if (!dragging || !column) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  modalBodyEl.querySelectorAll('[data-task-board-column].drag-over').forEach(item => {
+    if (item !== column) item.classList.remove('drag-over');
+  });
+  column.classList.add('drag-over');
+});
+
+modalBodyEl.addEventListener('dragleave', (e) => {
+  const column = e.target.closest('[data-task-board-column]');
+  if (column && !column.contains(e.relatedTarget)) column.classList.remove('drag-over');
+});
+
+modalBodyEl.addEventListener('drop', async (e) => {
+  const column = e.target.closest('[data-task-board-column]');
+  const card = modalBodyEl.querySelector('[data-task-board-card].dragging');
+  if (!column || !card) return;
+  e.preventDefault();
+  const taskId = e.dataTransfer.getData('text/plain') || card.dataset.taskId;
+  const status = column.dataset.taskBoardColumn || '';
+  const sourceStatus = card.dataset.taskStatus || '';
+  clearTaskBoardDragState();
+  if (taskId && status && status !== sourceStatus) await moveLoadedTask(taskId, status);
+});
+
+modalBodyEl.addEventListener('dragend', clearTaskBoardDragState);
 
 modalBodyEl.addEventListener('keydown', async (e) => {
   if (e.key !== 'Enter') return;

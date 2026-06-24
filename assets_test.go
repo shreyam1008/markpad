@@ -284,6 +284,9 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		"const TASK_BOARD_ACTIONS = [",
 		"function renderTaskBoardActions(task)",
 		"function renderTaskBoardRow(task)",
+		"data-task-board-card",
+		"data-task-board-column=",
+		`draggable="true"`,
 		"data-task-move=",
 		"data-task-move-status=",
 		"function setTaskStatusAtIndex(markdown, taskIndex, status)",
@@ -291,6 +294,11 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		"`due:${todayKey()}`",
 		"`due:${tomorrowKey()}`",
 		"'@waiting'",
+		"function clearTaskBoardDragState()",
+		"modalBodyEl.addEventListener('dragstart'",
+		"modalBodyEl.addEventListener('dragover'",
+		"modalBodyEl.addEventListener('drop'",
+		"await moveLoadedTask(taskId, status)",
 		"await moveLoadedTask(taskMove.dataset.taskMove, taskMove.dataset.taskMoveStatus)",
 	})
 
@@ -300,6 +308,10 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
 		".task-board-row",
+		`.task-board-row[draggable="true"]`,
+		".task-board-row.dragging",
+		".task-board .task-col[data-task-board-column]",
+		".task-board .task-col.drag-over",
 		".task-board .task-col::before",
 		".task-board .task-col:nth-child(1)::before",
 		".task-board .task-col:nth-child(4) h4::before",

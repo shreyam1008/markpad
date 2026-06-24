@@ -2647,12 +2647,30 @@ body.markpad-compact #modal-body {
   display: grid;
   gap: 6px;
 }
+.task-board-row[draggable="true"] {
+  cursor: grab;
+}
+.task-board-row[draggable="true"]:active {
+  cursor: grabbing;
+}
+.task-board-row.dragging {
+  opacity: .62;
+  transform: scale(.99);
+}
 .task-board-row .task-row {
   margin: 0;
 }
 .task-board .task-col {
   position: relative;
   overflow: hidden;
+}
+.task-board .task-col[data-task-board-column] {
+  transition: border-color .14s ease, background .14s ease, box-shadow .14s ease;
+}
+.task-board .task-col.drag-over {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .task-board .task-col::before {
   content: "";
