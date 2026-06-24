@@ -15408,10 +15408,26 @@ function openTaskFileSetup() {
   statusText.textContent = 'Task file setup';
 }
 
+async function createTaskFileFromMenu() {
+  if (!window.go?.main?.App?.AppendLocalFolderTask || !(await hasReadyLocalFolder())) {
+    openTaskFileSetup();
+    return;
+  }
+  try {
+    renderSession(await window.go.main.App.AppendLocalFolderTask(`Review new Tasks.md workflow !medium due:${todayKey()} #inbox`));
+    loadContent(await window.go.main.App.GetActiveContent());
+    setView('markdown');
+    await showTasksView('list');
+    statusText.textContent = 'Local Tasks.md created';
+  } catch {
+    openTaskFileSetup();
+  }
+}
+
 async function openTaskFileFromMenu() {
   const target = findTaskTargetNote();
   if (!target) {
-    openTaskFileSetup();
+    await createTaskFileFromMenu();
     return;
   }
   if (activeId && activeId !== target.id) {
