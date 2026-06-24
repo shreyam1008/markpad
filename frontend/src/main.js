@@ -4246,12 +4246,14 @@ function lightweightAssetSnapshot() {
     height: img.naturalHeight || 0,
     loading: img.loading || '',
   }));
+  const commandIcons = commandIconMetrics();
   return {
     type: 'markpad-lightweight-assets',
     version: 1,
     generatedAt: new Date().toISOString(),
     strategy: {
       icons: 'text glyphs and inline SVG',
+      commandIcons: commandIcons.strategy,
       themes: 'CSS variables',
       polish: 'CSS transitions and layout refinements',
       workspacePresets: 'theme/layout state only',
@@ -4267,15 +4269,27 @@ function lightweightAssetSnapshot() {
       inlineSvg: document.querySelectorAll('svg').length,
       canvasElements: document.querySelectorAll('canvas').length,
       stylesheets: document.styleSheets.length,
+      commandTextIcons: commandIcons.total,
+      uniqueCommandTextIcons: commandIcons.unique,
+      longCommandTextIcons: commandIcons.longLabels,
+      commandCategories: Object.keys(commandIcons.categories).length,
     },
+    commandIcons,
     images: images.slice(0, 20),
     notes: [
       'DOM image count reflects the current rendered view only.',
       'Inline SVG count reflects visible toolbar/document icons in the current view.',
+      'Command icons are measured as short text labels instead of font or bitmap assets.',
       'Themes are built-in CSS-variable themes and do not load image packs.',
       'Workspace presets apply existing CSS variables and local layout preferences.',
     ],
   };
+}
+
+function commandIconCategorySummary(categories = {}) {
+  const entries = Object.entries(categories);
+  if (!entries.length) return 'none';
+  return entries.map(([label, count]) => `${label} ${count}`).join(', ');
 }
 
 function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
@@ -4288,10 +4302,14 @@ function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
     `- Inline SVG elements: ${snapshot.counts.inlineSvg}`,
     `- Canvas elements: ${snapshot.counts.canvasElements}`,
     `- Stylesheets: ${snapshot.counts.stylesheets}`,
+    `- Command text icons: ${snapshot.commandIcons.total} (${snapshot.commandIcons.unique} unique)`,
+    `- Long command icon labels: ${snapshot.commandIcons.longLabels}`,
+    `- Command categories: ${commandIconCategorySummary(snapshot.commandIcons.categories)}`,
     '',
     '## Strategy',
     '',
     `- Icons: ${snapshot.strategy.icons}`,
+    `- Command icons: ${snapshot.strategy.commandIcons}`,
     `- Themes: ${snapshot.strategy.themes}`,
     `- UI polish: ${snapshot.strategy.polish}`,
     `- Workspace presets: ${snapshot.strategy.workspacePresets}`,
@@ -4333,6 +4351,8 @@ function showLightweightAssetReport() {
       <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>Current rendered view only</small></div>
       <div class="diag-card"><strong>${snapshot.counts.inlineSvg}</strong><span>Inline SVG</span><small>Current toolbar/document DOM</small></div>
       <div class="diag-card"><strong>${snapshot.counts.canvasElements}</strong><span>Canvas elements</span><small>Preview, PDF, or drawing surfaces</small></div>
+      <div class="diag-card"><strong>${snapshot.commandIcons.total}</strong><span>Command text icons</span><small>${snapshot.commandIcons.unique} unique labels</small></div>
+      <div class="diag-card"><strong>${snapshot.commandIcons.longLabels}</strong><span>Long icon labels</span><small>Text labels, no font pack</small></div>
       <div class="diag-card"><strong>no</strong><span>Icon fonts</span><small>Text glyphs and inline SVG instead</small></div>
       <div class="diag-card"><strong>no</strong><span>Image theme packs</span><small>CSS variables only</small></div>
       <div class="diag-card"><strong>CSS</strong><span>UI polish</span><small>No bitmap skins or runtime theme engine</small></div>
@@ -4936,6 +4956,27 @@ function commandPaletteCategories(items = commandItems()) {
     return acc;
   }, {});
   return preferred.map(label => ({ label, count: counts[label] || 0 })).filter(item => item.count);
+}
+
+function commandIconMetrics() {
+  const items = commandItems();
+  const icons = items.map(item => String(item.icon || '').trim()).filter(Boolean);
+  const categories = items.reduce((acc, item) => {
+    const category = commandCategory(item);
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+  const uniqueIcons = new Set(icons);
+  const longLabels = icons.filter(icon => icon.length > 4).length;
+  return {
+    total: icons.length,
+    unique: uniqueIcons.size,
+    missing: items.length - icons.length,
+    longLabels,
+    maxLength: icons.reduce((max, icon) => Math.max(max, icon.length), 0),
+    categories,
+    strategy: 'short text labels from command metadata; no icon font, sprite sheet, or bitmap pack',
+  };
 }
 
 function renderCommandCategoryStrip(items) {
