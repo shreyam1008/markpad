@@ -47,6 +47,9 @@ let taskViewMode = localStorage.getItem('markpad-task-view') || 'list';
 let taskFilter = localStorage.getItem('markpad-task-filter') || 'all';
 let taskQuery = localStorage.getItem('markpad-task-query') || '';
 let taskSourceFilter = normalizeTaskSourceFilter(localStorage.getItem('markpad-task-source-filter') || 'all');
+const TASK_RENDER_INITIAL = 200;
+const TASK_RENDER_STEP = 200;
+let taskRenderLimit = TASK_RENDER_INITIAL;
 let localFolderQuery = '';
 let latestTasks = [];
 let canvasTool = localStorage.getItem('markpad-canvas-tool') || 'pan';
@@ -8322,6 +8325,34 @@ function visibleTasksForView(tasks) {
   return sortTasksForView(tasks.filter(task => taskSourceMatches(task) && taskFilterMatches(task) && taskQueryMatches(task, queryPlan)));
 }
 
+function resetTaskRenderLimit() {
+  taskRenderLimit = TASK_RENDER_INITIAL;
+}
+
+function taskRenderPage(tasks) {
+  const total = Array.isArray(tasks) ? tasks.length : 0;
+  const limit = Math.max(TASK_RENDER_INITIAL, Number(taskRenderLimit || TASK_RENDER_INITIAL));
+  const shown = Math.min(total, limit);
+  return {
+    total,
+    shown,
+    hidden: Math.max(0, total - shown),
+    limit,
+    items: (Array.isArray(tasks) ? tasks : []).slice(0, shown),
+  };
+}
+
+function renderTaskPageFooter(page) {
+  if (!page || !page.hidden) return '';
+  const next = Math.min(page.total, page.shown + TASK_RENDER_STEP);
+  return `
+    <div class="task-page-footer">
+      <span>Rendering ${page.shown} of ${page.total} matching tasks to keep the view responsive.</span>
+      <button data-task-show-more>Show ${next - page.shown} more</button>
+    </div>
+  `;
+}
+
 function taskFilterCounts(tasks) {
   return {
     all: tasks.length,
@@ -8398,11 +8429,12 @@ function renderTaskSourceStrip(tasks, visibleTasks) {
   `;
 }
 
-function renderTaskControls(tasks, visibleTasks) {
+function renderTaskControls(tasks, visibleTasks, page) {
   const sourceTasks = tasks.filter(taskSourceMatches);
   const counts = taskFilterCounts(sourceTasks);
   const visibleLoaded = visibleTasks.filter(task => !task.local).length;
   const visibleLocal = visibleTasks.length - visibleLoaded;
+  const rendered = page?.shown ?? visibleTasks.length;
   const totalLoaded = tasks.filter(task => !task.local).length;
   const totalLocal = tasks.length - totalLoaded;
   const sourceFilters = [
@@ -8452,7 +8484,7 @@ function renderTaskControls(tasks, visibleTasks) {
         <button data-task-query-example="#idea">#idea</button>
       </div>
       ${renderTaskSourceStrip(tasks, visibleTasks)}
-      <div class="task-summary">${visibleTasks.length} visible in ${escapeHtml(filterLabel)} from ${escapeHtml(sourceLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${sourceTasks.length}/${tasks.length} source-matched · ${counts.open} open · Markdown stays the source of truth.</div>
+      <div class="task-summary">${rendered}/${visibleTasks.length} rendered in ${escapeHtml(filterLabel)} from ${escapeHtml(sourceLabel)} (${visibleLoaded} loaded, ${visibleLocal} local) · ${sourceTasks.length}/${tasks.length} source-matched · ${counts.open} open · Markdown stays the source of truth.</div>
     </div>
   `;
 }
@@ -8538,9 +8570,9 @@ function renderTaskRow(task, compact) {
     </div>`;
 }
 
-function renderTaskList(tasks) {
-  if (!tasks.length) return taskEmptyStateHtml('No Markdown tasks matched this task view.');
-  return `<div class="task-list">${tasks.map(task => renderTaskRow(task)).join('')}</div>`;
+function renderTaskList(tasks, page = taskRenderPage(tasks)) {
+  if (!page.total) return taskEmptyStateHtml('No Markdown tasks matched this task view.');
+  return `<div class="task-list">${page.items.map(task => renderTaskRow(task)).join('')}</div>${renderTaskPageFooter(page)}`;
 }
 
 function taskEmptyStateHtml(message = 'No Markdown tasks found in loaded files.') {
@@ -8869,8 +8901,9 @@ function renderTaskBoardGroups(tasks) {
   }).join('');
 }
 
-function renderTaskBoard(tasks) {
+function renderTaskBoard(tasks, page = taskRenderPage(tasks)) {
   if (!tasks.length) return taskEmptyStateHtml('No tasks matched this board view.');
+  const pageTasks = page.items;
   const columns = [
     ['today', 'Today'],
     ['upcoming', 'Upcoming'],
@@ -8878,9 +8911,11 @@ function renderTaskBoard(tasks) {
     ['done', 'Done'],
   ];
   return `<div class="task-board">${columns.map(([id, label]) => {
-    const colTasks = tasks.filter(task => taskStatus(task) === id);
-    return `<section class="task-col"><h4>${label} (${colTasks.length})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
-  }).join('')}</div>`;
+    const colTotal = tasks.filter(task => taskStatus(task) === id).length;
+    const colTasks = pageTasks.filter(task => taskStatus(task) === id);
+    const countLabel = page.hidden ? `${colTasks.length}/${colTotal}` : String(colTotal);
+    return `<section class="task-col"><h4>${label} (${countLabel})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
+  }).join('')}</div>${renderTaskPageFooter(page)}`;
 }
 
 function taskCalendarState(key) {
@@ -8900,9 +8935,9 @@ function renderTaskCalendarHeading(key, count) {
   `;
 }
 
-function renderTaskCalendar(tasks) {
+function renderTaskCalendar(tasks, page = taskRenderPage(tasks)) {
   const groups = new Map();
-  for (const task of tasks) {
+  for (const task of page.items) {
     const key = task.due || 'No due date';
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(task);
@@ -8915,19 +8950,23 @@ function renderTaskCalendar(tasks) {
   if (!keys.length) return taskEmptyStateHtml('No scheduled tasks matched this calendar view.');
   return `<div class="task-calendar">${keys.map(key => {
     const groupTasks = groups.get(key);
+    const groupTotal = tasks.filter(task => (task.due || 'No due date') === key).length;
     const state = taskCalendarState(key);
-    return `<section class="task-day ${state.className}"><h4>${renderTaskCalendarHeading(key, groupTasks.length)}</h4>${groupTasks.map(task => renderTaskRow(task)).join('')}</section>`;
-  }).join('')}</div>`;
+    const count = page.hidden ? `${groupTasks.length}/${groupTotal}` : groupTasks.length;
+    return `<section class="task-day ${state.className}"><h4>${renderTaskCalendarHeading(key, count)}</h4>${groupTasks.map(task => renderTaskRow(task)).join('')}</section>`;
+  }).join('')}</div>${renderTaskPageFooter(page)}`;
 }
 
-async function showTasksView(mode = taskViewMode) {
+async function showTasksView(mode = taskViewMode, options = {}) {
   taskViewMode = ['list', 'calendar', 'kanban'].includes(mode) ? mode : 'list';
+  if (!options.preserveTaskLimit) resetTaskRenderLimit();
   localStorage.setItem('markpad-task-view', taskViewMode);
   const tasks = await collectLoadedTasks();
   const visibleTasks = visibleTasksForView(tasks);
-  const body = taskViewMode === 'calendar' ? renderTaskCalendar(visibleTasks)
-    : taskViewMode === 'kanban' ? renderTaskBoard(visibleTasks)
-    : renderTaskList(visibleTasks);
+  const page = taskRenderPage(visibleTasks);
+  const body = taskViewMode === 'calendar' ? renderTaskCalendar(visibleTasks, page)
+    : taskViewMode === 'kanban' ? renderTaskBoard(visibleTasks, page)
+    : renderTaskList(visibleTasks, page);
   showModal('Tasks', `
     <div class="task-view-tabs">
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list" aria-pressed="${taskViewMode === 'list' ? 'true' : 'false'}">List</button>
@@ -8955,7 +8994,7 @@ async function showTasksView(mode = taskViewMode) {
         <button class="task-tab" data-task-copy-ics>Copy ICS</button>
         <button class="task-tab" data-task-export>Export ICS</button>
     </div>
-    ${renderTaskControls(tasks, visibleTasks)}
+    ${renderTaskControls(tasks, visibleTasks, page)}
     ${body}
   `, true);
 }
@@ -14797,6 +14836,11 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskCopyIcs && !taskCopyIcs.dataset.taskCopyIcs) await copyVisibleTasksIcs();
   const taskExport = e.target.closest('[data-task-export]');
   if (taskExport) await exportTasksIcs();
+  const taskShowMore = e.target.closest('[data-task-show-more]');
+  if (taskShowMore) {
+    taskRenderLimit += TASK_RENDER_STEP;
+    await showTasksView(taskViewMode, { preserveTaskLimit: true });
+  }
   const taskFilterBtn = e.target.closest('[data-task-filter]');
   if (taskFilterBtn) {
     taskFilter = taskFilterBtn.dataset.taskFilter || 'all';

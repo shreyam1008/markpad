@@ -1873,6 +1873,35 @@ body.markpad-compact #modal-body {
 .task-source-chip.later { border-color: #6f8f61; color: #4f7044; background: color-mix(in srgb, #6f8f61 9%, var(--surface)); }
 .task-source-chip.done { opacity: .78; }
 .task-list { display: flex; flex-direction: column; gap: 7px; }
+.task-page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--editor) 72%, var(--surface));
+  color: var(--muted);
+  margin-top: 10px;
+  padding: 9px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.task-page-footer button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--text);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 5px 10px;
+}
+.task-page-footer button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+}
 .task-row {
   display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: start;
   border: 1px solid var(--border-soft); border-radius: 12px; background: var(--editor); padding: 9px;
