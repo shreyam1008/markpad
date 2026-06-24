@@ -40,8 +40,8 @@ Updated: 2026-06-24
 - Search: field exclusions are implemented and discoverable; local-folder scans are serialized so fast repeated searches do not publish stale older results.
 - Tasks: rendering should be paged or virtualized before task features expand further.
 - Trash: draft trash has a localStorage byte cap and guardrail coverage; keep manual UI checks around restore/copy before expanding Trash reports.
-- Canvas: bounds caching and render scheduling should come before heavier infinite-canvas features.
-- Canvas: native `.markcanvas.json` and JSON Canvas `.canvas` interchange are separated; import caps and export/import round-trip tests should come before richer adapters.
+- Canvas: import caps now guard JSON size, element count, path points, and embedded files before imported data mutates the canvas.
+- Canvas: bounds caching, render scheduling, and export/import round-trip tests should come before richer adapters.
 
 ## Working rules for the next phase
 

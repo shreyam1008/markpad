@@ -164,6 +164,31 @@ func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 	})
 }
 
+func TestCanvasImportCapsContractIsGuarded(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"const CANVAS_IMPORT_MAX_BYTES = 4 * 1024 * 1024;",
+		"const CANVAS_IMPORT_MAX_ELEMENTS = 5000;",
+		"const CANVAS_IMPORT_MAX_PATH_POINTS = 10000;",
+		"const CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS = 200000;",
+		"const CANVAS_IMPORT_MAX_FILES_BYTES = 256 * 1024;",
+		"function parseCanvasImportJson(text, sourceLabel = 'canvas import', options = {})",
+		"validateCanvasImportDoc(doc, sourceLabel, options);",
+		"throw new Error(`${sourceLabel} has too many elements: ${elements.length} / ${maxElements}`);",
+		"throw new Error(`${sourceLabel} path has too many points: ${points} / ${maxPathPoints}`);",
+		"throw new Error(`${sourceLabel} embedded files are too large: ${formatBytes(filesBytes)} / ${formatBytes(maxFilesBytes)}`);",
+		"canvasDoc = parseCanvasImportJson(text, 'current document canvas');",
+		"parseCanvasImportJson(await navigator.clipboard.readText(), 'clipboard canvas')",
+		"canvasDoc = parseCanvasImportJson(text, file.name || 'canvas file');",
+		"importCaps: {",
+	})
+}
+
 func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
 	t.Helper()
 

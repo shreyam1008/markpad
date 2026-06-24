@@ -297,6 +297,11 @@ const CANVAS_SESSION_KEY = 'markpad-canvas-session';
 const MARKPAD_CANVAS_FORMAT = 'markpad-canvas-v1';
 const MARKPAD_CANVAS_SCHEMA = 'https://markpad.local/schemas/canvas-v1.json';
 const CANVAS_DPR_CAP = 1.5;
+const CANVAS_IMPORT_MAX_BYTES = 4 * 1024 * 1024;
+const CANVAS_IMPORT_MAX_ELEMENTS = 5000;
+const CANVAS_IMPORT_MAX_PATH_POINTS = 10000;
+const CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS = 200000;
+const CANVAS_IMPORT_MAX_FILES_BYTES = 256 * 1024;
 const CANVAS_HISTORY_LIMIT = 28;
 const CANVAS_HISTORY_BYTES = 768 * 1024;
 const CANVAS_HISTORY_TOTAL_BYTES = 3 * 1024 * 1024;
@@ -10559,6 +10564,44 @@ function normalizeCanvasDoc(input) {
   throw new Error('Unsupported canvas JSON');
 }
 
+function parseCanvasImportJson(text, sourceLabel = 'canvas import', options = {}) {
+  const bytes = byteSize(text || '');
+  const maxBytes = options.maxBytes || CANVAS_IMPORT_MAX_BYTES;
+  if (bytes > maxBytes) {
+    throw new Error(`${sourceLabel} is too large: ${formatBytes(bytes)} / ${formatBytes(maxBytes)}`);
+  }
+  const doc = normalizeCanvasDoc(JSON.parse(text));
+  validateCanvasImportDoc(doc, sourceLabel, options);
+  return doc;
+}
+
+function validateCanvasImportDoc(doc, sourceLabel = 'canvas import', options = {}) {
+  const maxElements = options.maxElements || CANVAS_IMPORT_MAX_ELEMENTS;
+  const maxPathPoints = options.maxPathPoints || CANVAS_IMPORT_MAX_PATH_POINTS;
+  const maxTotalPathPoints = options.maxTotalPathPoints || CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS;
+  const maxFilesBytes = options.maxFilesBytes || CANVAS_IMPORT_MAX_FILES_BYTES;
+  const elements = Array.isArray(doc?.elements) ? doc.elements : [];
+  if (elements.length > maxElements) {
+    throw new Error(`${sourceLabel} has too many elements: ${elements.length} / ${maxElements}`);
+  }
+  let totalPathPoints = 0;
+  for (const element of elements) {
+    if (!Array.isArray(element?.points)) continue;
+    const points = element.points.length;
+    totalPathPoints += points;
+    if (points > maxPathPoints) {
+      throw new Error(`${sourceLabel} path has too many points: ${points} / ${maxPathPoints}`);
+    }
+  }
+  if (totalPathPoints > maxTotalPathPoints) {
+    throw new Error(`${sourceLabel} has too many path points: ${totalPathPoints} / ${maxTotalPathPoints}`);
+  }
+  const filesBytes = byteSize(JSON.stringify(doc?.files || {}));
+  if (filesBytes > maxFilesBytes) {
+    throw new Error(`${sourceLabel} embedded files are too large: ${formatBytes(filesBytes)} / ${formatBytes(maxFilesBytes)}`);
+  }
+}
+
 function canvasPortableDoc(doc, options = {}) {
   const source = normalizeCanvasDoc(doc || newCanvasDoc());
   const meta = canvasDocumentMeta(source.meta || {});
@@ -12529,15 +12572,22 @@ async function copySelectedCanvasElementSvg() {
 
 async function pasteCanvasElementJsonFromClipboard() {
   if (!canvasDoc) loadCanvasState();
-  let parsed = null;
+  let doc = null;
   try {
-    parsed = JSON.parse(await navigator.clipboard.readText());
-  } catch {
-    statusText.textContent = 'Clipboard does not contain canvas element JSON';
+    const text = await navigator.clipboard.readText();
+    const bytes = byteSize(text || '');
+    if (bytes > CANVAS_IMPORT_MAX_BYTES) {
+      throw new Error(`clipboard canvas element is too large: ${formatBytes(bytes)} / ${formatBytes(CANVAS_IMPORT_MAX_BYTES)}`);
+    }
+    const parsed = JSON.parse(text);
+    const source = Array.isArray(parsed?.elements) ? parsed.elements[0] : parsed;
+    doc = normalizeCanvasDoc({ elements: [source], appState: canvasDoc.appState || { viewBackgroundColor: '#ffffff' } });
+    validateCanvasImportDoc(doc, 'clipboard canvas element', { maxElements: 1 });
+  } catch (err) {
+    statusText.textContent = 'Clipboard canvas element import failed: ' + (err.message || err);
     return;
   }
-  const source = Array.isArray(parsed?.elements) ? parsed.elements[0] : parsed;
-  const element = normalizeCanvasDoc({ elements: [source], appState: canvasDoc.appState || { viewBackgroundColor: '#ffffff' } }).elements[0];
+  const element = doc.elements[0];
   if (!element?.type) {
     statusText.textContent = 'Clipboard JSON is not a supported canvas element';
     return;
@@ -12555,17 +12605,16 @@ async function mergeCanvasJsonFromClipboard() {
   if (!canvasDoc) loadCanvasState();
   let parsed = null;
   try {
-    parsed = JSON.parse(await navigator.clipboard.readText());
-  } catch {
-    statusText.textContent = 'Clipboard does not contain canvas JSON';
+    parsed = parseCanvasImportJson(await navigator.clipboard.readText(), 'clipboard canvas');
+  } catch (err) {
+    statusText.textContent = 'Clipboard canvas import failed: ' + (err.message || err);
     return;
   }
-  const doc = normalizeCanvasDoc(parsed);
-  if (!doc.elements.length) {
+  if (!parsed.elements.length) {
     statusText.textContent = 'Clipboard canvas has no elements';
     return;
   }
-  const imported = doc.elements.map(element => moveCanvasElement({ ...element, id: canvasId() }, 24, 24));
+  const imported = parsed.elements.map(element => moveCanvasElement({ ...element, id: canvasId() }, 24, 24));
   canvasDoc.elements.push(...imported);
   canvasSelectedIndex = canvasDoc.elements.length - 1;
   saveCanvasState();
@@ -12579,17 +12628,16 @@ async function replaceCanvasJsonFromClipboard() {
   openCanvas();
   let parsed = null;
   try {
-    parsed = JSON.parse(await navigator.clipboard.readText());
-  } catch {
-    statusText.textContent = 'Clipboard does not contain canvas JSON';
+    parsed = parseCanvasImportJson(await navigator.clipboard.readText(), 'clipboard canvas');
+  } catch (err) {
+    statusText.textContent = 'Clipboard canvas import failed: ' + (err.message || err);
     return;
   }
-  const doc = normalizeCanvasDoc(parsed);
-  if (!doc.elements.length) {
+  if (!parsed.elements.length) {
     statusText.textContent = 'Clipboard canvas has no elements';
     return;
   }
-  canvasDoc = doc;
+  canvasDoc = parsed;
   canvasSession.camera = { x: 0, y: 0, scale: 1 };
   canvasSelectedIndex = -1;
   canvasMoveStart = null;
@@ -12597,7 +12645,7 @@ async function replaceCanvasJsonFromClipboard() {
   rememberCanvasHistory(true);
   renderCanvas();
   requestAnimationFrame(fitCanvasToContent);
-  statusText.textContent = `${doc.elements.length} canvas element${doc.elements.length === 1 ? '' : 's'} loaded from clipboard`;
+  statusText.textContent = `${parsed.elements.length} canvas element${parsed.elements.length === 1 ? '' : 's'} loaded from clipboard`;
 }
 
 function exportCanvasSvg() {
@@ -13323,6 +13371,13 @@ function canvasStorageProfileSnapshot() {
       pathPadding: 'max(100px, stroke width * 4)',
       pathBounds: 'single-pass',
     },
+    importCaps: {
+      maxBytes: CANVAS_IMPORT_MAX_BYTES,
+      maxElements: CANVAS_IMPORT_MAX_ELEMENTS,
+      maxPathPoints: CANVAS_IMPORT_MAX_PATH_POINTS,
+      maxTotalPathPoints: CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS,
+      maxFilesBytes: CANVAS_IMPORT_MAX_FILES_BYTES,
+    },
     undo: {
       snapshots: canvasHistory.length,
       currentIndex: canvasHistoryIndex,
@@ -13366,6 +13421,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? (snapshot.document.elements || 0)}/${snapshot.virtualization?.totalElements ?? (snapshot.document.elements || 0)}`,
     `- Viewport-visible paths: ${snapshot.virtualization?.visiblePathElements || 0}/${snapshot.virtualization?.totalPathElements || 0}`,
     `- Path bounds: ${snapshot.virtualization?.pathBounds || 'single-pass'}; paths culled by bounds: ${snapshot.virtualization?.pathsCulledByBounds ? 'yes' : 'no'}`,
+    `- Import caps: ${formatBytes(snapshot.importCaps?.maxBytes || CANVAS_IMPORT_MAX_BYTES)}, ${snapshot.importCaps?.maxElements || CANVAS_IMPORT_MAX_ELEMENTS} elements, ${snapshot.importCaps?.maxPathPoints || CANVAS_IMPORT_MAX_PATH_POINTS} points/path, ${snapshot.importCaps?.maxTotalPathPoints || CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS} total points, ${formatBytes(snapshot.importCaps?.maxFilesBytes || CANVAS_IMPORT_MAX_FILES_BYTES)} embedded files`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
     `- Files/assets: ${formatBytes(snapshot.document.filesBytes || 0)}`,
@@ -13427,6 +13483,11 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['path_elements_always_drawn', snapshot.virtualization?.pathElementsAlwaysDrawn ? 'true' : 'false'],
     ['paths_culled_by_bounds', snapshot.virtualization?.pathsCulledByBounds ? 'true' : 'false'],
     ['path_bounds', snapshot.virtualization?.pathBounds || ''],
+    ['import_max_bytes', Number(snapshot.importCaps?.maxBytes || CANVAS_IMPORT_MAX_BYTES)],
+    ['import_max_elements', Number(snapshot.importCaps?.maxElements || CANVAS_IMPORT_MAX_ELEMENTS)],
+    ['import_max_path_points', Number(snapshot.importCaps?.maxPathPoints || CANVAS_IMPORT_MAX_PATH_POINTS)],
+    ['import_max_total_path_points', Number(snapshot.importCaps?.maxTotalPathPoints || CANVAS_IMPORT_MAX_TOTAL_PATH_POINTS)],
+    ['import_max_files_bytes', Number(snapshot.importCaps?.maxFilesBytes || CANVAS_IMPORT_MAX_FILES_BYTES)],
     ['document_appstate_bytes', Number(snapshot.document.appStateBytes || 0)],
     ['document_files_bytes', Number(snapshot.document.filesBytes || 0)],
     ['document_background', snapshot.document.background || ''],
@@ -13457,6 +13518,7 @@ function showCanvasStorageProfile() {
       <div class="diag-card"><strong>${formatBytes(snapshot.document.averageElementBytes || 0)}</strong><span>Avg element</span><small>${formatBytes(snapshot.document.elementBytes || 0)} element JSON</small></div>
       <div class="diag-card"><strong>${snapshot.virtualization.visibleElements}/${snapshot.virtualization.totalElements}</strong><span>Viewport draw</span><small>${snapshot.virtualization.culledElements} culled · ${snapshot.virtualization.viewportPadding}px pad</small></div>
       <div class="diag-card"><strong>${snapshot.virtualization.visiblePathElements}/${snapshot.virtualization.totalPathElements}</strong><span>Visible paths</span><small>${snapshot.virtualization.culledPathElements} path${snapshot.virtualization.culledPathElements === 1 ? '' : 's'} culled</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.importCaps.maxBytes)}</strong><span>Import cap</span><small>${snapshot.importCaps.maxElements} elements · ${snapshot.importCaps.maxPathPoints} points/path</small></div>
       <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
       <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
@@ -13637,7 +13699,7 @@ function loadCurrentDocumentIntoCanvas() {
     return;
   }
   try {
-    canvasDoc = normalizeCanvasDoc(JSON.parse(text));
+    canvasDoc = parseCanvasImportJson(text, 'current document canvas');
     canvasSession = { camera: { x: 0, y: 0, scale: 1 } };
     canvasSelectedIndex = -1;
     canvasMoveStart = null;
@@ -13713,15 +13775,18 @@ canvasImportFile?.addEventListener('change', async () => {
   canvasImportFile.value = '';
   if (!file) return;
   try {
+    if (file.size > CANVAS_IMPORT_MAX_BYTES) {
+      throw new Error(`Canvas file is too large: ${formatBytes(file.size)} / ${formatBytes(CANVAS_IMPORT_MAX_BYTES)}`);
+    }
     const text = await file.text();
-    canvasDoc = normalizeCanvasDoc(JSON.parse(text));
+    canvasDoc = parseCanvasImportJson(text, file.name || 'canvas file');
     canvasSession.camera = { x: 0, y: 0, scale: 1 };
     canvasSelectedIndex = -1;
     canvasMoveStart = null;
     saveCanvasState();
     rememberCanvasHistory(true);
     renderCanvas();
-    statusText.textContent = 'Canvas imported';
+    statusText.textContent = `Canvas imported (${canvasDoc.elements.length} element${canvasDoc.elements.length === 1 ? '' : 's'})`;
   } catch (err) {
     statusText.textContent = 'Canvas import failed: ' + (err.message || err);
   }
