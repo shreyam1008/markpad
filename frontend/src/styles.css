@@ -1216,6 +1216,50 @@ body.markpad-compact #modal-body {
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
 #modal-body p { margin-bottom: 6px; }
+.pref-section-title {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pref-section-title.first {
+  margin-top: 0;
+}
+.pref-section-title.compact {
+  margin-bottom: 6px;
+}
+.pref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pref-table.spaced {
+  margin-top: 8px;
+}
+.pref-table tr:not(:last-child) {
+  border-bottom: 1px solid #e8e6df;
+}
+.pref-table td {
+  padding: 4px 6px;
+}
+.pref-table td:first-child {
+  font-weight: 600;
+}
+.pref-table .break,
+.pref-path {
+  word-break: break-all;
+}
+.pref-missing,
+.danger-action {
+  color: var(--danger);
+}
+.pref-actions {
+  margin-top: 8px;
+}
+.pref-path {
+  color: #6b6e68;
+  font-size: 11px;
+}
 .pref-theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(82px, 1fr)); gap: 6px; }
 .pref-theme {
   border: 1px solid var(--border); border-radius: 10px; background: var(--editor);
@@ -3367,7 +3411,7 @@ body.markpad-compact #modal-body {
 .local-head span {
   display: block; color: var(--muted); font-size: 10px; font-weight: 750; margin-top: 2px;
 }
-.local-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; }
+.local-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; margin-top: 10px; }
 .local-actions button {
   border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
   color: var(--muted); padding: 5px 8px; font-size: 11px; font-weight: 850; cursor: pointer;

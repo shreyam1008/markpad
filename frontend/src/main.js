@@ -1407,7 +1407,7 @@ function showLayoutProfile() {
       <div class="diag-card"><strong>${escapeHtml(snapshot.activeFile.type || 'none')}</strong><span>Active type</span><small>${snapshot.activeFile.readOnly ? 'read-only' : 'editable'}</small></div>
     </div>
     ${layoutLaneMeter(snapshot)}
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-layout-profile-md>Copy MD</button>
       <button data-export-layout-profile-md>Export MD</button>
       <button data-copy-layout-profile-json>Copy JSON</button>
@@ -2901,7 +2901,7 @@ function showSearchPerformanceGuide() {
       <div class="diag-card"><strong>next backend</strong><span>Streaming workspace search</span><small>Bounded Go workers, cancellation, and Markdown-first results</small></div>
       <div class="diag-card"><strong>later index</strong><span>Optional FTS</span><small>Only as a rebuildable index over local Markdown, not a new source of truth</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-open-local-footprint>Open Local Footprint</button>
       <button data-clear-loaded-search-cache>Clear Search Cache</button>
       <button data-search-profile-open>Search Profile</button>
@@ -2921,7 +2921,7 @@ function showWorkspaceSearchPlan() {
       <div class="diag-card"><strong>diagnose</strong><span>Counts + timing</span><small>Expose searched, skipped, elapsed time, and any cache/index cost</small></div>
       <div class="diag-card"><strong>optional</strong><span>FTS later</span><small>Only add an index after measurements show the standard path is not enough</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-search-performance-open>Search Performance</button>
       <button data-search-profile-open>Search Profile</button>
       <button data-open-local-footprint>Local Footprint</button>
@@ -3171,7 +3171,7 @@ function showSearchProfile() {
       <div class="diag-card"><strong>active</strong><span>Scan gate</span><small>Newest folder scan wins</small></div>
       <div class="diag-card"><strong>planned</strong><span>SQLite FTS5 sidecar</span><small>Rebuildable cache, not source of truth</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-search-profile-md>Copy MD</button>
       <button data-export-search-profile-md>Export MD</button>
       <button data-copy-search-profile-json>Copy JSON</button>
@@ -3515,7 +3515,7 @@ function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
       <button data-current-file-search-clear ${q ? '' : 'disabled'}>Clear</button>
     </div>
     <div class="local-summary">${q ? `${pack.total} match${pack.total === 1 ? '' : 'es'} in ${escapeHtml(activeFileSearchTitle())}${pack.truncated ? ` · first ${pack.matches.length} shown` : ''}` : `Search ${escapeHtml(activeFileSearchTitle())} without scanning other files.`}</div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-current-file-search-md ${q ? '' : 'disabled'}>Copy MD</button>
       <button data-copy-current-file-search-json ${q ? '' : 'disabled'}>Copy JSON</button>
       <button data-copy-current-file-search-csv ${q ? '' : 'disabled'}>Copy CSV</button>
@@ -3786,7 +3786,7 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
       <div class="diag-card"><strong>upgrade map</strong><span>One local dashboard</span><small>Search, tasks, canvas, Trash, themes, footprint, and sync-later boundaries</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-local-upgrade-map>Upgrade Map</button>
       <button data-local-workspace-setup>Workspace Setup</button>
       <button data-task-file-setup>Task File</button>
@@ -3809,7 +3809,7 @@ function showLowMemoryGuide() {
       <div class="diag-card"><strong>canvas</strong><span>bounded bridges</span><small>Task, search, outline, workspace, and backlink maps cap inserted cards</small></div>
       <div class="diag-card"><strong>assets</strong><span>text icons + CSS themes</span><small>No icon font packs, image theme bundles, or heavy drawing runtime</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-run-memory-cleanup-report>Cleanup + Footprint</button>
       <button data-open-local-footprint>Open Footprint</button>
       <button data-clear-all-undo-history>Clear Undo</button>
@@ -3847,7 +3847,7 @@ function showSplitWorkflowGuide() {
       <div class="diag-card"><strong>Nudge</strong><span>5% steps</span><small>Fine tune from the command palette</small></div>
       <div class="diag-card"><strong>${escapeHtml(splitRatioText())}</strong><span>Live badge</span><small>Divider shows the current editor/preview ratio</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-view-mode="markdown">Editor</button>
       <button data-view-mode="split">Split</button>
       <button data-view-mode="viewer">Preview</button>
@@ -3876,7 +3876,7 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Recipes</strong><span>Writing, planning, review, focus, night</span><small>Export lightweight Markdown/JSON guidance</small></div>
       <div class="diag-card"><strong>Companions</strong><span>Matched light/dark pairs</span><small>Switch day/night tone without changing workflow</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-theme-choice="paper" aria-pressed="${currentTheme === 'paper' ? 'true' : 'false'}">Paper</button>
       <button data-theme-choice="linen" aria-pressed="${currentTheme === 'linen' ? 'true' : 'false'}">Linen</button>
       <button data-theme-choice="mist" aria-pressed="${currentTheme === 'mist' ? 'true' : 'false'}">Mist</button>
@@ -3907,7 +3907,7 @@ function showSearchSyntaxHelp() {
       <div class="diag-card"><strong>canvas</strong><span>Send results</span><small>Turn current results into a canvas board</small></div>
       <div class="diag-card"><strong>inspect</strong><span>Query plan</span><small>Show parsed terms, filters, exclusions, fuzzy, and anchors</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-search-current-file-open>Current File</button>
       <button data-search-query-inspector-open>Query Inspector</button>
       <button data-search-performance-open>Performance</button>
@@ -7153,7 +7153,7 @@ async function showTrashCleanupProfile() {
       <div class="diag-card"><strong>${snapshot.retained.urgent}</strong><span>Expiring today</span><small>${snapshot.retained.soon} soon · ${snapshot.retained.safe} safe</small></div>
       <div class="diag-card"><strong>${snapshot.backend.cleanupExpiredFileTrash ? 'yes' : 'no'}</strong><span>File cleanup bridge</span><small>${snapshot.backend.emptyFileTrash ? 'empty supported' : 'empty unavailable'}</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-trash-cleanup-md>Copy MD</button>
       <button data-export-trash-cleanup-md>Export MD</button>
       <button data-copy-trash-cleanup-json>Copy JSON</button>
@@ -7273,7 +7273,7 @@ function showTrashGuide() {
       <div class="diag-card"><strong>cleanup</strong><span>Clean Expired</span><small>Only removes items past retention</small></div>
       <div class="diag-card"><strong>empty</strong><span>Empty Trash</span><small>Permanent local cleanup action</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-trash-audit>Audit Retention</button>
       <button data-trash-cleanup-profile>Cleanup Profile</button>
       <button data-trash-copy-report>Copy Report</button>
@@ -7756,7 +7756,7 @@ async function showLocalWorkspaceSetupGuide() {
       <div class="diag-card"><strong>canvas</strong><span>Portable JSON</span><small>Native .markcanvas.json files use inspectable JSON</small></div>
       <div class="diag-card"><strong>search</strong><span>Bounded scans</span><small>Local search avoids eager full-workspace loading</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-local-folder-choose>Choose folder</button>
       <button data-local-folder-open ${ready ? '' : 'disabled'}>Open folder</button>
       <button data-local-folder-new ${ready ? '' : 'disabled'}>New note</button>
@@ -8504,7 +8504,7 @@ function showTaskSyntaxHelp() {
       <div class="diag-card"><strong>starters</strong><span>Project, weekly, review</span><small>Append portable Markdown checklists</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Send visible tasks</span><small>Turn filtered tasks into a canvas board</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-task-file-setup>Task file setup</button>
       <button data-task-source-profile>Source profile</button>
       <button data-task-file-inbox>Create inbox starter</button>
@@ -8535,7 +8535,7 @@ function showTaskFileSetup() {
       <div class="diag-card"><strong>exports</strong><span>MD / JSON / CSV / ICS</span><small>Useful escape hatches stay visible</small></div>
       <div class="diag-card"><strong>canvas</strong><span>Visual planning</span><small>Send filtered tasks to lightweight canvas cards</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-task-file-inbox>${target ? 'Append inbox starter' : 'Create inbox starter'}</button>
       <button data-task-file-weekly>Weekly starter</button>
       <button data-task-file-project>Project starter</button>
@@ -9244,7 +9244,7 @@ async function showTaskAgenda() {
       ${renderTaskAgendaSection('Waiting', groups.waiting)}
       ${renderTaskAgendaSection('High priority', groups.high)}
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-task-agenda-md>Copy Markdown</button>
       <button data-copy-task-agenda-json>Copy JSON</button>
       <button data-copy-task-agenda-csv>Copy CSV</button>
@@ -10422,7 +10422,7 @@ async function showTaskSourceProfile() {
       <div class="diag-card"><strong>${snapshot.scan.tasks || 0}/${snapshot.scan.limit || 0}</strong><span>Local scan cap</span><small>${snapshot.scan.truncated ? 'truncated' : 'not truncated'} · ${snapshot.scan.taskFiles || 0} task files</small></div>
       <div class="diag-card"><strong>${snapshot.scan.skippedFiles || 0}</strong><span>Skipped files</span><small>${snapshot.scan.oversizeFiles || 0} oversize · cap ${formatBytes(snapshot.scan.fileCapBytes || 0)}</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-task-source-profile-md>Copy MD</button>
       <button data-export-task-source-profile-md>Export MD</button>
       <button data-copy-task-source-profile-json>Copy JSON</button>
@@ -12404,7 +12404,7 @@ function showSelectedCanvasElementInspector() {
       <div class="diag-card"><strong>${escapeHtml(element.fill || 'none')}</strong><span>Fill</span><small>${element.fill ? 'Native element fill' : 'Transparent / stroke-only'}</small></div>
       <div class="diag-card"><strong>${element.type === 'path' ? (element.points || []).length : canvasSelectedIndex + 1}</strong><span>${element.type === 'path' ? 'Points' : 'Layer'}</span><small>Lightweight JSON element</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-selected-canvas-details>Copy Markdown</button>
       <button data-copy-selected-canvas-json>Copy JSON</button>
       <button data-copy-selected-canvas-svg>Copy SVG</button>
@@ -13265,7 +13265,7 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>viewport</strong><span>Bounds culling</span><small>Offscreen elements and freehand paths are skipped during draw</small></div>
       <div class="diag-card"><strong>paths</strong><span>Single-pass bounds</span><small>No persisted bounds cache or raster preview memory</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-canvas-shortcuts-guide>Canvas shortcuts</button>
       <button data-canvas-inventory-open>Inventory</button>
       <button data-canvas-element-inspector-open>Selected Inspector</button>
@@ -13310,7 +13310,7 @@ function showCanvasMapGuide() {
       <div class="diag-card"><strong>backlinks</strong><span>24 references</span><small>Maps local backlinks for the saved active note</small></div>
       <div class="diag-card"><strong>memory</strong><span>bounded cards</span><small>Every bridge caps inserts before writing canvas JSON</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-task-agenda-canvas>Agenda to Canvas</button>
       <button data-search-results-canvas ${searchLastResults.length ? '' : 'disabled'}>Search to Canvas</button>
       <button data-current-file-search-canvas-guide>Current File to Canvas</button>
@@ -13773,7 +13773,7 @@ function showCanvasStorageProfile() {
       <div class="diag-card"><strong>${escapeHtml(snapshot.format)}</strong><span>Native format</span><small>${escapeHtml(snapshot.exports.native)}</small></div>
       <div class="diag-card"><strong>plain</strong><span>Interop exports</span><small>${escapeHtml(snapshot.exports.obsidian)} · ${escapeHtml(snapshot.exports.excalidraw)}</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions">
       <button data-copy-canvas-storage-md>Copy MD</button>
       <button data-export-canvas-storage-md>Export MD</button>
       <button data-copy-canvas-storage-json>Copy JSON</button>
@@ -15459,7 +15459,12 @@ async function createNoteFromMenu() {
 }
 
 async function createCanvasFromMenu() {
-  if (await ensureReadyLocalFolder('Choose a local folder before creating canvas files')) await createLocalFolderCanvas();
+  if (await ensureReadyLocalFolder('Choose a local folder for canvas files')) await createLocalFolderCanvas();
+}
+
+function startScratchCanvasFromMenu() {
+  openCanvas();
+  statusText.textContent = 'Scratch canvas opened';
 }
 
 async function createOtherFileFromMenu() {
@@ -15522,7 +15527,7 @@ async function runCreateMenuAction(kind) {
       openTaskFileSetup();
       break;
     case 'canvas':
-      await createCanvasFromMenu();
+      startScratchCanvasFromMenu();
       break;
     case 'open-folder':
       if (await ensureReadyLocalFolder('Choose a local folder before opening the workspace')) await openConfiguredLocalFolder();
@@ -16570,57 +16575,57 @@ async function showPreferences() {
   const localInfo = window.go?.main?.App?.GetLocalFolder ? await window.go.main.App.GetLocalFolder() : {};
   const themeButtons = THEMES.map(theme => `<button data-theme-choice="${theme.id}" data-theme-mode="${theme.mode}" class="pref-theme${theme.id === currentTheme ? ' active' : ''}" aria-pressed="${theme.id === currentTheme ? 'true' : 'false'}"><span class="theme-lab-swatch pref-theme-swatch" data-theme-swatch="${theme.id}"><i></i><i></i><i></i></span><span class="pref-theme-name">${theme.label}</span></button>`).join('');
   showModal('Preferences', `
-    <h3 style="margin-top:0;margin-bottom:8px;font-size:13px;font-weight:700;">Appearance</h3>
+    <h3 class="pref-section-title first">Appearance</h3>
     <div class="pref-theme-grid">${themeButtons}</div>
     <p style="margin-top:8px;"><button class="pref-inline-action" data-theme-lab-open>Open Theme Lab</button></p>
     <p style="margin-top:8px;">Themes are CSS-variable only, so they add polish without images, icon fonts, or runtime dependencies.</p>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;margin-top:8px;">
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Focus</td><td style="padding:4px 6px;">${focusMode ? 'Enabled' : 'Disabled'} · command-driven writing chrome</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Compact</td><td style="padding:4px 6px;">${compactMode ? 'Enabled' : 'Disabled'} · tighter sidebar, toolbar, search, tasks, and canvas controls</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Soft wrap</td><td style="padding:4px 6px;">${editorSoftWrap ? 'Enabled' : 'Disabled'} · visual only</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Reading width</td><td style="padding:4px 6px;">${editorReadingWidth ? 'Enabled' : 'Disabled'} · constrained editor/preview lane</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600;">Zoom / Split</td><td style="padding:4px 6px;">${Math.round(fontSize / ZOOM_DEFAULT * 100)}% · ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}</td></tr>
+    <table class="pref-table spaced">
+      <tr><td>Focus</td><td>${focusMode ? 'Enabled' : 'Disabled'} · command-driven writing chrome</td></tr>
+      <tr><td>Compact</td><td>${compactMode ? 'Enabled' : 'Disabled'} · tighter sidebar, toolbar, search, tasks, and canvas controls</td></tr>
+      <tr><td>Soft wrap</td><td>${editorSoftWrap ? 'Enabled' : 'Disabled'} · visual only</td></tr>
+      <tr><td>Reading width</td><td>${editorReadingWidth ? 'Enabled' : 'Disabled'} · constrained editor/preview lane</td></tr>
+      <tr><td>Zoom / Split</td><td>${Math.round(fontSize / ZOOM_DEFAULT * 100)}% · ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}</td></tr>
     </table>
-    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Local Workspace</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Default folder</td><td style="padding:4px 6px;word-break:break-all;">${localInfo?.path ? escapeHtml(localInfo.path) : 'Not set'}${localInfo?.missing ? ' <span style="color:#c54b33;font-weight:700;">(missing)</span>' : ''}</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Search scope</td><td style="padding:4px 6px;">${escapeHtml(searchScope)} · Loaded / Local / All</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600;">Local tools</td><td style="padding:4px 6px;">Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps</td></tr>
+    <h3 class="pref-section-title">Local Workspace</h3>
+    <table class="pref-table">
+      <tr><td>Default folder</td><td class="break">${localInfo?.path ? escapeHtml(localInfo.path) : 'Not set'}${localInfo?.missing ? ' <span class="pref-missing">(missing)</span>' : ''}</td></tr>
+      <tr><td>Search scope</td><td>${escapeHtml(searchScope)} · Loaded / Local / All</td></tr>
+      <tr><td>Local tools</td><td>Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps</td></tr>
     </table>
-    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+    <div class="local-actions pref-actions">
       <button data-local-folder-choose class="diag-action">Choose local folder</button>
       <button data-local-workspace-setup class="diag-action">Setup guide</button>
-      <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
+      <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} class="diag-action danger-action">Clear local folder</button>
       <button data-export-local-settings class="diag-action">Export settings</button>
       <button data-copy-local-settings class="diag-action">Copy settings</button>
       <button data-import-local-settings class="diag-action">Import settings</button>
     </div>
-    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + capped Code View; syntax coloring only when a local highlighter is loaded</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Local-first read-only card + Open Externally</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Canvas</td><td style="padding:4px 6px;">Native .markcanvas.json export, local JSON canvas view, Obsidian/JSON Canvas import/export, Excalidraw import/export, SVG, PNG viewport/full export, Markdown summary, Write to active .markcanvas.json/JSON/draft</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
+    <h3 class="pref-section-title">File Handling</h3>
+    <table class="pref-table">
+      <tr><td>Markdown</td><td>Editor, Split, Preview, formatting toolbar</td></tr>
+      <tr><td>Code</td><td>Editor + capped Code View; syntax coloring only when a local highlighter is loaded</td></tr>
+      <tr><td>Text</td><td>Direct editor with line/word stats</td></tr>
+      <tr><td>PDF</td><td>Local-first read-only card + Open Externally</td></tr>
+      <tr><td>Image</td><td>Inline preview (read-only)</td></tr>
+      <tr><td>Canvas</td><td>Native .markcanvas.json export, local JSON canvas view, Obsidian/JSON Canvas import/export, Excalidraw import/export, SVG, PNG viewport/full export, Markdown summary, Write to active .markcanvas.json/JSON/draft</td></tr>
+      <tr><td>Ebook/Office/Archive</td><td>Info card + Open Externally</td></tr>
     </table>
-    <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Canvas</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Grid</td><td style="padding:4px 6px;">${canvasGridVisible ? 'Visible' : 'Hidden'} · ${canvasGridSize}px · stored locally</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Snap</td><td style="padding:4px 6px;">${canvasSnapToGrid ? 'Enabled' : 'Disabled'} · ${canvasGridSize}px grid for new shapes/text</td></tr>
-      <tr><td style="padding:4px 6px;font-weight:600;">Minimap</td><td style="padding:4px 6px;">${canvasMinimapVisible ? 'Visible' : 'Hidden'} · simplified bounds only</td></tr>
+    <h3 class="pref-section-title">Canvas</h3>
+    <table class="pref-table">
+      <tr><td>Grid</td><td>${canvasGridVisible ? 'Visible' : 'Hidden'} · ${canvasGridSize}px · stored locally</td></tr>
+      <tr><td>Snap</td><td>${canvasSnapToGrid ? 'Enabled' : 'Disabled'} · ${canvasGridSize}px grid for new shapes/text</td></tr>
+      <tr><td>Minimap</td><td>${canvasMinimapVisible ? 'Visible' : 'Hidden'} · simplified bounds only</td></tr>
     </table>
-    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Sidebar</h3>
+    <h3 class="pref-section-title compact">Sidebar</h3>
     <p>Favorites, Open, and Recent are collapsible sections. Open files are reorderable tabs with close buttons. Right-click for context actions.</p>
-    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Tasks and Trash</h3>
+    <h3 class="pref-section-title compact">Tasks and Trash</h3>
     <p>Tasks are plain Markdown checkboxes. Deleted drafts and saved files move to local Trash with 30-day retention before permanent cleanup.</p>
-    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Single Instance</h3>
+    <h3 class="pref-section-title compact">Single Instance</h3>
     <p>Only one Markpad window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
-    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Storage</h3>
-    <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
+    <h3 class="pref-section-title compact">Storage</h3>
+    <p class="pref-path">${storagePath}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
-    <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
+    <h3 class="pref-section-title compact">Performance</h3>
     <p>PDFs do not load a runtime renderer or CDN script; Markpad shows a local-first read-only card with Open Externally. No PDF engine bundled. Code View caps rendering at 5000 lines and does not fetch a CDN highlighter. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
   `);
 }
