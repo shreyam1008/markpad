@@ -490,6 +490,61 @@ body.markpad-compact #modal-body {
 }
 .layout-lane-legend strong { color: var(--text); font-weight: 950; }
 
+.upgrade-map-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.upgrade-map-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),
+    color-mix(in srgb, var(--editor) 88%, var(--surface));
+}
+.upgrade-map-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 850;
+}
+.upgrade-map-chip strong {
+  color: var(--text);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.upgrade-map-chip.ready,
+.upgrade-map-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.upgrade-map-chip.warn {
+  border-color: #c57933;
+  color: #a85f1d;
+  background: color-mix(in srgb, #c57933 10%, var(--surface));
+}
+.upgrade-map-chip.planned {
+  border-color: color-mix(in srgb, var(--muted) 42%, var(--border));
+}
+.upgrade-map-grid {
+  margin-top: 0;
+}
+.upgrade-map-actions {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
+}
+
 .theme-chip {
   border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px;
   background: var(--editor); color: var(--muted); font-size: 11px; font-weight: 800;

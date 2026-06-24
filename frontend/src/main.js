@@ -4519,10 +4519,35 @@ async function exportUpgradeMapCsv() {
   statusText.textContent = 'Upgrade Map exported as CSV';
 }
 
+function upgradeMapStatusChips(snapshot) {
+  const trashTotal = Number(snapshot.trash.retainedDrafts || 0) + Number(snapshot.trash.retainedFiles || 0);
+  const chips = [
+    ['Local', snapshot.status.overall, 'ready'],
+    ['Search', snapshot.status.search, snapshot.search.operators?.total ? 'active' : 'idle'],
+    ['Tasks', snapshot.status.tasks, snapshot.tasks.known ? 'active' : 'idle'],
+    ['Canvas', snapshot.status.canvas, snapshot.canvas.elements ? 'active' : 'idle'],
+    ['Trash', snapshot.status.trash, trashTotal ? 'warn' : 'idle'],
+    ['Footprint', snapshot.status.footprint, 'ready'],
+    ['Sync', snapshot.status.sync, 'planned'],
+  ];
+  return `
+    <div class="upgrade-map-chips" aria-label="Upgrade Map status">
+      ${chips.map(([label, value, tone]) => `
+        <span class="upgrade-map-chip ${tone}">
+          <strong>${escapeHtml(label)}</strong>
+          ${escapeHtml(value)}
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
 async function showUpgradeMap() {
   const snapshot = await upgradeMapSnapshot();
   showModal('Upgrade Map', `
-    <div class="diag-grid">
+    <div class="upgrade-map-shell">
+    ${upgradeMapStatusChips(snapshot)}
+    <div class="diag-grid upgrade-map-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.status.overall)}</strong><span>Upgrade status</span><small>search ${escapeHtml(snapshot.status.search)} · tasks ${escapeHtml(snapshot.status.tasks)} · canvas ${escapeHtml(snapshot.status.canvas)}</small></div>
       <div class="diag-card"><strong>later</strong><span>Sync readiness</span><small>${snapshot.syncReadiness.loadedFiles} files · ${snapshot.syncReadiness.drafts} drafts · ${snapshot.syncReadiness.dirtyItems} dirty · folder ${snapshot.syncReadiness.localFolderConfigured ? 'set' : 'unset'}</small></div>
@@ -4540,7 +4565,7 @@ async function showUpgradeMap() {
       <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
       <div class="diag-card"><strong>${snapshot.assets.domImages}</strong><span>Rendered assets</span><small>${snapshot.assets.inlineSvg} inline SVG · ${snapshot.assets.canvasSurfaces} canvas · no theme packs</small></div>
     </div>
-    <div class="local-actions" style="margin-top:10px;">
+    <div class="local-actions upgrade-map-actions" style="margin-top:10px;">
       <button data-copy-upgrade-map-md>Copy MD</button>
       <button data-export-upgrade-map-md>Export MD</button>
       <button data-copy-upgrade-map-json>Copy JSON</button>
@@ -4559,6 +4584,7 @@ async function showUpgradeMap() {
       <button data-workspace-search-plan>Search Plan</button>
     </div>
     <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+    </div>
   `);
 }
 
