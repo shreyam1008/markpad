@@ -11239,11 +11239,17 @@ canvasStage?.addEventListener('pointerup', () => {
     saveCanvasState();
   }
   if (!canvasDrawing) return;
+  const createdSticky = canvasDrawing.type === 'sticky';
   if (canvasDrawing.type === 'path' ? canvasDrawing.points.length > 1 : canvasDrawing.type === 'sticky' || Math.hypot(canvasDrawing.w, canvasDrawing.h) > 3) {
     canvasDoc.elements.push(canvasDrawing);
     canvasSelectedIndex = canvasDoc.elements.length - 1;
     saveCanvasState();
     rememberCanvasHistory();
+    if (createdSticky) {
+      const stickyIndex = canvasSelectedIndex;
+      const sticky = canvasDoc.elements[stickyIndex];
+      requestAnimationFrame(() => startCanvasTextEdit({ x: sticky.x, y: sticky.y }, stickyIndex));
+    }
   }
   canvasDrawing = null;
   canvasDraftElement = null;
