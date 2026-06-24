@@ -50,4 +50,5 @@ Elements should stay simple: id, kind, position, size, style, text, points, and 
 - Style controls: stroke, fill, opacity, width, font size, arrowhead, and rough/smooth line mode.
 - Infinite canvas: virtualize hit testing and drawing by viewport bounds; do not keep DOM nodes for every element.
 - Hint/status text: derive from existing in-memory canvas state so empty, drawing, panning, selected, active tool, grid, snap, minimap, and pressed-button states teach the surface without extra persisted data.
+- Toolbar labels: use text buttons, titles, and ARIA labels on existing controls instead of image assets or icon fonts.
 - Assets: use inline SVG icons or CSS shapes; avoid icon fonts and large image packs.
