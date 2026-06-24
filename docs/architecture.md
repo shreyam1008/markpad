@@ -1,41 +1,48 @@
 # Architecture
 
-Markpad is a Go desktop app built around three separable layers:
+Markpad is a lightweight local-first desktop app built with Go and Wails.
 
-- `cmd/markpad`: process entry point and command-line file arguments.
-- `internal/desktop`: Gio UI, menus, sidebar, editor, viewer, modals, and user actions.
-- `internal/session`: session restore, drafts, bookmarks, preferences, and atomic file persistence.
-- `internal/preview`: lightweight Markdown block parsing for native viewer layout.
-- `internal/markdown`: goldmark-backed HTML rendering support for tests and future export/web work.
+The current architecture is intentionally simple:
 
-## Data flow
+- Go/Wails backend: top-level `*.go` files expose native file, session, local-folder, Trash, task, runtime, and canvas helpers to the webview.
+- Session core: `internal/session` owns durable session metadata, drafts, bookmarks, preferences, and atomic file persistence tests.
+- Frontend shell: `frontend/index.html`, `frontend/src/main.js`, and `frontend/src/styles.css` implement the sidebar, split editor/preview, command palette, search, tasks, Trash, canvas, diagnostics, and themes.
+- Packaging: `Makefile`, `build/`, and `packaging/` define local builds and release packaging.
 
-1. Startup creates a `session.Store` under the platform config directory.
-2. The session JSON is loaded, then every document draft is restored from `drafts/`.
-3. Opening a file reads plain text from disk, adds or activates a session document, writes a draft copy, and switches to Viewer mode.
-4. Editing updates document metadata and schedules a draft flush.
-5. Save writes atomically to the current file path. Save as writes atomically to the chosen path and updates the document path.
-6. Exit flushes dirty drafts and saves session metadata.
+## Local-first boundaries
 
-## Persistence model
+- Markdown and user-selected files are the source of truth for notes.
+- Markdown task lines are the source of truth for tasks; list, calendar, and kanban are projections.
+- Canvas content is portable JSON; camera, tool, grid, snap, and minimap are device-local session state.
+- Search indexes and diagnostics are derived state, not canonical content.
+- Trash is local metadata plus recoverable draft/file content with explicit retention controls.
+- Sync/cloud is a future layer over these formats, not part of the current phase.
 
-- Session metadata: `session.json`.
-- Draft content: one file per document under `drafts/`.
-- Saved files: regular user-chosen paths with any extension.
-- Bookmarks: absolute, deduplicated file paths stored in the session.
+## Runtime model
 
-## UI model
+The app has one native Wails window and one webview frontend. Avoid adding additional embedded browser surfaces unless profiling proves it is necessary.
 
-The UI intentionally follows a traditional desktop shape:
+Memory should be measured in three planes:
 
-- File/View/Help menu bar above everything.
-- Collapsible left sidebar with favorites/bookmarks first and session notes below.
-- Center mode switch with only Markdown and Viewer.
-- Save and Cancel changes on the right side of the note toolbar.
-- Help, Tour, About, Settings, and Save as are in-app modal overlays.
+- Go heap/runtime metrics from `GetRuntimeStats`.
+- WebView/JavaScript memory through browser/devtools profiling when available.
+- OS process-tree RSS, including WebKit helper processes.
+
+## Validation model
+
+The local validation checkpoint is:
+
+```sh
+make validate
+```
+
+That expands to core tests, full Go tests, production-tag Go tests, `go vet`, frontend syntax checking, and production-style build.
+
+CI should mirror these checks so the long-running upgrade does not drift from buildable, testable, lightweight behavior.
 
 ## Performance notes
 
-Current preview parsing is cached per note and only recalculates when content changes. Draft writes are throttled during editing and forced on close.
-
-The large-file roadmap is to replace the full-string editor model with a rope or piece-table, add incremental preview parsing, and benchmark 1 MB to 100 MB Markdown files.
+- Keep the binary small by avoiding bundled image packs, font icon packs, heavy JS runtimes, source maps, and WASM unless measured.
+- Keep canvas rendering bounds-first and viewport-cullable; do not persist cached bounds or raster previews into portable canvas files.
+- Keep search bounded and diagnostic-rich; future FTS indexes must be rebuildable sidecars.
+- Keep task and Trash views metadata-aware and exportable without becoming separate canonical stores.

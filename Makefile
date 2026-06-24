@@ -4,7 +4,7 @@ APP := markpad
 DIST := dist
 TAGS := production,webkit2_41
 
-.PHONY: run dev build css test test-core fmt clean
+.PHONY: run dev build css test test-core vet js-check validate fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -24,6 +24,20 @@ test:
 
 test-core:
 	$(GO) test ./internal/session ./tests
+
+vet:
+	$(GO) vet ./...
+
+js-check:
+	node --check frontend/src/main.js
+
+validate:
+	$(GO) test ./internal/session ./tests
+	$(GO) test ./...
+	$(GO) test -tags $(TAGS) ./...
+	$(GO) vet ./...
+	node --check frontend/src/main.js
+	$(MAKE) build
 
 fmt:
 	$(GO)fmt -w . ./internal
