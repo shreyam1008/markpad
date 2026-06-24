@@ -52,6 +52,7 @@ let taskSourceFilter = normalizeTaskSourceFilter(localStorage.getItem('markpad-t
 const TASK_RENDER_INITIAL = 200;
 const TASK_RENDER_STEP = 200;
 const TASK_RENDER_MAX = 1000;
+const CLIPBOARD_UNAVAILABLE = 'Clipboard unavailable';
 let taskRenderLimit = TASK_RENDER_INITIAL;
 let localFolderQuery = '';
 let latestTasks = [];
@@ -724,28 +725,19 @@ function searchRecentsCsv() {
 }
 
 async function copySearchRecentsMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchRecentsMarkdown());
   statusText.textContent = 'Search recents copied as Markdown';
 }
 
 async function copySearchRecentsJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchRecentsJson());
   statusText.textContent = 'Search recents copied as JSON';
 }
 
 async function copySearchRecentsCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchRecentsCsv());
   statusText.textContent = 'Search recents copied as CSV';
 }
@@ -766,10 +758,7 @@ function exportSearchRecentsCsv() {
 }
 
 async function restoreSearchRecentsFromClipboard() {
-  if (!navigator.clipboard?.readText) {
-    statusText.textContent = 'Clipboard read unavailable';
-    return;
-  }
+  if (!canReadClipboard()) return;
   let parsed = null;
   try {
     parsed = JSON.parse(await navigator.clipboard.readText());
@@ -1152,28 +1141,19 @@ function commandRecentsCsv() {
 }
 
 async function copyCommandRecentsMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(commandRecentsMarkdown());
   statusText.textContent = 'Command recents copied as Markdown';
 }
 
 async function copyCommandRecentsJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(commandRecentsJson());
   statusText.textContent = 'Command recents copied as JSON';
 }
 
 async function copyCommandRecentsCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(commandRecentsCsv());
   statusText.textContent = 'Command recents copied as CSV';
 }
@@ -1194,10 +1174,7 @@ function exportCommandRecentsCsv() {
 }
 
 async function restoreCommandRecentsFromClipboard() {
-  if (!navigator.clipboard?.readText) {
-    statusText.textContent = 'Clipboard read unavailable';
-    return;
-  }
+  if (!canReadClipboard()) return;
   let parsed = null;
   try {
     parsed = JSON.parse(await navigator.clipboard.readText());
@@ -1446,10 +1423,7 @@ function showLayoutProfile() {
 }
 
 async function copyLayoutProfileMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(layoutProfileMarkdown());
   statusText.textContent = 'Layout profile copied as Markdown';
 }
@@ -1460,10 +1434,7 @@ function exportLayoutProfileMarkdown() {
 }
 
 async function copyLayoutProfileJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(layoutProfileJson());
   statusText.textContent = 'Layout profile copied as JSON';
 }
@@ -1474,10 +1445,7 @@ function exportLayoutProfileJson() {
 }
 
 async function copyLayoutProfileCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(layoutProfileCsv());
   statusText.textContent = 'Layout profile copied as CSV';
 }
@@ -1635,10 +1603,7 @@ function exportUiStateSummary() {
 }
 
 async function copyUiStateJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(uiStateSummaryJson());
   statusText.textContent = 'UI state copied as JSON';
 }
@@ -1650,7 +1615,7 @@ function exportUiStateJson() {
 
 async function restoreUiStateJsonFromClipboard() {
   if (!navigator.clipboard?.readText) {
-    statusText.textContent = 'Clipboard unavailable';
+    statusText.textContent = CLIPBOARD_UNAVAILABLE;
     return;
   }
   let parsed;
@@ -1931,6 +1896,16 @@ function activeType() { const active = cachedNotes.find(n => n.id === activeId);
 function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'archive'].includes(type); }
 function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', canvas: 'Canvas', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
 function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function canWriteClipboard() {
+  if (navigator.clipboard?.writeText) return true;
+  statusText.textContent = CLIPBOARD_UNAVAILABLE;
+  return false;
+}
+function canReadClipboard() {
+  if (navigator.clipboard?.readText) return true;
+  statusText.textContent = 'Clipboard read unavailable';
+  return false;
+}
 function slugifyHeading(value) { return String(value || '').toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '') || 'section'; }
 
 const CODE_LINE_CAP = 5000;
@@ -3314,10 +3289,7 @@ function searchEmptyHtml(message, query = searchLastQuery) {
 }
 
 async function copySearchProfileMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(searchProfileMarkdown());
     statusText.textContent = 'Search profile copied as Markdown';
@@ -3332,10 +3304,7 @@ function exportSearchProfileMarkdown() {
 }
 
 async function copySearchProfileJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(searchProfileJson());
     statusText.textContent = 'Search profile copied as JSON';
@@ -3350,10 +3319,7 @@ function exportSearchProfileJson() {
 }
 
 async function copySearchProfileCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(searchProfileCsv());
     statusText.textContent = 'Search profile copied as CSV';
@@ -3557,10 +3523,7 @@ function showCurrentFileSearch(query = currentFileSearchDefaultQuery()) {
 }
 
 async function copyCurrentFileSearchMarkdown(query = currentFileSearchDefaultQuery()) {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const q = String(query || '').trim();
   if (!q) {
     statusText.textContent = 'Enter text to copy current-file search results';
@@ -3571,10 +3534,7 @@ async function copyCurrentFileSearchMarkdown(query = currentFileSearchDefaultQue
 }
 
 async function copyCurrentFileSearchJson(query = currentFileSearchDefaultQuery()) {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const q = String(query || '').trim();
   if (!q) {
     statusText.textContent = 'Enter text to copy current-file search JSON';
@@ -3585,10 +3545,7 @@ async function copyCurrentFileSearchJson(query = currentFileSearchDefaultQuery()
 }
 
 async function copyCurrentFileSearchCsv(query = currentFileSearchDefaultQuery()) {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const q = String(query || '').trim();
   if (!q) {
     statusText.textContent = 'Enter text to copy current-file search CSV';
@@ -4387,10 +4344,7 @@ async function copySearchResultsMarkdown() {
     statusText.textContent = 'No search results to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchResultsToMarkdown(searchLastResults, searchLastQuery));
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as Markdown`;
 }
@@ -4409,10 +4363,7 @@ async function copySearchResultsJson() {
     statusText.textContent = 'No search results to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchResultsToJson(searchLastResults, searchLastQuery));
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as JSON`;
 }
@@ -4431,10 +4382,7 @@ async function copySearchResultsCsv() {
     statusText.textContent = 'No search results to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(searchResultsToCsv(searchLastResults, searchLastQuery));
   statusText.textContent = `${searchLastResults.length} search result${searchLastResults.length === 1 ? '' : 's'} copied as CSV`;
 }
@@ -4453,10 +4401,7 @@ async function copySearchResultPaths() {
     statusText.textContent = 'No search result paths to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const lines = searchLastResults.map((result) => {
     const path = result.path || 'Draft';
     const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : 0;
@@ -4472,10 +4417,7 @@ async function copyActiveSearchResultMarkdown() {
     statusText.textContent = 'No active search result to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '';
   const lines = [
     '# Markpad Search Result',
@@ -4496,10 +4438,7 @@ async function copyActiveSearchResultJson() {
     statusText.textContent = 'No active search result to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify({
     type: 'markpad-search-result',
     version: 1,
@@ -4526,10 +4465,7 @@ async function copyActiveSearchResultCsv() {
     statusText.textContent = 'No active search result to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const row = [
     searchLastQuery || '',
     searchScope,
@@ -4635,20 +4571,14 @@ async function copyActiveSearchResultPath() {
     statusText.textContent = 'No active search result path to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const line = Number.isFinite(Number(result.line)) ? Number(result.line) + 1 : '';
   await navigator.clipboard.writeText(`${result.path || 'Draft'}${line ? `:${line}` : ''}\n`);
   statusText.textContent = 'Active search result path copied';
 }
 
 async function copySearchQuerySummary() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText([
     '# Markpad Search Query',
     '',
@@ -5548,10 +5478,7 @@ async function copyRuntimeStats() {
     statusText.textContent = 'Runtime stats unavailable';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(runtimeStatsText(await getter()));
     statusText.textContent = 'Runtime stats copied';
@@ -5615,10 +5542,7 @@ async function copyRuntimeStatsJson() {
     statusText.textContent = 'Runtime stats unavailable';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(runtimeStatsJson(await getter()));
     statusText.textContent = 'Runtime stats copied as JSON';
@@ -5721,10 +5645,7 @@ async function copyRuntimeStatsMarkdown() {
     statusText.textContent = 'Runtime stats unavailable';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(runtimeStatsMarkdown(await getter()));
     statusText.textContent = 'Runtime stats copied as Markdown';
@@ -5739,10 +5660,7 @@ async function copyRuntimeStatsCsv() {
     statusText.textContent = 'Runtime stats unavailable';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   try {
     await navigator.clipboard.writeText(runtimeStatsCsv(await getter()));
     statusText.textContent = 'Runtime stats copied as CSV';
@@ -6822,10 +6740,7 @@ async function deleteDraftTrashItem(itemId) {
 async function copyDraftTrashItem(itemId) {
   const item = loadDraftTrash().find(entry => entry.id === itemId);
   if (!item) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(item.content || '');
   statusText.textContent = 'Trash draft copied';
 }
@@ -6833,10 +6748,7 @@ async function copyDraftTrashItem(itemId) {
 async function copyDraftTrashItemJson(itemId) {
   const item = loadDraftTrash().find(entry => entry.id === itemId);
   if (!item) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify(trashItemJson('Draft', item), null, 2) + '\n');
   statusText.textContent = 'Trash draft metadata copied as JSON';
 }
@@ -7289,10 +7201,7 @@ async function copyTrashReportMarkdown() {
 async function copyFileTrashPath(itemId) {
   const item = (await loadFileTrash()).find(entry => entry.id === itemId);
   if (!item) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(item.originalPath || item.path || '');
   statusText.textContent = 'Trash file path copied';
 }
@@ -7300,10 +7209,7 @@ async function copyFileTrashPath(itemId) {
 async function copyFileTrashItemJson(itemId) {
   const item = (await loadFileTrash()).find(entry => entry.id === itemId);
   if (!item) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify(trashItemJson('File', item), null, 2) + '\n');
   statusText.textContent = 'Trash file metadata copied as JSON';
 }
@@ -7622,10 +7528,7 @@ async function localFootprintSnapshot() {
 }
 
 async function copyLocalFootprintJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify(await localFootprintSnapshot(), null, 2) + '\n');
   statusText.textContent = 'Local footprint copied as JSON';
 }
@@ -7730,10 +7633,7 @@ function localFootprintSnapshotToCsv(snapshot) {
 }
 
 async function copyLocalFootprintMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(localFootprintSnapshotToMarkdown(await localFootprintSnapshot()));
   statusText.textContent = 'Local footprint copied as Markdown';
 }
@@ -7744,10 +7644,7 @@ async function exportLocalFootprintMarkdown() {
 }
 
 async function copyLocalFootprintCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(localFootprintSnapshotToCsv(await localFootprintSnapshot()));
   statusText.textContent = 'Local footprint copied as CSV';
 }
@@ -9161,37 +9058,25 @@ async function taskAgendaTodoTxt() {
 }
 
 async function copyTaskAgendaMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(await taskAgendaMarkdown());
   statusText.textContent = 'Task agenda copied as Markdown';
 }
 
 async function copyTaskAgendaJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(await taskAgendaJson());
   statusText.textContent = 'Task agenda copied as JSON';
 }
 
 async function copyTaskAgendaCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(await taskAgendaCsv());
   statusText.textContent = 'Task agenda copied as CSV';
 }
 
 async function copyTaskAgendaIcs() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to copy';
@@ -9202,10 +9087,7 @@ async function copyTaskAgendaIcs() {
 }
 
 async function copyTaskAgendaTodoTxt() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to copy';
@@ -9510,10 +9392,7 @@ function taskFileStarterMarkdown() {
 }
 
 async function copyTaskFileStarterMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(taskFileStarterMarkdown());
   statusText.textContent = 'tasks.md starter copied';
 }
@@ -9820,10 +9699,7 @@ async function copyVisibleTasksMarkdown() {
     statusText.textContent = 'No visible tasks to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToMarkdown(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as Markdown`;
 }
@@ -9834,10 +9710,7 @@ async function copyVisibleTasksSourceMarkdown() {
     statusText.textContent = 'No visible tasks to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToSourceMarkdown(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as editable tasks.md`;
 }
@@ -9848,10 +9721,7 @@ async function copyVisibleTasksJson() {
     statusText.textContent = 'No visible tasks to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToJson(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as JSON`;
 }
@@ -9862,10 +9732,7 @@ async function copyVisibleTasksCsv() {
     statusText.textContent = 'No visible tasks to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToCsv(tasks));
   statusText.textContent = `${tasks.length} visible task${tasks.length === 1 ? '' : 's'} copied as CSV`;
 }
@@ -9873,10 +9740,7 @@ async function copyVisibleTasksCsv() {
 async function copySingleTaskMarkdown(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const text = [
     taskMarkdownExportLine(task),
     `  - Source: ${task.local ? 'Local' : 'Loaded'} · ${task.noteTitle || 'Untitled'} · ${task.path || 'Draft'}:${Number(task.line || 0) + 1}`,
@@ -9889,10 +9753,7 @@ async function copySingleTaskMarkdown(taskId) {
 async function copySingleTaskJson(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(JSON.stringify({
     type: 'markpad-task',
     version: 1,
@@ -9917,10 +9778,7 @@ async function copySingleTaskJson(taskId) {
 async function copySingleTaskIcs(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToIcs([task]));
   statusText.textContent = 'Task copied as ICS';
 }
@@ -9928,10 +9786,7 @@ async function copySingleTaskIcs(taskId) {
 async function copySingleTaskCsv(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToCsv([task]));
   statusText.textContent = 'Task copied as CSV';
 }
@@ -9978,10 +9833,7 @@ function taskToTodoTxtLine(task) {
 async function copySingleTaskTodoTxt(taskId) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task) return;
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(`${taskToTodoTxtLine(task)}\n`);
   statusText.textContent = 'Task copied as Todo.txt';
 }
@@ -9996,10 +9848,7 @@ async function copyVisibleTasksTodoTxt() {
     statusText.textContent = 'No visible tasks to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(tasksToTodoTxt(tasks));
   statusText.textContent = `Copied ${tasks.length} tasks as Todo.txt`;
 }
@@ -10016,10 +9865,7 @@ async function exportTasksTodoTxt() {
 
 async function copyTaskViewSummary() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const open = tasks.filter(task => !task.checked).length;
   const done = tasks.length - open;
   const waiting = tasks.filter(task => task.waiting && !task.checked).length;
@@ -10050,10 +9896,7 @@ async function copyTaskViewSummary() {
 
 async function copyTaskViewSummaryJson() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const open = tasks.filter(task => !task.checked).length;
   const waiting = tasks.filter(task => task.waiting && !task.checked).length;
   const high = tasks.filter(task => isHighPriorityTask(task) && !task.checked).length;
@@ -10086,10 +9929,7 @@ async function copyTaskViewSummaryJson() {
 
 async function copyTaskViewSummaryCsv() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const open = tasks.filter(task => !task.checked).length;
   const waiting = tasks.filter(task => task.waiting && !task.checked).length;
   const high = tasks.filter(task => isHighPriorityTask(task) && !task.checked).length;
@@ -12281,10 +12121,7 @@ async function copySelectedCanvasDetails() {
     statusText.textContent = 'Select a canvas element first';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const element = canvasDoc.elements[canvasSelectedIndex];
   const bounds = canvasElementBounds(element);
   const lines = [
@@ -12769,10 +12606,7 @@ function exportMarkcanvasJson() {
 }
 
 async function copyMarkcanvasJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(markcanvasJson());
   statusText.textContent = 'Native .markcanvas.json copied';
 }
@@ -13406,10 +13240,7 @@ function exportCanvasMarkdownSummary() {
 
 async function copyCanvasMarkdownSummary() {
   if (!canvasDoc) loadCanvasState();
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasToMarkdownSummary(canvasDoc));
   statusText.textContent = 'Canvas Markdown summary copied';
 }
@@ -13422,10 +13253,7 @@ function exportCanvasElementsCsv() {
 
 async function copyCanvasElementsCsv() {
   if (!canvasDoc) loadCanvasState();
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasToCsv(canvasDoc));
   statusText.textContent = 'Canvas elements copied as CSV';
 }
@@ -13438,10 +13266,7 @@ function exportCanvasInventoryJson() {
 
 async function copyCanvasInventoryJson() {
   if (!canvasDoc) loadCanvasState();
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasInventoryToJson(canvasDoc));
   statusText.textContent = 'Canvas inventory copied as JSON';
 }
@@ -13500,28 +13325,19 @@ function canvasViewStateCsv() {
 }
 
 async function copyCanvasViewStateMarkdown() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasViewStateMarkdown());
   statusText.textContent = 'Canvas view state copied as Markdown';
 }
 
 async function copyCanvasViewStateJson() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasViewStateJson());
   statusText.textContent = 'Canvas view state copied as JSON';
 }
 
 async function copyCanvasViewStateCsv() {
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   await navigator.clipboard.writeText(canvasViewStateCsv());
   statusText.textContent = 'Canvas view state copied as CSV';
 }
@@ -13806,10 +13622,7 @@ function exportCanvasStorageProfileCsv() {
 }
 
 async function restoreCanvasViewStateFromClipboard() {
-  if (!navigator.clipboard?.readText) {
-    statusText.textContent = 'Clipboard read unavailable';
-    return;
-  }
+  if (!canReadClipboard()) return;
   let parsed = null;
   try {
     parsed = JSON.parse(await navigator.clipboard.readText());
@@ -16252,10 +16065,7 @@ async function copyDocumentOutlineMarkdown() {
     statusText.textContent = 'No headings to copy';
     return;
   }
-  if (!navigator.clipboard?.writeText) {
-    statusText.textContent = 'Clipboard unavailable';
-    return;
-  }
+  if (!canWriteClipboard()) return;
   const title = active?.title || basename(active?.path || '') || 'Untitled';
   const lines = [`# ${title} Outline`, ''];
   outline.forEach(item => {
