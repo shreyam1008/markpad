@@ -122,6 +122,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Keep menu and command-palette polish text/CSS based, with category chips and command metadata instead of bitmap or font-icon packs.
 - Keep command empty-state shortcuts text-only and backed by existing command IDs; they should improve discoverability without adding new behavior.
 - Track command text-icon usage in Lightweight Assets so menu polish remains measurable without icon fonts or sprite sheets.
+- Link Lightweight Assets from theme surfaces so visual polish remains auditable without shipping image packs or icon fonts.
 - Let Lightweight Assets estimate decoded image bytes from current DOM image dimensions only; do not scan workspace files for asset accounting.
 - Let Lightweight Assets mark current-view asset budget as ok/review using DOM image count and decoded-image byte thresholds only.
 - Keep Theme Lab summaries metadata-only: current theme, light/dark counts, preset matches, and zero theme assets.

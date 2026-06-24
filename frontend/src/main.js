@@ -3638,6 +3638,7 @@ function showThemeGuide() {
       <button data-theme-choice="midnight" aria-pressed="${currentTheme === 'midnight' ? 'true' : 'false'}">Midnight</button>
       <button data-theme-lab-open>Theme Lab</button>
       <button data-theme-lab-choice="${themeCompanionId(currentTheme)}">Companion: ${escapeHtml(themeCompanionFor(currentTheme).label)}</button>
+      <button data-asset-report-open>Asset Report</button>
       <button data-copy-theme-recipes-md>Copy recipes MD</button>
       <button data-export-theme-recipes-json>Export recipes JSON</button>
     </div>
@@ -14529,6 +14530,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (themeLabOpen) showThemeLab();
   const themeGuideOpen = e.target.closest('[data-theme-guide-open]');
   if (themeGuideOpen) showThemeGuide();
+  const assetReportOpen = e.target.closest('[data-asset-report-open]');
+  if (assetReportOpen) showLightweightAssetReport();
   const themeLabChoice = e.target.closest('[data-theme-lab-choice]');
   if (themeLabChoice) {
     applyTheme(themeLabChoice.dataset.themeLabChoice);
