@@ -299,6 +299,9 @@ func TestSearchLocalFolderDropsStaleOverlappingSearch(t *testing.T) {
 	if len(first.Hits) != 0 {
 		t.Fatalf("stale first search returned %d hits, want 0", len(first.Hits))
 	}
+	if !first.Superseded {
+		t.Fatal("stale first search should be marked superseded")
+	}
 
 	var second LocalFolderSearchResult
 	select {
@@ -311,5 +314,8 @@ func TestSearchLocalFolderDropsStaleOverlappingSearch(t *testing.T) {
 	}
 	if second.Hits[0].RelPath != "beta.md" {
 		t.Fatalf("latest search hit = %q, want beta.md", second.Hits[0].RelPath)
+	}
+	if second.Superseded {
+		t.Fatal("latest search should not be marked superseded")
 	}
 }

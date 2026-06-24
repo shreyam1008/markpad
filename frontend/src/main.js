@@ -38,7 +38,7 @@ let searchLastResults = [];
 let searchLastQuery = '';
 let searchResultPageStart = 0;
 let searchLastDedupe = { input: 0, output: 0, removed: 0 };
-let searchLastDiagnostics = { scope: 'loaded', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
+let searchLastDiagnostics = { scope: 'loaded', status: 'idle', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
 let searchRecentQueries = [];
 let commandOpen = false;
 let commandActiveIndex = 0;
@@ -2982,6 +2982,7 @@ function setSearchDiagnostics(stats = {}) {
   const backendElapsedMs = Number.isFinite(Number(stats.elapsedMs)) ? Math.max(0, Math.round(Number(stats.elapsedMs))) : null;
   searchLastDiagnostics = {
     scope: stats.scope || searchScope,
+    status: stats.status || (stats.superseded ? 'superseded' : 'complete'),
     elapsedMs: Number.isFinite(Number(stats.startedAt)) ? searchElapsedMs(stats.startedAt) : searchElapsedMs(null, stats.elapsedMs),
     backendElapsedMs,
     searched: Math.max(0, Number(stats.searched ?? stats.searchable ?? 0)),
@@ -2994,10 +2995,13 @@ function setSearchDiagnostics(stats = {}) {
   return searchLastDiagnostics;
 }
 
+function searchRunStatus(telemetry = searchLastDiagnostics) { return String(telemetry?.status || 'complete').trim() || 'complete'; }
+
 function searchDiagnosticsSummary(telemetry = searchLastDiagnostics) {
   const stats = telemetry || {};
   const skipped = Number(stats.skipped || 0) + Number(stats.oversize || 0);
   const parts = [`${Number(stats.elapsedMs || 0)} ms`];
+  const status = searchRunStatus(stats);
   if (Number.isFinite(Number(stats.backendElapsedMs)) && Number(stats.backendElapsedMs) !== Number(stats.elapsedMs || 0)) {
     parts.push(`${Number(stats.backendElapsedMs)} ms backend`);
   }
@@ -3005,6 +3009,7 @@ function searchDiagnosticsSummary(telemetry = searchLastDiagnostics) {
   if (Number(stats.scanned || 0) && Number(stats.scanned || 0) !== Number(stats.searched || 0)) parts.push(`${Number(stats.scanned || 0)} scanned`);
   if (skipped) parts.push(`${skipped} skipped`);
   if (stats.capped) parts.push('capped');
+  if (status !== 'complete') parts.push(status.replace(/-/g, ' '));
   return parts.join(' · ');
 }
 
@@ -3014,7 +3019,7 @@ function renderSearchIdleState(query, startedAt) {
   const message = searchScope === 'all'
     ? 'Type a query to search loaded and local files. Empty all-scope searches stay idle to avoid scanning your workspace.'
     : 'Type a query to search the local folder. Empty local searches stay idle to avoid scanning your workspace.';
-  setSearchDiagnostics({ scope: searchScope, startedAt, searched: 0, scanned: 0, resultCount: 0 });
+  setSearchDiagnostics({ scope: searchScope, status: 'idle', startedAt, searched: 0, scanned: 0, resultCount: 0 });
   searchLastResults = [];
   searchLastQuery = trimmedQuery;
   searchResultPageStart = 0;
@@ -3111,6 +3116,7 @@ function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
     `- Current result page: ${formatBytes(snapshot.resultPage?.bytes || 0)} (${snapshot.resultPage?.count || 0} results, ${formatBytes(snapshot.resultPage?.snippetBytes || 0)} snippets)`,
     `- Cache cap: ${formatBytes(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)}`,
     `- Per-file content cap: ${formatBytes(snapshot.limits.contentCapBytes || SEARCH_CONTENT_CAP)}`,
+    `- Run status: ${searchRunStatus(snapshot.diagnostics)}; stale folder scans return superseded; oversize/page caps are active`,
     `- Loaded backend bridge: ${snapshot.capabilities.loadedBackend ? 'available' : 'unavailable'}`,
     `- Local folder search bridge: ${snapshot.capabilities.localFolderSearch ? 'available' : 'unavailable'}`,
     `- Planned index: ${snapshot.capabilities.plannedSidecar}`,
@@ -3137,6 +3143,7 @@ function searchProfileCsv(snapshot = searchProfileSnapshot()) {
     ['dedupe_removed', Number(snapshot.dedupe?.removed || 0)],
     ['last_run_elapsed_ms', Number(snapshot.diagnostics?.elapsedMs || 0)],
     ['last_run_backend_elapsed_ms', snapshot.diagnostics?.backendElapsedMs ?? ''],
+    ['last_run_status', searchRunStatus(snapshot.diagnostics)],
     ['last_run_searched', Number(snapshot.diagnostics?.searched || 0)],
     ['last_run_scanned', Number(snapshot.diagnostics?.scanned || 0)],
     ['last_run_skipped', Number(snapshot.diagnostics?.skipped || 0)],
@@ -3175,10 +3182,10 @@ function showSearchProfile() {
       <div class="diag-card"><strong>${(snapshot.operators.phrases || []).length}</strong><span>Phrases</span><small>${escapeHtml((snapshot.operators.phrases || []).join(', ') || 'none')}</small></div>
       <div class="diag-card"><strong>${(snapshot.operators.wildcards || []).length}</strong><span>Wildcards</span><small>${escapeHtml((snapshot.operators.wildcards || []).join(', ') || 'none')}</small></div>
       <div class="diag-card"><strong>${(snapshot.operators.fuzzyTerms || []).length}</strong><span>Fuzzy terms</span><small>${escapeHtml((snapshot.operators.fuzzyTerms || []).map(value => `~${value}`).join(', ') || 'none')}</small></div>
-      <div class="diag-card"><strong>${snapshot.capabilities.loadedBackend ? 'yes' : 'no'}</strong><span>Loaded bridge</span><small>Go search fast path</small></div>
+      <div class="diag-card"><strong>${escapeHtml(searchRunStatus(snapshot.diagnostics))}</strong><span>Status</span><small>Idle, complete, superseded, error</small></div>
       <div class="diag-card"><strong>${snapshot.capabilities.localFolderSearch ? 'yes' : 'no'}</strong><span>Local bridge</span><small>Current folder search path</small></div>
-      <div class="diag-card"><strong>pending</strong><span>Loaded cap</span><small>Cap large notes before Wails bridge</small></div>
-      <div class="diag-card"><strong>pending</strong><span>Scan cancel</span><small>Serialize or cancel older folder scans</small></div>
+      <div class="diag-card"><strong>active</strong><span>Bounds</span><small>Cache, oversize skips, capped pages</small></div>
+      <div class="diag-card"><strong>active</strong><span>Scan gate</span><small>Newest folder scan wins</small></div>
       <div class="diag-card"><strong>planned</strong><span>SQLite FTS5 sidecar</span><small>Rebuildable cache, not source of truth</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
@@ -3942,7 +3949,7 @@ function showSearchSyntaxHelp() {
       <button data-search-results-canvas ${searchLastResults.length ? '' : 'disabled'}>Results to Canvas</button>
     </div>
     <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory with a bounded content cache; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
-    <p class="diag-note">Search Profile shows local diagnostics only. It does not send telemetry; backend follow-ups should cap loaded content before it crosses the Wails bridge and make folder scans cancellable or serialized.</p>
+    <p class="diag-note">Search Profile is local-only. Result pages are bounded, oversize files are skipped, and stale folder scans report superseded.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
 }
@@ -3999,7 +4006,7 @@ async function runLocalFolderSearch(query, token) {
       results: [],
       message: 'Local folder search failed.',
       meta: `Local search failed: ${err?.message || err}`,
-      stats: { searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 },
+      stats: { status: 'error', searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 },
     };
   }
   if (token !== searchToken) return;
@@ -4019,7 +4026,12 @@ async function runLocalFolderSearch(query, token) {
 
 async function collectLocalSearchResults(query, token, limit) {
   if (!window.go?.main?.App?.GetLocalFolder) {
-    return { results: [], message: 'Local folder backend unavailable.', meta: 'Local folder search unavailable' };
+    return {
+      results: [],
+      message: 'Local folder backend unavailable.',
+      meta: 'Local folder search unavailable',
+      stats: { status: 'unavailable', searched: 0, scanned: 0, resultCount: 0 },
+    };
   }
   const plan = parseSearchQuery(query);
   const info = await window.go.main.App.GetLocalFolder();
@@ -4029,6 +4041,7 @@ async function collectLocalSearchResults(query, token, limit) {
       results: [],
       message: 'Choose a local folder first from the command palette.',
       meta: info.missing ? 'Saved local folder is missing' : 'No local folder set',
+      stats: { status: 'unavailable', searched: 0, scanned: 0, resultCount: 0 },
     };
   }
   const q = localSearchBackendQuery(plan, query);
@@ -4085,11 +4098,13 @@ async function collectLocalSearchResults(query, token, limit) {
     if (Number(diagnostics.oversize || 0)) metaParts.push(`${Number(diagnostics.oversize || 0)} large skipped`);
     if (Number(diagnostics.skipped || 0)) metaParts.push(`${Number(diagnostics.skipped || 0)} skipped`);
     if (diagnostics.capped) metaParts.push('top matches shown');
+    if (diagnostics.superseded) metaParts.push('superseded');
   }
   return {
     results,
     meta: `${metaParts.join(' · ')} from ${info.path}`,
     stats: diagnostics ? {
+      status: diagnostics.superseded ? 'superseded' : '',
       searched: Number(diagnostics.searchable || 0),
       searchable: Number(diagnostics.searchable || 0),
       scanned: Number(diagnostics.scanned || 0),
@@ -4097,6 +4112,7 @@ async function collectLocalSearchResults(query, token, limit) {
       oversize: Number(diagnostics.oversize || 0),
       skipped: Number(diagnostics.skipped || 0),
       capped: !!diagnostics.capped,
+      superseded: !!diagnostics.superseded,
       resultCount: results.length,
     } : { searched: results.length, scanned: results.length, resultCount: results.length },
   };

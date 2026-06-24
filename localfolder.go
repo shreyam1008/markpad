@@ -95,6 +95,7 @@ type LocalFolderSearchResult struct {
 	Candidates int                    `json:"candidates"`
 	Limit      int                    `json:"limit"`
 	Capped     bool                   `json:"capped"`
+	Superseded bool                   `json:"superseded"`
 	ElapsedMs  int64                  `json:"elapsedMs"`
 }
 
@@ -216,6 +217,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 	searchID := localFolderSearches.begin()
 	defer localFolderSearches.end()
 	if !localFolderSearches.isLatest(searchID) {
+		result.Superseded = true
 		return
 	}
 	hits := make([]LocalFolderSearchHit, 0, candidateLimit)
@@ -269,6 +271,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 		return nil
 	})
 	if !localFolderSearches.isLatest(searchID) {
+		result.Superseded = true
 		return
 	}
 	sortLocalFolderSearchHits(hits)

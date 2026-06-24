@@ -10,6 +10,7 @@ Requirements:
 
 - Keep canonical content in user-owned files, not a hidden search database.
 - Preserve result caps, file-size skips, and stale-search cancellation.
+- Mark superseded folder scans in result metadata so UI/export copy can report dropped stale searches truthfully.
 - Rank exact title/path matches above body matches.
 - Return clear result metadata: source, path/title, line, snippet, and skipped/limited status.
 - Avoid retaining full-folder indexes or whole-file bodies after a query completes.
