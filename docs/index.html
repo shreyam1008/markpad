@@ -235,7 +235,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny notepad<br/>that gets out of the way.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Open any text file. Edit Markdown with live preview. View code with syntax highlighting. Version history with diffs. No Electron, no cloud, no telemetry. Under 10 MB.
+          Open any text file. Edit Markdown with live preview. View code in a capped local Code View. Version history with diffs. No Electron, no cloud, no telemetry. Under 10 MB.
         </p>
         <div class="flex justify-center gap-3 mb-6 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -323,8 +323,8 @@
             <p class="text-sm text-muted">Bold, italic, headings, code, links, images, lists, tables, blockquotes. All with icon buttons and shortcuts.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
-            <h3 class="font-bold mb-2">Syntax Highlighting</h3>
-            <p class="text-sm text-muted">Code files get language-aware highlighting via highlight.js. No markdown clutter — just clean, readable code.</p>
+            <h3 class="font-bold mb-2">Local Code View</h3>
+            <p class="text-sm text-muted">Code files open in an escaped, capped local view. No CDN highlighter, no markdown clutter — just clean, readable code.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Version History + Diffs</h3>
@@ -389,7 +389,7 @@
       <section class="max-w-4xl mx-auto px-6 pb-24">
         <div class="text-center mb-10">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Under the Hood</p>
-          <h2 class="text-3xl font-bold">Lean, native, no runtime.</h2>
+          <h2 class="text-3xl font-bold">Lean, native, no bundled browser runtime.</h2>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Go</strong><span class="text-xs text-muted">Single binary</span></div>

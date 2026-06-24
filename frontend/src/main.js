@@ -1865,6 +1865,18 @@ function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(
 function slugifyHeading(value) { return String(value || '').toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '') || 'section'; }
 
 const CODE_LINE_CAP = 5000;
+function hasCodeHighlighter() {
+  return !!(window.hljs && typeof hljs.highlight === 'function' && typeof hljs.highlightAuto === 'function');
+}
+function highlightCodeForView(code, lang) {
+  if (!hasCodeHighlighter()) return escapeHtml(code);
+  try {
+    if (lang && typeof hljs.getLanguage === 'function' && hljs.getLanguage(lang)) return hljs.highlight(code, { language: lang }).value;
+    return hljs.highlightAuto(code).value;
+  } catch {
+    return escapeHtml(code);
+  }
+}
 function renderCode(content, path) {
   const ext = path ? path.split('.').pop().toLowerCase() : '';
   const langMap = { py: 'python', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', bash: 'bash', zsh: 'bash', fish: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini', h: 'c', hpp: 'cpp', cs: 'csharp', kt: 'kotlin', ex: 'elixir', exs: 'elixir', pl: 'perl', ps1: 'powershell', bat: 'dos', cmd: 'dos', tf: 'hcl', gradle: 'groovy', svelte: 'xml', vue: 'xml' };
@@ -1872,12 +1884,11 @@ function renderCode(content, path) {
   const lines = content.split('\n');
   const capped = lines.length > CODE_LINE_CAP;
   const toHighlight = capped ? lines.slice(0, CODE_LINE_CAP).join('\n') : content;
-  let highlighted = escapeHtml(toHighlight);
-  try {
-    if (window.hljs && lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
-    else if (window.hljs) highlighted = hljs.highlightAuto(toHighlight).value;
-  } catch {}
-  const capNote = capped ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">Showing first ${CODE_LINE_CAP} of ${lines.length} lines</div>` : '';
+  const highlighted = highlightCodeForView(toHighlight, lang);
+  const notes = [];
+  if (!hasCodeHighlighter()) notes.push('Plain code view: syntax coloring is not loaded, and Markpad does not fetch a CDN highlighter.');
+  if (capped) notes.push(`Showing first ${CODE_LINE_CAP} of ${lines.length} lines`);
+  const capNote = notes.length ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">${notes.map(escapeHtml).join(' · ')}</div>` : '';
   return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code class="language-${escapeHtml(lang)}">${highlighted}</code></pre>${capNote}`;
 }
 
@@ -1890,7 +1901,7 @@ function renderDocumentCard(note) {
   const path = note?.path || '';
   const label = typeLabel(type);
   const noteText = type === 'pdf'
-    ? 'PDF preview is local-first in this phase: Markpad does not download pdf.js or contact a CDN. Open it in your system PDF viewer for full rendering.'
+    ? 'PDF handling is local-first in this phase: Markpad shows a read-only card, does not download pdf.js, and does not contact a CDN. Open it in your system PDF viewer for full rendering.'
     : 'This format is kept read-only in Markpad to stay tiny, fast, and safe. Open it in your system viewer for full rendering.';
   return `
     <div class="doc-card">
@@ -15407,7 +15418,7 @@ async function showPreferences() {
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + syntax-highlighted Code View</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + capped Code View; syntax coloring only when a local highlighter is loaded</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Local-first read-only card + Open Externally</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
@@ -15430,7 +15441,7 @@ async function showPreferences() {
     <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
-    <p>PDFs do not load a runtime renderer or CDN script; Markpad shows a local-first read-only card with Open Externally. No PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
+    <p>PDFs do not load a runtime renderer or CDN script; Markpad shows a local-first read-only card with Open Externally. No PDF engine bundled. Code View caps rendering at 5000 lines and does not fetch a CDN highlighter. Diffs cap at 5000 lines. Local Footprint reports undo snapshot memory, and command palette cleanup actions can release editor/canvas undo history. This keeps the binary under 10 MB and memory low.</p>
   `);
 }
 
@@ -15448,10 +15459,10 @@ function showChangelog() {
       <p><b>v0.7 Eklavya</b></p>
       <ul style="margin:4px 0 12px 16px;padding:0;list-style:disc;">
         <li>Scroll position memory: remembers where you left off in each note</li>
-        <li>Extended syntax highlighting: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more language mappings</li>
+        <li>Expanded code language detection: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more extension mappings</li>
         <li>Fixed Open Folder: uses xdg-open/open/explorer (was broken on Linux)</li>
         <li>Fixed PDF dirty indicator: read-only files no longer show "NOT SAVED"</li>
-        <li>Performance: removed runtime PDF CDN loading and blocking first-paint CDN scripts</li>
+        <li>Performance: removed runtime PDF CDN loading and blocking first-paint CDN highlighter scripts</li>
         <li>BUNDLE_BUDGET.md: tracks size/memory cost of every feature</li>
         <li>Comprehensive agents.md: strict guardrails for AI-assisted development</li>
       </ul>
@@ -15484,7 +15495,7 @@ function showChangelog() {
         <li>Split view with resizable divider</li>
         <li>Formatting toolbar with SVG icons</li>
         <li>Drag-and-drop reorder, right-click context menu</li>
-        <li>Syntax highlighting for code files</li>
+        <li>Code View for code files</li>
         <li>3-section sidebar: Favorites / Open / Recent</li>
       </ul>
       <p><b>v0.2</b></p>
@@ -15530,7 +15541,7 @@ function registerEvents() {
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
     <p><b>Markpad</b> v0.7 <span style="opacity:0.6;font-style:italic;">Eklavya</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Single instance, PDF read-only cards, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
+    <p>Single instance, PDF read-only cards, image preview, scroll position memory, capped code view, markdown split view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
