@@ -8131,7 +8131,8 @@ function taskDueBadge(task) {
 
 function taskMeta(task) {
   const bits = [];
-  bits.push(`<span class="task-pill">${escapeHtml(task.noteTitle)}</span>`);
+  const provenance = taskProvenance(task);
+  if (provenance) bits.push(`<span class="task-pill task-provenance">${escapeHtml(provenance)}</span>`);
   if (task.due) bits.push(`<span class="task-pill">due ${escapeHtml(task.due)}</span>`);
   const dueBadge = taskDueBadge(task);
   if (dueBadge) bits.push(dueBadge);
@@ -8142,6 +8143,21 @@ function taskMeta(task) {
   if (task.waiting) bits.push('<span class="task-pill">@waiting</span>');
   task.tags.forEach(tag => bits.push(`<span class="task-pill">#${escapeHtml(tag)}</span>`));
   return bits.join('');
+}
+
+function compactTaskSourceName(task) {
+  const raw = task.noteTitle || (task.path ? String(task.path).split(/[\\/]/).pop() : '') || 'Untitled';
+  const clean = String(raw).replace(/\s+/g, ' ').trim();
+  return clean.length > 36 ? `${clean.slice(0, 33)}...` : clean;
+}
+
+function taskProvenance(task) {
+  const bits = [task.local ? 'local' : 'loaded'];
+  const line = Number(task.line);
+  if (Number.isFinite(line)) bits.push(`line ${line + 1}`);
+  const sourceName = compactTaskSourceName(task);
+  if (sourceName) bits.push(sourceName);
+  return bits.join(' · ');
 }
 
 function renderTaskRow(task, compact) {
