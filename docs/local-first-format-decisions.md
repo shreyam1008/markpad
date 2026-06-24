@@ -99,6 +99,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 ## Performance budget
 
 - Avoid adding large icon packs or canvas libraries to the core bundle.
+- Keep menu and command-palette polish text/CSS based, with category chips and command metadata instead of bitmap or font-icon packs.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
