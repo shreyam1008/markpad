@@ -462,6 +462,7 @@ func TestSearchSyntaxStripStaysStaticAndLocalFirst(t *testing.T) {
 		`class="search-filter-group-label">Filters</span>`,
 		`class="search-filter-group-label">Patterns</span>`,
 		`data-search-example="type:md"`,
+		`data-search-example="ext:md"`,
 		`data-search-example="path:notes"`,
 		`data-search-example="title:"`,
 		`data-search-example="tag:idea"`,
@@ -480,6 +481,17 @@ func TestSearchSyntaxStripStaysStaticAndLocalFirst(t *testing.T) {
 		".search-filter-group-label",
 		".search-filter-group-label:not(:first-child)",
 		".search-filter-hints button:focus-visible",
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		"^(path|file|title|name|type|kind|ext|tag|task):",
+		"if (key === 'kind' || key === 'ext') key = 'type';",
+		"else if (key === 'file') key = 'path';",
+		"else if (key === 'name') key = 'title';",
 	})
 }
 

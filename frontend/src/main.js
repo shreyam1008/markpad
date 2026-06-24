@@ -2512,9 +2512,12 @@ function parseSearchQuery(query) {
     }
     const token = clean;
     const targetFilters = negated ? excludes : filters;
-    const match = token.match(/^(path|title|type|kind|tag|task):(.+)$/i);
+    const match = token.match(/^(path|file|title|name|type|kind|ext|tag|task):(.+)$/i);
     if (match) {
-      const key = match[1].toLowerCase() === 'kind' ? 'type' : match[1].toLowerCase();
+      let key = match[1].toLowerCase();
+      if (key === 'kind' || key === 'ext') key = 'type';
+      else if (key === 'file') key = 'path';
+      else if (key === 'name') key = 'title';
       const value = match[2].replace(/^#/, '').toLowerCase().trim();
       if (value) targetFilters[key].push(value);
       return;
