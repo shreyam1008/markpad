@@ -6449,6 +6449,8 @@ function trashCleanupProfileCsv(snapshot) {
 
 async function showTrashCleanupProfile() {
   const snapshot = await currentTrashCleanupProfileSnapshot();
+  const expiredCleanupCandidates = Number(snapshot.cleanupCandidates?.expiredDrafts || 0)
+    + Number(snapshot.cleanupCandidates?.visibleExpiredFiles || 0);
   showModal('Trash Cleanup Profile', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${snapshot.retained.total}</strong><span>Retained items</span><small>${snapshot.retained.drafts} drafts · ${snapshot.retained.files} files</small></div>
@@ -6465,11 +6467,11 @@ async function showTrashCleanupProfile() {
       <button data-export-trash-cleanup-json>Export JSON</button>
       <button data-copy-trash-cleanup-csv>Copy CSV</button>
       <button data-export-trash-cleanup-csv>Export CSV</button>
-      <button data-trash-clean-expired>Clean Expired</button>
+      <button data-trash-clean-expired ${expiredCleanupCandidates ? '' : 'disabled'}>Clean Expired</button>
       <button data-trash-audit>Audit Retention</button>
       <button data-trash-guide>Guide</button>
     </div>
-    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+    <p class="diag-note">${expiredCleanupCandidates ? `${expiredCleanupCandidates} expired Trash cleanup candidate${expiredCleanupCandidates === 1 ? '' : 's'} available.` : 'No expired Trash cleanup candidates are available from the current profile.'} ${escapeHtml(snapshot.note)}</p>
   `);
 }
 
