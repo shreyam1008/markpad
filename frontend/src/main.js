@@ -1195,6 +1195,12 @@ function layoutProfileSnapshot() {
       editorShare: viewMode === 'viewer' ? 0 : viewMode === 'split' ? Math.round(splitRatio * 10) / 10 : 100,
       previewShare: viewMode === 'markdown' ? 0 : viewMode === 'split' ? Math.round((100 - splitRatio) * 10) / 10 : 100,
     },
+    splitControls: {
+      role: 'separator',
+      summary: 'Arrow keys resize, Shift+Arrow resizes faster, Home/End jump to extremes, Enter/Space resets to 50/50.',
+      persistedAs: 'localStorage:markpad-split-ratio',
+      documentWrites: false,
+    },
     editor: {
       softWrap: !!editorSoftWrap,
       readingWidth: !!editorReadingWidth,
@@ -1279,6 +1285,8 @@ function layoutProfileCsv(snapshot = layoutProfileSnapshot()) {
     ['view_mode', snapshot.view.mode],
     ['split_ratio', Number(snapshot.view.splitRatio || 0)],
     ['split_label', snapshot.view.splitLabel],
+    ['split_keyboard_controls', snapshot.splitControls?.summary || ''],
+    ['split_document_writes', snapshot.splitControls?.documentWrites ? 'true' : 'false'],
     ['editor_visible', snapshot.view.editorVisible ? 'true' : 'false'],
     ['preview_visible', snapshot.view.previewVisible ? 'true' : 'false'],
     ['editor_share', Number(snapshot.view.editorShare || 0)],
