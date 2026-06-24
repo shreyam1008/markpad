@@ -260,6 +260,7 @@ const CANVAS_ZOOM_MIN = 0.12;
 const CANVAS_ZOOM_MAX = 4;
 const DRAFT_TRASH_KEY = 'markpad-draft-trash-v1';
 const DRAFT_TRASH_DAYS = 30;
+const DRAFT_TRASH_BYTES = 1536 * 1024;
 
 function applyTheme(id, silent) {
   if (!THEMES.some(t => t.id === id)) id = 'paper';
@@ -3577,7 +3578,7 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>workspace map</strong><span>Loaded items to canvas</span><small>Visualize open files and drafts locally</small></div>
       <div class="diag-card"><strong>backlinks</strong><span>Active note to canvas</span><small>Map local references without cloud services</small></div>
       <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
-      <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
+      <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Draft trash caps at ${formatBytes(DRAFT_TRASH_BYTES)}</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
       <div class="diag-card"><strong>upgrade map</strong><span>One local dashboard</span><small>Search, tasks, canvas, Trash, themes, footprint, and sync-later boundaries</small></div>
     </div>
@@ -4797,6 +4798,8 @@ async function upgradeMapSnapshot() {
       retainedDrafts: draftTrash.length,
       retainedFiles: fileTrash.length,
       draftBytes: trashAudit.draftBytes,
+      draftCapBytes: DRAFT_TRASH_BYTES,
+      draftOverCap: trashAudit.draftBytes > DRAFT_TRASH_BYTES,
       fileBytes: trashAudit.fileBytes,
       totalBytes: trashAudit.totalBytes,
       urgent: trashAudit.urgent,
@@ -4879,7 +4882,7 @@ function upgradeMapMarkdown(snapshot) {
     `- Footprint: ${formatBytes(snapshot.footprint.estimatedUiBytes || 0)} sampled UI estimate, ${formatBytes(snapshot.footprint.localStorageBytes || 0)} Markpad localStorage, ${snapshot.footprint.editorUndoStates} editor undo / ${snapshot.footprint.canvasUndoStates} canvas undo states, ${snapshot.footprint.loadedNotes} loaded notes`,
     `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.totalThemes} CSS themes (${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark), ${snapshot.theme.recipes} recipes (${snapshot.theme.activeRecipes} active), catalog ${formatBytes(snapshot.theme.catalogBytes || 0)}, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
-    `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
+    `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, draft cap ${formatBytes(snapshot.trash.draftCapBytes || DRAFT_TRASH_BYTES)}, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
     `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.visible}/${snapshot.tasks.known} visible, ${snapshot.tasks.open} open / ${snapshot.tasks.done} done, ${snapshot.tasks.loaded} loaded / ${snapshot.tasks.local} local, due today ${snapshot.tasks.dueBuckets?.today || 0}, overdue ${snapshot.tasks.dueBuckets?.overdue || 0}, ${snapshot.tasks.sourceOfTruth}`,
     `- Canvas: ${snapshot.canvas.elements} elements (${canvasElementTypeSummary(snapshot.canvas.elementTypes)}), ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.tool}, zoom ${snapshot.canvas.camera?.zoomPercent || 100}%, grid ${snapshot.canvas.gridVisible ? `${snapshot.canvas.gridSize}px` : 'off'}, snap ${snapshot.canvas.snapToGrid ? 'on' : 'off'}, minimap ${snapshot.canvas.minimapVisible ? 'on' : 'off'}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
     `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), ${snapshot.assets.domImages} DOM images, ${snapshot.assets.inlineSvg} inline SVG, ${snapshot.assets.canvasSurfaces} canvas surfaces, icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
@@ -4962,6 +4965,8 @@ function upgradeMapCsv(snapshot) {
     ['trash_retained_drafts', Number(snapshot.trash.retainedDrafts || 0)],
     ['trash_retained_files', Number(snapshot.trash.retainedFiles || 0)],
     ['trash_draft_bytes', Number(snapshot.trash.draftBytes || 0)],
+    ['trash_draft_cap_bytes', Number(snapshot.trash.draftCapBytes || DRAFT_TRASH_BYTES)],
+    ['trash_draft_over_cap', snapshot.trash.draftOverCap ? 'true' : 'false'],
     ['trash_file_bytes', Number(snapshot.trash.fileBytes || 0)],
     ['trash_total_bytes', Number(snapshot.trash.totalBytes || 0)],
     ['trash_urgent', Number(snapshot.trash.urgent || 0)],
@@ -5075,7 +5080,7 @@ async function showUpgradeMap() {
       <div class="diag-card"><strong>${snapshot.footprint.editorUndoStates}/${snapshot.footprint.canvasUndoStates}</strong><span>Undo states</span><small>${formatBytes((snapshot.footprint.editorUndoBytes || 0) + (snapshot.footprint.canvasUndoBytes || 0))} undo bytes · runtime ${snapshot.footprint.runtimeStatsAvailable ? 'available' : 'unavailable'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.totalThemes} CSS themes · ${snapshot.theme.recipes} recipes · ${snapshot.theme.activeRecipes} active</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
-      <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
+      <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)} · cap ${formatBytes(snapshot.trash.draftCapBytes || DRAFT_TRASH_BYTES)}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.urgent}</strong><span>Trash expiry</span><small>${snapshot.trash.soon} soon · ${snapshot.trash.safe} safe · next ${escapeHtml(snapshot.trash.nextExpiry || 'None')}</small></div>
       <div class="diag-card"><strong>${snapshot.tasks.visible}/${snapshot.tasks.known}</strong><span>Tasks</span><small>${snapshot.tasks.open} open · ${snapshot.tasks.done} done · ${snapshot.tasks.loaded} loaded/${snapshot.tasks.local} local</small></div>
       <div class="diag-card"><strong>${snapshot.tasks.dueBuckets.today || 0}</strong><span>Task due today</span><small>${snapshot.tasks.dueBuckets.overdue || 0} overdue · ${snapshot.tasks.dueBuckets.week || 0} this week · ${escapeHtml(snapshot.tasks.sourceState)}</small></div>
@@ -6327,8 +6332,9 @@ commandOverlay?.addEventListener('click', (e) => { if (e.target === commandOverl
 function loadDraftTrash() {
   const items = readDraftTrashRaw();
   const pruned = activeTrashItems(items);
-  if (pruned.length !== items.length) localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(pruned));
-  return pruned;
+  const payload = draftTrashStoragePayload(pruned);
+  if (payload.serialized !== localStorage.getItem(DRAFT_TRASH_KEY)) localStorage.setItem(DRAFT_TRASH_KEY, payload.serialized);
+  return payload.items;
 }
 
 function readDraftTrashRaw() {
@@ -6346,8 +6352,22 @@ function activeTrashItems(items) {
   return items.filter(item => item && item.deletedAt && new Date(item.deletedAt).getTime() >= cutoff);
 }
 
+function draftTrashStoragePayload(items) {
+  const retained = (Array.isArray(items) ? items : []).slice(0, 80);
+  let serialized = JSON.stringify(retained);
+  while (retained.length && byteSize(serialized) > DRAFT_TRASH_BYTES) {
+    retained.pop();
+    serialized = JSON.stringify(retained);
+  }
+  return {
+    items: retained,
+    serialized,
+    bytes: byteSize(serialized),
+  };
+}
+
 function saveDraftTrash(items) {
-  localStorage.setItem(DRAFT_TRASH_KEY, JSON.stringify(items.slice(0, 80)));
+  localStorage.setItem(DRAFT_TRASH_KEY, draftTrashStoragePayload(items).serialized);
 }
 
 function trashDraftSnapshot(note, content) {
@@ -6964,6 +6984,7 @@ function showTrashGuide() {
   showModal('Trash Guide', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${DRAFT_TRASH_DAYS} days</strong><span>Retention</span><small>Expired items can be cleaned manually</small></div>
+      <div class="diag-card"><strong>${formatBytes(DRAFT_TRASH_BYTES)}</strong><span>Draft cap</span><small>Oldest retained drafts are trimmed after the 80-item limit</small></div>
       <div class="diag-card"><strong>drafts</strong><span>localStorage</span><small>Unsaved notes stay restorable without disk files</small></div>
       <div class="diag-card"><strong>saved files</strong><span>disk Trash manifest</span><small>Restored through the Wails backend</small></div>
       <div class="diag-card"><strong>reports</strong><span>MD / JSON / CSV</span><small>Audit what is retained before cleanup</small></div>
@@ -7053,7 +7074,7 @@ async function showTrashView() {
     ${trashRetentionMeter(audit)}
     <div class="trash-cleanup-note ${expiredCleanupCandidates ? 'ready' : 'idle'}">
       <strong>${expiredCleanupCandidates ? `${expiredCleanupCandidates} expired cleanup candidate${expiredCleanupCandidates === 1 ? '' : 's'}` : 'No expired cleanup candidates'}</strong>
-      <span>${DRAFT_TRASH_DAYS}-day retention is active. Clean Expired only removes items past retention; use Profile before permanent cleanup.</span>
+      <span>${DRAFT_TRASH_DAYS}-day retention is active. Draft trash is capped at ${formatBytes(DRAFT_TRASH_BYTES)}. Clean Expired only removes items past retention; use Profile before permanent cleanup.</span>
     </div>
     <h3 style="margin:8px 0 6px;font-size:12px;font-weight:900;">Saved files</h3>
     ${renderFileTrashRows(fileItems)}
@@ -7213,6 +7234,8 @@ async function localFootprintSnapshot() {
     },
     trash: {
       draftBytes: trashBytes,
+      draftCapBytes: DRAFT_TRASH_BYTES,
+      draftOverCap: trashBytes > DRAFT_TRASH_BYTES,
       draftCount: trashItems.length,
       fileBytes: fileTrashBytes,
       fileCount: fileTrashItems.length,
@@ -7278,6 +7301,7 @@ function localFootprintSnapshotToMarkdown(snapshot) {
     '## Trash and Local Storage',
     '',
     `- Draft trash: ${formatBytes(snapshot.trash.draftBytes || 0)} (${snapshot.trash.draftCount || 0} drafts)`,
+    `- Draft trash cap: ${formatBytes(snapshot.trash.draftCapBytes || DRAFT_TRASH_BYTES)}`,
     `- Saved file trash: ${formatBytes(snapshot.trash.fileBytes || 0)} (${snapshot.trash.fileCount || 0} files)`,
     `- Trash retention: ${snapshot.trash?.retentionDays || DRAFT_TRASH_DAYS} days`,
     `- Expiring today: ${snapshot.trash?.urgentCount || 0}`,
@@ -7322,6 +7346,8 @@ function localFootprintSnapshotToCsv(snapshot) {
     ['canvas_undo_states', Number(snapshot.undo.canvasStates || 0)],
     ['draft_trash_bytes', Number(snapshot.trash.draftBytes || 0)],
     ['draft_trash_count', Number(snapshot.trash.draftCount || 0)],
+    ['draft_trash_cap_bytes', Number(snapshot.trash?.draftCapBytes || DRAFT_TRASH_BYTES)],
+    ['draft_trash_over_cap', snapshot.trash?.draftOverCap ? 'true' : 'false'],
     ['file_trash_bytes', Number(snapshot.trash.fileBytes || 0)],
     ['file_trash_count', Number(snapshot.trash.fileCount || 0)],
     ['trash_retention_days', Number(snapshot.trash?.retentionDays || DRAFT_TRASH_DAYS)],
@@ -7386,7 +7412,7 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${formatBytes(canvasBytes)}</strong><span>Canvas draft/session</span><small>${(canvasDoc?.elements || []).length} canvas elements</small></div>
       <div class="diag-card"><strong>${formatBytes(undo.editorBytes)}</strong><span>Editor undo history</span><small>${undo.editorStates} text snapshot${undo.editorStates === 1 ? '' : 's'} in memory</small></div>
       <div class="diag-card"><strong>${formatBytes(undo.canvasBytes)}</strong><span>Canvas undo history</span><small>${undo.canvasStates} canvas snapshot${undo.canvasStates === 1 ? '' : 's'} in memory</small></div>
-      <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
+      <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'} · cap ${formatBytes(DRAFT_TRASH_BYTES)}</small></div>
       <div class="diag-card"><strong>${formatBytes(fileTrashBytes)}</strong><span>Saved file trash</span><small>${fileTrashItems.length} retained file${fileTrashItems.length === 1 ? '' : 's'} · stored on disk</small></div>
       <div class="diag-card"><strong>${trashAudit.urgent}</strong><span>Trash expiring today</span><small>${trashAudit.soon} soon · ${trashAudit.safe} safe</small></div>
       <div class="diag-card"><strong>${escapeHtml(trashAudit.nextExpiry)}</strong><span>Next trash expiry</span><small>${trashAudit.nextTitle ? escapeHtml(trashAudit.nextTitle) : 'No retained trash items'}</small></div>
