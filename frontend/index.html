@@ -84,37 +84,37 @@
       <div id="create-menu" class="create-menu hidden" role="menu" aria-label="Create local file">
         <div class="create-menu-kicker">Files first</div>
         <div class="create-menu-section-label">Create</div>
-        <button type="button" role="menuitem" data-create-kind="note">
+        <button type="button" role="menuitem" data-create-kind="note" data-menu-chip="MD">
           <strong>Note</strong>
           <span>Create Markdown in the local folder, or a draft</span>
         </button>
-        <button type="button" role="menuitem" data-create-kind="daily">
+        <button type="button" role="menuitem" data-create-kind="daily" data-menu-chip="TODAY">
           <strong>Daily note</strong>
           <span>Today in the local folder</span>
         </button>
-        <button type="button" role="menuitem" data-create-kind="weekly">
+        <button type="button" role="menuitem" data-create-kind="weekly" data-menu-chip="WEEK">
           <strong>Weekly note</strong>
           <span>This week in the local folder</span>
         </button>
-        <button type="button" role="menuitem" data-create-kind="task">
+        <button type="button" role="menuitem" data-create-kind="task" data-menu-chip="TASK">
           <strong>Task file</strong>
           <span>Open Tasks.md or setup list, calendar, kanban</span>
         </button>
-        <button type="button" role="menuitem" data-create-kind="canvas">
+        <button type="button" role="menuitem" data-create-kind="canvas" data-menu-chip=".JSON">
           <strong>Canvas file</strong>
           <span>Create native .markcanvas.json in the local folder</span>
         </button>
         <div class="create-menu-section-label">Workspace</div>
-        <button type="button" role="menuitem" data-create-kind="open-folder">
+        <button type="button" role="menuitem" data-create-kind="open-folder" data-menu-chip="DIR">
           <strong>Open folder</strong>
           <span>Reveal the configured local workspace</span>
         </button>
-        <button type="button" role="menuitem" data-create-kind="search-folder">
+        <button type="button" role="menuitem" data-create-kind="search-folder" data-menu-chip="FIND">
           <strong>Search folder</strong>
           <span>Find text in the configured local workspace</span>
         </button>
         <div class="create-menu-section-label">Later</div>
-        <button type="button" role="menuitem" data-create-kind="other" disabled>
+        <button type="button" role="menuitem" data-create-kind="other" data-menu-chip="SOON" disabled>
           <strong>Other file</strong>
           <span>Coming next: choose extension and template</span>
         </button>
@@ -144,23 +144,23 @@
       </div>
       <div id="canvas-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Canvas workflows">
         <div class="create-menu-kicker">Canvas files</div>
-        <button type="button" role="menuitem" data-canvas-workflow="draft">
+        <button type="button" role="menuitem" data-canvas-workflow="draft" data-menu-chip="OPEN">
           <strong>Open canvas</strong>
           <span>Load active .markcanvas.json, otherwise scratch</span>
         </button>
-        <button type="button" role="menuitem" data-canvas-workflow="new">
+        <button type="button" role="menuitem" data-canvas-workflow="new" data-menu-chip="NEW">
           <strong>New canvas file</strong>
           <span>Create native .markcanvas.json</span>
         </button>
-        <button type="button" role="menuitem" data-canvas-workflow="write">
+        <button type="button" role="menuitem" data-canvas-workflow="write" data-menu-chip="SAVE">
           <strong>Write active</strong>
           <span>Write canvas JSON to active .markcanvas.json/JSON/draft</span>
         </button>
-        <button type="button" role="menuitem" data-canvas-workflow="draft-file">
+        <button type="button" role="menuitem" data-canvas-workflow="draft-file" data-menu-chip="DRAFT">
           <strong>Save draft JSON</strong>
           <span>Create an editable canvas JSON draft</span>
         </button>
-        <button type="button" role="menuitem" data-canvas-workflow="workspace-map">
+        <button type="button" role="menuitem" data-canvas-workflow="workspace-map" data-menu-chip="MAP">
           <strong>Loaded files map</strong>
           <span>Send open files to canvas cards</span>
         </button>
