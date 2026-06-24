@@ -23,6 +23,7 @@ These are product targets, not promises for every development build:
 
 - Prefer text glyphs, CSS shapes, and small inline SVG using `currentColor`.
 - Avoid icon fonts, broad icon packs, bundled image theme packs, and large raster assets.
+- Inline SVG toolbar icons should stay decorative under labeled buttons using `aria-hidden` and `focusable="false"`.
 - Keep generated platform icons in packaging assets only; do not load them into the running UI unnecessarily.
 - Prefer CSS variables for themes instead of image backgrounds.
 - Any bitmap added to the app should have a clear reason, compressed size, and runtime load path.
