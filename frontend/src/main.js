@@ -8368,6 +8368,19 @@ function taskProvenanceTitle(task) {
   return bits.join(' · ');
 }
 
+function taskSourceTrail(task) {
+  const line = Number(task.line);
+  const lineLabel = Number.isFinite(line) ? `L${line + 1}` : 'source';
+  const sourceName = compactTaskSourceName(task);
+  return `
+    <div class="task-trace" title="${escapeAttr(taskProvenanceTitle(task))}">
+      <span class="task-trace-source ${task.local ? 'local' : 'loaded'}">${task.local ? 'local' : 'loaded'}</span>
+      <code>${escapeHtml(lineLabel)}</code>
+      <span>${escapeHtml(sourceName)}</span>
+    </div>
+  `;
+}
+
 function renderTaskRow(task, compact) {
   const priorityClass = taskPriorityClass(task);
   return `
@@ -8375,6 +8388,7 @@ function renderTaskRow(task, compact) {
       <button class="task-check" data-task-toggle="${escapeHtml(task.id)}" title="Toggle task">${task.checked ? '✓' : ''}</button>
       <div class="task-body">
         <div class="task-text">${escapeHtml(task.text)}</div>
+        ${taskSourceTrail(task)}
         <div class="task-meta">${taskMeta(task)}</div>
       </div>
       ${compact ? '' : `<button class="task-open" data-task-open="${escapeHtml(task.id)}">Open</button><button class="task-open" data-task-copy="${escapeHtml(task.id)}">Copy</button><button class="task-open" data-task-copy-json="${escapeHtml(task.id)}">JSON</button><button class="task-open" data-task-copy-ics="${escapeHtml(task.id)}">ICS</button><button class="task-open" data-task-copy-csv="${escapeHtml(task.id)}">CSV</button><button class="task-open" data-task-copy-todo="${escapeHtml(task.id)}">Todo.txt</button>`}

@@ -1851,6 +1851,53 @@ body.markpad-compact #modal-body {
 }
 .task-body { min-width: 0; }
 .task-text { font-size: 13px; line-height: 1.4; font-weight: 650; color: var(--text); word-break: break-word; }
+.task-trace {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+.task-trace span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-trace-source {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0 5px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.task-trace-source.local {
+  border-color: color-mix(in srgb, #2f6f61 44%, var(--border));
+  color: #2f6f61;
+  background: color-mix(in srgb, #2f6f61 8%, var(--surface));
+}
+.task-trace-source.loaded {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+.task-trace code {
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--editor) 82%, var(--surface));
+  color: var(--text);
+  padding: 0 4px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 900;
+}
 .task-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .task-pill { border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; background: var(--surface); }
 .task-provenance { border-style: dashed; color: var(--text-subtle); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2696,4 +2743,32 @@ html[data-theme="ember"] .hljs-builtin-name {
   .local-row:hover {
     transform: none;
   }
+}
+
+/* Text-only asset polish: make file type badges read as tiny documents. */
+.file-badge {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255,255,255,.58) inset, 0 1px 2px rgba(0,0,0,.04);
+}
+
+.file-badge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  border-left: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  border-bottom-left-radius: 2px;
+  background: linear-gradient(135deg, rgba(255,255,255,.62), rgba(255,255,255,0) 62%);
+  pointer-events: none;
+}
+
+button:hover .file-badge,
+.bg-selected .file-badge,
+.doc-open .file-badge {
+  border-color: var(--accent);
+  color: var(--accent);
 }
