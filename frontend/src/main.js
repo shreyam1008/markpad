@@ -11761,7 +11761,7 @@ function selectCanvasInventoryElement(index) {
 function showCanvasHelp() {
   showModal('Canvas Guide', `
     <div class="diag-grid">
-      <div class="diag-card"><strong>tools</strong><span>Select, pan, pen, text, shape</span><small>Command palette or canvas toolbar</small></div>
+      <div class="diag-card"><strong>tools</strong><span>Select, pan, pen, text, sticky, shape</span><small>Command palette or canvas toolbar</small></div>
       <div class="diag-card"><strong>infinite view</strong><span>Pan + zoom</span><small>Camera changes do not alter content</small></div>
       <div class="diag-card"><strong>grid</strong><span>12-48px snap</span><small>Stored as local UI preference</small></div>
       <div class="diag-card"><strong>selected</strong><span>Inspect + style</span><small>Open selected inspector for geometry, exports, colors, width, style copy/apply, duplicate, and fit</small></div>
