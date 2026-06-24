@@ -43,40 +43,172 @@
       }
     </script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              bg: '#f4f2ed', paper: '#fffffc', ink: '#1a1c1b', muted: '#6b6e68',
-              accent: '#2f6f61', 'accent-light': '#3d9484', 'accent-soft': '#dde8df',
-              line: '#d8d6ce', gold: '#d49e2a',
-            },
-            fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-            animation: { 'fade-up': 'fadeUp 0.6s ease-out both', 'float': 'float 6s ease-in-out infinite' },
-            keyframes: {
-              fadeUp: { '0%': { opacity: '0', transform: 'translateY(24px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-              float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
-            }
-          }
-        }
-      }
-    </script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
+      :root {
+        --bg: #f4f2ed;
+        --paper: #fffffc;
+        --ink: #1a1c1b;
+        --muted: #6b6e68;
+        --accent: #2f6f61;
+        --accent-light: #3d9484;
+        --accent-soft: #dde8df;
+        --line: #d8d6ce;
+        --gold: #d49e2a;
+      }
+      * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; text-decoration: none; }
+      a:hover { color: var(--accent); }
+      img { max-width: 100%; display: block; }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+        backdrop-filter: blur(12px);
+      }
+      header > div,
+      section,
+      footer {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+      header > div {
+        min-height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      nav { display: flex; gap: 1.5rem; color: var(--muted); font-size: .92rem; font-weight: 650; }
+      main section { padding-top: 5rem; padding-bottom: 5rem; }
+      #top > section:first-child { text-align: center; max-width: 56rem; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { font-size: clamp(2.5rem, 6vw, 4.8rem); line-height: .98; letter-spacing: -.055em; margin-bottom: 1.5rem; }
+      h2 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.08; letter-spacing: -.035em; margin-bottom: .75rem; }
+      h3 { font-size: 1.05rem; margin-bottom: .5rem; }
+      p { color: var(--muted); line-height: 1.7; }
+      code { font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace; }
+      .bg-paper { background: var(--paper); }
+      .bg-bg { background: var(--bg); }
+      .bg-accent { background: var(--accent); color: #fff; }
+      .bg-accent-soft { background: var(--accent-soft); }
+      .text-accent { color: var(--accent); }
+      .text-muted { color: var(--muted); }
+      .text-white { color: #fff; }
+      .border, .border-line { border: 1px solid var(--line); }
+      .rounded-lg { border-radius: .75rem; }
+      .rounded-xl { border-radius: 1rem; }
+      .rounded-2xl { border-radius: 1.25rem; }
+      .rounded-full { border-radius: 999px; }
+      .shadow-lg { box-shadow: 0 14px 34px rgba(30, 32, 30, .09); }
+      .shadow-xl { box-shadow: 0 22px 55px rgba(30, 32, 30, .13); }
+      .grid { display: grid; gap: 1.25rem; }
+      .flex { display: flex; }
+      .items-center { align-items: center; }
+      .justify-center { justify-content: center; }
+      .justify-between { justify-content: space-between; }
+      .flex-wrap { flex-wrap: wrap; }
+      .gap-1\.5 { gap: .375rem; }
+      .gap-2 { gap: .5rem; }
+      .gap-3 { gap: .75rem; }
+      .gap-4 { gap: 1rem; }
+      .gap-6 { gap: 1.5rem; }
+      .space-y-8 > * + * { margin-top: 2rem; }
+      .p-3\.5, .p-5, .p-6 { padding: 1.25rem; }
+      .px-2\.5 { padding-left: .625rem; padding-right: .625rem; }
+      .px-3 { padding-left: .75rem; padding-right: .75rem; }
+      .px-4 { padding-left: 1rem; padding-right: 1rem; }
+      .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+      .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .py-1 { padding-top: .25rem; padding-bottom: .25rem; }
+      .py-1\.5 { padding-top: .375rem; padding-bottom: .375rem; }
+      .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+      .py-3 { padding-top: .75rem; padding-bottom: .75rem; }
+      .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+      .mb-2 { margin-bottom: .5rem; }
+      .mb-4 { margin-bottom: 1rem; }
+      .mb-6 { margin-bottom: 1.5rem; }
+      .mb-8 { margin-bottom: 2rem; }
+      .mb-12 { margin-bottom: 3rem; }
+      .mt-1 { margin-top: .25rem; }
+      .mx-auto { margin-left: auto; margin-right: auto; }
+      .max-w-lg { max-width: 34rem; }
+      .max-w-3xl { max-width: 48rem; }
+      .max-w-4xl { max-width: 56rem; }
+      .max-w-5xl { max-width: 64rem; }
+      .w-8 { width: 2rem; }
+      .h-8 { height: 2rem; }
+      .w-full { width: 100%; }
+      .h-auto { height: auto; }
+      .block { display: block; }
+      .inline-flex { display: inline-flex; }
+      .text-center { text-align: center; }
+      .text-left { text-align: left; }
+      .text-xs { font-size: .75rem; }
+      .text-sm { font-size: .875rem; }
+      .text-lg { font-size: 1.125rem; }
+      .font-medium { font-weight: 600; }
+      .font-semibold { font-weight: 700; }
+      .font-bold { font-weight: 800; }
+      .font-extrabold { font-weight: 900; }
+      .uppercase { text-transform: uppercase; }
+      .tracking-wide { letter-spacing: .04em; }
+      .tracking-wider { letter-spacing: .08em; }
+      .overflow-hidden { overflow: hidden; }
+      .overflow-x-auto { overflow-x: auto; }
+      .whitespace-nowrap { white-space: nowrap; }
+      .flex-shrink-0 { flex-shrink: 0; }
+      .select-all { user-select: all; }
+      .select-none { user-select: none; }
+      .transition-colors { transition: color .15s ease, background .15s ease, border-color .15s ease; }
+      .transition-all { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+      .hover\:-translate-y-1:hover { transform: translateY(-4px); }
+      .hover\:bg-accent-light:hover { background: var(--accent-light); }
+      .hover\:bg-accent-soft:hover { background: var(--accent-soft); }
+      .hover\:shadow-lg:hover { box-shadow: 0 14px 34px rgba(30, 32, 30, .11); }
+      .underline { text-decoration: underline; }
+      .window-dots span { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+      .window-dots span:nth-child(1) { background: #ff5f57; }
+      .window-dots span:nth-child(2) { background: #ffbd2e; }
+      .window-dots span:nth-child(3) { background: #27c93f; }
+      .bg-slate-900 { background: #0f172a; }
+      .bg-slate-800 { background: #1e293b; }
+      .text-slate-200 { color: #e2e8f0; }
+      .text-slate-400 { color: #94a3b8; }
+      .border-slate-800 { border-color: #1e293b; }
+      .bg-gradient-to-br { background: linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 42%, transparent), var(--paper)); }
+      @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      .animate-fade-up { animation: fadeUp .6s ease-out both; }
+      .animate-float { animation: float 6s ease-in-out infinite; }
       .delay-1 { animation-delay: 0.1s; }
       .delay-2 { animation-delay: 0.2s; }
       .delay-3 { animation-delay: 0.3s; }
       .delay-4 { animation-delay: 0.4s; }
-      .window-dots span { width: 12px; height: 12px; border-radius: 50%; }
-      .window-dots span:nth-child(1) { background: #ff5f57; }
-      .window-dots span:nth-child(2) { background: #ffbd2e; }
-      .window-dots span:nth-child(3) { background: #27c93f; }
+      @media (min-width: 640px) {
+        .sm\:text-5xl { font-size: 3.2rem; }
+        .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (min-width: 900px) {
+        .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .lg\:col-span-1 { grid-column: span 1 / span 1; }
+      }
+      @media (max-width: 720px) {
+        nav { display: none; }
+        header > div, section, footer { padding-left: 1rem; padding-right: 1rem; }
+        .grid, .sm\:grid-cols-2, .lg\:grid-cols-3 { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body class="bg-bg text-ink font-sans antialiased">
@@ -120,7 +252,7 @@
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">PDF Rendering</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Local PDF Cards</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
@@ -199,8 +331,8 @@
             <p class="text-sm text-muted">Every save creates a snapshot. Click any version for a unified diff. Green for added, red for removed. Restore instantly.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
-            <h3 class="font-bold mb-2">PDF & Image Preview</h3>
-            <p class="text-sm text-muted">PDFs render page-by-page via pdf.js. Images display inline. No heavy engine bundled — stays lightweight.</p>
+            <h3 class="font-bold mb-2">PDF Cards & Image Preview</h3>
+            <p class="text-sm text-muted">PDFs stay local-first with read-only cards and Open Externally. Images display inline. No heavy engine bundled.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Single Instance</h3>

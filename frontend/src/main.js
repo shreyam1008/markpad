@@ -2072,12 +2072,60 @@ function renderMarkdownFallback(md) {
   return out.join('\n');
 }
 
+function isRemoteResourceUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function hasRemoteSrcset(value) {
+  return String(value || '').split(',').some(part => isRemoteResourceUrl(part.trim().split(/\s+/)[0]));
+}
+
+function remoteMediaPlaceholder(kind, url) {
+  const label = url ? `: ${escapeHtml(url).slice(0, 120)}` : '';
+  return `<span class="doc-note" style="display:block;margin:8px 0;">Remote ${escapeHtml(kind)} blocked for local-first preview${label}</span>`;
+}
+
+function blockRemoteMarkdownMedia(html) {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+
+  template.content.querySelectorAll('img').forEach(node => {
+    const src = node.getAttribute('src') || '';
+    const srcset = node.getAttribute('srcset') || '';
+    if (isRemoteResourceUrl(src) || hasRemoteSrcset(srcset)) {
+      node.outerHTML = remoteMediaPlaceholder('image', src || srcset);
+    }
+  });
+
+  template.content.querySelectorAll('source').forEach(node => {
+    const src = node.getAttribute('src') || '';
+    const srcset = node.getAttribute('srcset') || '';
+    if (isRemoteResourceUrl(src) || hasRemoteSrcset(srcset)) node.remove();
+  });
+
+  template.content.querySelectorAll('video,audio').forEach(node => {
+    const src = node.getAttribute('src') || '';
+    const poster = node.getAttribute('poster') || '';
+    if (isRemoteResourceUrl(src) || isRemoteResourceUrl(poster)) {
+      node.outerHTML = remoteMediaPlaceholder(node.tagName.toLowerCase(), src || poster);
+    }
+  });
+
+  template.content.querySelectorAll('iframe,object,embed').forEach(node => {
+    const src = node.getAttribute('src') || node.getAttribute('data') || '';
+    node.outerHTML = remoteMediaPlaceholder(node.tagName.toLowerCase(), src);
+  });
+
+  return template.innerHTML;
+}
+
 function renderMd(md) {
   if (markedAvailable) {
     const html = marked.parse(md || '');
-    return DOMPurify.sanitize(html, {
+    const clean = DOMPurify.sanitize(html, {
       ADD_TAGS: ['input'], ADD_ATTR: ['type', 'checked', 'disabled']
     });
+    return blockRemoteMarkdownMedia(clean);
   }
   return renderMarkdownFallback(md);
 }
