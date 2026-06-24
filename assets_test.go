@@ -360,6 +360,19 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 		"Theme and icon changes must stay in CSS variables, tiny self-contained SVG, and the existing asset budgets rather than new packaged media.",
 		"Do not ship theme screenshots, texture packs, icon webfonts, or framework-sized icon bundles.",
 	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		"/* Text-only asset polish: make file type badges read as tiny documents. */",
+		".file-badge::before",
+		".file-badge::after",
+		"button:hover .file-badge::before",
+		".theme-chip:hover::before",
+		".pref-theme.active::before",
+	})
 }
 
 func TestCommandPaletteGeneratedEntriesKeepBundleHeadroom(t *testing.T) {
