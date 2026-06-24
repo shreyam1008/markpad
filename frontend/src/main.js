@@ -15,6 +15,7 @@ let splitScrollSource = '';
 let splitScrollReleaseTimer = null;
 let draggedNoteId = null;
 let ctxNoteId = null;
+let ctxLocalPath = '';
 let findOpen = false;
 let historyOpen = false;
 let historySelectedTs = null;
@@ -7902,7 +7903,7 @@ async function openLocalFolderFile(path) {
 function renderLocalFolderFiles(files) {
   if (!files.length) return '<div class="local-empty">No files listed. Choose a folder or search for text.</div>';
   return `<div class="local-list">${files.map(file => `
-    <button class="local-row" data-local-open="${escapeHtml(file.path)}">
+    <button class="local-row" data-local-open="${escapeAttr(file.path)}">
       <span class="local-badge">${escapeHtml(fileIcon(file.path))}</span>
       <span class="local-body">
         <strong>${escapeHtml(file.relPath || file.title)}</strong>
@@ -8050,7 +8051,7 @@ async function createLocalLinksCanvas() {
 function renderLocalBacklinks(backlinks) {
   if (!backlinks.length) return '<div class="local-empty">No local backlinks found for the active note.</div>';
   return `<div class="local-list">${backlinks.map(hit => `
-    <button class="local-row" data-local-open="${escapeHtml(hit.path)}">
+    <button class="local-row" data-local-open="${escapeAttr(hit.path)}">
       <span class="local-badge">BL</span>
       <span class="local-body">
         <strong>${escapeHtml(hit.relPath || hit.title)}</strong>
@@ -14051,6 +14052,7 @@ function makeNoteRow(note) {
   row.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     ctxNoteId = note.id;
+    ctxLocalPath = '';
     const hasPath = !!note.path;
     const isCanvas = getFileType(note.path, note.kind) === 'canvas';
     const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
@@ -14064,9 +14066,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = hasPath && getFileType(note.path, note.kind) === 'md' ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="delete"]').style.display = canTrash ? '' : 'none';
-    ctxMenu.style.left = e.clientX + 'px';
-    ctxMenu.style.top = e.clientY + 'px';
-    ctxMenu.classList.remove('hidden');
+    showContextMenuAt(e);
   });
 
   row.addEventListener('dragstart', () => { draggedNoteId = note.id; row.classList.add('note-dragging'); });
@@ -14269,6 +14269,48 @@ document.addEventListener('click', (event) => {
   if (canvasContextMenu?.contains(event.target)) return;
   hideCanvasContextMenu();
 });
+
+function contextTargetNote() {
+  return ctxNoteId ? cachedNotes.find(n => n.id === ctxNoteId) : null;
+}
+
+function contextTargetPath() {
+  if (ctxLocalPath) return ctxLocalPath;
+  return contextTargetNote()?.path || '';
+}
+
+function contextWikilinkTitle() {
+  const note = contextTargetNote();
+  if (note) return note.title || basename(note.path || '');
+  const name = basename(ctxLocalPath || '');
+  return name.replace(/\.(md|markdown)$/i, '') || name;
+}
+
+function showContextMenuAt(event) {
+  ctxMenu.style.left = event.clientX + 'px';
+  ctxMenu.style.top = event.clientY + 'px';
+  ctxMenu.classList.remove('hidden');
+}
+
+function showLocalFileContextMenu(event, path) {
+  path = String(path || '');
+  if (!path) return;
+  event.preventDefault();
+  event.stopPropagation();
+  ctxNoteId = null;
+  ctxLocalPath = path;
+  ctxMenu.querySelector('[data-ctx="star"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="info"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="canvas"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="saveas"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="folder"]').style.display = '';
+  ctxMenu.querySelector('[data-ctx="copypath"]').style.display = '';
+  ctxMenu.querySelector('[data-ctx="copywikilink"]').style.display = getFileType(path) === 'md' ? '' : 'none';
+  ctxMenu.querySelector('[data-ctx="close"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="delete"]').style.display = 'none';
+  showContextMenuAt(event);
+}
+
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
 });
@@ -14319,20 +14361,20 @@ ctxMenu.querySelector('[data-ctx="saveas"]').addEventListener('click', async () 
   await doSaveAs();
 });
 ctxMenu.querySelector('[data-ctx="folder"]').addEventListener('click', () => {
-  const note = cachedNotes.find(n => n.id === ctxNoteId);
-  if (note && note.path) window.go.main.App.OpenContainingFolder(note.path);
+  const path = contextTargetPath();
+  if (path) window.go.main.App.OpenContainingFolder(path);
   else statusText.textContent = 'No file path';
 });
-ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', () => {
-  const note = cachedNotes.find(n => n.id === ctxNoteId);
-  if (note && note.path) {
-    navigator.clipboard.writeText(note.path).then(() => { statusText.textContent = 'Path copied'; });
+ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', async () => {
+  const path = contextTargetPath();
+  if (path) {
+    await navigator.clipboard.writeText(path);
+    statusText.textContent = 'Path copied';
   } else statusText.textContent = 'No file path to copy';
 });
 ctxMenu.querySelector('[data-ctx="copywikilink"]').addEventListener('click', async () => {
-  const note = cachedNotes.find(n => n.id === ctxNoteId);
-  if (note && note.path) {
-    await navigator.clipboard.writeText(`[[${note.title || basename(note.path)}]]`);
+  if (contextTargetPath()) {
+    await navigator.clipboard.writeText(`[[${contextWikilinkTitle()}]]`);
     statusText.textContent = 'Wikilink copied';
   } else statusText.textContent = 'No file path to copy';
   ctxMenu.classList.add('hidden');
@@ -16089,6 +16131,11 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (localBacklinks && !localBacklinks.disabled) await showActiveBacklinks();
   const localOpen = e.target.closest('[data-local-open]');
   if (localOpen) await openLocalFolderFile(localOpen.dataset.localOpen);
+});
+
+modalBodyEl.addEventListener('contextmenu', (e) => {
+  const localRow = e.target.closest('[data-local-open]');
+  if (localRow) showLocalFileContextMenu(e, localRow.dataset.localOpen);
 });
 
 function clearTaskBoardDragState() {
