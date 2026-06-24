@@ -2801,10 +2801,12 @@ function searchEmptyHtml(message, query = searchLastQuery) {
   ].map(([action, label]) => `<button type="button" class="search-empty-chip action" data-search-empty-action="${action}">${label}</button>`)
     .join('');
   const queryLine = query ? `<span>Query: <code>${escapeHtml(query)}</code></span>` : '<span>Try a phrase, type:md, tag:idea, task:open, or a wider scope.</span>';
+  const queryPlan = query ? renderSearchQueryChips(query) : '';
   return `
     <div class="search-empty">
       <strong>${escapeHtml(message)}</strong>
       ${queryLine}
+      ${queryPlan}
       <div class="search-empty-actions">${scopeButtons}</div>
       <div class="search-empty-actions">${actionButtons}</div>
     </div>
@@ -3956,6 +3958,11 @@ function setSearchActive(index) {
 }
 
 searchResults?.addEventListener('click', (event) => {
+  const chip = event.target.closest('[data-search-chip]');
+  if (chip) {
+    appendSearchExample(chip.dataset.searchChip || '');
+    return;
+  }
   const scope = event.target.closest('[data-search-empty-scope]');
   if (scope) {
     openSearchPaletteScope(scope.dataset.searchEmptyScope || 'loaded');
