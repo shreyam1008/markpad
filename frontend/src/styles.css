@@ -3241,6 +3241,20 @@ body.markpad-compact #modal-body {
 }
 .trash-cleanup-note strong { color: var(--text); font-size: 12px; font-weight: 950; }
 .trash-cleanup-note.ready { border-color: #c57933; background: color-mix(in srgb, #c57933 8%, var(--editor)); }
+.trash-cleanup-note strong::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  margin-right: 6px;
+  background: #4f8f62;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #4f8f62 12%, transparent);
+}
+.trash-cleanup-note.ready strong::before {
+  background: #c57933;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #c57933 14%, transparent);
+}
 .trash-list { display: flex; flex-direction: column; gap: 8px; }
 .trash-row {
   display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start;

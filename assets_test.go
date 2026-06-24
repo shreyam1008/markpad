@@ -1016,6 +1016,9 @@ func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 		"draftCapBytes: DRAFT_TRASH_BYTES",
 		"draftOverCap: trashBytes > DRAFT_TRASH_BYTES",
 		"Newest 80 drafts stay first; oldest drafts are trimmed to fit the byte cap",
+		"const cleanupTitle = expiredCleanupCandidates ?",
+		`aria-label="${escapeAttr(cleanupTitle)}"`,
+		`role="status" aria-live="polite"`,
 	})
 
 	styles, err := os.ReadFile("frontend/src/styles.css")
@@ -1029,6 +1032,8 @@ func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 		".trash-row.urgent::after",
 		".trash-retention.soon::before",
 		".trash-retention.urgent::before",
+		".trash-cleanup-note strong::before",
+		".trash-cleanup-note.ready strong::before",
 		".trash-actions button:disabled",
 	})
 }

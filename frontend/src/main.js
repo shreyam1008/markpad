@@ -7194,6 +7194,7 @@ async function showTrashView() {
   const cleanupProfile = await currentTrashCleanupProfileSnapshot();
   const expiredCleanupCandidates = Number(cleanupProfile.cleanupCandidates?.expiredDrafts || 0)
     + Number(cleanupProfile.cleanupCandidates?.visibleExpiredFiles || 0);
+  const cleanupTitle = expiredCleanupCandidates ? `Clean ${expiredCleanupCandidates} expired Trash item${expiredCleanupCandidates === 1 ? '' : 's'}` : 'No expired Trash items past retention';
   showModal('Trash', `
     <div class="trash-head">
       <span>${escapeHtml(trashRetentionSummaryText(items, fileItems))}</span>
@@ -7206,11 +7207,11 @@ async function showTrashView() {
       <button data-trash-audit>Audit</button>
       <button data-trash-cleanup-profile>Profile</button>
       <button data-trash-guide>Guide</button>
-      <button data-trash-clean-expired ${expiredCleanupCandidates ? '' : 'disabled'}>Clean Expired</button>
+      <button data-trash-clean-expired ${expiredCleanupCandidates ? '' : 'disabled'} title="${escapeAttr(cleanupTitle)}" aria-label="${escapeAttr(cleanupTitle)}">Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
     ${trashRetentionMeter(audit)}
-    <div class="trash-cleanup-note ${expiredCleanupCandidates ? 'ready' : 'idle'}">
+    <div class="trash-cleanup-note ${expiredCleanupCandidates ? 'ready' : 'idle'}" role="status" aria-live="polite">
       <strong>${expiredCleanupCandidates ? `${expiredCleanupCandidates} expired cleanup candidate${expiredCleanupCandidates === 1 ? '' : 's'}` : 'No expired cleanup candidates'}</strong>
       <span>${DRAFT_TRASH_DAYS}-day retention is active. Draft trash is capped at ${formatBytes(DRAFT_TRASH_BYTES)}. Clean Expired only removes items past retention; use Profile before permanent cleanup.</span>
     </div>
