@@ -91,6 +91,7 @@ function applyEditorWrap(silent) {
   editor.wrap = editorSoftWrap ? 'soft' : 'off';
   editor.classList.toggle('editor-soft-wrap', editorSoftWrap);
   $('btn-wrap')?.classList.toggle('active', editorSoftWrap);
+  $('btn-wrap')?.setAttribute('aria-pressed', editorSoftWrap ? 'true' : 'false');
   localStorage.setItem('markpad-editor-wrap', editorSoftWrap ? '1' : '0');
   if (!silent && statusText) statusText.textContent = editorSoftWrap ? 'Soft wrap enabled' : 'Soft wrap disabled';
 }
