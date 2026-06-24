@@ -69,6 +69,7 @@ The database lives in app cache or app data. Deleting it must not lose user work
 ## UI affordances
 
 - Search popover should show index state: cold, indexing, ready, stale, fallback.
+- Search popover should show parsed query chips for terms, phrases, filters, exclusions, wildcards, and fuzzy terms.
 - Local Footprint should show index database bytes and row count.
 - Search Profile should show query operators, result sources, loaded-search cache bytes, bridge availability, and sidecar state.
 - Local Folder panel should offer:
