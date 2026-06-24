@@ -726,38 +726,23 @@ function searchRecentsCsv() {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-async function copySearchRecentsMarkdown() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchRecentsMarkdown());
-  statusText.textContent = 'Search recents copied as Markdown';
+async function copyGeneratedText(build, message, guard = false) {
+  if (guard && !canWriteClipboard()) return;
+  await navigator.clipboard.writeText(build());
+  statusText.textContent = message;
 }
 
-async function copySearchRecentsJson() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchRecentsJson());
-  statusText.textContent = 'Search recents copied as JSON';
+function exportGeneratedText(filename, mime, build, message) {
+  downloadText(filename, mime, build());
+  statusText.textContent = message;
 }
 
-async function copySearchRecentsCsv() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(searchRecentsCsv());
-  statusText.textContent = 'Search recents copied as CSV';
-}
-
-function exportSearchRecentsMarkdown() {
-  downloadText('markpad-search-recents.md', 'text/markdown', searchRecentsMarkdown());
-  statusText.textContent = 'Search recents exported as Markdown';
-}
-
-function exportSearchRecentsJson() {
-  downloadText('markpad-search-recents.json', 'application/json', searchRecentsJson());
-  statusText.textContent = 'Search recents exported as JSON';
-}
-
-function exportSearchRecentsCsv() {
-  downloadText('markpad-search-recents.csv', 'text/csv', searchRecentsCsv());
-  statusText.textContent = 'Search recents exported as CSV';
-}
+async function copySearchRecentsMarkdown() { return copyGeneratedText(searchRecentsMarkdown, 'Search recents copied as Markdown', true); }
+async function copySearchRecentsJson() { return copyGeneratedText(searchRecentsJson, 'Search recents copied as JSON', true); }
+async function copySearchRecentsCsv() { return copyGeneratedText(searchRecentsCsv, 'Search recents copied as CSV', true); }
+function exportSearchRecentsMarkdown() { exportGeneratedText('markpad-search-recents.md', 'text/markdown', searchRecentsMarkdown, 'Search recents exported as Markdown'); }
+function exportSearchRecentsJson() { exportGeneratedText('markpad-search-recents.json', 'application/json', searchRecentsJson, 'Search recents exported as JSON'); }
+function exportSearchRecentsCsv() { exportGeneratedText('markpad-search-recents.csv', 'text/csv', searchRecentsCsv, 'Search recents exported as CSV'); }
 
 async function restoreSearchRecentsFromClipboard() {
   if (!canReadClipboard()) return;
@@ -895,35 +880,12 @@ async function copyActiveFilePath() {
   statusText.textContent = 'Active file path copied';
 }
 
-async function copyActiveFileContext() {
-  await navigator.clipboard.writeText(activeFileContextMarkdown());
-  statusText.textContent = 'Active file context copied';
-}
-
-function exportActiveFileContextMarkdown() {
-  downloadText('markpad-active-file.md', 'text/markdown', activeFileContextMarkdown());
-  statusText.textContent = 'Active file context exported as Markdown';
-}
-
-async function copyActiveFileContextJson() {
-  await navigator.clipboard.writeText(activeFileContextJson());
-  statusText.textContent = 'Active file context copied as JSON';
-}
-
-function exportActiveFileContextJson() {
-  downloadText('markpad-active-file.json', 'application/json', activeFileContextJson());
-  statusText.textContent = 'Active file context exported as JSON';
-}
-
-async function copyActiveFileContextCsv() {
-  await navigator.clipboard.writeText(activeFileContextCsv());
-  statusText.textContent = 'Active file context copied as CSV';
-}
-
-function exportActiveFileContextCsv() {
-  downloadText('markpad-active-file.csv', 'text/csv', activeFileContextCsv());
-  statusText.textContent = 'Active file context exported as CSV';
-}
+const copyActiveFileContext = () => copyGeneratedText(activeFileContextMarkdown, 'Active file context copied');
+const exportActiveFileContextMarkdown = () => exportGeneratedText('markpad-active-file.md', 'text/markdown', activeFileContextMarkdown, 'Active file context exported as Markdown');
+const copyActiveFileContextJson = () => copyGeneratedText(activeFileContextJson, 'Active file context copied as JSON');
+const exportActiveFileContextJson = () => exportGeneratedText('markpad-active-file.json', 'application/json', activeFileContextJson, 'Active file context exported as JSON');
+const copyActiveFileContextCsv = () => copyGeneratedText(activeFileContextCsv, 'Active file context copied as CSV');
+const exportActiveFileContextCsv = () => exportGeneratedText('markpad-active-file.csv', 'text/csv', activeFileContextCsv, 'Active file context exported as CSV');
 
 function loadedWorkspaceSnapshot() {
   const notes = cachedNotes.map((note, index) => {
@@ -1003,35 +965,12 @@ function loadedWorkspaceCsv(snapshot = loadedWorkspaceSnapshot()) {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-async function copyLoadedWorkspaceMarkdown() {
-  await navigator.clipboard.writeText(loadedWorkspaceMarkdown());
-  statusText.textContent = 'Loaded workspace copied as Markdown';
-}
-
-function exportLoadedWorkspaceMarkdown() {
-  downloadText('markpad-loaded-workspace.md', 'text/markdown', loadedWorkspaceMarkdown());
-  statusText.textContent = 'Loaded workspace exported as Markdown';
-}
-
-async function copyLoadedWorkspaceJson() {
-  await navigator.clipboard.writeText(loadedWorkspaceJson());
-  statusText.textContent = 'Loaded workspace copied as JSON';
-}
-
-function exportLoadedWorkspaceJson() {
-  downloadText('markpad-loaded-workspace.json', 'application/json', loadedWorkspaceJson());
-  statusText.textContent = 'Loaded workspace exported as JSON';
-}
-
-async function copyLoadedWorkspaceCsv() {
-  await navigator.clipboard.writeText(loadedWorkspaceCsv());
-  statusText.textContent = 'Loaded workspace copied as CSV';
-}
-
-function exportLoadedWorkspaceCsv() {
-  downloadText('markpad-loaded-workspace.csv', 'text/csv', loadedWorkspaceCsv());
-  statusText.textContent = 'Loaded workspace exported as CSV';
-}
+const copyLoadedWorkspaceMarkdown = () => copyGeneratedText(loadedWorkspaceMarkdown, 'Loaded workspace copied as Markdown');
+const exportLoadedWorkspaceMarkdown = () => exportGeneratedText('markpad-loaded-workspace.md', 'text/markdown', loadedWorkspaceMarkdown, 'Loaded workspace exported as Markdown');
+const copyLoadedWorkspaceJson = () => copyGeneratedText(loadedWorkspaceJson, 'Loaded workspace copied as JSON');
+const exportLoadedWorkspaceJson = () => exportGeneratedText('markpad-loaded-workspace.json', 'application/json', loadedWorkspaceJson, 'Loaded workspace exported as JSON');
+const copyLoadedWorkspaceCsv = () => copyGeneratedText(loadedWorkspaceCsv, 'Loaded workspace copied as CSV');
+const exportLoadedWorkspaceCsv = () => exportGeneratedText('markpad-loaded-workspace.csv', 'text/csv', loadedWorkspaceCsv, 'Loaded workspace exported as CSV');
 
 function showLoadedWorkspaceInventory() {
   const snapshot = loadedWorkspaceSnapshot();
@@ -1142,38 +1081,12 @@ function commandRecentsCsv() {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-async function copyCommandRecentsMarkdown() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(commandRecentsMarkdown());
-  statusText.textContent = 'Command recents copied as Markdown';
-}
-
-async function copyCommandRecentsJson() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(commandRecentsJson());
-  statusText.textContent = 'Command recents copied as JSON';
-}
-
-async function copyCommandRecentsCsv() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(commandRecentsCsv());
-  statusText.textContent = 'Command recents copied as CSV';
-}
-
-function exportCommandRecentsMarkdown() {
-  downloadText('markpad-command-recents.md', 'text/markdown', commandRecentsMarkdown());
-  statusText.textContent = 'Command recents exported as Markdown';
-}
-
-function exportCommandRecentsJson() {
-  downloadText('markpad-command-recents.json', 'application/json', commandRecentsJson());
-  statusText.textContent = 'Command recents exported as JSON';
-}
-
-function exportCommandRecentsCsv() {
-  downloadText('markpad-command-recents.csv', 'text/csv', commandRecentsCsv());
-  statusText.textContent = 'Command recents exported as CSV';
-}
+async function copyCommandRecentsMarkdown() { return copyGeneratedText(commandRecentsMarkdown, 'Command recents copied as Markdown', true); }
+async function copyCommandRecentsJson() { return copyGeneratedText(commandRecentsJson, 'Command recents copied as JSON', true); }
+async function copyCommandRecentsCsv() { return copyGeneratedText(commandRecentsCsv, 'Command recents copied as CSV', true); }
+function exportCommandRecentsMarkdown() { exportGeneratedText('markpad-command-recents.md', 'text/markdown', commandRecentsMarkdown, 'Command recents exported as Markdown'); }
+function exportCommandRecentsJson() { exportGeneratedText('markpad-command-recents.json', 'application/json', commandRecentsJson, 'Command recents exported as JSON'); }
+function exportCommandRecentsCsv() { exportGeneratedText('markpad-command-recents.csv', 'text/csv', commandRecentsCsv, 'Command recents exported as CSV'); }
 
 async function restoreCommandRecentsFromClipboard() {
   if (!canReadClipboard()) return;
@@ -1424,38 +1337,12 @@ function showLayoutProfile() {
   `);
 }
 
-async function copyLayoutProfileMarkdown() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(layoutProfileMarkdown());
-  statusText.textContent = 'Layout profile copied as Markdown';
-}
-
-function exportLayoutProfileMarkdown() {
-  downloadText('markpad-layout-profile.md', 'text/markdown', layoutProfileMarkdown());
-  statusText.textContent = 'Layout profile exported as Markdown';
-}
-
-async function copyLayoutProfileJson() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(layoutProfileJson());
-  statusText.textContent = 'Layout profile copied as JSON';
-}
-
-function exportLayoutProfileJson() {
-  downloadText('markpad-layout-profile.json', 'application/json', layoutProfileJson());
-  statusText.textContent = 'Layout profile exported as JSON';
-}
-
-async function copyLayoutProfileCsv() {
-  if (!canWriteClipboard()) return;
-  await navigator.clipboard.writeText(layoutProfileCsv());
-  statusText.textContent = 'Layout profile copied as CSV';
-}
-
-function exportLayoutProfileCsv() {
-  downloadText('markpad-layout-profile.csv', 'text/csv', layoutProfileCsv());
-  statusText.textContent = 'Layout profile exported as CSV';
-}
+async function copyLayoutProfileMarkdown() { return copyGeneratedText(layoutProfileMarkdown, 'Layout profile copied as Markdown', true); }
+function exportLayoutProfileMarkdown() { exportGeneratedText('markpad-layout-profile.md', 'text/markdown', layoutProfileMarkdown, 'Layout profile exported as Markdown'); }
+async function copyLayoutProfileJson() { return copyGeneratedText(layoutProfileJson, 'Layout profile copied as JSON', true); }
+function exportLayoutProfileJson() { exportGeneratedText('markpad-layout-profile.json', 'application/json', layoutProfileJson, 'Layout profile exported as JSON'); }
+async function copyLayoutProfileCsv() { return copyGeneratedText(layoutProfileCsv, 'Layout profile copied as CSV', true); }
+function exportLayoutProfileCsv() { exportGeneratedText('markpad-layout-profile.csv', 'text/csv', layoutProfileCsv, 'Layout profile exported as CSV'); }
 
 function applyWritingFocusPreset() {
   focusMode = true;
