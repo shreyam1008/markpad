@@ -10116,6 +10116,22 @@ function canvasTemplateCard(x, y, w, h, title, stroke = '#2f6f61') {
   ];
 }
 
+function canvasTemplateSticky(x, y, w, h, text, stroke = '#2f6f61') {
+  return {
+    id: canvasId(),
+    type: 'sticky',
+    x,
+    y,
+    w,
+    h,
+    text,
+    stroke,
+    fill: canvasStickyFillForStroke(stroke),
+    width: 2,
+    size: 13,
+  };
+}
+
 function canvasTemplateArrow(x1, y1, x2, y2, stroke = '#2563eb') {
   return { id: canvasId(), type: 'arrow', x: x1, y: y1, w: x2 - x1, h: y2 - y1, stroke, width: 3 };
 }
@@ -10234,10 +10250,8 @@ async function insertVisibleTasksCanvasBoard() {
     colTasks.forEach((task, taskIndex) => {
       const cardY = y + 62 + taskIndex * 92;
       const stroke = canvasTaskCardColor(task);
-      elements.push({ id: canvasId(), type: 'rect', x: x + 14, y: cardY, w: 192, h: 74, stroke, width: 2 });
-      elements.push(canvasTemplateText(x + 26, cardY + 28, compactCanvasTaskText(task), 13, stroke));
       const meta = compactCanvasTaskMeta(task);
-      if (meta) elements.push(canvasTemplateText(x + 26, cardY + 52, meta, 10, '#6b6e68'));
+      elements.push(canvasTemplateSticky(x + 14, cardY, 192, 74, [compactCanvasTaskText(task), meta].filter(Boolean).join('\n'), stroke));
     });
   });
   if (tasks.length > visible.length) {
@@ -10282,10 +10296,8 @@ function insertTaskAgendaCanvasBoard() {
     visible.forEach((task, taskIndex) => {
       const cardY = y + 62 + taskIndex * 92;
       const cardStroke = canvasTaskCardColor(task);
-      elements.push({ id: canvasId(), type: 'rect', x: x + 14, y: cardY, w: 192, h: 74, stroke: cardStroke, width: 2 });
-      elements.push(canvasTemplateText(x + 26, cardY + 28, compactCanvasTaskText(task), 13, cardStroke));
       const meta = compactCanvasTaskMeta(task);
-      if (meta) elements.push(canvasTemplateText(x + 26, cardY + 52, meta, 10, '#6b6e68'));
+      elements.push(canvasTemplateSticky(x + 14, cardY, 192, 74, [compactCanvasTaskText(task), meta].filter(Boolean).join('\n'), cardStroke));
     });
   });
   if (total > 24) {
