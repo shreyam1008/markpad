@@ -236,7 +236,7 @@
     <div class="search-palette" role="dialog" aria-modal="true" aria-labelledby="search-title">
       <div class="search-head">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-        <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search loaded files, titles, paths..." aria-labelledby="search-title" />
+        <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search loaded files, titles, paths..." aria-labelledby="search-title" aria-describedby="search-meta" aria-controls="search-results" />
         <button id="search-close" title="Close search" aria-label="Close search">&times;</button>
       </div>
       <div class="search-sub">
@@ -256,7 +256,7 @@
         <button data-search-example="task:open">task:open</button>
       </div>
       <div id="search-recents" class="search-recents hidden"></div>
-      <div id="search-results" class="search-results"></div>
+      <div id="search-results" class="search-results" role="region" aria-label="Search results" aria-live="polite"></div>
     </div>
   </div>
 
@@ -264,14 +264,14 @@
     <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-title">
       <div class="command-head">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/></svg>
-        <input id="command-input" type="text" autocomplete="off" spellcheck="false" placeholder="Run a command..." aria-labelledby="command-title" />
+        <input id="command-input" type="text" autocomplete="off" spellcheck="false" placeholder="Run a command..." aria-labelledby="command-title" aria-controls="command-results" />
         <button id="command-close" title="Close command palette" aria-label="Close command palette">&times;</button>
       </div>
       <div class="command-sub">
         <span id="command-title">Command palette</span>
         <span>Enter to run · Esc to close · Ctrl+P</span>
       </div>
-      <div id="command-results" class="command-results"></div>
+      <div id="command-results" class="command-results" role="region" aria-label="Command results" aria-live="polite"></div>
     </div>
   </div>
 
