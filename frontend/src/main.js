@@ -7828,14 +7828,14 @@ function renderTaskControls(tasks, visibleTasks) {
   const sourceLabel = (sourceFilters.find(([id]) => id === taskSourceFilter) || sourceFilters[0])[1];
   return `
     <div class="task-controls">
-      <div class="task-filter-row">${sourceChips}</div>
-      <div class="task-filter-row">${chips}</div>
+      <div class="task-filter-row" aria-label="Task source filters">${sourceChips}</div>
+      <div class="task-filter-row" aria-label="Task status filters">${chips}</div>
       <div class="task-search-row">
         <input data-task-search value="${query}" placeholder="Filter text, due:today, !high, @waiting, #tag, -#blocked" />
         <button data-task-search-apply>Apply</button>
         <button data-task-search-clear ${taskQuery ? '' : 'disabled'}>Clear</button>
       </div>
-      <div class="task-query-hints">
+      <div class="task-query-hints" aria-label="Task query examples">
         <span>Examples</span>
         <button data-task-query-example="due:today">due:today</button>
         <button data-task-query-example="due:tomorrow">due:tomorrow</button>
