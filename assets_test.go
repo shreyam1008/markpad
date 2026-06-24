@@ -217,12 +217,18 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
 		`id="create-menu"`,
+		`aria-label="Create local file"`,
 		`data-create-kind="note"`,
 		`data-create-kind="task"`,
 		`data-create-kind="canvas"`,
 		`data-create-kind="other" disabled`,
 		"Files first",
+		"Open Tasks.md setup, list, calendar, kanban",
 		"Native .markcanvas.json board",
+		"Tasks from loaded files",
+		"Canvas draft",
+		"Portable local JSON. Camera, grid, and tool state stay on this device.",
+		"Write canvas to active local canvas document",
 	})
 
 	mainJS, err := os.ReadFile("frontend/src/main.js")
@@ -237,6 +243,11 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await doNew()",
 		"showTaskFileSetup()",
 		"await createLocalFolderCanvas()",
+		"const localNew = e.target.closest('[data-local-folder-new]');",
+		"const localTasks = e.target.closest('[data-local-folder-tasks]');",
+		"const localCanvas = e.target.closest('[data-local-folder-canvas]');",
+		"Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps",
+		"Write to active .markcanvas.json/JSON/draft",
 		"Choose a local folder before creating canvas files",
 		"Other file creation is coming next",
 	})
@@ -248,7 +259,24 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	assertTextIncludesAll(t, "docs/local-first-feature-decisions.md", string(featureDecisions), []string{
 		"| Create workflow | Sidebar-first explicit file-type creation for Note, Task file, Canvas, and later Other files | Tabs-first workspace model, folder-first navigation model, generic unvalidated extension creation |",
 		"Markpad should keep a files-first creation surface in the sidebar.",
+		"The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Task file, Canvas, and a disabled Other file placeholder until the remaining rules are specified.",
+		"Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.",
+		"Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas draft remains a separate scratch surface, not the primary create path.",
+		"Choosing a local folder is a storage prerequisite for file-backed note/canvas creation, not the default product narrative or startup mode.",
+		"If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.",
 		"Do not introduce a tab system or make folder loading the default mental model.",
+	})
+
+	uiDirection, err := os.ReadFile("docs/ui-direction.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "docs/ui-direction.md", string(uiDirection), []string{
+		"Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Task file, Canvas, and later Other file once validated; keep recents, favorites, local folder actions, and compact badges visible here.",
+		"Create: keep the sidebar `+ New` menu explicit about Note, Task file, Canvas, and a disabled Other file placeholder until extension rules are defined.",
+		`Tasks: keep the affordance framed as "Tasks from loaded files" and "Tasks.md setup, list, calendar, kanban"; list/calendar/kanban are views over Markdown files, not a separate workspace type.`,
+		"Canvas: keep the top-bar canvas positioned as a draft scratch surface while sidebar creation writes native local canvas documents with clear Write/Draft actions.",
+		"Local folder: choose/open/reveal actions should support file-backed creation and navigation, not turn the app into a folder-first shell.",
 	})
 }
 

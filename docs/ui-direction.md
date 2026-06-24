@@ -5,13 +5,13 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 ## Product feel
 
 - Local-first: every surface should make it clear that files, tasks, trash, search, and canvas data stay on the machine.
-- Workbench, not IDE clone: keep the sidebar and split view, but avoid tab overload. Prefer source chips, command actions, and lightweight modals over persistent chrome.
+- Workbench, not IDE clone: keep the sidebar and split view, but avoid tab overload or language that reframes open files as the primary product model. Prefer source chips, command actions, and lightweight modals over persistent chrome.
 - Dense but readable: show useful status and controls, but keep typography small, high-contrast, and grouped.
 - Fast feedback: command palette actions should update status text immediately. Long-running local operations should report counts, scope, and completion.
 
 ## Layout direction
 
-- Sidebar: file/source navigation with visible recents, favorites, local folder actions, and compact badges.
+- Sidebar: file/source navigation plus the primary `+ New` create menu for Note, Task file, Canvas, and later Other file once validated; keep recents, favorites, local folder actions, and compact badges visible here.
 - Center: editor/preview split remains the primary mode, with presets for writing, review, and preview-heavy reading.
 - Bottom/status: practical local stats: file type, line/word/selection, cursor, read time, memory, and binary/runtime diagnostics.
 - Overlays: search, commands, tasks, trash, settings, and canvas should share focused modal treatment with strong keyboard access.
@@ -34,10 +34,14 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 
 ## Feature-specific polish
 
+- Create: keep the sidebar `+ New` menu explicit about Note, Task file, Canvas, and a disabled Other file placeholder until extension rules are defined.
 - Search: keep source scopes visible, show operator hints, highlight matches, and make result source counts obvious.
+- Tasks: keep the affordance framed as "Tasks from loaded files" and "Tasks.md setup, list, calendar, kanban"; list/calendar/kanban are views over Markdown files, not a separate workspace type.
 - Tasks: one Markdown task source, multiple views. List/calendar/kanban should feel like filters over files, not a separate database.
 - Trash: show retention state clearly, keep cleanup explicit, and avoid hiding permanent delete behind ambiguous language.
+- Canvas: keep the top-bar canvas positioned as a draft scratch surface while sidebar creation writes native local canvas documents with clear Write/Draft actions.
 - Canvas: prioritize zoom, pan, selection, keyboard movement, portable exports, and clear save/write options before richer shape libraries.
+- Local folder: choose/open/reveal actions should support file-backed creation and navigation, not turn the app into a folder-first shell.
 - Settings/help: explain local storage, default folder, memory/binary constraints, and sync as a future layer.
 
 ## Non-goals for Phase 1

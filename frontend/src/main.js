@@ -15074,7 +15074,7 @@ async function createCanvasFromMenu() {
     await createLocalFolderCanvas();
     return;
   }
-  await showLocalWorkspaceSetup();
+  await showLocalWorkspaceSetupGuide();
   statusText.textContent = 'Choose a local folder before creating canvas files';
 }
 
@@ -15110,6 +15110,17 @@ async function doOpen() {
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
 
+function bindSidebarWorkflowButtons() {
+  const bind = (ids, handler) => ids.forEach(id => $(id)?.addEventListener('click', handler));
+  bind(['side-files', 'side-files-mini'], () => { showLocalFolder(); });
+  bind(['side-tasks', 'side-tasks-mini'], () => { showTasksView(); });
+  bind(['side-canvas', 'side-canvas-mini'], openCanvas);
+  bind(['side-search', 'side-search-mini'], openSearchPalette);
+  bind(['side-command', 'side-command-mini'], openCommandPalette);
+  bind(['side-help'], showHelpModal);
+  bind(['side-settings'], showPreferences);
+}
+
 // ── Buttons ──────────────────────────────────────────────
 $('btn-new').addEventListener('click', event => {
   event.stopPropagation();
@@ -15141,6 +15152,7 @@ $('btn-command').addEventListener('click', openCommandPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
 $('btn-canvas').addEventListener('click', openCanvas);
 $('btn-focus').addEventListener('click', toggleFocusMode);
+bindSidebarWorkflowButtons();
 $('btn-wrap')?.addEventListener('click', toggleEditorWrap);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));

@@ -378,6 +378,8 @@ body.writing-empty #viewer::first-line {
 .tb:focus-visible,
 .view-btn:focus-visible,
 .create-menu button:focus-visible,
+.sidebar-workflow button:focus-visible,
+.sidebar-rail-btn:focus-visible,
 .theme-chip:focus-visible,
 .pref-theme:focus-visible,
 .search-scope button:focus-visible,
@@ -461,13 +463,136 @@ body.writing-empty #viewer::first-line {
   line-height: 1.35;
 }
 
+.sidebar-workflow {
+  display: grid;
+  gap: 8px;
+  margin: 0 10px 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 38%),
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 54%, transparent), color-mix(in srgb, var(--sidebar) 92%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 62%, transparent);
+}
+
+.sidebar-workflow button {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--editor) 58%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;
+}
+
+.sidebar-workflow button:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  background: var(--hover);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--shadow) 24%, transparent);
+  transform: translateY(-1px);
+}
+
+.sidebar-workflow-primary {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.sidebar-workflow-primary span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.sidebar-workflow-primary strong {
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -.01em;
+}
+
+.sidebar-workflow-primary small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.sidebar-workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sidebar-workflow-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  min-width: 0;
+}
+
+.sidebar-workflow-action b {
+  width: 19px;
+  height: 19px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.sidebar-workflow-action span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sidebar-workflow-utils {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.sidebar-workflow-utils button {
+  padding: 5px 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.sidebar-workflow-utils button:hover {
+  color: var(--text);
+}
+
+.sidebar-rail-btn {
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.sidebar-rail-btn span {
+  position: relative;
+  z-index: 1;
+}
+
 .search-row,
 .command-row,
 .task-filter,
 .canvas-tool,
 .theme-chip,
 .pref-theme,
-.tag-chip {
+.tag-chip,
+.sidebar-workflow button {
   transition: background-color .14s ease, border-color .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;
 }
 
@@ -494,7 +619,8 @@ body.writing-empty #viewer::first-line {
   .canvas-tool,
   .theme-chip,
   .pref-theme,
-  .tag-chip {
+  .tag-chip,
+  .sidebar-workflow button {
     transition: none;
   }
 
@@ -509,7 +635,8 @@ body.writing-empty #viewer::first-line {
   .theme-chip:hover,
   .pref-theme:hover,
   .pref-theme.active,
-  .tag-chip:hover {
+  .tag-chip:hover,
+  .sidebar-workflow button:hover {
     transform: none;
   }
 }

@@ -106,6 +106,11 @@ Initial implementation constraints:
 - `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
 - `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend, separate from the top-bar canvas draft.
 - `Other file` must stay disabled until extension validation, template choice, and collision behavior are explicit.
+- The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Task file, Canvas, and a disabled Other file placeholder until the remaining rules are specified.
+- Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
+- Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas draft remains a separate scratch surface, not the primary create path.
+- Choosing a local folder is a storage prerequisite for file-backed note/canvas creation, not the default product narrative or startup mode.
+- If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.
 - Keep the sidebar as the main place for creation and navigation. Do not introduce a tab system or make folder loading the default mental model.
 
 ## Phase order
