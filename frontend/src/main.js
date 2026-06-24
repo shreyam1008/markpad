@@ -5382,6 +5382,7 @@ function commandItems() {
     { id: 'canvas-pan-tool', icon: 'CPN', title: 'Canvas pan tool', hint: 'Move around the infinite canvas without editing elements', run: () => { openCanvas(); setCanvasTool('pan'); } },
     { id: 'canvas-pen-tool', icon: 'PEN', title: 'Canvas pen tool', hint: 'Draw freehand paths on the canvas', run: () => { openCanvas(); setCanvasTool('pen'); } },
     { id: 'canvas-text-tool', icon: 'TXT', title: 'Canvas text tool', hint: 'Place or edit canvas text', run: () => { openCanvas(); setCanvasTool('text'); } },
+    { id: 'canvas-sticky-tool', icon: 'STK', title: 'Canvas sticky note tool', hint: 'Place a local sticky note card and edit its text immediately', run: () => { openCanvas(); setCanvasTool('sticky'); } },
     { id: 'canvas-rect-tool', icon: 'BOX', title: 'Canvas rectangle tool', hint: 'Draw lightweight rectangle shapes', run: () => { openCanvas(); setCanvasTool('rect'); } },
     { id: 'canvas-ellipse-tool', icon: 'ELL', title: 'Canvas ellipse tool', hint: 'Draw lightweight ellipse shapes', run: () => { openCanvas(); setCanvasTool('ellipse'); } },
     { id: 'canvas-line-tool', icon: 'LIN', title: 'Canvas line tool', hint: 'Draw straight line connectors', run: () => { openCanvas(); setCanvasTool('line'); } },
