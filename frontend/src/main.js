@@ -11318,6 +11318,11 @@ function canvasStorageProfileSnapshot() {
   const doc = canvasDoc || newCanvasDoc();
   const session = canvasSession || { camera: { x: 0, y: 0, scale: 1 } };
   const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  const elementTypes = (doc.elements || []).reduce((acc, element) => {
+    const type = String(element?.type || 'element');
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
   return {
     type: 'markpad-canvas-storage-profile',
     version: 1,
@@ -11328,6 +11333,7 @@ function canvasStorageProfileSnapshot() {
       key: CANVAS_DOC_KEY,
       bytes: byteSize(documentText),
       elements: (doc.elements || []).length,
+      elementTypes,
       appStateBytes: byteSize(JSON.stringify(doc.appState || {})),
       filesBytes: byteSize(JSON.stringify(doc.files || {})),
       background: doc.appState?.viewBackgroundColor || '#ffffff',
@@ -11365,6 +11371,12 @@ function canvasStorageProfileSnapshot() {
   };
 }
 
+function canvasElementTypeSummary(counts = {}) {
+  const entries = Object.entries(counts);
+  if (!entries.length) return 'none';
+  return entries.map(([type, count]) => `${type}: ${count}`).join(', ');
+}
+
 function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot()) {
   const camera = snapshot.session.camera || {};
   return [
@@ -11379,6 +11391,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Key: ${snapshot.document.key}`,
     `- Bytes: ${formatBytes(snapshot.document.bytes || 0)}`,
     `- Elements: ${snapshot.document.elements || 0}`,
+    `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
     `- Files/assets: ${formatBytes(snapshot.document.filesBytes || 0)}`,
     `- Background: ${snapshot.document.background}`,
@@ -11442,6 +11455,7 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['undo_limit', Number(snapshot.undo.limit || 0)],
     ['undo_max_bytes', Number(snapshot.undo.maxBytes || 0)],
   ];
+  Object.entries(snapshot.document.elementTypes || {}).forEach(([type, count]) => rows.push([`element_type_${type}`, Number(count || 0)]));
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
@@ -11451,6 +11465,7 @@ function showCanvasStorageProfile() {
   showModal('Canvas Storage Profile', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${formatBytes(snapshot.document.bytes || 0)}</strong><span>Document JSON</span><small>${snapshot.document.elements || 0} elements · ${escapeHtml(snapshot.document.key)}</small></div>
+      <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
       <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.undo.bytes || 0)}</strong><span>Canvas undo</span><small>${snapshot.undo.snapshots}/${snapshot.undo.limit} snapshots</small></div>
