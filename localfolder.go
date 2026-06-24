@@ -340,17 +340,26 @@ func (a *App) writeLocalFolderSettings(settings localFolderSettings) error {
 }
 
 type localFolderSearchPlan struct {
-	Text         string
-	Terms        []string
-	Phrases      []string
-	PathFilters  []string
-	TitleFilters []string
-	TypeFilters  []string
-	TagFilters   []string
-	TaskFilters  []string
-	HasFilters   bool
-	HasPhrases   bool
-	NeedsContent bool
+	Text                 string
+	Terms                []string
+	Phrases              []string
+	PathFilters          []string
+	TitleFilters         []string
+	TypeFilters          []string
+	TagFilters           []string
+	TaskFilters          []string
+	ExcludedTerms        []string
+	ExcludedPhrases      []string
+	ExcludedPathFilters  []string
+	ExcludedTitleFilters []string
+	ExcludedTypeFilters  []string
+	ExcludedTagFilters   []string
+	ExcludedTaskFilters  []string
+	HasFilters           bool
+	HasPhrases           bool
+	HasExclusions        bool
+	NeedsContent         bool
+	NeedsExclusionScan   bool
 }
 
 func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
@@ -363,13 +372,30 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 			continue
 		}
 		lower := strings.ToLower(clean)
+		negated := strings.HasPrefix(lower, "-") && len(lower) > 1
+		if negated {
+			clean = strings.TrimPrefix(clean, "-")
+			lower = strings.TrimPrefix(lower, "-")
+			plan.HasExclusions = true
+		}
 		if field.Quoted {
-			plan.Phrases = append(plan.Phrases, lower)
-			plan.HasPhrases = true
+			if negated {
+				plan.ExcludedPhrases = append(plan.ExcludedPhrases, lower)
+				plan.NeedsContent = true
+				plan.NeedsExclusionScan = true
+			} else {
+				plan.Phrases = append(plan.Phrases, lower)
+				plan.HasPhrases = true
+			}
 			continue
 		}
 		if strings.HasPrefix(lower, "#") && len(lower) > 1 {
-			plan.TagFilters = append(plan.TagFilters, strings.TrimPrefix(lower, "#"))
+			if negated {
+				plan.ExcludedTagFilters = append(plan.ExcludedTagFilters, strings.TrimPrefix(lower, "#"))
+				plan.NeedsExclusionScan = true
+			} else {
+				plan.TagFilters = append(plan.TagFilters, strings.TrimPrefix(lower, "#"))
+			}
 			plan.HasFilters = true
 			plan.NeedsContent = true
 			continue
@@ -380,28 +406,56 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 			value := strings.TrimPrefix(parts[1], "#")
 			switch key {
 			case "path":
-				plan.PathFilters = append(plan.PathFilters, value)
+				if negated {
+					plan.ExcludedPathFilters = append(plan.ExcludedPathFilters, value)
+				} else {
+					plan.PathFilters = append(plan.PathFilters, value)
+				}
 				plan.HasFilters = true
 				continue
 			case "title":
-				plan.TitleFilters = append(plan.TitleFilters, value)
+				if negated {
+					plan.ExcludedTitleFilters = append(plan.ExcludedTitleFilters, value)
+				} else {
+					plan.TitleFilters = append(plan.TitleFilters, value)
+				}
 				plan.HasFilters = true
 				continue
 			case "type", "kind":
-				plan.TypeFilters = append(plan.TypeFilters, value)
+				if negated {
+					plan.ExcludedTypeFilters = append(plan.ExcludedTypeFilters, value)
+				} else {
+					plan.TypeFilters = append(plan.TypeFilters, value)
+				}
 				plan.HasFilters = true
 				continue
 			case "tag":
-				plan.TagFilters = append(plan.TagFilters, value)
+				if negated {
+					plan.ExcludedTagFilters = append(plan.ExcludedTagFilters, value)
+					plan.NeedsExclusionScan = true
+				} else {
+					plan.TagFilters = append(plan.TagFilters, value)
+				}
 				plan.HasFilters = true
 				plan.NeedsContent = true
 				continue
 			case "task":
-				plan.TaskFilters = append(plan.TaskFilters, value)
+				if negated {
+					plan.ExcludedTaskFilters = append(plan.ExcludedTaskFilters, value)
+					plan.NeedsExclusionScan = true
+				} else {
+					plan.TaskFilters = append(plan.TaskFilters, value)
+				}
 				plan.HasFilters = true
 				plan.NeedsContent = true
 				continue
 			}
+		}
+		if negated {
+			plan.ExcludedTerms = append(plan.ExcludedTerms, searchTerms(lower)...)
+			plan.NeedsContent = true
+			plan.NeedsExclusionScan = true
+			continue
 		}
 		textParts = append(textParts, clean)
 	}
@@ -428,8 +482,15 @@ func localSearchQueryTokens(query string) []localSearchQueryToken {
 	}
 	for _, r := range strings.TrimSpace(query) {
 		if r == '"' {
-			flush()
-			quoted = !quoted
+			if quoted {
+				flush()
+				quoted = false
+			} else {
+				if strings.TrimSpace(b.String()) != "-" {
+					flush()
+				}
+				quoted = true
+			}
 			continue
 		}
 		if !quoted && (r == ' ' || r == '\t' || r == '\n' || r == '\r') {
@@ -452,6 +513,9 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 	relLower := strings.ToLower(filepath.ToSlash(rel))
 	typeLower := strings.ToLower(kind + " " + localSearchExtension(path))
 	if !localFolderFiltersMatch(relLower, titleLower, typeLower, plan) {
+		return LocalFolderSearchHit{}, false
+	}
+	if localFolderTextHasExcluded(titleLower+"\n"+relLower, plan) {
 		return LocalFolderSearchHit{}, false
 	}
 	metadataTextMatch := localFolderTextMatches(titleLower+"\n"+relLower, plan)
@@ -515,7 +579,10 @@ func searchLocalFile(root string, path string, kind string, plan localFolderSear
 			filterLine = lineNo
 			filterSnippet = strings.TrimSpace(line)
 		}
-		if (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases) || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
+		if localFolderTextHasExcluded(lower, plan) || localFolderLineMatchesExcludedContentFilters(lower, plan, taskFilterLine) {
+			return LocalFolderSearchHit{}, false
+		}
+		if !plan.NeedsExclusionScan && (metadataTextMatch || localFolderTextFiltersMatched(plan, textTerms, textPhrases) || (len(plan.Terms) == 0 && len(plan.Phrases) == 0)) && localFolderContentFiltersMatched(plan, matchedTags, matchedTasks) {
 			break
 		}
 		lineNo++
@@ -585,7 +652,36 @@ func localFolderFiltersMatch(relLower string, titleLower string, typeLower strin
 			return false
 		}
 	}
+	for _, value := range plan.ExcludedPathFilters {
+		if strings.Contains(relLower, value) {
+			return false
+		}
+	}
+	for _, value := range plan.ExcludedTitleFilters {
+		if strings.Contains(titleLower, value) {
+			return false
+		}
+	}
+	for _, value := range plan.ExcludedTypeFilters {
+		if strings.Contains(typeLower, value) {
+			return false
+		}
+	}
 	return true
+}
+
+func localFolderTextHasExcluded(value string, plan localFolderSearchPlan) bool {
+	for _, term := range plan.ExcludedTerms {
+		if strings.Contains(value, term) {
+			return true
+		}
+	}
+	for _, phrase := range plan.ExcludedPhrases {
+		if strings.Contains(value, phrase) {
+			return true
+		}
+	}
+	return false
 }
 
 func localFolderTextMatches(value string, plan localFolderSearchPlan) bool {
@@ -649,6 +745,20 @@ func localFolderLineMatchesContentFilters(line string, plan localFolderSearchPla
 		}
 	}
 	return matched
+}
+
+func localFolderLineMatchesExcludedContentFilters(line string, plan localFolderSearchPlan, taskFilterLine bool) bool {
+	for _, tag := range plan.ExcludedTagFilters {
+		if strings.Contains(line, "#"+tag) {
+			return true
+		}
+	}
+	for _, task := range plan.ExcludedTaskFilters {
+		if taskFilterLine && localFolderTaskFilterMatchesLine(line, task) {
+			return true
+		}
+	}
+	return false
 }
 
 func localFolderContentFiltersMatched(plan localFolderSearchPlan, tags map[string]bool, tasks map[string]bool) bool {
