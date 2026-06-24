@@ -20,6 +20,7 @@ Use a rebuildable SQLite FTS5 sidecar index for workspace-wide search.
 - Memory rule: keep only the active result page and small snippet windows in the webview.
 - Phase 1 query scope: files Markpad has loaded or indexed locally.
 - Phase 2 sync scope: index remains local per device; sync transfers files and metadata, not search cache.
+- Main view: summarize result count, loaded/local distribution, and parsed operator counts from the current result page only.
 
 Implementation bias:
 
