@@ -156,6 +156,10 @@
           <strong>Save canvas file</strong>
           <span>Save current canvas to local .markcanvas.json</span>
         </button>
+        <button type="button" role="menuitem" data-canvas-workflow="export-native" data-menu-chip="NATIVE">
+          <strong>Export .markcanvas</strong>
+          <span>Download the native canvas file from scratch or active board</span>
+        </button>
         <button type="button" role="menuitem" data-canvas-workflow="write" data-menu-chip="SAVE">
           <strong>Write active</strong>
           <span>Write canvas JSON to active .markcanvas.json/JSON/draft</span>
@@ -439,6 +443,7 @@
           <span class="canvas-action-label" aria-hidden="true">Export</span>
           <button id="canvas-import" class="canvas-tool" title="Import canvas JSON" aria-label="Import canvas JSON">Import</button>
           <button id="canvas-export" class="canvas-tool" title="Export Markpad canvas JSON" aria-label="Export Markpad canvas JSON">JSON</button>
+          <button id="canvas-export-markcanvas" class="canvas-tool" title="Export native .markcanvas.json" aria-label="Export native .markcanvas.json">Native</button>
           <button id="canvas-export-svg" class="canvas-tool" title="Export canvas as SVG" aria-label="Export canvas as SVG">SVG</button>
           <button id="canvas-export-obsidian" class="canvas-tool" title="Export Obsidian JSON Canvas" aria-label="Export Obsidian JSON Canvas">Obsidian</button>
           <span class="canvas-action-label" aria-hidden="true">Save</span>

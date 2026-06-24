@@ -13887,6 +13887,7 @@ function importCanvasJson() {
 }
 $('canvas-import')?.addEventListener('click', importCanvasJson);
 $('canvas-export')?.addEventListener('click', exportCanvasJson);
+$('canvas-export-markcanvas')?.addEventListener('click', exportMarkcanvasJson);
 $('canvas-export-svg')?.addEventListener('click', exportCanvasSvg);
 $('canvas-export-obsidian')?.addEventListener('click', exportObsidianCanvas);
 $('canvas-save-active')?.addEventListener('click', saveCanvasToActiveDocument);
@@ -15502,6 +15503,9 @@ async function runCanvasWorkflowAction(kind) {
       break;
     case 'save-file':
       await saveCanvasAsLocalFile();
+      break;
+    case 'export-native':
+      exportMarkcanvasJson();
       break;
     case 'write':
       await openActiveCanvasOrDraft();
