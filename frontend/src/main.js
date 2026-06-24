@@ -189,6 +189,18 @@ const THEME_RECIPES = [
 ];
 const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
 const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
+const THEME_COMPANIONS = {
+  paper: 'ink',
+  linen: 'ember',
+  dawn: 'slate',
+  mist: 'pine',
+  sand: 'midnight',
+  ink: 'paper',
+  pine: 'mist',
+  slate: 'dawn',
+  ember: 'linen',
+  midnight: 'sand',
+};
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_CACHE_MAX_ENTRIES = 24;
 const SEARCH_CACHE_MAX_BYTES = 6 * 1024 * 1024;
@@ -265,6 +277,25 @@ function cycleDarkTheme() {
   cycleThemeGroup(DARK_THEMES);
 }
 
+function themeById(id) {
+  return THEMES.find(theme => theme.id === id) || THEMES[0];
+}
+
+function themeCompanionId(id = currentTheme) {
+  return THEME_COMPANIONS[id] || (themeById(id).mode === 'dark' ? 'paper' : 'ink');
+}
+
+function themeCompanionFor(id = currentTheme) {
+  return themeById(themeCompanionId(id));
+}
+
+function applyThemeCompanion() {
+  const current = themeById(currentTheme);
+  const companion = themeCompanionFor(current.id);
+  applyTheme(companion.id, true);
+  if (statusText) statusText.textContent = `Theme companion: ${current.label} to ${companion.label}`;
+}
+
 function themeCatalogSnapshot() {
   return {
     type: 'markpad-theme-catalog',
@@ -276,13 +307,18 @@ function themeCatalogSnapshot() {
       assets: 'text glyphs, CSS, and existing inline SVG only',
       storage: 'localStorage:markpad-theme',
     },
-    themes: THEMES.map(theme => ({
-      id: theme.id,
-      label: theme.label,
-      mode: theme.mode,
-      hint: theme.hint,
-      active: theme.id === currentTheme,
-    })),
+    themes: THEMES.map(theme => {
+      const companion = themeCompanionFor(theme.id);
+      return {
+        id: theme.id,
+        label: theme.label,
+        mode: theme.mode,
+        hint: theme.hint,
+        companion: companion.id,
+        companionLabel: companion.label,
+        active: theme.id === currentTheme,
+      };
+    }),
   };
 }
 
@@ -415,6 +451,29 @@ function renderThemeLabSummary() {
   `;
 }
 
+function renderThemeCompanionPanel() {
+  const current = themeById(currentTheme);
+  const companion = themeCompanionFor(current.id);
+  return `
+    <div class="theme-lab-companion" aria-label="Recommended theme companion">
+      <div class="theme-lab-companion-card">
+        <span class="theme-lab-swatch" data-theme-swatch="${current.id}"><i></i><i></i><i></i></span>
+        <strong>${escapeHtml(current.label)}</strong>
+        <small>${escapeHtml(current.mode)} now</small>
+      </div>
+      <div class="theme-lab-companion-link">
+        <span>pairs with</span>
+        <button data-theme-lab-choice="${companion.id}" type="button">Switch to ${escapeHtml(companion.label)}</button>
+      </div>
+      <div class="theme-lab-companion-card">
+        <span class="theme-lab-swatch" data-theme-swatch="${companion.id}"><i></i><i></i><i></i></span>
+        <strong>${escapeHtml(companion.label)}</strong>
+        <small>${escapeHtml(companion.mode)} companion</small>
+      </div>
+    </div>
+  `;
+}
+
 function showThemeLab() {
   showModal('Theme Lab', `
     <div class="theme-lab-actions">
@@ -430,6 +489,7 @@ function showThemeLab() {
       <button data-workspace-preset="night">Night preset</button>
     </div>
     ${renderThemeLabSummary()}
+    ${renderThemeCompanionPanel()}
     <h3 class="theme-lab-heading">Light themes</h3>
     <div class="theme-lab-grid">${renderThemeLabCards('light')}</div>
     <h3 class="theme-lab-heading">Dark themes</h3>
@@ -3338,6 +3398,7 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Fast switch</strong><span>Command palette</span><small>Cycle all themes or only light/dark groups</small></div>
       <div class="diag-card"><strong>Theme Lab</strong><span>Compare + export</span><small>Apply themes and copy a small local JSON catalog</small></div>
       <div class="diag-card"><strong>Recipes</strong><span>Writing, planning, review, focus, night</span><small>Export lightweight Markdown/JSON guidance</small></div>
+      <div class="diag-card"><strong>Companions</strong><span>Matched light/dark pairs</span><small>Switch day/night tone without changing workflow</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-theme-choice="paper" aria-pressed="${currentTheme === 'paper' ? 'true' : 'false'}">Paper</button>
@@ -3347,6 +3408,7 @@ function showThemeGuide() {
       <button data-theme-choice="pine" aria-pressed="${currentTheme === 'pine' ? 'true' : 'false'}">Pine</button>
       <button data-theme-choice="midnight" aria-pressed="${currentTheme === 'midnight' ? 'true' : 'false'}">Midnight</button>
       <button data-theme-lab-open>Theme Lab</button>
+      <button data-theme-lab-choice="${themeCompanionId(currentTheme)}">Companion: ${escapeHtml(themeCompanionFor(currentTheme).label)}</button>
       <button data-copy-theme-recipes-md>Copy recipes MD</button>
       <button data-export-theme-recipes-json>Export recipes JSON</button>
     </div>
@@ -5604,6 +5666,7 @@ function commandItems() {
     { id: 'theme', icon: '☼', title: 'Cycle theme', hint: 'Switch lightweight CSS-variable themes', run: cycleTheme },
     { id: 'theme-light-cycle', icon: 'TL', title: 'Cycle light theme', hint: 'Switch between Paper, Linen, Dawn, Mist, and Sand', run: cycleLightTheme },
     { id: 'theme-dark-cycle', icon: 'TD', title: 'Cycle dark theme', hint: 'Switch between Ink, Pine, Slate, Ember, and Midnight', run: cycleDarkTheme },
+    { id: 'theme-companion', icon: 'TC', title: 'Switch to theme companion', hint: 'Apply the recommended light/dark companion for the current theme', run: applyThemeCompanion },
     { id: 'theme-reset', icon: 'TR', title: 'Reset theme to Paper', hint: 'Return to the default low-contrast Paper theme', run: () => applyTheme('paper') },
     { id: 'theme-guide', icon: 'TG', title: 'Theme guide', hint: 'Show light, dark, preset, portability, and lightweight theme notes', run: showThemeGuide },
     { id: 'theme-lab', icon: 'TLB', title: 'Theme Lab', hint: 'Compare light/dark themes and export the local theme catalog', run: showThemeLab },
