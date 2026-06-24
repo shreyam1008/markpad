@@ -570,6 +570,31 @@ func TestCanvasContextMenuStaysNativeAndDependencyFree(t *testing.T) {
 	})
 }
 
+func TestDiagnosticActionsUseSharedClassForBudget(t *testing.T) {
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(mainJS)
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		`class="diag-action"`,
+		`data-copy-canvas-summary-md class="diag-action"`,
+		`data-export-local-settings class="diag-action"`,
+	})
+	assertTextOmits(t, "frontend/src/main.js", text, []string{
+		`style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;"`,
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".diag-action",
+		"font-weight: 850;",
+	})
+}
+
 func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	indexHTML, err := os.ReadFile("frontend/index.html")
 	if err != nil {

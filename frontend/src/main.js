@@ -1051,12 +1051,12 @@ function showLoadedWorkspaceInventory() {
       <div class="diag-card"><strong>${snapshot.dirtyCount}</strong><span>Unsaved</span><small>Need save or discard</small></div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-      <button data-copy-loaded-workspace-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-      <button data-export-loaded-workspace-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-      <button data-copy-loaded-workspace-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-      <button data-export-loaded-workspace-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
-      <button data-copy-loaded-workspace-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
-      <button data-export-loaded-workspace-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+      <button data-copy-loaded-workspace-md class="diag-action">Copy MD</button>
+      <button data-export-loaded-workspace-md class="diag-action">Export MD</button>
+      <button data-copy-loaded-workspace-json class="diag-action">Copy JSON</button>
+      <button data-export-loaded-workspace-json class="diag-action">Export JSON</button>
+      <button data-copy-loaded-workspace-csv class="diag-action">Copy CSV</button>
+      <button data-export-loaded-workspace-csv class="diag-action">Export CSV</button>
     </div>
     <div class="local-list" style="margin-top:10px;">${rows}</div>
     <p class="diag-note">This manifest exports metadata only. It does not include document contents, draft text, or version history.</p>
@@ -1517,11 +1517,11 @@ function showUiStateSummary() {
       <div class="diag-card"><strong>${escapeHtml(canvasBg)}</strong><span>Canvas background</span><small>stored with canvas exports</small></div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-      <button data-copy-ui-state-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-      <button data-export-ui-state-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-      <button data-copy-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-      <button data-export-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
-      <button data-restore-ui-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Restore JSON</button>
+      <button data-copy-ui-state-md class="diag-action">Copy MD</button>
+      <button data-export-ui-state-md class="diag-action">Export MD</button>
+      <button data-copy-ui-state-json class="diag-action">Copy JSON</button>
+      <button data-export-ui-state-json class="diag-action">Export JSON</button>
+      <button data-restore-ui-state-json class="diag-action">Restore JSON</button>
     </div>
     <p class="diag-note">All values are local-only UI preferences or active in-memory canvas settings. No workspace scan is performed.</p>
   `);
@@ -5831,10 +5831,10 @@ function showLightweightAssetReport() {
       <div class="diag-card"><strong>state</strong><span>Workspace presets</span><small>Theme/layout preferences, not assets</small></div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-      <button data-copy-asset-report-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-      <button data-export-asset-report-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-      <button data-copy-asset-report-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-      <button data-export-asset-report-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
+      <button data-copy-asset-report-md class="diag-action">Copy MD</button>
+      <button data-export-asset-report-md class="diag-action">Export MD</button>
+      <button data-copy-asset-report-json class="diag-action">Copy JSON</button>
+      <button data-export-asset-report-json class="diag-action">Export JSON</button>
     </div>
     <p class="diag-note">This report is local and current-view only. It is meant to keep UI polish honest: avoid icon fonts, large raster assets, image theme packs, and heavy runtime theme engines.</p>
   `);
@@ -5900,14 +5900,14 @@ async function showRuntimeStats() {
           ${rows.map(([label, value]) => `<tr style="border-bottom:1px solid var(--border-soft);"><td style="padding:5px 8px;color:var(--muted);font-weight:750;">${escapeHtml(label)}</td><td style="padding:5px 8px;text-align:right;font-weight:850;">${escapeHtml(value)}</td></tr>`).join('')}
         </table>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button data-copy-runtime-text style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy Text</button>
-          <button data-export-runtime-text style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export Text</button>
-          <button data-copy-runtime-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-          <button data-export-runtime-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-          <button data-copy-runtime-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-          <button data-export-runtime-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
-          <button data-copy-runtime-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
-          <button data-export-runtime-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+          <button data-copy-runtime-text class="diag-action">Copy Text</button>
+          <button data-export-runtime-text class="diag-action">Export Text</button>
+          <button data-copy-runtime-md class="diag-action">Copy MD</button>
+          <button data-export-runtime-md class="diag-action">Export MD</button>
+          <button data-copy-runtime-json class="diag-action">Copy JSON</button>
+          <button data-export-runtime-json class="diag-action">Export JSON</button>
+          <button data-copy-runtime-csv class="diag-action">Copy CSV</button>
+          <button data-export-runtime-csv class="diag-action">Export CSV</button>
         </div>
         <p style="margin:0;color:var(--muted);font-size:11px;line-height:1.55;">RSS is the resident memory reported by the OS for the Markpad process when available. Go heap is runtime memory inside the backend only, so it will be lower than total desktop app memory.</p>
       </div>
@@ -7692,12 +7692,12 @@ async function showLocalFootprint() {
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-      <button data-copy-footprint-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-      <button data-export-footprint-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-      <button data-copy-footprint-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-      <button data-export-footprint-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
-      <button data-copy-footprint-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
-      <button data-export-footprint-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
+      <button data-copy-footprint-md class="diag-action">Copy MD</button>
+      <button data-export-footprint-md class="diag-action">Export MD</button>
+      <button data-copy-footprint-json class="diag-action">Copy JSON</button>
+      <button data-export-footprint-json class="diag-action">Export JSON</button>
+      <button data-copy-footprint-csv class="diag-action">Copy CSV</button>
+      <button data-export-footprint-csv class="diag-action">Export CSV</button>
     </div>
     <p class="diag-note">Metrics are sampled only when this panel opens. Loaded text and local persisted UI data are counted without scanning the workspace; saved Trash reads the existing Trash manifest.</p>
   `);
@@ -13262,19 +13262,19 @@ function showCanvasInventory() {
   showModal('Canvas Inventory', `
     <div class="local-summary">${source.elements.length} element${source.elements.length === 1 ? '' : 's'} · ${Object.entries(counts).map(([type, count]) => `${escapeHtml(type)} ${count}`).join(' · ') || 'empty canvas'}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;">
-      <button data-copy-canvas-summary-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy MD</button>
-      <button data-export-canvas-summary-md style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export MD</button>
-      <button data-copy-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy CSV</button>
-      <button data-export-canvas-elements-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export CSV</button>
-      <button data-copy-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy JSON</button>
-      <button data-export-canvas-inventory-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export JSON</button>
-      <button data-copy-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View</button>
-      <button data-export-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View</button>
-      <button data-copy-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View JSON</button>
-      <button data-export-canvas-view-state-json style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View JSON</button>
-      <button data-restore-canvas-view-state style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Restore View JSON</button>
-      <button data-copy-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy View CSV</button>
-      <button data-export-canvas-view-state-csv style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export View CSV</button>
+      <button data-copy-canvas-summary-md class="diag-action">Copy MD</button>
+      <button data-export-canvas-summary-md class="diag-action">Export MD</button>
+      <button data-copy-canvas-elements-csv class="diag-action">Copy CSV</button>
+      <button data-export-canvas-elements-csv class="diag-action">Export CSV</button>
+      <button data-copy-canvas-inventory-json class="diag-action">Copy JSON</button>
+      <button data-export-canvas-inventory-json class="diag-action">Export JSON</button>
+      <button data-copy-canvas-view-state class="diag-action">Copy View</button>
+      <button data-export-canvas-view-state class="diag-action">Export View</button>
+      <button data-copy-canvas-view-state-json class="diag-action">Copy View JSON</button>
+      <button data-export-canvas-view-state-json class="diag-action">Export View JSON</button>
+      <button data-restore-canvas-view-state class="diag-action">Restore View JSON</button>
+      <button data-copy-canvas-view-state-csv class="diag-action">Copy View CSV</button>
+      <button data-export-canvas-view-state-csv class="diag-action">Export View CSV</button>
     </div>
     ${renderCanvasInventoryRows(source)}
     <p class="local-note">Inventory is derived from the current local canvas draft. No files are scanned.</p>
@@ -16396,12 +16396,12 @@ async function showPreferences() {
       <tr><td style="padding:4px 6px;font-weight:600;">Local tools</td><td style="padding:4px 6px;">Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps</td></tr>
     </table>
     <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-      <button data-local-folder-choose style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Choose local folder</button>
-      <button data-local-workspace-setup style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Setup guide</button>
+      <button data-local-folder-choose class="diag-action">Choose local folder</button>
+      <button data-local-workspace-setup class="diag-action">Setup guide</button>
       <button data-local-folder-clear ${localInfo?.path ? '' : 'disabled'} style="border:1px solid var(--border);background:var(--editor);color:var(--danger);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Clear local folder</button>
-      <button data-export-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Export settings</button>
-      <button data-copy-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Copy settings</button>
-      <button data-import-local-settings style="border:1px solid var(--border);background:var(--editor);color:var(--text);border-radius:9px;padding:5px 9px;font-size:11px;font-weight:850;cursor:pointer;">Import settings</button>
+      <button data-export-local-settings class="diag-action">Export settings</button>
+      <button data-copy-local-settings class="diag-action">Copy settings</button>
+      <button data-import-local-settings class="diag-action">Import settings</button>
     </div>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">File Handling</h3>
     <table style="width:100%;border-collapse:collapse;font-size:12px;line-height:1.6;">
