@@ -3750,12 +3750,20 @@ function renderSearchResults(results, query) {
 }
 
 function searchResultsToMarkdown(results, query) {
+  const snapshot = searchProfileSnapshot(query, results);
+  const dedupeLines = snapshot.scope === 'all'
+    ? [
+      `Merged hits: ${snapshot.dedupe?.input || results.length}`,
+      `Duplicates removed: ${snapshot.dedupe?.removed || 0}`,
+    ]
+    : [];
   const lines = [
     '# Markpad Search Results',
     '',
     `Query: ${query || '(empty)'}`,
     `Scope: ${searchScope}`,
     `Count: ${results.length}`,
+    ...dedupeLines,
     `Exported: ${new Date().toLocaleString()}`,
     '',
   ];
@@ -3774,6 +3782,7 @@ function searchResultsToMarkdown(results, query) {
 }
 
 function searchResultsToJson(results, query) {
+  const snapshot = searchProfileSnapshot(query, results);
   return JSON.stringify({
     type: 'markpad-search-results',
     version: 1,
@@ -3781,6 +3790,7 @@ function searchResultsToJson(results, query) {
     query: query || '',
     scope: searchScope,
     count: results.length,
+    dedupe: snapshot.scope === 'all' ? snapshot.dedupe : { input: results.length, output: results.length, removed: 0 },
     results: results.map(result => ({
       title: result.title || basename(result.path) || 'Untitled',
       path: result.path || '',
@@ -3800,11 +3810,15 @@ function csvCell(value) {
 }
 
 function searchResultsToCsv(results, query) {
+  const snapshot = searchProfileSnapshot(query, results);
+  const dedupe = snapshot.scope === 'all' ? snapshot.dedupe : { input: results.length, output: results.length, removed: 0 };
   const rows = [
-    ['query', 'scope', 'rank', 'title', 'path', 'source', 'type', 'match', 'line', 'score', 'snippet'],
+    ['query', 'scope', 'dedupeInput', 'dedupeRemoved', 'rank', 'title', 'path', 'source', 'type', 'match', 'line', 'score', 'snippet'],
     ...results.map((result, index) => [
       query || '',
       searchScope,
+      Number(dedupe?.input || results.length),
+      Number(dedupe?.removed || 0),
       index + 1,
       result.title || basename(result.path) || 'Untitled',
       result.path || '',
