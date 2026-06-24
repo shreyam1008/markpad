@@ -1124,6 +1124,8 @@ function layoutProfileSnapshot() {
       splitLabel: splitRatioText(),
       editorVisible: viewMode === 'markdown' || viewMode === 'split',
       previewVisible: viewMode === 'viewer' || viewMode === 'split',
+      editorShare: viewMode === 'viewer' ? 0 : viewMode === 'split' ? Math.round(splitRatio * 10) / 10 : 100,
+      previewShare: viewMode === 'markdown' ? 0 : viewMode === 'split' ? Math.round((100 - splitRatio) * 10) / 10 : 100,
     },
     editor: {
       softWrap: !!editorSoftWrap,
@@ -1171,6 +1173,8 @@ function layoutProfileMarkdown(snapshot = layoutProfileSnapshot()) {
     `- Split: ${snapshot.view.splitLabel}`,
     `- Editor visible: ${snapshot.view.editorVisible ? 'yes' : 'no'}`,
     `- Preview visible: ${snapshot.view.previewVisible ? 'yes' : 'no'}`,
+    `- Editor share: ${snapshot.view.editorShare}%`,
+    `- Preview share: ${snapshot.view.previewShare}%`,
     '',
     '## Editor',
     '',
@@ -1209,6 +1213,8 @@ function layoutProfileCsv(snapshot = layoutProfileSnapshot()) {
     ['split_label', snapshot.view.splitLabel],
     ['editor_visible', snapshot.view.editorVisible ? 'true' : 'false'],
     ['preview_visible', snapshot.view.previewVisible ? 'true' : 'false'],
+    ['editor_share', Number(snapshot.view.editorShare || 0)],
+    ['preview_share', Number(snapshot.view.previewShare || 0)],
     ['soft_wrap', snapshot.editor.softWrap ? 'true' : 'false'],
     ['reading_width', snapshot.editor.readingWidth ? 'true' : 'false'],
     ['font_size', Number(snapshot.editor.fontSize || 0)],
@@ -1218,6 +1224,32 @@ function layoutProfileCsv(snapshot = layoutProfileSnapshot()) {
     ['sidebar_collapsed', snapshot.chrome.sidebarCollapsed ? 'true' : 'false'],
   ];
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function layoutLaneMeter(snapshot) {
+  const editorShare = Math.max(0, Math.min(100, Number(snapshot.view.editorShare || 0)));
+  const previewShare = Math.max(0, Math.min(100, Number(snapshot.view.previewShare || 0)));
+  const editorLabel = snapshot.view.editorVisible ? `${Math.round(editorShare)}% editor` : 'editor hidden';
+  const previewLabel = snapshot.view.previewVisible ? `${Math.round(previewShare)}% preview` : 'preview hidden';
+  return `
+    <div class="layout-lane-meter" aria-label="Editor and preview layout share">
+      <div class="layout-lane-top">
+        <strong>${escapeHtml(snapshot.view.mode)}</strong>
+        <span>${escapeHtml(snapshot.view.splitLabel)} · ${snapshot.editor.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.editor.readingWidth ? 'reading width' : 'full width'}</span>
+      </div>
+      <div class="layout-lane-track">
+        ${editorShare ? `<span class="layout-lane-segment editor" style="width:${editorShare}%;">${escapeHtml(editorLabel)}</span>` : ''}
+        ${previewShare ? `<span class="layout-lane-segment preview" style="width:${previewShare}%;">${escapeHtml(previewLabel)}</span>` : ''}
+        ${!editorShare && !previewShare ? '<span class="layout-lane-segment empty" style="width:100%;">no lane</span>' : ''}
+      </div>
+      <div class="layout-lane-legend">
+        <span><strong>${Math.round(editorShare)}%</strong> editor</span>
+        <span><strong>${Math.round(previewShare)}%</strong> preview</span>
+        <span><strong>${snapshot.editor.zoomPercent}%</strong> zoom</span>
+        <span><strong>${snapshot.chrome.focusMode ? 'on' : 'off'}</strong> focus</span>
+      </div>
+    </div>
+  `;
 }
 
 function showLayoutProfile() {
@@ -1231,6 +1263,7 @@ function showLayoutProfile() {
       <div class="diag-card"><strong>${snapshot.chrome.focusMode ? 'on' : 'off'}</strong><span>Focus mode</span><small>${snapshot.chrome.compactMode ? 'compact on' : 'compact off'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.activeFile.type || 'none')}</strong><span>Active type</span><small>${snapshot.activeFile.readOnly ? 'read-only' : 'editable'}</small></div>
     </div>
+    ${layoutLaneMeter(snapshot)}
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-layout-profile-md>Copy MD</button>
       <button data-export-layout-profile-md>Export MD</button>
