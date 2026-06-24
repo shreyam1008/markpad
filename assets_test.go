@@ -286,6 +286,9 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		"function renderTaskBoardRow(task)",
 		"data-task-board-card",
 		"data-task-board-column=",
+		"data-task-board-empty=",
+		"Drop Markdown tasks here to move them.",
+		"Drag to another board column or use the Move buttons",
 		`draggable="true"`,
 		"data-task-move=",
 		"data-task-move-status=",
@@ -312,12 +315,14 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		".task-board-row.dragging",
 		".task-board .task-col[data-task-board-column]",
 		".task-board .task-col.drag-over",
+		".task-board .task-col.drag-over .task-board-drop-hint",
 		".task-board .task-col::before",
 		".task-board .task-col:nth-child(1)::before",
 		".task-board .task-col:nth-child(4) h4::before",
 		".task-board-actions",
 		".task-board-actions button.active",
 		".task-board-actions button:disabled",
+		".task-board-drop-hint",
 	})
 }
 

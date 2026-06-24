@@ -2712,6 +2712,9 @@ body.markpad-compact #modal-body {
   display: grid;
   gap: 6px;
 }
+.task-board-row[title] {
+  scroll-margin: 16px;
+}
 .task-board-row[draggable="true"] {
   cursor: grab;
 }
@@ -2736,6 +2739,11 @@ body.markpad-compact #modal-body {
   border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.task-board .task-col.drag-over .task-board-drop-hint {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--editor));
 }
 .task-board .task-col::before {
   content: "";
@@ -2812,6 +2820,21 @@ body.markpad-compact #modal-body {
 .task-board-actions button:disabled {
   cursor: default;
   opacity: .48;
+}
+.task-board-drop-hint {
+  display: grid;
+  place-items: center;
+  min-height: 82px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--editor) 62%, transparent);
+  color: var(--text-subtle);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-align: center;
+  text-transform: uppercase;
+  transition: border-color .14s ease, background .14s ease, color .14s ease;
 }
 .task-check {
   width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 6px;

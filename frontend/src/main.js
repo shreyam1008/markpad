@@ -8911,7 +8911,8 @@ function renderTaskBoardActions(task) {
 function renderTaskBoardRow(task) {
   const status = taskStatus(task);
   const dragAttrs = task.local ? '' : ' draggable="true"';
-  return `<div class="task-board-row" data-task-board-card data-task-id="${escapeAttr(task.id)}" data-task-status="${escapeAttr(status)}"${dragAttrs}>${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
+  const dragTitle = task.local ? 'Open the local task source to move this task' : 'Drag to another board column or use the Move buttons';
+  return `<div class="task-board-row" data-task-board-card data-task-id="${escapeAttr(task.id)}" data-task-status="${escapeAttr(status)}"${dragAttrs} title="${escapeAttr(dragTitle)}">${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
 }
 
 function renderTaskList(tasks, page = taskRenderPage(tasks)) {
@@ -9244,7 +9245,9 @@ function renderTaskBoard(tasks, page = taskRenderPage(tasks)) {
     const colTotal = tasks.filter(task => taskStatus(task) === id).length;
     const colTasks = pageTasks.filter(task => taskStatus(task) === id);
     const countLabel = page.hidden ? `${colTasks.length}/${colTotal}` : String(colTotal);
-    return `<section class="task-col" data-task-board-column="${id}"><h4>${label} (${countLabel})</h4>${renderTaskBoardGroups(colTasks)}</section>`;
+    const groups = renderTaskBoardGroups(colTasks);
+    const emptyHint = `<div class="task-board-drop-hint" data-task-board-empty="${id}">Drop here for ${label}</div>`;
+    return `<section class="task-col" data-task-board-column="${id}" aria-label="${escapeAttr(label)} task column. Drop Markdown tasks here to move them."><h4>${label} (${countLabel})</h4>${groups || emptyHint}</section>`;
   }).join('')}</div>${renderTaskPageFooter(page)}`;
 }
 
