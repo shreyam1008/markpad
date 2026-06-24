@@ -5992,20 +5992,53 @@ function showCommandWorkflowGuide() {
   `);
 }
 
+const COMMAND_CATEGORY_FILTERS = [
+  ['search', 'Search', 'Search actions'],
+  ['tasks', 'Task', 'Tasks actions'],
+  ['canvas', 'Canvas', 'Canvas actions'],
+  ['local', 'Local', 'Local workspace actions'],
+  ['layout', 'Layout', 'layout and editor view actions'],
+  ['diagnostics', 'Diagnostics', 'memory, footprint, and runtime actions'],
+  ['theme', 'Theme', 'lightweight theme and appearance actions'],
+  ['trash', 'Trash', 'local Trash, restore, cleanup, and report actions'],
+];
+
+const SEARCH_SCOPE_COMMANDS = [
+  ['search-loaded', 'SL', 'Search loaded scope', 'Open search limited to currently loaded files', 'loaded'],
+  ['search-local', 'SF', 'Search local folder scope', 'Open search for the configured local folder', 'local'],
+  ['search-all', 'SA', 'Search all scope', 'Open search across loaded files and the local folder', 'all'],
+];
+
+const SEARCH_QUERY_COMMANDS = [
+  ['search-markdown', 'SM', 'Search Markdown files', 'Open all-source search with type:md prefilled', 'type:md '],
+  ['search-canvas-files', 'SC', 'Search canvas files', 'Open all-source search with type:canvas prefilled', 'type:canvas '],
+  ['search-text-files', 'ST', 'Search text files', 'Open all-source search with type:txt prefilled', 'type:txt '],
+  ['search-json-files', 'SJ', 'Search JSON files', 'Open all-source search with type:json prefilled', 'type:json '],
+  ['search-pdf-files', 'SP', 'Search PDF files', 'Open all-source search with type:pdf prefilled', 'type:pdf '],
+  ['search-image-files', 'SI', 'Search image files', 'Open all-source search with type:image prefilled', 'type:image '],
+  ['search-title-filter', 'STI', 'Search by title', 'Open all-source search with title: prefilled', 'title:'],
+  ['search-path-filter', 'SPA', 'Search by path', 'Open all-source search with path: prefilled', 'path:'],
+  ['search-tag-filter', '#', 'Search by tag', 'Open all-source search with tag: prefilled', 'tag:'],
+  ['search-exclude-path-filter', '-P', 'Search excluding path', 'Open all-source search with -path: prefilled', '-path:'],
+  ['search-exclude-title-filter', '-T', 'Search excluding title', 'Open all-source search with -title: prefilled', '-title:'],
+  ['search-exclude-type-filter', '-Y', 'Search excluding type', 'Open all-source search with -type: prefilled', '-type:'],
+  ['search-exclude-tag-filter', '-#', 'Search excluding tag', 'Open all-source search with -tag: prefilled', '-tag:'],
+  ['search-exclude-archive', '-A', 'Search outside archive', 'Open all-source search excluding archive paths', '-path:archive '],
+  ['search-exclude-done-tasks', '-D', 'Search without completed tasks', 'Open all-source search excluding task:done', '-task:done '],
+];
+
+const SEARCH_TASK_QUERY_COMMANDS = [
+  ['search-open-tasks', 'SO', 'Search open tasks', 'Open all-source search with task:open prefilled', 'task:open '],
+  ['search-done-tasks', 'SD', 'Search completed tasks', 'Open all-source search with task:done prefilled', 'task:done '],
+];
+
 function commandItems() {
   return [
     { id: 'new', icon: '+', title: 'New note', hint: 'Create an empty draft', kbd: 'Ctrl+N', run: doNew },
     { id: 'open', icon: 'O', title: 'Open file', hint: 'Open a local file', kbd: 'Ctrl+O', run: doOpen },
     { id: 'save', icon: 'S', title: 'Save', hint: 'Save the active document', kbd: 'Ctrl+S', run: doSave },
     { id: 'saveas', icon: 'A', title: 'Save as', hint: 'Choose a save path', kbd: 'Ctrl+Shift+S', run: doSaveAs },
-    { id: 'commands-search', icon: 'CMD', title: 'Show Search commands', hint: 'Filter the command palette to Search actions', run: () => openCommandPaletteQuery('Search') },
-    { id: 'commands-tasks', icon: 'CMD', title: 'Show Task commands', hint: 'Filter the command palette to Tasks actions', run: () => openCommandPaletteQuery('Tasks') },
-    { id: 'commands-canvas', icon: 'CMD', title: 'Show Canvas commands', hint: 'Filter the command palette to Canvas actions', run: () => openCommandPaletteQuery('Canvas') },
-    { id: 'commands-local', icon: 'CMD', title: 'Show Local commands', hint: 'Filter the command palette to Local workspace actions', run: () => openCommandPaletteQuery('Local') },
-    { id: 'commands-layout', icon: 'CMD', title: 'Show Layout commands', hint: 'Filter the command palette to layout and editor view actions', run: () => openCommandPaletteQuery('Layout') },
-    { id: 'commands-diagnostics', icon: 'CMD', title: 'Show Diagnostics commands', hint: 'Filter the command palette to memory, footprint, and runtime actions', run: () => openCommandPaletteQuery('Diagnostics') },
-    { id: 'commands-theme', icon: 'CMD', title: 'Show Theme commands', hint: 'Filter the command palette to lightweight theme and appearance actions', run: () => openCommandPaletteQuery('Theme') },
-    { id: 'commands-trash', icon: 'CMD', title: 'Show Trash commands', hint: 'Filter the command palette to local Trash, restore, cleanup, and report actions', run: () => openCommandPaletteQuery('Trash') },
+    ...COMMAND_CATEGORY_FILTERS.map(([id, label, hint]) => ({ id: `commands-${id}`, icon: 'CMD', title: `Show ${label} commands`, hint: `Filter the command palette to ${hint}`, run: () => openCommandPaletteQuery(label === 'Task' ? 'Tasks' : label) })),
     { id: 'command-guide', icon: 'CG', title: 'Command workflow guide', hint: 'Show categories, recents, bridges, and diagnostics in the command palette', run: showCommandWorkflowGuide },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'local-upgrade-map', icon: 'UP', title: 'Local upgrade map', hint: 'Show local-first feature coverage, footprint budget, and diagnostic shortcuts', run: showUpgradeMap },
@@ -6016,28 +6049,11 @@ function commandItems() {
     { id: 'copy-upgrade-map-csv', icon: 'CUC', title: 'Copy Upgrade Map CSV', hint: 'Copy local-first feature coverage and footprint budget as CSV', run: copyUpgradeMapCsv },
     { id: 'export-upgrade-map-csv', icon: 'EUC', title: 'Export Upgrade Map CSV', hint: 'Download local-first feature coverage and footprint budget as CSV', run: exportUpgradeMapCsv },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
-    { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
-    { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
-    { id: 'search-all', icon: 'SA', title: 'Search all scope', hint: 'Open search across loaded files and the local folder', run: () => openSearchPaletteScope('all') },
-    { id: 'search-markdown', icon: 'SM', title: 'Search Markdown files', hint: 'Open all-source search with type:md prefilled', run: () => openSearchPaletteQuery('all', 'type:md ') },
-    { id: 'search-canvas-files', icon: 'SC', title: 'Search canvas files', hint: 'Open all-source search with type:canvas prefilled', run: () => openSearchPaletteQuery('all', 'type:canvas ') },
-    { id: 'search-text-files', icon: 'ST', title: 'Search text files', hint: 'Open all-source search with type:txt prefilled', run: () => openSearchPaletteQuery('all', 'type:txt ') },
-    { id: 'search-json-files', icon: 'SJ', title: 'Search JSON files', hint: 'Open all-source search with type:json prefilled', run: () => openSearchPaletteQuery('all', 'type:json ') },
-    { id: 'search-pdf-files', icon: 'SP', title: 'Search PDF files', hint: 'Open all-source search with type:pdf prefilled', run: () => openSearchPaletteQuery('all', 'type:pdf ') },
-    { id: 'search-image-files', icon: 'SI', title: 'Search image files', hint: 'Open all-source search with type:image prefilled', run: () => openSearchPaletteQuery('all', 'type:image ') },
-    { id: 'search-title-filter', icon: 'STI', title: 'Search by title', hint: 'Open all-source search with title: prefilled', run: () => openSearchPaletteQuery('all', 'title:') },
-    { id: 'search-path-filter', icon: 'SPA', title: 'Search by path', hint: 'Open all-source search with path: prefilled', run: () => openSearchPaletteQuery('all', 'path:') },
-    { id: 'search-tag-filter', icon: '#', title: 'Search by tag', hint: 'Open all-source search with tag: prefilled', run: () => openSearchPaletteQuery('all', 'tag:') },
-    { id: 'search-exclude-path-filter', icon: '-P', title: 'Search excluding path', hint: 'Open all-source search with -path: prefilled', run: () => openSearchPaletteQuery('all', '-path:') },
-    { id: 'search-exclude-title-filter', icon: '-T', title: 'Search excluding title', hint: 'Open all-source search with -title: prefilled', run: () => openSearchPaletteQuery('all', '-title:') },
-    { id: 'search-exclude-type-filter', icon: '-Y', title: 'Search excluding type', hint: 'Open all-source search with -type: prefilled', run: () => openSearchPaletteQuery('all', '-type:') },
-    { id: 'search-exclude-tag-filter', icon: '-#', title: 'Search excluding tag', hint: 'Open all-source search with -tag: prefilled', run: () => openSearchPaletteQuery('all', '-tag:') },
-    { id: 'search-exclude-archive', icon: '-A', title: 'Search outside archive', hint: 'Open all-source search excluding archive paths', run: () => openSearchPaletteQuery('all', '-path:archive ') },
-    { id: 'search-exclude-done-tasks', icon: '-D', title: 'Search without completed tasks', hint: 'Open all-source search excluding task:done', run: () => openSearchPaletteQuery('all', '-task:done ') },
+    ...SEARCH_SCOPE_COMMANDS.map(([id, icon, title, hint, scope]) => ({ id, icon, title, hint, run: () => openSearchPaletteScope(scope) })),
+    ...SEARCH_QUERY_COMMANDS.map(([id, icon, title, hint, query]) => ({ id, icon, title, hint, run: () => openSearchPaletteQuery('all', query) })),
     { id: 'search-active-title', icon: 'SAT', title: 'Search active title everywhere', hint: 'Search loaded files and the local folder for the active title as an exact phrase', run: searchActiveTitleEverywhere },
     { id: 'search-active-path', icon: 'SAP', title: 'Search active path everywhere', hint: 'Search loaded files and the local folder for the active path as an exact phrase', run: searchActivePathEverywhere },
-    { id: 'search-open-tasks', icon: 'SO', title: 'Search open tasks', hint: 'Open all-source search with task:open prefilled', run: () => openSearchPaletteQuery('all', 'task:open ') },
-    { id: 'search-done-tasks', icon: 'SD', title: 'Search completed tasks', hint: 'Open all-source search with task:done prefilled', run: () => openSearchPaletteQuery('all', 'task:done ') },
+    ...SEARCH_TASK_QUERY_COMMANDS.map(([id, icon, title, hint, query]) => ({ id, icon, title, hint, run: () => openSearchPaletteQuery('all', query) })),
     { id: 'search-selection-all', icon: 'SS', title: 'Search selection everywhere', hint: 'Search loaded files and the local folder for selected text as an exact phrase', run: searchSelectionEverywhere },
     { id: 'search-clipboard-all', icon: 'SCB', title: 'Search clipboard everywhere', hint: 'Search loaded files and the local folder for clipboard text as an exact phrase', run: searchClipboardEverywhere },
     { id: 'search-scope-loaded', icon: 'SL', title: 'Search scope: loaded files', hint: 'Search only files currently open in Markpad', run: () => setSearchScope('loaded') },

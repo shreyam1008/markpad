@@ -359,6 +359,28 @@ func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
 	})
 }
 
+func TestCommandPaletteGeneratedEntriesKeepBundleHeadroom(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(data), []string{
+		"const COMMAND_CATEGORY_FILTERS = [",
+		"const SEARCH_SCOPE_COMMANDS = [",
+		"const SEARCH_QUERY_COMMANDS = [",
+		"const SEARCH_TASK_QUERY_COMMANDS = [",
+		"...COMMAND_CATEGORY_FILTERS.map",
+		"...SEARCH_SCOPE_COMMANDS.map",
+		"...SEARCH_QUERY_COMMANDS.map",
+		"...SEARCH_TASK_QUERY_COMMANDS.map",
+		"openCommandPaletteQuery(label === 'Task' ? 'Tasks' : label)",
+		"openSearchPaletteScope(scope)",
+		"openSearchPaletteQuery('all', query)",
+		"'search-markdown', 'SM', 'Search Markdown files'",
+		"'search-open-tasks', 'SO', 'Search open tasks'",
+	})
+}
+
 func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	indexHTML, err := os.ReadFile("frontend/index.html")
 	if err != nil {
