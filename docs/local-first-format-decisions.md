@@ -36,6 +36,7 @@ Use a Markdown task file as the canonical format.
 - Views: list, calendar, and kanban are projections of the same file.
 - No lock-in: users can edit the task file in any Markdown editor.
 - Diagnostics: Task Source Profile must expose loaded/local counts, due buckets, active filters, generated `tasks.md` size, and export readiness.
+- Main view: summarize visible/total tasks, loaded/local sources, task files, and due buckets from the current parsed Markdown only.
 
 The app may keep a small parsed cache in memory, but it must be disposable and rebuilt from `tasks.md`.
 
