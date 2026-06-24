@@ -4110,6 +4110,17 @@ async function upgradeMapSnapshot() {
   }, {});
   const canvasCamera = canvasSession?.camera || { x: 0, y: 0, scale: 1 };
   const searchCache = loadedSearchCacheFootprint();
+  const undoFootprint = undoHistoryFootprint();
+  const markpadLocalStorageBytes = localStorageMarkpadBytes();
+  const canvasSessionBytes = byteSize(localStorage.getItem(CANVAS_SESSION_KEY) || '');
+  const currentBufferBytes = byteSize(currentContent || '');
+  const loadedReadOnlyCount = cachedNotes.filter(note => isReadOnlyType(getFileType(note.path, note.kind))).length;
+  const loadedEditableCount = Math.max(0, cachedNotes.length - loadedReadOnlyCount);
+  const estimatedUiBytes = markpadLocalStorageBytes
+    + searchCache.bytes
+    + undoFootprint.editorBytes
+    + undoFootprint.canvasBytes
+    + currentBufferBytes;
   const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
   const localResults = searchLastResults.length - loadedResults;
   const searchPlan = parseSearchQuery(searchLastQuery || '');
@@ -4179,6 +4190,25 @@ async function upgradeMapSnapshot() {
         taskFilters: (searchPlan.filters?.task || []).length,
       },
       plannedIndex: 'SQLite FTS5 sidecar, rebuildable later',
+    },
+    footprint: {
+      estimatedUiBytes,
+      localStorageBytes: markpadLocalStorageBytes,
+      searchCacheBytes: searchCache.bytes,
+      searchCacheEntries: searchCache.entries,
+      searchCacheMaxBytes: searchCache.maxBytes,
+      searchCacheMaxEntries: searchCache.maxEntries,
+      currentBufferBytes,
+      loadedNotes: cachedNotes.length,
+      loadedEditable: loadedEditableCount,
+      loadedReadOnly: loadedReadOnlyCount,
+      editorUndoStates: undoFootprint.editorStates,
+      editorUndoBytes: undoFootprint.editorBytes,
+      canvasUndoStates: undoFootprint.canvasStates,
+      canvasUndoBytes: undoFootprint.canvasBytes,
+      canvasDocumentBytes: canvasBytes,
+      canvasSessionBytes,
+      runtimeStatsAvailable: !!window.go?.main?.App?.GetRuntimeStats,
     },
     theme: {
       id: currentTheme,
@@ -4283,6 +4313,7 @@ function upgradeMapMarkdown(snapshot) {
     '## Feature coverage',
     '',
     `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache, ${snapshot.search.operators?.total || 0} query operators (${snapshot.search.operators?.filters || 0} filters, ${snapshot.search.operators?.excludes || 0} excludes)`,
+    `- Footprint: ${formatBytes(snapshot.footprint.estimatedUiBytes || 0)} sampled UI estimate, ${formatBytes(snapshot.footprint.localStorageBytes || 0)} Markpad localStorage, ${snapshot.footprint.editorUndoStates} editor undo / ${snapshot.footprint.canvasUndoStates} canvas undo states, ${snapshot.footprint.loadedNotes} loaded notes`,
     `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.totalThemes} CSS themes (${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark), ${snapshot.theme.recipes} recipes (${snapshot.theme.activeRecipes} active), catalog ${formatBytes(snapshot.theme.catalogBytes || 0)}, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
     `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
@@ -4324,6 +4355,19 @@ function upgradeMapCsv(snapshot) {
     ['search_filter_title', Number(snapshot.search.operators?.titleFilters || 0)],
     ['search_filter_tag', Number(snapshot.search.operators?.tagFilters || 0)],
     ['search_filter_task', Number(snapshot.search.operators?.taskFilters || 0)],
+    ['footprint_estimated_ui_bytes', Number(snapshot.footprint.estimatedUiBytes || 0)],
+    ['footprint_localstorage_bytes', Number(snapshot.footprint.localStorageBytes || 0)],
+    ['footprint_current_buffer_bytes', Number(snapshot.footprint.currentBufferBytes || 0)],
+    ['footprint_loaded_notes', Number(snapshot.footprint.loadedNotes || 0)],
+    ['footprint_loaded_editable', Number(snapshot.footprint.loadedEditable || 0)],
+    ['footprint_loaded_readonly', Number(snapshot.footprint.loadedReadOnly || 0)],
+    ['footprint_editor_undo_states', Number(snapshot.footprint.editorUndoStates || 0)],
+    ['footprint_editor_undo_bytes', Number(snapshot.footprint.editorUndoBytes || 0)],
+    ['footprint_canvas_undo_states', Number(snapshot.footprint.canvasUndoStates || 0)],
+    ['footprint_canvas_undo_bytes', Number(snapshot.footprint.canvasUndoBytes || 0)],
+    ['footprint_canvas_document_bytes', Number(snapshot.footprint.canvasDocumentBytes || 0)],
+    ['footprint_canvas_session_bytes', Number(snapshot.footprint.canvasSessionBytes || 0)],
+    ['footprint_runtime_stats_available', snapshot.footprint.runtimeStatsAvailable ? 'true' : 'false'],
     ['theme_id', snapshot.theme.id],
     ['theme_mode', snapshot.theme.mode],
     ['theme_total', Number(snapshot.theme.totalThemes || 0)],
@@ -4423,6 +4467,8 @@ async function showUpgradeMap() {
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${snapshot.search.operators.total} ops · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.footprint.estimatedUiBytes || 0)}</strong><span>UI footprint</span><small>${formatBytes(snapshot.footprint.localStorageBytes || 0)} localStorage · ${snapshot.footprint.loadedNotes} loaded notes</small></div>
+      <div class="diag-card"><strong>${snapshot.footprint.editorUndoStates}/${snapshot.footprint.canvasUndoStates}</strong><span>Undo states</span><small>${formatBytes((snapshot.footprint.editorUndoBytes || 0) + (snapshot.footprint.canvasUndoBytes || 0))} undo bytes · runtime ${snapshot.footprint.runtimeStatsAvailable ? 'available' : 'unavailable'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.totalThemes} CSS themes · ${snapshot.theme.recipes} recipes · ${snapshot.theme.activeRecipes} active</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
