@@ -81,6 +81,7 @@ let canvasSaveTimer = null;
 let canvasSaveTimerSessionOnly = false;
 let canvasBoundsCache = new WeakMap();
 let canvasRenderFrame = 0;
+let canvasRenderNeedsStatus = false;
 let loadedSearchCacheBytes = 0;
 const loadedSearchCache = new Map();
 
@@ -11672,23 +11673,32 @@ function panCanvasView(dx, dy) {
 }
 
 function renderCanvas(options = {}) {
+  const shouldUpdateStatus = options.status !== false;
   if (options.immediate) {
     if (canvasRenderFrame) {
       cancelAnimationFrame(canvasRenderFrame);
       canvasRenderFrame = 0;
     }
-    renderCanvasNow();
+    canvasRenderNeedsStatus = false;
+    renderCanvasNow({ status: shouldUpdateStatus });
     return;
   }
+  canvasRenderNeedsStatus = canvasRenderNeedsStatus || shouldUpdateStatus;
   if (canvasRenderFrame) return;
   canvasRenderFrame = requestAnimationFrame(() => {
+    const updateStatus = canvasRenderNeedsStatus;
     canvasRenderFrame = 0;
-    renderCanvasNow();
+    canvasRenderNeedsStatus = false;
+    renderCanvasNow({ status: updateStatus });
   });
 }
 
-function renderCanvasNow() {
-  updateCanvasStatus();
+function renderCanvasFast() {
+  renderCanvas({ status: false });
+}
+
+function renderCanvasNow(options = {}) {
+  if (options.status !== false) updateCanvasStatus();
   if (!canvasStage || !canvasDoc || !canvasActive) return;
   const ctx = canvasStage.getContext('2d', { alpha: false });
   const dpr = Math.min(window.devicePixelRatio || 1, CANVAS_DPR_CAP);
@@ -12414,14 +12424,14 @@ canvasStage?.addEventListener('pointermove', (e) => {
     const dy = point.y - canvasMoveStart.point.y;
     canvasMoveStart.moved = canvasMoveStart.moved || Math.hypot(dx, dy) > 0.5;
     canvasDoc.elements[canvasMoveStart.index] = moveCanvasElement(canvasMoveStart.element, dx, dy);
-    renderCanvas();
+    renderCanvasFast();
     return;
   }
   if (canvasPanStart) {
     const camera = canvasCamera();
     camera.x = canvasPanStart.cameraX + (e.clientX - canvasPanStart.x);
     camera.y = canvasPanStart.cameraY + (e.clientY - canvasPanStart.y);
-    renderCanvas();
+    renderCanvasFast();
     return;
   }
   if (!canvasDrawing) return;
@@ -12436,7 +12446,7 @@ canvasStage?.addEventListener('pointermove', (e) => {
   }
   canvasDraftElement = canvasDrawing;
   resetCanvasBoundsCache();
-  renderCanvas();
+  renderCanvasFast();
 });
 
 canvasStage?.addEventListener('pointerup', () => {
@@ -12484,7 +12494,7 @@ canvasStage?.addEventListener('wheel', (e) => {
   camera.x = e.clientX - rect.left - before.x * camera.scale;
   camera.y = e.clientY - rect.top - before.y * camera.scale;
   queueCanvasStateSave({ sessionOnly: true });
-  renderCanvas();
+  renderCanvasFast();
 }, { passive: false });
 
 canvasTextEditor?.addEventListener('keydown', (e) => {

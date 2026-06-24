@@ -189,6 +189,34 @@ func TestCanvasImportCapsContractIsGuarded(t *testing.T) {
 	})
 }
 
+func TestCanvasRenderSchedulingAndBoundsCacheAreGuarded(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"let canvasRenderFrame = 0;",
+		"let canvasRenderNeedsStatus = false;",
+		"function renderCanvas(options = {})",
+		"const shouldUpdateStatus = options.status !== false;",
+		"if (options.immediate) {",
+		"canvasRenderNeedsStatus = canvasRenderNeedsStatus || shouldUpdateStatus;",
+		"if (canvasRenderFrame) return;",
+		"canvasRenderFrame = requestAnimationFrame(() => {",
+		"renderCanvasNow({ status: updateStatus });",
+		"function renderCanvasFast()",
+		"renderCanvas({ status: false });",
+		"if (options.status !== false) updateCanvasStatus();",
+		"function resetCanvasBoundsCache()",
+		"canvasBoundsCache = new WeakMap();",
+		"const cached = canvasBoundsCache.get(el);",
+		"canvasBoundsCache.set(el, bounds);",
+		"canvasDoc.elements.filter(el => canvasElementInViewport(el, view)).forEach(el => renderCanvasElement(ctx, el));",
+	})
+}
+
 func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
 	t.Helper()
 

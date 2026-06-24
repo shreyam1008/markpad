@@ -41,7 +41,7 @@ Updated: 2026-06-24
 - Tasks: rendering should be paged or virtualized before task features expand further.
 - Trash: draft trash has a localStorage byte cap and guardrail coverage; keep manual UI checks around restore/copy before expanding Trash reports.
 - Canvas: import caps now guard JSON size, element count, path points, and embedded files before imported data mutates the canvas.
-- Canvas: bounds caching, render scheduling, and export/import round-trip tests should come before richer adapters.
+- Canvas: bounds caching, viewport culling, requestAnimationFrame render scheduling, and visual-only redraws for continuous interactions are guarded; export/import round-trip tests should come before richer adapters.
 
 ## Working rules for the next phase
 
