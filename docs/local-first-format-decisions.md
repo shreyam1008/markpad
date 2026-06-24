@@ -112,6 +112,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
 - Keep Upgrade Map as a metadata dashboard over existing diagnostics; it must not scan workspaces, load assets, or become a new source of truth.
 - Keep Upgrade Map exports limited to Markdown, JSON, and CSV metadata snapshots; do not include document bodies or deleted draft contents.
+- Let Upgrade Map include saved-file Trash counts, bytes, retention buckets, and next expiry from the existing Trash manifest only.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
