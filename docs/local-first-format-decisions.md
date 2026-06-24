@@ -35,8 +35,11 @@ Use a Markdown task file as the canonical format.
 - Metadata: optional inline attributes after the task text, for example `@due(2026-07-01) @status(todo) @priority(high)`.
 - Views: list, calendar, and kanban are projections of the same file.
 - No lock-in: users can edit the task file in any Markdown editor.
+- Diagnostics: Task Source Profile must expose loaded/local counts, due buckets, active filters, generated `tasks.md` size, and export readiness.
 
 The app may keep a small parsed cache in memory, but it must be disposable and rebuilt from `tasks.md`.
+
+Current v1 implementation note: Markpad recognizes GitHub-style checkbox lines and lightweight tokens such as `due:YYYY-MM-DD`, `!high`, `@waiting`, and `#tag`. List, calendar, kanban, agenda, exports, and canvas boards are derived views over those Markdown lines.
 
 ## Canvas
 
