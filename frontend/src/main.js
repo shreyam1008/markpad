@@ -12383,6 +12383,8 @@ function canvasStorageProfileSnapshot() {
   const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
   const totalElements = (doc.elements || []).length;
   const visibleElements = canvasVisibleElementCount();
+  const elementText = JSON.stringify(doc.elements || []);
+  const elementBytes = byteSize(elementText);
   const elementTypes = (doc.elements || []).reduce((acc, element) => {
     const type = String(element?.type || 'element');
     acc[type] = (acc[type] || 0) + 1;
@@ -12398,6 +12400,8 @@ function canvasStorageProfileSnapshot() {
       key: CANVAS_DOC_KEY,
       bytes: byteSize(documentText),
       elements: totalElements,
+      elementBytes,
+      averageElementBytes: totalElements ? Math.round(elementBytes / totalElements) : 0,
       elementTypes,
       appStateBytes: byteSize(JSON.stringify(doc.appState || {})),
       filesBytes: byteSize(JSON.stringify(doc.files || {})),
@@ -12463,6 +12467,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Key: ${snapshot.document.key}`,
     `- Bytes: ${formatBytes(snapshot.document.bytes || 0)}`,
     `- Elements: ${snapshot.document.elements || 0}`,
+    `- Element JSON: ${formatBytes(snapshot.document.elementBytes || 0)} (${formatBytes(snapshot.document.averageElementBytes || 0)} average)`,
     `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? snapshot.document.elements || 0}/${snapshot.virtualization?.totalElements ?? snapshot.document.elements || 0}`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
@@ -12512,6 +12517,8 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['document_key', snapshot.document.key],
     ['document_bytes', Number(snapshot.document.bytes || 0)],
     ['document_elements', Number(snapshot.document.elements || 0)],
+    ['document_element_bytes', Number(snapshot.document.elementBytes || 0)],
+    ['document_average_element_bytes', Number(snapshot.document.averageElementBytes || 0)],
     ['viewport_visible_elements', Number(snapshot.virtualization?.visibleElements || 0)],
     ['viewport_culled_elements', Number(snapshot.virtualization?.culledElements || 0)],
     ['viewport_padding', Number(snapshot.virtualization?.viewportPadding || 0)],
@@ -12541,6 +12548,7 @@ function showCanvasStorageProfile() {
   showModal('Canvas Storage Profile', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${formatBytes(snapshot.document.bytes || 0)}</strong><span>Document JSON</span><small>${snapshot.document.elements || 0} elements · ${escapeHtml(snapshot.document.key)}</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.document.averageElementBytes || 0)}</strong><span>Avg element</span><small>${formatBytes(snapshot.document.elementBytes || 0)} element JSON</small></div>
       <div class="diag-card"><strong>${snapshot.virtualization.visibleElements}/${snapshot.virtualization.totalElements}</strong><span>Viewport draw</span><small>${snapshot.virtualization.culledElements} culled · ${snapshot.virtualization.viewportPadding}px pad</small></div>
       <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
