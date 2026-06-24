@@ -1088,7 +1088,52 @@ body.markpad-compact #modal-body {
   padding: 0 1px;
   font-weight: 900;
 }
-.search-empty { color: var(--muted); text-align: center; padding: 28px 16px; font-size: 13px; }
+.search-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 28px 16px;
+  font-size: 13px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.search-empty strong {
+  color: var(--text);
+  font-size: 14px;
+}
+.search-empty code {
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: var(--editor);
+  color: var(--text);
+  padding: 1px 5px;
+  font-size: 11px;
+}
+.search-empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.search-empty-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.search-empty-chip.active,
+.search-empty-chip:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--editor));
+  color: var(--accent);
+}
+.search-empty-chip.action {
+  color: var(--text);
+}
 
 /* Command palette */
 .command-backdrop {

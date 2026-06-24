@@ -2780,6 +2780,31 @@ function renderSearchResultStrip(results, query) {
   `;
 }
 
+function searchEmptyHtml(message, query = searchLastQuery) {
+  const scopeButtons = [
+    ['loaded', 'Loaded'],
+    ['local', 'Local folder'],
+    ['all', 'All local'],
+  ].map(([scope, label]) => `<button type="button" class="search-empty-chip${searchScope === scope ? ' active' : ''}" data-search-empty-scope="${scope}">${label}</button>`)
+    .join('');
+  const actionButtons = [
+    ['profile', 'Search Profile'],
+    ['inspector', 'Query Inspector'],
+    ['current', 'Current File'],
+    ['cache', 'Clear Cache'],
+  ].map(([action, label]) => `<button type="button" class="search-empty-chip action" data-search-empty-action="${action}">${label}</button>`)
+    .join('');
+  const queryLine = query ? `<span>Query: <code>${escapeHtml(query)}</code></span>` : '<span>Try a phrase, type:md, tag:idea, task:open, or a wider scope.</span>';
+  return `
+    <div class="search-empty">
+      <strong>${escapeHtml(message)}</strong>
+      ${queryLine}
+      <div class="search-empty-actions">${scopeButtons}</div>
+      <div class="search-empty-actions">${actionButtons}</div>
+    </div>
+  `;
+}
+
 async function copySearchProfileMarkdown() {
   await navigator.clipboard.writeText(searchProfileMarkdown());
   statusText.textContent = 'Search profile copied as Markdown';
@@ -3384,7 +3409,7 @@ async function runLocalFolderSearch(query, token) {
   const pack = await collectLocalSearchResults(query, token, 60);
   if (token !== searchToken) return;
   if (pack.message) {
-    searchResults.innerHTML = `<div class="search-empty">${escapeHtml(pack.message)}</div>`;
+    searchResults.innerHTML = searchEmptyHtml(pack.message, query);
     searchMeta.textContent = pack.meta || 'Local folder search unavailable';
     return;
   }
@@ -3528,7 +3553,7 @@ function renderSearchResults(results, query) {
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!results.length) {
-    searchResults.insertAdjacentHTML('beforeend', `<div class="search-empty">${searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.'}</div>`);
+    searchResults.insertAdjacentHTML('beforeend', searchEmptyHtml(searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.', trimmedQuery));
     return;
   }
   results.forEach((result, index) => {
@@ -3923,6 +3948,30 @@ function setSearchActive(index) {
   searchActiveIndex = index;
   [...searchResults.querySelectorAll('.search-row')].forEach((row, i) => row.classList.toggle('active', i === index));
 }
+
+searchResults?.addEventListener('click', (event) => {
+  const scope = event.target.closest('[data-search-empty-scope]');
+  if (scope) {
+    openSearchPaletteScope(scope.dataset.searchEmptyScope || 'loaded');
+    return;
+  }
+  const action = event.target.closest('[data-search-empty-action]');
+  if (!action) return;
+  switch (action.dataset.searchEmptyAction) {
+    case 'profile':
+      showSearchProfile();
+      break;
+    case 'inspector':
+      showSearchQueryInspector();
+      break;
+    case 'current':
+      showCurrentFileSearch(searchLastQuery || '');
+      break;
+    case 'cache':
+      clearLoadedSearchCacheAction();
+      break;
+  }
+});
 
 function queueLoadedSearch() {
   clearTimeout(searchTimer);
