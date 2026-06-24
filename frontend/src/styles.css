@@ -1843,6 +1843,8 @@ body.markpad-compact #modal-body {
 .task-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .task-pill { border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; background: var(--surface); }
 .task-provenance { border-style: dashed; color: var(--text-subtle); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-provenance.local { border-color: #2f6f61; background: color-mix(in srgb, #2f6f61 8%, var(--surface)); }
+.task-provenance.loaded { border-color: var(--accent-soft); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
 .task-priority-pill { font-weight: 950; }
 .task-priority-pill.urgent,
 .task-priority-pill.high { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }

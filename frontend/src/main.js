@@ -8132,7 +8132,7 @@ function taskDueBadge(task) {
 function taskMeta(task) {
   const bits = [];
   const provenance = taskProvenance(task);
-  if (provenance) bits.push(`<span class="task-pill task-provenance">${escapeHtml(provenance)}</span>`);
+  if (provenance) bits.push(`<span class="task-pill task-provenance ${task.local ? 'local' : 'loaded'}">${escapeHtml(provenance)}</span>`);
   if (task.due) bits.push(`<span class="task-pill">due ${escapeHtml(task.due)}</span>`);
   const dueBadge = taskDueBadge(task);
   if (dueBadge) bits.push(dueBadge);
