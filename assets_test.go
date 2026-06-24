@@ -3,6 +3,7 @@ package main
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,12 @@ var hostedTaskVendorMarkers = []string{
 	"trello.com/1/",
 }
 
+const (
+	frontendBundledAssetTotalMaxBytes = 128 * 1024
+	frontendRasterAssetMaxBytes       = 48 * 1024
+	frontendVectorAssetMaxBytes       = 16 * 1024
+)
+
 func TestEmbeddedFrontendAssetsExposeIndexAtRoot(t *testing.T) {
 	frontendAssets, err := fs.Sub(assets, "frontend")
 	if err != nil {
@@ -113,6 +120,29 @@ func TestTaskSystemKeepsPortableMarkdownContract(t *testing.T) {
 	walkStaticTextFiles(t, "frontend", func(path, text string) {
 		assertTextOmits(t, path, text, hostedTaskVendorMarkers)
 	})
+}
+
+func TestFrontendAvoidsHeavyBundledAssets(t *testing.T) {
+	var total int64
+	walkFrontendAssetFiles(t, func(path string, info fs.FileInfo) {
+		ext := strings.ToLower(filepath.Ext(path))
+		total += info.Size()
+		switch ext {
+		case ".woff", ".woff2", ".ttf", ".otf", ".eot":
+			t.Fatalf("%s is a bundled font asset; use CSS variables, text labels, or tiny inline SVG instead", path)
+		case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico":
+			if info.Size() > frontendRasterAssetMaxBytes {
+				t.Fatalf("%s is %d bytes, max raster asset budget is %d bytes", path, info.Size(), frontendRasterAssetMaxBytes)
+			}
+		case ".svg":
+			if info.Size() > frontendVectorAssetMaxBytes {
+				t.Fatalf("%s is %d bytes, max SVG asset budget is %d bytes", path, info.Size(), frontendVectorAssetMaxBytes)
+			}
+		}
+	})
+	if total > frontendBundledAssetTotalMaxBytes {
+		t.Fatalf("frontend bundled visual assets total %d bytes, max %d bytes", total, frontendBundledAssetTotalMaxBytes)
+	}
 }
 
 func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
@@ -166,6 +196,36 @@ func walkStaticTextFiles(t *testing.T, root string, check func(path, text string
 	}
 }
 
+func walkFrontendAssetFiles(t *testing.T, check func(path string, info fs.FileInfo)) {
+	t.Helper()
+
+	rootFS := os.DirFS("frontend")
+	if err := fs.WalkDir(rootFS, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case ".vite", "build", "dist", "node_modules", "wailsjs":
+				return fs.SkipDir
+			default:
+				return nil
+			}
+		}
+		if !isBundledVisualAssetFile(path) {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		check("frontend/"+strings.TrimPrefix(path, "./"), info)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func isStaticTextFile(path string) bool {
 	for _, suffix := range []string{
 		".css",
@@ -183,4 +243,13 @@ func isStaticTextFile(path string) bool {
 		}
 	}
 	return false
+}
+
+func isBundledVisualAssetFile(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".bmp", ".eot", ".gif", ".ico", ".jpeg", ".jpg", ".otf", ".png", ".svg", ".ttf", ".webp", ".woff", ".woff2":
+		return true
+	default:
+		return false
+	}
 }
