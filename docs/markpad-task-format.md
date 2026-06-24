@@ -34,7 +34,7 @@ Supported checkbox markers:
 - List view sorts and filters Markdown task lines.
 - Calendar view groups tasks by `due:` date.
 - Kanban view groups the same Markdown tasks by status and priority.
-- Canvas export creates editable local canvas cards but does not rewrite the Markdown task source.
+- Canvas export creates editable local sticky-note cards but does not rewrite the Markdown task source.
 
 ## Export formats
 
