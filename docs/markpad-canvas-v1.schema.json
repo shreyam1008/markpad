@@ -6,6 +6,21 @@
   "type": "object",
   "required": ["type", "version", "schema", "source", "elements", "appState", "files"],
   "additionalProperties": true,
+  "not": {
+    "anyOf": [
+      { "required": ["camera"] },
+      { "required": ["selection"] },
+      { "required": ["tool"] },
+      { "required": ["grid"] },
+      { "required": ["snap"] },
+      { "required": ["minimap"] },
+      { "required": ["undo"] },
+      { "required": ["history"] },
+      { "required": ["cachedBounds"] },
+      { "required": ["rasterPreview"] },
+      { "required": ["spatialIndex"] }
+    ]
+  },
   "properties": {
     "type": {
       "const": "markpad-canvas"
@@ -50,6 +65,21 @@
     "appState": {
       "type": "object",
       "additionalProperties": true,
+      "not": {
+        "anyOf": [
+          { "required": ["camera"] },
+          { "required": ["selection"] },
+          { "required": ["tool"] },
+          { "required": ["grid"] },
+          { "required": ["snap"] },
+          { "required": ["minimap"] },
+          { "required": ["undo"] },
+          { "required": ["history"] },
+          { "required": ["cachedBounds"] },
+          { "required": ["rasterPreview"] },
+          { "required": ["spatialIndex"] }
+        ]
+      },
       "properties": {
         "viewBackgroundColor": {
           "type": "string",

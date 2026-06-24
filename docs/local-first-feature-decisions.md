@@ -62,7 +62,8 @@ The current goal is a lightweight local infinite canvas, not a full whiteboard r
 
 Initial implementation constraints:
 
-- Store canvas files as versioned JSON with `type`, `version`, `app`, `elements`, and viewport/session metadata.
+- Store canvas files as versioned JSON with `type`, `version`, `schema`, `source`, `elements`, `appState`, and `files`.
+- Do not store `camera`, `tool`, `selection`, `grid`, `snap`, `minimap`, `undo`, `history`, `cachedBounds`, `rasterPreview`, or `spatialIndex` in the portable document.
 - Keep embedded image assets external or separately capped; do not inline large blobs by default.
 - Cache element bounds and schedule renders with `requestAnimationFrame` before adding heavier features.
 - Add Excalidraw import/export later if users need interoperability.
