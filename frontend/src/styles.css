@@ -3840,6 +3840,15 @@ body.markpad-focus #note-title::after {
 #resize-divider {
   position: relative;
 }
+#resize-divider:hover,
+#resize-divider:focus-visible {
+  background: color-mix(in srgb, var(--accent) 58%, var(--border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+#resize-divider:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 72%, var(--text));
+  outline-offset: 3px;
+}
 #resize-divider::before {
   content: attr(data-split-label);
   position: absolute;
@@ -3865,6 +3874,12 @@ body.markpad-focus #note-title::after {
   opacity: .68;
 }
 #resize-divider[data-split-label]:hover::before {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--editor);
+}
+#resize-divider[data-split-label]:focus-visible::before {
   opacity: 1;
   color: var(--accent);
   border-color: var(--accent);

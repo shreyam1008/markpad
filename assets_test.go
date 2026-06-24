@@ -851,6 +851,8 @@ func TestSplitViewControlsStayPolishedAndLightweight(t *testing.T) {
 		".split-live-chip::before",
 		`content: "Split";`,
 		"#resize-divider[data-split-label]::before",
+		"#resize-divider:focus-visible",
+		"#resize-divider[data-split-label]:focus-visible::before",
 		"#resize-divider::after",
 		"repeating-linear-gradient(",
 	})
