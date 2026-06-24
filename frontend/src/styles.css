@@ -1637,12 +1637,20 @@ body.markpad-compact #modal-body {
   border-bottom: 1px solid var(--border-soft);
   background: color-mix(in srgb, var(--editor) 92%, var(--accent) 8%);
 }
-.search-filter-hints span {
+.search-filter-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--muted);
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .08em;
+}
+.search-filter-group-label:not(:first-child) {
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-soft);
 }
 .search-filter-hints button {
   border: 1px solid var(--border-soft);
@@ -1654,7 +1662,8 @@ body.markpad-compact #modal-body {
   font-weight: 850;
   cursor: pointer;
 }
-.search-filter-hints button:hover {
+.search-filter-hints button:hover,
+.search-filter-hints button:focus-visible {
   border-color: var(--accent);
   background: var(--hover);
   color: var(--text);

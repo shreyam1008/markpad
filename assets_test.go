@@ -409,6 +409,38 @@ func TestSearchEmptyStateGuidesNextMoves(t *testing.T) {
 	})
 }
 
+func TestSearchSyntaxStripStaysStaticAndLocalFirst(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`id="search-filter-hints"`,
+		`aria-label="Local search syntax examples"`,
+		`class="search-filter-group-label">Filters</span>`,
+		`class="search-filter-group-label">Patterns</span>`,
+		`data-search-example="type:md"`,
+		`data-search-example="path:notes"`,
+		`data-search-example="title:"`,
+		`data-search-example="tag:idea"`,
+		`data-search-example="task:open"`,
+		`data-search-example="task:done"`,
+		`data-search-example="&quot;exact phrase&quot;"`,
+		`data-search-example="-path:archive"`,
+		`data-search-example="-task:done"`,
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".search-filter-group-label",
+		".search-filter-group-label:not(:first-child)",
+		".search-filter-hints button:focus-visible",
+	})
+}
+
 func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	indexHTML, err := os.ReadFile("frontend/index.html")
 	if err != nil {
