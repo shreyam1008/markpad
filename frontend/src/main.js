@@ -4395,6 +4395,10 @@ function commandItems() {
     { id: 'tasks-export-source-md', icon: 'ESM', title: 'Export task source Markdown', hint: 'Download visible tasks as a clean editable tasks.md source file', run: exportTasksSourceMarkdown },
     { id: 'tasks-copy-starter-md', icon: 'CSF', title: 'Copy tasks.md starter', hint: 'Copy a portable Markdown task-file starter', run: copyTaskFileStarterMarkdown },
     { id: 'tasks-export-starter-md', icon: 'ESF', title: 'Export tasks.md starter', hint: 'Download a portable Markdown task-file starter', run: exportTaskFileStarterMarkdown },
+    { id: 'tasks-source-profile', icon: 'TSP', title: 'Task source profile', hint: 'Show task source counts, filters, due buckets, and portable export readiness', run: showTaskSourceProfile },
+    { id: 'tasks-copy-source-profile', icon: 'TDM', title: 'Copy task source profile', hint: 'Copy task source diagnostics as Markdown', run: copyTaskSourceProfileMarkdown },
+    { id: 'tasks-export-source-profile', icon: 'TEM', title: 'Export task source profile', hint: 'Download task source diagnostics as Markdown', run: exportTaskSourceProfileMarkdown },
+    { id: 'tasks-export-source-profile-json', icon: 'TEJ', title: 'Export task source profile JSON', hint: 'Download task source diagnostics as JSON', run: exportTaskSourceProfileJson },
     { id: 'tasks-to-canvas', icon: 'T2C', title: 'Send visible tasks to canvas', hint: 'Append the current filtered task view as a lightweight canvas board', run: insertVisibleTasksCanvasBoard },
     { id: 'task-agenda-to-canvas', icon: 'A2C', title: 'Send task agenda to canvas', hint: 'Append overdue, today, waiting, and high-priority tasks as a lightweight canvas board', run: insertTaskAgendaCanvasBoard },
     { id: 'tasks-to-canvas-guide', icon: 'TCG', title: 'Task canvas guide', hint: 'Explain task-to-canvas filters, 24-task cap, local JSON cards, and Markdown source of truth', run: showTaskCanvasGuide },
@@ -6296,6 +6300,7 @@ function showTaskSyntaxHelp() {
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-task-file-setup>Task file setup</button>
+      <button data-task-source-profile>Source profile</button>
       <button data-task-file-inbox>Create inbox starter</button>
       <button data-task-file-weekly>Weekly starter</button>
       <button data-task-file-copy-starter>Copy tasks.md starter</button>
@@ -6331,6 +6336,7 @@ function showTaskFileSetup() {
       <button data-task-file-review>Review starter</button>
       <button data-task-file-quick>Quick task</button>
       <button data-task-file-open-view>Open task views</button>
+      <button data-task-source-profile>Source profile</button>
       <button data-task-file-copy-starter>Copy tasks.md starter</button>
       <button data-task-file-export-starter>Export tasks.md starter</button>
       <button data-task-copy-source-md>Copy source MD</button>
@@ -6969,6 +6975,7 @@ async function showTasksView(mode = taskViewMode) {
       <button class="task-tab" data-task-agenda>Agenda</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
+        <button class="task-tab" data-task-source-profile>Source Profile</button>
         <button class="task-tab" data-task-export-md>Export MD</button>
         <button class="task-tab" data-task-copy-source-md>Copy Source MD</button>
         <button class="task-tab" data-task-export-source-md>Export Source MD</button>
@@ -7767,6 +7774,235 @@ async function exportTaskViewSummaryCsv() {
   const tasks = visibleTasksForView(latestTasks.length ? latestTasks : await collectLoadedTasks());
   downloadText('markpad-task-view-summary.csv', 'text/csv', taskViewSummaryCsvText(taskViewSummarySnapshot(tasks)));
   statusText.textContent = 'Task view summary exported as CSV';
+}
+
+function taskDueBucket(task) {
+  if (task.checked) return 'done';
+  if (!task.due) return 'unscheduled';
+  const today = todayKey();
+  if (task.due < today) return 'overdue';
+  if (task.due === today) return 'today';
+  if (task.due === tomorrowKey()) return 'tomorrow';
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 7);
+  endDate.setMinutes(endDate.getMinutes() - endDate.getTimezoneOffset());
+  return task.due <= endDate.toISOString().slice(0, 10) ? 'week' : 'later';
+}
+
+function taskSourceProfileSnapshot(allTasks, visibleTasks) {
+  const tasks = Array.isArray(allTasks) ? allTasks : [];
+  const visible = Array.isArray(visibleTasks) ? visibleTasks : visibleTasksForView(tasks);
+  const sourceFiles = new Set(tasks.map(task => task.path || 'Draft'));
+  const loadedFiles = new Set(tasks.filter(task => !task.local).map(task => task.path || 'Draft'));
+  const localFiles = new Set(tasks.filter(task => task.local).map(task => task.path || 'Local'));
+  const dueBuckets = tasks.reduce((acc, task) => {
+    const key = taskDueBucket(task);
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, { overdue: 0, today: 0, tomorrow: 0, week: 0, later: 0, unscheduled: 0, done: 0 });
+  const priorityBuckets = tasks.reduce((acc, task) => {
+    const key = taskPriorityBucket(task);
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, { high: 0, medium: 0, normal: 0, low: 0 });
+  const target = findTaskTargetNote();
+  const sourceMarkdown = tasksToSourceMarkdown(visible);
+  return {
+    type: 'markpad-task-source-profile',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    view: {
+      mode: taskViewMode,
+      source: taskSourceFilter,
+      filter: taskFilter,
+      query: taskQuery || '',
+      visible: visible.length,
+    },
+    counts: {
+      total: tasks.length,
+      open: tasks.filter(task => !task.checked).length,
+      done: tasks.filter(task => task.checked).length,
+      waiting: tasks.filter(task => !task.checked && task.waiting).length,
+      high: tasks.filter(isHighPriorityTask).length,
+      loaded: tasks.filter(task => !task.local).length,
+      local: tasks.filter(task => task.local).length,
+      sourceFiles: sourceFiles.size,
+      loadedFiles: loadedFiles.size,
+      localFiles: localFiles.size,
+    },
+    dueBuckets,
+    priorityBuckets,
+    taskFile: target ? {
+      found: true,
+      title: target.title || basename(target.path || '') || 'Tasks',
+      path: target.path || 'Draft',
+      active: target.id === activeId,
+    } : {
+      found: false,
+      title: '',
+      path: '',
+      active: false,
+    },
+    formats: {
+      source: 'GitHub-style Markdown checkboxes in tasks.md',
+      metadata: ['due:YYYY-MM-DD', '!high', '!medium', '!low', '@waiting', '#tag'],
+      views: ['list', 'calendar', 'kanban'],
+      exports: ['tasks.md', 'Markdown report', 'JSON', 'CSV', 'ICS', 'Todo.txt', 'canvas board'],
+      generatedSourceBytes: byteSize(sourceMarkdown),
+    },
+    backend: {
+      localFolderTasks: !!window.go?.main?.App?.ListLocalFolderTasks,
+      appendLocalFolderTask: !!window.go?.main?.App?.AppendLocalFolderTask,
+    },
+    note: 'Task views are derived from Markdown checkbox lines; Markpad does not create a hidden task database.',
+  };
+}
+
+async function currentTaskSourceProfileSnapshot() {
+  const allTasks = await collectLoadedTasks();
+  return taskSourceProfileSnapshot(allTasks, visibleTasksForView(allTasks));
+}
+
+function taskSourceProfileMarkdown(snapshot) {
+  return [
+    '# Markpad Task Source Profile',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    `View: ${snapshot.view.mode}`,
+    `Source filter: ${snapshot.view.source}`,
+    `Status filter: ${snapshot.view.filter}`,
+    `Query: ${snapshot.view.query || '(none)'}`,
+    `Visible: ${snapshot.view.visible}`,
+    '',
+    '## Counts',
+    '',
+    `- Total tasks: ${snapshot.counts.total}`,
+    `- Open: ${snapshot.counts.open}`,
+    `- Done: ${snapshot.counts.done}`,
+    `- Waiting: ${snapshot.counts.waiting}`,
+    `- High priority: ${snapshot.counts.high}`,
+    `- Loaded/local: ${snapshot.counts.loaded}/${snapshot.counts.local}`,
+    `- Source files: ${snapshot.counts.sourceFiles} (${snapshot.counts.loadedFiles} loaded, ${snapshot.counts.localFiles} local)`,
+    '',
+    '## Due buckets',
+    '',
+    `- Overdue: ${snapshot.dueBuckets.overdue || 0}`,
+    `- Today: ${snapshot.dueBuckets.today || 0}`,
+    `- Tomorrow: ${snapshot.dueBuckets.tomorrow || 0}`,
+    `- This week: ${snapshot.dueBuckets.week || 0}`,
+    `- Later: ${snapshot.dueBuckets.later || 0}`,
+    `- Unscheduled: ${snapshot.dueBuckets.unscheduled || 0}`,
+    '',
+    '## Portable source',
+    '',
+    `- Task file: ${snapshot.taskFile.found ? `${snapshot.taskFile.title} (${snapshot.taskFile.path})` : 'not currently loaded'}`,
+    `- Source format: ${snapshot.formats.source}`,
+    `- Metadata tokens: ${snapshot.formats.metadata.join(', ')}`,
+    `- Views: ${snapshot.formats.views.join(', ')}`,
+    `- Exports: ${snapshot.formats.exports.join(', ')}`,
+    `- Generated visible tasks.md size: ${formatBytes(snapshot.formats.generatedSourceBytes || 0)}`,
+    '',
+    '## Backend bridges',
+    '',
+    `- Local folder task scan: ${snapshot.backend.localFolderTasks ? 'available' : 'unavailable'}`,
+    `- Append local folder task: ${snapshot.backend.appendLocalFolderTask ? 'available' : 'unavailable'}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function taskSourceProfileJson(snapshot) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function taskSourceProfileCsv(snapshot) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['view_mode', snapshot.view.mode],
+    ['source_filter', snapshot.view.source],
+    ['status_filter', snapshot.view.filter],
+    ['query', snapshot.view.query || ''],
+    ['visible', Number(snapshot.view.visible || 0)],
+    ['total', Number(snapshot.counts.total || 0)],
+    ['open', Number(snapshot.counts.open || 0)],
+    ['done', Number(snapshot.counts.done || 0)],
+    ['waiting', Number(snapshot.counts.waiting || 0)],
+    ['high', Number(snapshot.counts.high || 0)],
+    ['loaded', Number(snapshot.counts.loaded || 0)],
+    ['local', Number(snapshot.counts.local || 0)],
+    ['source_files', Number(snapshot.counts.sourceFiles || 0)],
+    ['due_overdue', Number(snapshot.dueBuckets.overdue || 0)],
+    ['due_today', Number(snapshot.dueBuckets.today || 0)],
+    ['due_tomorrow', Number(snapshot.dueBuckets.tomorrow || 0)],
+    ['due_week', Number(snapshot.dueBuckets.week || 0)],
+    ['due_later', Number(snapshot.dueBuckets.later || 0)],
+    ['due_unscheduled', Number(snapshot.dueBuckets.unscheduled || 0)],
+    ['task_file_found', snapshot.taskFile.found ? 'true' : 'false'],
+    ['task_file_path', snapshot.taskFile.path || ''],
+    ['generated_source_bytes', Number(snapshot.formats.generatedSourceBytes || 0)],
+    ['local_folder_task_scan', snapshot.backend.localFolderTasks ? 'true' : 'false'],
+    ['append_local_folder_task', snapshot.backend.appendLocalFolderTask ? 'true' : 'false'],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+async function showTaskSourceProfile() {
+  const snapshot = await currentTaskSourceProfileSnapshot();
+  showModal('Task Source Profile', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${snapshot.counts.total}</strong><span>Total tasks</span><small>${snapshot.counts.open} open · ${snapshot.counts.done} done</small></div>
+      <div class="diag-card"><strong>${snapshot.view.visible}</strong><span>Visible now</span><small>${escapeHtml(snapshot.view.source)} · ${escapeHtml(snapshot.view.filter)}${snapshot.view.query ? ` · ${escapeHtml(snapshot.view.query)}` : ''}</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.loaded}/${snapshot.counts.local}</strong><span>Loaded/local</span><small>${snapshot.counts.sourceFiles} source file${snapshot.counts.sourceFiles === 1 ? '' : 's'}</small></div>
+      <div class="diag-card"><strong>${snapshot.dueBuckets.overdue || 0}</strong><span>Overdue</span><small>${snapshot.dueBuckets.today || 0} today · ${snapshot.dueBuckets.week || 0} this week</small></div>
+      <div class="diag-card"><strong>${snapshot.counts.waiting}</strong><span>Waiting</span><small>${snapshot.counts.high} high priority</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.formats.generatedSourceBytes || 0)}</strong><span>Visible tasks.md</span><small>Clean editable source export</small></div>
+      <div class="diag-card"><strong>${snapshot.taskFile.found ? 'found' : 'missing'}</strong><span>Task file</span><small>${escapeHtml(snapshot.taskFile.path || 'Use setup or starter')}</small></div>
+      <div class="diag-card"><strong>${snapshot.backend.localFolderTasks ? 'yes' : 'no'}</strong><span>Local scan bridge</span><small>${snapshot.backend.appendLocalFolderTask ? 'append available' : 'append fallback to draft'}</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-task-source-profile-md>Copy MD</button>
+      <button data-export-task-source-profile-md>Export MD</button>
+      <button data-copy-task-source-profile-json>Copy JSON</button>
+      <button data-export-task-source-profile-json>Export JSON</button>
+      <button data-copy-task-source-profile-csv>Copy CSV</button>
+      <button data-export-task-source-profile-csv>Export CSV</button>
+      <button data-task-export-source-md>Export Source MD</button>
+      <button data-task-file-setup>Task File Setup</button>
+    </div>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+  `, true);
+}
+
+async function copyTaskSourceProfileMarkdown() {
+  await navigator.clipboard.writeText(taskSourceProfileMarkdown(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile copied as Markdown';
+}
+
+async function exportTaskSourceProfileMarkdown() {
+  downloadText('markpad-task-source-profile.md', 'text/markdown', taskSourceProfileMarkdown(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile exported as Markdown';
+}
+
+async function copyTaskSourceProfileJson() {
+  await navigator.clipboard.writeText(taskSourceProfileJson(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile copied as JSON';
+}
+
+async function exportTaskSourceProfileJson() {
+  downloadText('markpad-task-source-profile.json', 'application/json', taskSourceProfileJson(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile exported as JSON';
+}
+
+async function copyTaskSourceProfileCsv() {
+  await navigator.clipboard.writeText(taskSourceProfileCsv(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile copied as CSV';
+}
+
+async function exportTaskSourceProfileCsv() {
+  downloadText('markpad-task-source-profile.csv', 'text/csv', taskSourceProfileCsv(await currentTaskSourceProfileSnapshot()));
+  statusText.textContent = 'Task source profile exported as CSV';
 }
 
 function toggleTaskAtIndex(markdown, taskIndex, checked) {
@@ -12199,6 +12435,20 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskAdd) await addQuickTask();
   const taskFormat = e.target.closest('[data-task-format]');
   if (taskFormat) showTaskSyntaxHelp();
+  const taskSourceProfile = e.target.closest('[data-task-source-profile]');
+  if (taskSourceProfile) await showTaskSourceProfile();
+  const copyTaskSourceProfileMd = e.target.closest('[data-copy-task-source-profile-md]');
+  if (copyTaskSourceProfileMd) await copyTaskSourceProfileMarkdown();
+  const exportTaskSourceProfileMd = e.target.closest('[data-export-task-source-profile-md]');
+  if (exportTaskSourceProfileMd) await exportTaskSourceProfileMarkdown();
+  const copyTaskSourceProfileJson = e.target.closest('[data-copy-task-source-profile-json]');
+  if (copyTaskSourceProfileJson) await copyTaskSourceProfileJson();
+  const exportTaskSourceProfileJson = e.target.closest('[data-export-task-source-profile-json]');
+  if (exportTaskSourceProfileJson) await exportTaskSourceProfileJson();
+  const copyTaskSourceProfileCsv = e.target.closest('[data-copy-task-source-profile-csv]');
+  if (copyTaskSourceProfileCsv) await copyTaskSourceProfileCsv();
+  const exportTaskSourceProfileCsv = e.target.closest('[data-export-task-source-profile-csv]');
+  if (exportTaskSourceProfileCsv) await exportTaskSourceProfileCsv();
   const taskExportMd = e.target.closest('[data-task-export-md]');
   if (taskExportMd) await exportTasksMarkdown();
   const taskCopySourceMd = e.target.closest('[data-task-copy-source-md]');
