@@ -54,7 +54,7 @@ These are product targets, not promises for every development build:
 - Polish should come from spacing, typography, hover states, command discoverability, and predictable layout, not heavy frameworks.
 - Theme additions should be CSS-variable-only.
 - Theme badges should use text and CSS pseudo-elements rather than icon fonts or image assets.
-- Split/edit controls should remain keyboard-accessible and work without modal-heavy workflows.
+- Split/edit controls should remain keyboard-accessible, expose pressed/active state, and work without modal-heavy workflows.
 - Empty states and guides should explain local behavior instead of hiding complexity behind opaque automation.
 
 ## Cleanup and diagnostics
