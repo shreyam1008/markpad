@@ -2635,6 +2635,47 @@ body.markpad-compact #modal-body {
 .task-board-row .task-row {
   margin: 0;
 }
+.task-board .task-col {
+  position: relative;
+  overflow: hidden;
+}
+.task-board .task-col::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: color-mix(in srgb, var(--accent) 34%, var(--border-soft));
+  opacity: .86;
+}
+.task-board .task-col:nth-child(1)::before,
+.task-board .task-col:nth-child(1) h4::before {
+  background: #c57933;
+}
+.task-board .task-col:nth-child(2)::before,
+.task-board .task-col:nth-child(2) h4::before {
+  background: var(--accent);
+}
+.task-board .task-col:nth-child(3)::before,
+.task-board .task-col:nth-child(3) h4::before {
+  background: #6f8f61;
+}
+.task-board .task-col:nth-child(4)::before,
+.task-board .task-col:nth-child(4) h4::before {
+  background: var(--muted);
+}
+.task-board .task-col h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.task-board .task-col h4::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+  flex: 0 0 auto;
+}
 .task-board-actions {
   display: flex;
   align-items: center;

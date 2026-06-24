@@ -300,6 +300,9 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 	}
 	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
 		".task-board-row",
+		".task-board .task-col::before",
+		".task-board .task-col:nth-child(1)::before",
+		".task-board .task-col:nth-child(4) h4::before",
 		".task-board-actions",
 		".task-board-actions button.active",
 		".task-board-actions button:disabled",
