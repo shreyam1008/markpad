@@ -66,6 +66,7 @@ let canvasPanStart = null;
 let canvasMoveStart = null;
 let canvasSelectedIndex = -1;
 let canvasClipboard = null;
+let canvasStyleClipboard = null;
 let canvasTextTarget = null;
 let canvasHistory = [];
 let canvasHistoryIndex = -1;
@@ -4218,6 +4219,8 @@ function commandItems() {
     { id: 'canvas-layer-back', icon: 'TB', title: 'Canvas send to back', hint: 'Move the selected canvas element behind all others', run: () => moveSelectedCanvasLayer('back') },
     { id: 'canvas-stroke-up', icon: 'W+', title: 'Canvas stroke thicker', hint: 'Increase the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(1) },
     { id: 'canvas-stroke-down', icon: 'W-', title: 'Canvas stroke thinner', hint: 'Decrease the selected canvas element stroke width', run: () => adjustSelectedCanvasWidth(-1) },
+    { id: 'canvas-copy-style', icon: 'CST', title: 'Copy selected canvas style', hint: 'Copy selected canvas stroke color and width', run: copySelectedCanvasStyle },
+    { id: 'canvas-apply-style', icon: 'AST', title: 'Apply copied canvas style', hint: 'Apply copied canvas stroke color and width to the selected element', run: applyCopiedCanvasStyle },
     { id: 'canvas-align-left', icon: 'AL', title: 'Canvas align left', hint: 'Align the selected element to the visible canvas left edge', run: () => alignSelectedCanvasElement('left') },
     { id: 'canvas-align-center', icon: 'AC', title: 'Canvas align center', hint: 'Center the selected element horizontally in the visible canvas', run: () => alignSelectedCanvasElement('center') },
     { id: 'canvas-align-right', icon: 'AR', title: 'Canvas align right', hint: 'Align the selected element to the visible canvas right edge', run: () => alignSelectedCanvasElement('right') },
@@ -8707,6 +8710,44 @@ function adjustSelectedCanvasWidth(delta) {
   return true;
 }
 
+function copySelectedCanvasStyle() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  canvasStyleClipboard = {
+    stroke: element.stroke || '#1f2937',
+    width: Number(element.width || 3),
+  };
+  statusText.textContent = 'Canvas style copied';
+  return true;
+}
+
+function applyCopiedCanvasStyle() {
+  if (!canvasActive) openCanvas();
+  if (!hasCanvasSelection()) {
+    statusText.textContent = 'Select a canvas element first';
+    return false;
+  }
+  if (!canvasStyleClipboard) {
+    statusText.textContent = 'Copy a canvas style first';
+    return false;
+  }
+  const element = canvasDoc.elements[canvasSelectedIndex];
+  element.stroke = canvasStyleClipboard.stroke;
+  if (element.type !== 'text') element.width = canvasStyleClipboard.width;
+  if (canvasColor && /^#[0-9a-fA-F]{6}$/.test(String(element.stroke || ''))) canvasColor.value = element.stroke;
+  if (canvasWidth && element.type !== 'text') canvasWidth.value = String(element.width || 3);
+  saveCanvasState();
+  rememberCanvasHistory();
+  renderCanvas();
+  syncCanvasControlsFromSelection();
+  statusText.textContent = 'Canvas style applied';
+  return true;
+}
+
 function alignSelectedCanvasElement(direction) {
   if (!canvasActive) openCanvas();
   if (!canvasStage || !hasCanvasSelection()) {
@@ -8857,6 +8898,8 @@ function showSelectedCanvasElementInspector() {
       <button data-selected-canvas-stroke="#d97706" data-selected-canvas-stroke-label="amber">Amber</button>
       <button data-selected-canvas-width-delta="-1">Thinner</button>
       <button data-selected-canvas-width-delta="1">Thicker</button>
+      <button data-copy-selected-canvas-style>Copy Style</button>
+      <button data-apply-selected-canvas-style ${canvasStyleClipboard ? '' : 'disabled'}>Apply Style</button>
       <button data-duplicate-selected-canvas>Duplicate</button>
     </div>
     <p class="diag-note">Inspector reads the selected element already held in the canvas document. It does not export the whole canvas or create new persistent state.</p>
@@ -11435,6 +11478,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (selectedCanvasStrokeBtn) setCanvasStrokePreset(selectedCanvasStrokeBtn.dataset.selectedCanvasStroke, selectedCanvasStrokeBtn.dataset.selectedCanvasStrokeLabel || 'custom');
   const selectedCanvasWidthDeltaBtn = e.target.closest('[data-selected-canvas-width-delta]');
   if (selectedCanvasWidthDeltaBtn) adjustSelectedCanvasWidth(Number(selectedCanvasWidthDeltaBtn.dataset.selectedCanvasWidthDelta || 0));
+  const copySelectedCanvasStyleBtn = e.target.closest('[data-copy-selected-canvas-style]');
+  if (copySelectedCanvasStyleBtn) copySelectedCanvasStyle();
+  const applySelectedCanvasStyleBtn = e.target.closest('[data-apply-selected-canvas-style]');
+  if (applySelectedCanvasStyleBtn && !applySelectedCanvasStyleBtn.disabled) applyCopiedCanvasStyle();
   const duplicateSelectedCanvasBtn = e.target.closest('[data-duplicate-selected-canvas]');
   if (duplicateSelectedCanvasBtn) duplicateSelectedCanvasElement();
   const canvasInventoryOpenBtn = e.target.closest('[data-canvas-inventory-open]');
