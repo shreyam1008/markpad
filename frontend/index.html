@@ -320,14 +320,14 @@
           <button id="canvas-clear" class="canvas-tool danger">Clear</button>
           <button id="canvas-close" class="canvas-close" title="Close canvas">&times;</button>
           <input id="canvas-import-file" class="hidden" type="file" accept=".json,.canvas,application/json" />
-          <span id="canvas-status" class="canvas-status">0 elements · 100%</span>
+          <span id="canvas-status" class="canvas-status" role="status" aria-live="polite">0 elements · 100%</span>
         </div>
       </div>
       <div class="canvas-stage-wrap">
         <canvas id="canvas-stage"></canvas>
         <canvas id="canvas-minimap" class="canvas-minimap"></canvas>
         <textarea id="canvas-text-editor" class="hidden" spellcheck="false"></textarea>
-        <div id="canvas-hint" class="canvas-hint">Empty local canvas: choose Pen, Rect, Arrow, or Text. JSON stays on this machine.</div>
+        <div id="canvas-hint" class="canvas-hint" role="status" aria-live="polite">Empty local canvas: choose Pen, Rect, Arrow, or Text. JSON stays on this machine.</div>
       </div>
     </div>
   </div>
