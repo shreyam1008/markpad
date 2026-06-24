@@ -406,6 +406,9 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"menu.offsetHeight || 260",
 		"menu.style.maxHeight = `${maxHeight}px`;",
 		"function closeAllMenus()",
+		"function handleWorkflowMenuKeydown(event)",
+		"function focusMenuTextMatch(menu, key)",
+		"if (handleWorkflowMenuKeydown(event)) return;",
 		"await createLocalFolderNote()",
 		"await doNew()",
 		"showTaskFileSetup()",
@@ -457,6 +460,30 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"Canvas: keep the top-bar canvas positioned as the active canvas opener; it should load the selected `.markcanvas.json` file when active and fall back to the local scratch canvas otherwise.",
 		"Canvas workflow: sidebar Canvas actions should distinguish Open canvas, New canvas file, Write active, Save draft JSON, and Loaded files map.",
 		"Local folder: choose/open/reveal actions should support file-backed creation and navigation, not turn the app into a folder-first shell.",
+	})
+}
+
+func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(data), []string{
+		"requestAnimationFrame(() => menu.querySelector('button:not(:disabled)')?.focus())",
+		"function menuButtons(menu)",
+		"function focusMenuButton(menu, delta)",
+		"function focusMenuTextMatch(menu, key)",
+		"function handleWorkflowMenuKeydown(event)",
+		"case 'ArrowDown':",
+		"case 'ArrowUp':",
+		"case 'Home':",
+		"case 'End':",
+		"case 'Enter':",
+		"case ' ':",
+		"case 'Escape':",
+		"const anchor = activeMenuAnchor;",
+		"anchor?.focus?.();",
+		"if (handleWorkflowMenuKeydown(event)) return;",
 	})
 }
 

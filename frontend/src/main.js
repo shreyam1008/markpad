@@ -15191,6 +15191,78 @@ function toggleMenu(menuId, anchor) {
   openMenu(menuId, anchor);
 }
 
+function menuButtons(menu) {
+  return Array.from(menu?.querySelectorAll('button:not(:disabled)') || []);
+}
+
+function focusMenuButton(menu, delta) {
+  const buttons = menuButtons(menu);
+  if (!buttons.length) return;
+  const index = buttons.indexOf(document.activeElement);
+  const base = index === -1 ? (delta > 0 ? -1 : 0) : index;
+  const next = (base + delta + buttons.length) % buttons.length;
+  buttons[next].focus();
+}
+
+function focusMenuTextMatch(menu, key) {
+  const query = String(key || '').toLowerCase();
+  if (!query || query.length !== 1) return false;
+  const buttons = menuButtons(menu);
+  const current = buttons.indexOf(document.activeElement);
+  const ordered = buttons.slice(current + 1).concat(buttons.slice(0, current + 1));
+  const match = ordered.find(button => button.textContent.trim().toLowerCase().startsWith(query));
+  if (!match) return false;
+  match.focus();
+  return true;
+}
+
+function handleWorkflowMenuKeydown(event) {
+  const menu = event.target.closest?.('#create-menu, #task-workflow-menu, #canvas-workflow-menu');
+  if (!menu || menu.classList.contains('hidden')) return false;
+  switch (event.key) {
+    case 'ArrowDown':
+    case 'ArrowRight':
+      event.preventDefault();
+      focusMenuButton(menu, 1);
+      return true;
+    case 'ArrowUp':
+    case 'ArrowLeft':
+      event.preventDefault();
+      focusMenuButton(menu, -1);
+      return true;
+    case 'Home':
+      event.preventDefault();
+      menuButtons(menu)[0]?.focus();
+      return true;
+    case 'End':
+      event.preventDefault();
+      {
+        const buttons = menuButtons(menu);
+        buttons[buttons.length - 1]?.focus();
+      }
+      return true;
+    case 'Enter':
+    case ' ':
+      event.preventDefault();
+      document.activeElement?.click?.();
+      return true;
+    case 'Escape':
+      event.preventDefault();
+      {
+        const anchor = activeMenuAnchor;
+        closeAllMenus();
+        anchor?.focus?.();
+      }
+      return true;
+    default:
+      if (!event.ctrlKey && !event.metaKey && !event.altKey && focusMenuTextMatch(menu, event.key)) {
+        event.preventDefault();
+        return true;
+      }
+      return false;
+  }
+}
+
 async function hasReadyLocalFolder() {
   try {
     if (!window.go?.main?.App?.GetLocalFolder) return false;
@@ -15350,6 +15422,7 @@ document.addEventListener('click', event => {
   closeAllMenus();
 });
 document.addEventListener('keydown', event => {
+  if (handleWorkflowMenuKeydown(event)) return;
   if (event.key === 'Escape') closeAllMenus();
 });
 window.addEventListener('resize', () => {
