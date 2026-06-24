@@ -447,6 +447,18 @@
         <canvas id="canvas-minimap" class="canvas-minimap"></canvas>
         <textarea id="canvas-text-editor" class="hidden" spellcheck="false"></textarea>
         <div id="canvas-hint" class="canvas-hint" role="status" aria-live="polite">Empty local canvas: choose Pen, Rect, Arrow, or Text. JSON stays on this machine.</div>
+        <div id="canvas-context-menu" class="canvas-context-menu hidden" role="menu" aria-label="Canvas selection actions">
+          <button type="button" role="menuitem" data-canvas-context-action="duplicate">Duplicate selected</button>
+          <button type="button" role="menuitem" data-canvas-context-action="copy-json">Copy selected JSON</button>
+          <button type="button" role="menuitem" data-canvas-context-action="copy-svg">Copy selected SVG</button>
+          <button type="button" role="menuitem" data-canvas-context-action="fit">Fit selected</button>
+          <div class="canvas-context-sep" aria-hidden="true"></div>
+          <button type="button" role="menuitem" data-canvas-context-action="front">Bring to front</button>
+          <button type="button" role="menuitem" data-canvas-context-action="back">Send to back</button>
+          <div class="canvas-context-sep" aria-hidden="true"></div>
+          <button type="button" role="menuitem" data-canvas-context-action="insert-md">Insert as Markdown</button>
+          <button type="button" role="menuitem" data-canvas-context-action="delete" class="danger">Delete selected</button>
+        </div>
       </div>
     </div>
   </div>

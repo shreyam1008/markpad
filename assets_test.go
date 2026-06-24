@@ -508,6 +508,68 @@ func TestSearchSyntaxStripStaysStaticAndLocalFirst(t *testing.T) {
 	})
 }
 
+func TestCanvasContextMenuStaysNativeAndDependencyFree(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`id="canvas-context-menu"`,
+		`class="canvas-context-menu hidden"`,
+		`aria-label="Canvas selection actions"`,
+		`data-canvas-context-action="duplicate"`,
+		`data-canvas-context-action="copy-json"`,
+		`data-canvas-context-action="copy-svg"`,
+		`data-canvas-context-action="fit"`,
+		`data-canvas-context-action="front"`,
+		`data-canvas-context-action="back"`,
+		`data-canvas-context-action="insert-md"`,
+		`data-canvas-context-action="delete"`,
+		"Duplicate selected",
+		"Copy selected JSON",
+		"Copy selected SVG",
+		"Fit selected",
+		"Insert as Markdown",
+	})
+
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/main.js", string(mainJS), []string{
+		"const canvasContextMenu = $('canvas-context-menu');",
+		"function showCanvasContextMenu(event)",
+		"function hideCanvasContextMenu()",
+		"function updateCanvasContextMenuState()",
+		"async function runCanvasContextAction(action)",
+		"canvasStage?.addEventListener('contextmenu', showCanvasContextMenu);",
+		"if (e.button !== 0) return;",
+		"duplicateSelectedCanvasElement();",
+		"await copySelectedCanvasElementJson();",
+		"await copySelectedCanvasElementSvg();",
+		"fitCanvasToSelection();",
+		"moveSelectedCanvasLayer('front');",
+		"moveSelectedCanvasLayer('back');",
+		"insertSelectedCanvasElementMarkdownIntoNote();",
+		"deleteSelectedCanvasElement();",
+		"hideCanvasContextMenu();",
+	})
+	assertTextOmits(t, "frontend/src/main.js", strings.ToLower(string(mainJS)), referenceAppRuntimeMarkers)
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".canvas-context-menu",
+		".canvas-context-menu.hidden",
+		".canvas-context-menu button",
+		".canvas-context-menu button:disabled",
+		".canvas-context-menu button.danger",
+		".canvas-context-sep",
+	})
+}
+
 func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 	indexHTML, err := os.ReadFile("frontend/index.html")
 	if err != nil {

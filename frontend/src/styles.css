@@ -3550,6 +3550,47 @@ body.markpad-compact #modal-body {
   font-size: 11px; font-weight: 750; pointer-events: none;
   box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow) 65%, transparent);
 }
+.canvas-context-menu {
+  position: fixed;
+  z-index: 90;
+  min-width: 196px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px var(--shadow);
+  padding: 5px;
+}
+.canvas-context-menu.hidden { display: none; }
+.canvas-context-menu button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 9px;
+  text-align: left;
+}
+.canvas-context-menu button:hover,
+.canvas-context-menu button:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.canvas-context-menu button:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: .48;
+}
+.canvas-context-menu button.danger {
+  color: var(--danger);
+}
+.canvas-context-sep {
+  border-top: 1px solid var(--border-soft);
+  margin: 4px 6px;
+}
 
 @media (max-width: 760px) {
   .canvas-backdrop { padding: 0; }

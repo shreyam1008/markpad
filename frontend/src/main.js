@@ -194,6 +194,7 @@ const canvasWidth  = $('canvas-width');
 const canvasImportFile = $('canvas-import-file');
 const canvasStatus = $('canvas-status');
 const canvasHint = $('canvas-hint');
+const canvasContextMenu = $('canvas-context-menu');
 
 const EMPTY_MARKDOWN_PLACEHOLDER = [
   'Start with a heading, a thought, or a task.',
@@ -11971,6 +11972,7 @@ function openCanvas() {
 
 function closeCanvas() {
   finishCanvasTextEdit();
+  hideCanvasContextMenu();
   flushCanvasStateSave();
   canvasActive = false;
   updateCanvasButtonState();
@@ -12019,6 +12021,80 @@ function moveCanvasElement(el, dx, dy) {
 
 function hasCanvasSelection() {
   return !!canvasDoc && canvasSelectedIndex >= 0 && canvasSelectedIndex < canvasDoc.elements.length;
+}
+
+function hideCanvasContextMenu() {
+  canvasContextMenu?.classList.add('hidden');
+}
+
+function positionCanvasContextMenu(clientX, clientY) {
+  if (!canvasContextMenu || !canvasOverlay || canvasOverlay.classList.contains('hidden')) return;
+  canvasContextMenu.style.visibility = 'hidden';
+  canvasContextMenu.classList.remove('hidden');
+  const width = canvasContextMenu.offsetWidth || 196;
+  const height = canvasContextMenu.offsetHeight || 286;
+  const pad = 8;
+  const left = Math.max(pad, Math.min(window.innerWidth - width - pad, clientX));
+  const top = Math.max(pad, Math.min(window.innerHeight - height - pad, clientY));
+  canvasContextMenu.style.left = `${left}px`;
+  canvasContextMenu.style.top = `${top}px`;
+  canvasContextMenu.style.visibility = '';
+}
+
+function updateCanvasContextMenuState() {
+  if (!canvasContextMenu) return;
+  const selected = hasCanvasSelection();
+  canvasContextMenu.querySelectorAll('[data-canvas-context-action]').forEach(button => {
+    button.disabled = !selected;
+  });
+}
+
+function showCanvasContextMenu(event) {
+  if (!canvasActive || !canvasStage || !canvasContextMenu) return;
+  event.preventDefault();
+  finishCanvasTextEdit();
+  const point = canvasScreenToWorld(event.clientX, event.clientY);
+  const idx = canvasHitTest(point);
+  if (idx >= 0) {
+    canvasSelectedIndex = idx;
+    syncCanvasControlsFromSelection();
+    renderCanvas();
+  }
+  updateCanvasContextMenuState();
+  positionCanvasContextMenu(event.clientX, event.clientY);
+}
+
+async function runCanvasContextAction(action) {
+  hideCanvasContextMenu();
+  switch (action) {
+    case 'duplicate':
+      duplicateSelectedCanvasElement();
+      break;
+    case 'copy-json':
+      await copySelectedCanvasElementJson();
+      break;
+    case 'copy-svg':
+      await copySelectedCanvasElementSvg();
+      break;
+    case 'fit':
+      fitCanvasToSelection();
+      break;
+    case 'front':
+      moveSelectedCanvasLayer('front');
+      break;
+    case 'back':
+      moveSelectedCanvasLayer('back');
+      break;
+    case 'insert-md':
+      insertSelectedCanvasElementMarkdownIntoNote();
+      break;
+    case 'delete':
+      deleteSelectedCanvasElement();
+      break;
+    default:
+      break;
+  }
+  updateCanvasSelectionButtons();
 }
 
 function syncCanvasControlsFromSelection() {
@@ -12470,6 +12546,8 @@ function finishCanvasTextEdit() {
 
 canvasStage?.addEventListener('pointerdown', (e) => {
   if (!canvasActive) return;
+  hideCanvasContextMenu();
+  if (e.button !== 0) return;
   finishCanvasTextEdit();
   const rawPoint = canvasScreenToWorld(e.clientX, e.clientY);
   const point = ['select', 'pan', 'erase'].includes(canvasTool) ? rawPoint : canvasSnapPoint(rawPoint);
@@ -12588,6 +12666,7 @@ canvasStage?.addEventListener('pointerup', () => {
 
 canvasStage?.addEventListener('wheel', (e) => {
   if (!canvasActive) return;
+  hideCanvasContextMenu();
   e.preventDefault();
   const camera = canvasCamera();
   const rect = canvasStage.getBoundingClientRect();
@@ -12599,6 +12678,14 @@ canvasStage?.addEventListener('wheel', (e) => {
   queueCanvasStateSave({ sessionOnly: true });
   renderCanvasFast();
 }, { passive: false });
+
+canvasStage?.addEventListener('contextmenu', showCanvasContextMenu);
+canvasContextMenu?.addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-canvas-context-action]');
+  if (!button || button.disabled) return;
+  event.preventDefault();
+  await runCanvasContextAction(button.dataset.canvasContextAction);
+});
 
 canvasTextEditor?.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
@@ -14177,6 +14264,10 @@ async function requestCloseNote(note) {
 
 // ── Context menu ─────────────────────────────────────────
 document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
+document.addEventListener('click', (event) => {
+  if (canvasContextMenu?.contains(event.target)) return;
+  hideCanvasContextMenu();
+});
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
 });
@@ -14964,6 +15055,7 @@ document.addEventListener('keydown', async (e) => {
   else if (ctrl && !shift && key.toLowerCase() === 'i' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('italic'); }
   else if (ctrl && !shift && key.toLowerCase() === 'k' && document.activeElement !== findInput && !inSearchInput && !inCommandInput) { e.preventDefault(); applyFormat('link'); }
   else if (key === 'Escape') {
+    hideCanvasContextMenu();
     if (canvasActive) closeCanvas();
     if (commandOpen) closeCommandPalette();
     if (searchOpen) closeSearchPalette();
@@ -14971,6 +15063,7 @@ document.addEventListener('keydown', async (e) => {
     if (historyOpen) toggleHistory();
     modalOverlay.classList.add('hidden');
     ctxMenu.classList.add('hidden');
+    hideCanvasContextMenu();
   }
   else if (ctrl && (key === '=' || key === '+')) { e.preventDefault(); zoomIn(); }
   else if (ctrl && key === '-') { e.preventDefault(); zoomOut(); }
