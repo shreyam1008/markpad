@@ -1848,6 +1848,36 @@ body.markpad-focus #note-title::after {
 #resize-divider {
   position: relative;
 }
+#resize-divider::before {
+  content: attr(data-split-label);
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 38px);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
+  padding: 3px 7px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--muted);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--shadow) 30%, transparent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s, color .12s, border-color .12s, background .12s;
+  white-space: nowrap;
+}
+#resize-divider[data-split-label]::before {
+  opacity: .68;
+}
+#resize-divider[data-split-label]:hover::before {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--editor);
+}
 #resize-divider::after {
   content: "";
   position: absolute;
@@ -1856,14 +1886,17 @@ body.markpad-focus #note-title::after {
   width: 7px;
   height: 42px;
   border-radius: 999px;
-  background: var(--border);
+  background:
+    linear-gradient(180deg, transparent 10%, color-mix(in srgb, var(--accent) 28%, var(--border)) 10% 22%, transparent 22% 36%, color-mix(in srgb, var(--accent) 28%, var(--border)) 36% 48%, transparent 48% 62%, color-mix(in srgb, var(--accent) 28%, var(--border)) 62% 74%, transparent 74% 90%),
+    var(--border);
   transform: translateY(-50%);
-  opacity: 0;
-  transition: opacity .12s, background .12s;
+  opacity: .35;
+  transition: opacity .12s, background .12s, box-shadow .12s;
 }
 #resize-divider:hover::after {
   opacity: 1;
   background: var(--accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 /* Theme-aware Markdown/code rendering */

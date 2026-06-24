@@ -1293,12 +1293,26 @@ function normalizeSplitRatio(value) {
   return Math.max(28, Math.min(72, Number.isFinite(value) ? value : 50));
 }
 
+function splitRatioText(value = splitRatio) {
+  const ratio = normalizeSplitRatio(value);
+  return `${Math.round(ratio)}/${Math.round(100 - ratio)}`;
+}
+
+function updateSplitRatioBadge(value = splitRatio) {
+  if (!divider) return;
+  const text = splitRatioText(value);
+  divider.dataset.splitLabel = text;
+  divider.setAttribute('aria-label', `Resize split view, editor preview ratio ${text}`);
+  divider.setAttribute('title', `Split ${text}. Drag to resize, double-click for 50/50.`);
+}
+
 function applySplitRatio() {
   if (viewMode !== 'split') return;
   splitRatio = normalizeSplitRatio(splitRatio);
   editorCont.style.flex = `0 0 ${splitRatio}%`;
   viewerCont.style.flex = '1 1 0';
   localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+  updateSplitRatioBadge();
   updateSplitPresetButtons();
 }
 
@@ -1309,6 +1323,7 @@ function rememberSplitRatio() {
   if (total > 0 && width > 0) {
     splitRatio = normalizeSplitRatio((width / total) * 100);
     localStorage.setItem('markpad-split-ratio', String(Math.round(splitRatio * 10) / 10));
+    updateSplitRatioBadge();
     updateSplitPresetButtons();
   }
 }
@@ -1330,7 +1345,7 @@ function setSplitPreset(value) {
     return;
   }
   applySplitRatio();
-  statusText.textContent = `Split set to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
+  statusText.textContent = `Split set to ${splitRatioText()}`;
 }
 
 function adjustSplitRatio(delta) {
@@ -1341,7 +1356,7 @@ function adjustSplitRatio(delta) {
   }
   splitRatio = normalizeSplitRatio(splitRatio + Number(delta || 0));
   applySplitRatio();
-  statusText.textContent = `Split adjusted to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
+  statusText.textContent = `Split adjusted to ${splitRatioText()}`;
 }
 
 function swapSplitRatio() {
@@ -1352,7 +1367,7 @@ function swapSplitRatio() {
   }
   splitRatio = normalizeSplitRatio(100 - splitRatio);
   applySplitRatio();
-  statusText.textContent = `Split swapped to ${Math.round(splitRatio)}/${Math.round(100 - splitRatio)}`;
+  statusText.textContent = `Split swapped to ${splitRatioText()}`;
 }
 
 // ── File type icons ──────────────────────────────────────
@@ -2653,6 +2668,7 @@ function showSplitWorkflowGuide() {
       <div class="diag-card"><strong>38/62</strong><span>Preview wide</span><small>Review rendered Markdown without leaving edit mode</small></div>
       <div class="diag-card"><strong>Swap</strong><span>Flip current ratio</span><small>Switch editor/preview emphasis without dragging</small></div>
       <div class="diag-card"><strong>Nudge</strong><span>5% steps</span><small>Fine tune from the command palette</small></div>
+      <div class="diag-card"><strong>${escapeHtml(splitRatioText())}</strong><span>Live badge</span><small>Divider shows the current editor/preview ratio</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-view-mode="markdown">Editor</button>
@@ -10656,6 +10672,8 @@ function setView(mode) {
   if (mode !== 'split') {
     editorCont.style.flex = '';
     viewerCont.style.flex = '';
+    divider.removeAttribute('data-split-label');
+    divider.removeAttribute('title');
   }
   if (!showEditor && findOpen) toggleFind();
 }
@@ -10693,6 +10711,7 @@ document.addEventListener('mousemove', (e) => {
   const clamped = normalizeSplitRatio(pct);
   editorCont.style.flex = `0 0 ${clamped}%`;
   viewerCont.style.flex = `0 0 ${100 - clamped}%`;
+  updateSplitRatioBadge(clamped);
 });
 document.addEventListener('mouseup', () => {
   if (!resizing) return;
