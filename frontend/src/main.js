@@ -9761,14 +9761,47 @@ function canvasElementBounds(el) {
   };
 }
 
+function canvasViewportBounds() {
+  if (!canvasStage || !canvasSession) return null;
+  const camera = canvasCamera();
+  const rect = canvasStage.getBoundingClientRect();
+  const scale = camera.scale || 1;
+  return {
+    x: -camera.x / scale,
+    y: -camera.y / scale,
+    w: rect.width / scale,
+    h: rect.height / scale,
+  };
+}
+
+function canvasElementInViewport(el, view, pad = 100) {
+  if (!view) return true;
+  if (el.type === 'path') return true;
+  const bounds = canvasElementBounds(el);
+  return bounds.x + bounds.w >= view.x - pad
+    && bounds.y + bounds.h >= view.y - pad
+    && bounds.x <= view.x + view.w + pad
+    && bounds.y <= view.y + view.h + pad;
+}
+
+function canvasVisibleElementCount() {
+  const elements = canvasDoc?.elements || [];
+  if (!elements.length) return 0;
+  const view = canvasViewportBounds();
+  if (!view || !canvasActive) return elements.length;
+  return elements.filter(el => canvasElementInViewport(el, view)).length;
+}
+
 function updateCanvasStatus() {
   if (!canvasStatus || !canvasSession) return;
   const count = (canvasDoc?.elements || []).length;
+  const visibleCount = canvasVisibleElementCount();
   const zoom = Math.round((canvasSession.camera?.scale || 1) * 100);
   const bytes = byteSize(JSON.stringify(canvasDoc || newCanvasDoc()));
   const bg = canvasDoc?.appState?.viewBackgroundColor || '#ffffff';
   const mode = `${canvasToolLabel(canvasTool)} · ${canvasGridVisible ? 'grid' : 'no grid'} · ${canvasSnapToGrid ? 'snap' : 'free'}`;
-  canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}% · ${mode} · ${formatBytes(bytes)} · bg ${bg}${canvasSelectionStatus(count)}`;
+  const visibility = count ? `${visibleCount}/${count} visible` : '0 elements';
+  canvasStatus.textContent = `${visibility} · ${zoom}% · ${mode} · ${formatBytes(bytes)} · bg ${bg}${canvasSelectionStatus(count)}`;
   updateCanvasHint(count);
   updateCanvasSelectionButtons();
 }
@@ -10671,7 +10704,6 @@ function renderCanvas() {
   updateCanvasStatus();
   if (!canvasStage || !canvasDoc || !canvasActive) return;
   const ctx = canvasStage.getContext('2d', { alpha: false });
-  const rect = canvasStage.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, CANVAS_DPR_CAP);
   const width = canvasStage.width / dpr;
   const height = canvasStage.height / dpr;
@@ -10683,21 +10715,8 @@ function renderCanvas() {
   const camera = canvasCamera();
   ctx.translate(camera.x, camera.y);
   ctx.scale(camera.scale, camera.scale);
-  const view = {
-    x: -camera.x / camera.scale,
-    y: -camera.y / camera.scale,
-    w: rect.width / camera.scale,
-    h: rect.height / camera.scale,
-  };
-  const visible = (el) => {
-    if (el.type === 'path') return true;
-    const x = Math.min(el.x, el.x + (el.w || 0));
-    const y = Math.min(el.y, el.y + (el.h || 0));
-    const w = Math.abs(el.w || 220);
-    const h = Math.abs(el.h || 60);
-    return x + w >= view.x - 100 && y + h >= view.y - 100 && x <= view.x + view.w + 100 && y <= view.y + view.h + 100;
-  };
-  canvasDoc.elements.filter(visible).forEach(el => renderCanvasElement(ctx, el));
+  const view = canvasViewportBounds();
+  canvasDoc.elements.filter(el => canvasElementInViewport(el, view)).forEach(el => renderCanvasElement(ctx, el));
   if (canvasDraftElement) renderCanvasElement(ctx, canvasDraftElement);
   renderCanvasSelection(ctx);
   renderCanvasMinimap();
@@ -12296,6 +12315,8 @@ function canvasStorageProfileSnapshot() {
   const doc = canvasDoc || newCanvasDoc();
   const session = canvasSession || { camera: { x: 0, y: 0, scale: 1 } };
   const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
+  const totalElements = (doc.elements || []).length;
+  const visibleElements = canvasVisibleElementCount();
   const elementTypes = (doc.elements || []).reduce((acc, element) => {
     const type = String(element?.type || 'element');
     acc[type] = (acc[type] || 0) + 1;
@@ -12310,7 +12331,7 @@ function canvasStorageProfileSnapshot() {
     document: {
       key: CANVAS_DOC_KEY,
       bytes: byteSize(documentText),
-      elements: (doc.elements || []).length,
+      elements: totalElements,
       elementTypes,
       appStateBytes: byteSize(JSON.stringify(doc.appState || {})),
       filesBytes: byteSize(JSON.stringify(doc.files || {})),
@@ -12330,6 +12351,13 @@ function canvasStorageProfileSnapshot() {
       gridSize: canvasGridSize,
       minimapVisible: !!canvasMinimapVisible,
       tool: canvasTool,
+    },
+    virtualization: {
+      visibleElements,
+      totalElements,
+      culledElements: Math.max(0, totalElements - visibleElements),
+      viewportPadding: 100,
+      pathElementsAlwaysDrawn: true,
     },
     undo: {
       snapshots: canvasHistory.length,
@@ -12369,6 +12397,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Key: ${snapshot.document.key}`,
     `- Bytes: ${formatBytes(snapshot.document.bytes || 0)}`,
     `- Elements: ${snapshot.document.elements || 0}`,
+    `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? snapshot.document.elements || 0}/${snapshot.virtualization?.totalElements ?? snapshot.document.elements || 0}`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
     `- Files/assets: ${formatBytes(snapshot.document.filesBytes || 0)}`,
@@ -12417,6 +12446,9 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['document_key', snapshot.document.key],
     ['document_bytes', Number(snapshot.document.bytes || 0)],
     ['document_elements', Number(snapshot.document.elements || 0)],
+    ['viewport_visible_elements', Number(snapshot.virtualization?.visibleElements || 0)],
+    ['viewport_culled_elements', Number(snapshot.virtualization?.culledElements || 0)],
+    ['viewport_padding', Number(snapshot.virtualization?.viewportPadding || 0)],
     ['document_appstate_bytes', Number(snapshot.document.appStateBytes || 0)],
     ['document_files_bytes', Number(snapshot.document.filesBytes || 0)],
     ['document_background', snapshot.document.background || ''],
@@ -12443,6 +12475,7 @@ function showCanvasStorageProfile() {
   showModal('Canvas Storage Profile', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${formatBytes(snapshot.document.bytes || 0)}</strong><span>Document JSON</span><small>${snapshot.document.elements || 0} elements · ${escapeHtml(snapshot.document.key)}</small></div>
+      <div class="diag-card"><strong>${snapshot.virtualization.visibleElements}/${snapshot.virtualization.totalElements}</strong><span>Viewport draw</span><small>${snapshot.virtualization.culledElements} culled · ${snapshot.virtualization.viewportPadding}px pad</small></div>
       <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
       <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
