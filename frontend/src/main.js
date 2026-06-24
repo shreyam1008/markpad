@@ -1698,9 +1698,12 @@ function splitRatioText(value = splitRatio) {
 function updateSplitRatioBadge(value = splitRatio) {
   if (!divider) return;
   const text = splitRatioText(value);
+  const ratio = normalizeSplitRatio(value);
   divider.dataset.splitLabel = text;
+  divider.setAttribute('aria-valuenow', String(Math.round(ratio)));
+  divider.setAttribute('aria-valuetext', text);
   divider.setAttribute('aria-label', `Resize split view, editor preview ratio ${text}`);
-  divider.setAttribute('title', `Split ${text}. Drag to resize, double-click for 50/50.`);
+  divider.setAttribute('title', `Split ${text}. Drag, use arrow keys, or double-click for 50/50.`);
 }
 
 function applySplitRatio() {
@@ -12993,6 +12996,7 @@ function setView(mode) {
   editorCont.classList.toggle('hidden', !showEditor);
   viewerCont.classList.toggle('hidden', !showViewer);
   divider.classList.toggle('hidden', mode !== 'split');
+  divider.tabIndex = mode === 'split' ? 0 : -1;
   $('split-preset-group')?.classList.toggle('hidden', mode !== 'split' || ft !== 'md');
   // Hide formatting toolbar for non-md files
   toolbar.classList.toggle('hidden', !showEditor || ft !== 'md');
@@ -13022,6 +13026,26 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 });
 divider.addEventListener('dblclick', () => {
   setSplitPreset(50);
+});
+divider.addEventListener('keydown', (e) => {
+  if (viewMode !== 'split') return;
+  const step = e.shiftKey ? 10 : 5;
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    adjustSplitRatio(-step);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    adjustSplitRatio(step);
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    setSplitPreset(28);
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    setSplitPreset(72);
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    setSplitPreset(50);
+  }
 });
 divider.addEventListener('mouseup', rememberSplitRatio);
 document.addEventListener('mouseup', rememberSplitRatio);
