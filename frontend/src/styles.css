@@ -892,35 +892,53 @@ body.markpad-compact #modal-body {
   align-items: center;
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  background: var(--surface);
-  padding: 2px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--editor) 88%, var(--surface)), var(--surface));
+  padding: 3px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 70%, white 30%);
 }
 .split-preset-group.hidden { display: none; }
 .split-preset-group button {
-  border: none;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  padding: 3px 7px;
+  min-width: 28px;
+  padding: 3px 8px;
   font-size: 10px;
   font-weight: 900;
   cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
 }
 .split-preset-group button:hover,
 .split-preset-group button.active {
-  background: var(--accent);
-  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--editor));
+  color: var(--accent);
+}
+.split-preset-group button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 13%, transparent);
 }
 .split-live-chip {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   min-height: 18px;
   border-right: 1px solid var(--border-soft);
-  color: var(--text);
-  padding: 0 7px 0 5px;
+  color: var(--accent);
+  padding: 0 8px 0 6px;
   font-size: 10px;
   font-weight: 950;
   letter-spacing: .04em;
+}
+.split-live-chip::before {
+  content: "Split";
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 .layout-lane-meter {
   border: 1px solid var(--border-soft);
@@ -3691,6 +3709,7 @@ body.markpad-compact .search-row {
       transparent 3px 8px
     ),
     var(--surface);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--shadow) 20%, transparent);
 }
 
 html[data-theme] .markdown-body pre,

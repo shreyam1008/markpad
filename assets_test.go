@@ -569,6 +569,35 @@ func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
 	})
 }
 
+func TestSplitViewControlsStayPolishedAndLightweight(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`id="split-preset-group"`,
+		`id="split-live-chip"`,
+		`data-split-ratio="38"`,
+		`data-split-ratio="50"`,
+		`data-split-ratio="62"`,
+		`data-split-swap`,
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".split-preset-group",
+		".split-preset-group button:focus-visible",
+		".split-live-chip::before",
+		`content: "Split";`,
+		"#resize-divider[data-split-label]::before",
+		"#resize-divider::after",
+		"repeating-linear-gradient(",
+	})
+}
+
 func TestNativeCanvasFilesOpenCanvasSurface(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {
