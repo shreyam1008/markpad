@@ -2856,6 +2856,14 @@ function renderSearchResultStrip(results, query) {
     + (snapshot.operators.phrases || []).length
     + (snapshot.operators.wildcards || []).length
     + (snapshot.operators.fuzzyTerms || []).length;
+  const dedupe = snapshot.dedupe || { input: snapshot.resultCount, output: snapshot.resultCount, removed: 0 };
+  const dedupeCard = snapshot.scope === 'all'
+    ? `<div class="search-result-card">
+        <strong>${Number(dedupe.removed || 0)}</strong>
+        <span>Deduped</span>
+        <small>${Number(dedupe.input || snapshot.resultCount)} merged hits</small>
+      </div>`
+    : '';
   return `
     <div class="search-result-strip" aria-label="Search result source summary">
       <div class="search-result-card">
@@ -2863,6 +2871,7 @@ function renderSearchResultStrip(results, query) {
         <span>Results</span>
         <small>${escapeHtml(snapshot.scope)} scope</small>
       </div>
+      ${dedupeCard}
       <div class="search-result-card">
         <strong>${loadedCount}</strong>
         <span>Loaded</span>
