@@ -14126,6 +14126,8 @@ function makeNoteRow(note) {
     const starBtn = ctxMenu.querySelector('[data-ctx="star"]');
     starBtn.textContent = note.star ? 'Unstar' : 'Star';
     starBtn.style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="open"]').style.display = 'none';
+    ctxMenu.querySelector('[data-ctx="search"]').style.display = 'none';
     ctxMenu.querySelector('[data-ctx="info"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="canvas"]').style.display = isCanvas ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="saveas"]').style.display = hasPath ? 'none' : '';
@@ -14364,6 +14366,22 @@ function contextEmbedTarget() {
   return basename(path);
 }
 
+function contextRelatedSearchQuery() {
+  const path = String(contextTargetPath() || '').replace(/\\/g, '/');
+  if (!path) return '';
+  const parts = path.split('/').filter(Boolean);
+  const file = parts[parts.length - 1] || '';
+  const parent = parts.length > 1 ? parts[parts.length - 2] : '';
+  const stem = file.replace(/\.[^.]+$/, '');
+  const clean = (value) => String(value || '').replace(/[#:"'`]/g, ' ').replace(/\s+/g, ' ').trim();
+  const title = clean(stem);
+  const folder = clean(parent);
+  if (folder && title) return `file:${folder} ${title}`;
+  if (title) return `name:${title}`;
+  if (folder) return `file:${folder}`;
+  return '';
+}
+
 function showContextMenuAt(event) {
   ctxMenu.style.left = event.clientX + 'px';
   ctxMenu.style.top = event.clientY + 'px';
@@ -14378,6 +14396,8 @@ function showLocalFileContextMenu(event, path) {
   ctxNoteId = null;
   ctxLocalPath = path;
   ctxMenu.querySelector('[data-ctx="star"]').style.display = 'none';
+  ctxMenu.querySelector('[data-ctx="open"]').style.display = '';
+  ctxMenu.querySelector('[data-ctx="search"]').style.display = '';
   ctxMenu.querySelector('[data-ctx="info"]').style.display = 'none';
   ctxMenu.querySelector('[data-ctx="canvas"]').style.display = 'none';
   ctxMenu.querySelector('[data-ctx="saveas"]').style.display = 'none';
@@ -14394,6 +14414,18 @@ function showLocalFileContextMenu(event, path) {
 
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
+});
+ctxMenu.querySelector('[data-ctx="open"]').addEventListener('click', async () => {
+  const path = contextTargetPath();
+  ctxMenu.classList.add('hidden');
+  if (path) await openLocalFolderFile(path);
+  else statusText.textContent = 'No file path to open';
+});
+ctxMenu.querySelector('[data-ctx="search"]').addEventListener('click', async () => {
+  const query = contextRelatedSearchQuery();
+  ctxMenu.classList.add('hidden');
+  if (query) await showLocalFolder(query);
+  else statusText.textContent = 'No file path to search';
 });
 ctxMenu.querySelector('[data-ctx="info"]').addEventListener('click', async () => {
   if (ctxNoteId) {
