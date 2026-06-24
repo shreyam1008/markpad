@@ -91,6 +91,7 @@ Trash remains local and predictable.
 - Reports: footprint exports should include trash bytes, item counts, retention buckets, and next expiry.
 - Diagnostics: Trash Cleanup Profile must show retained bytes, expired candidates, backend cleanup support, and safe cleanup actions before destructive cleanup.
 - Main view: show retention buckets and next expiry from existing Trash metadata; do not scan workspaces or export deleted draft bodies by default.
+- Empty states: keep guide, audit, and cleanup profile actions available even when draft or saved-file Trash sections are empty.
 - Cleanup: automatic cleanup can run opportunistically on startup or when opening Trash.
 
 ## Future sync layer
