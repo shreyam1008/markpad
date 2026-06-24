@@ -885,6 +885,12 @@ func TestNativeCanvasFilesOpenCanvasSurface(t *testing.T) {
 		"<strong>Open canvas</strong>",
 		"Load active .markcanvas.json, otherwise scratch",
 	})
+	assertTextOrder(t, "frontend/index.html", string(indexHTML), []string{
+		`data-canvas-workflow="new"`,
+		`data-canvas-workflow="draft"`,
+		`data-canvas-workflow="save-file"`,
+		`data-canvas-workflow="write"`,
+	})
 }
 
 func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
@@ -1118,6 +1124,19 @@ func assertTextIncludesAll(t *testing.T, path string, text string, required []st
 		if !strings.Contains(text, value) {
 			t.Fatalf("%s must include %q", path, value)
 		}
+	}
+}
+
+func assertTextOrder(t *testing.T, path string, text string, ordered []string) {
+	t.Helper()
+
+	cursor := 0
+	for _, value := range ordered {
+		index := strings.Index(text[cursor:], value)
+		if index < 0 {
+			t.Fatalf("%s must include %q after byte %d", path, value, cursor)
+		}
+		cursor += index + len(value)
 	}
 }
 
