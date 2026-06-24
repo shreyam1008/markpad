@@ -2009,7 +2009,33 @@ body.markpad-compact #modal-body {
 .trash-retention.urgent { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }
 .trash-actions { display: flex; gap: 6px; }
 .trash-actions .danger { color: var(--danger); }
-.trash-empty { padding: 28px 10px; text-align: center; color: var(--muted); font-size: 13px; }
+.trash-empty {
+  padding: 28px 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+.trash-empty strong { color: var(--text); font-size: 13px; font-weight: 900; }
+.trash-empty span { color: var(--muted); font-size: 11px; font-weight: 750; }
+.trash-empty-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.trash-empty-actions button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.trash-empty-actions button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
 
 @media (max-width: 640px) {
   .trash-row { grid-template-columns: 1fr; }

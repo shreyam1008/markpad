@@ -5941,7 +5941,7 @@ async function emptyDraftTrash() {
 }
 
 function renderTrashRows(items) {
-  if (!items.length) return '<div class="trash-empty">Trash is empty. Deleted drafts stay here for 30 days.</div>';
+  if (!items.length) return trashEmptyStateHtml('No deleted drafts in Trash.', `Deleted drafts stay restorable here for ${DRAFT_TRASH_DAYS} days.`);
   return `<div class="trash-list">${items.map(item => {
     const state = trashRetentionState(item.deletedAt);
     return `
@@ -5961,6 +5961,19 @@ function renderTrashRows(items) {
   }).join('')}</div>`;
 }
 
+function trashEmptyStateHtml(message, detail) {
+  return `
+    <div class="trash-empty">
+      <strong>${escapeHtml(message)}</strong>
+      <span>${escapeHtml(detail)}</span>
+      <div class="trash-empty-actions">
+        <button type="button" data-trash-guide>Guide</button>
+        <button type="button" data-trash-audit>Audit</button>
+        <button type="button" data-trash-cleanup-profile>Cleanup Profile</button>
+      </div>
+    </div>`;
+}
+
 async function loadFileTrash() {
   try {
     if (window.go?.main?.App?.ListFileTrash) return await window.go.main.App.ListFileTrash();
@@ -5969,7 +5982,7 @@ async function loadFileTrash() {
 }
 
 function renderFileTrashRows(items) {
-  if (!items.length) return '<div class="trash-empty">No saved files in Trash.</div>';
+  if (!items.length) return trashEmptyStateHtml('No saved files in Trash.', 'Saved files moved to Trash appear here with restore paths and expiry dates.');
   return `<div class="trash-list">${items.map(item => {
     const state = trashRetentionState(item.deletedAt);
     return `
