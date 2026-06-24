@@ -8608,8 +8608,8 @@ function taskSourceLabel(task) {
   return String(task?.noteTitle || task?.fileName || task?.path || task?.id || '').trim();
 }
 
-function taskAgendaGroups() {
-  const tasks = collectLoadedTasks();
+async function taskAgendaGroups() {
+  const tasks = await collectLoadedTasks();
   const visibleTasks = tasks.filter(taskSourceMatches);
   const openTasks = visibleTasks.filter(task => !task.checked);
   const overdue = openTasks.filter(isTaskOverdue);
@@ -8619,8 +8619,8 @@ function taskAgendaGroups() {
   return { all: tasks, visible: visibleTasks, open: openTasks, overdue, dueToday, waiting, high };
 }
 
-function taskAgendaMarkdown() {
-  const groups = taskAgendaGroups();
+async function taskAgendaMarkdown() {
+  const groups = await taskAgendaGroups();
   const lines = [
     '# Markpad Task Agenda',
     '',
@@ -8651,7 +8651,7 @@ function taskAgendaMarkdown() {
   return lines.join('\n');
 }
 
-function taskAgendaBuckets(groups = taskAgendaGroups()) {
+function taskAgendaBuckets(groups) {
   return [
     ['overdue', 'Overdue', groups.overdue],
     ['due_today', 'Due today', groups.dueToday],
@@ -8682,13 +8682,13 @@ function taskAgendaRecord(bucketId, bucketTitle, task) {
   };
 }
 
-function taskAgendaRecords(groups = taskAgendaGroups()) {
+function taskAgendaRecords(groups) {
   return taskAgendaBuckets(groups).flatMap(([bucketId, bucketTitle, tasks]) =>
     tasks.map(task => taskAgendaRecord(bucketId, bucketTitle, task))
   );
 }
 
-function taskAgendaUniqueTasks(groups = taskAgendaGroups()) {
+function taskAgendaUniqueTasks(groups) {
   const seen = new Set();
   const tasks = [];
   taskAgendaBuckets(groups).forEach(([bucketId, bucketTitle, bucketTasks]) => {
@@ -8702,8 +8702,8 @@ function taskAgendaUniqueTasks(groups = taskAgendaGroups()) {
   return tasks;
 }
 
-function taskAgendaJson() {
-  const groups = taskAgendaGroups();
+async function taskAgendaJson() {
+  const groups = await taskAgendaGroups();
   const buckets = taskAgendaBuckets(groups);
   return JSON.stringify({
     type: 'markpad-task-agenda',
@@ -8728,10 +8728,11 @@ function taskAgendaJson() {
   }, null, 2) + '\n';
 }
 
-function taskAgendaCsv() {
+async function taskAgendaCsv() {
+  const groups = await taskAgendaGroups();
   const rows = [
     ['bucket', 'title', 'due', 'priority', 'waiting', 'status', 'source', 'noteId', 'path', 'line', 'local'],
-    ...taskAgendaRecords().map(task => [
+    ...taskAgendaRecords(groups).map(task => [
       task.bucketTitle,
       task.title,
       task.due,
@@ -8748,12 +8749,12 @@ function taskAgendaCsv() {
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-function taskAgendaIcs() {
-  return tasksToIcs(taskAgendaUniqueTasks());
+async function taskAgendaIcs() {
+  return tasksToIcs(taskAgendaUniqueTasks(await taskAgendaGroups()));
 }
 
-function taskAgendaTodoTxt() {
-  return tasksToTodoTxt(taskAgendaUniqueTasks());
+async function taskAgendaTodoTxt() {
+  return tasksToTodoTxt(taskAgendaUniqueTasks(await taskAgendaGroups()));
 }
 
 async function copyTaskAgendaMarkdown() {
@@ -8761,7 +8762,7 @@ async function copyTaskAgendaMarkdown() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(taskAgendaMarkdown());
+  await navigator.clipboard.writeText(await taskAgendaMarkdown());
   statusText.textContent = 'Task agenda copied as Markdown';
 }
 
@@ -8770,7 +8771,7 @@ async function copyTaskAgendaJson() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(taskAgendaJson());
+  await navigator.clipboard.writeText(await taskAgendaJson());
   statusText.textContent = 'Task agenda copied as JSON';
 }
 
@@ -8779,7 +8780,7 @@ async function copyTaskAgendaCsv() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  await navigator.clipboard.writeText(taskAgendaCsv());
+  await navigator.clipboard.writeText(await taskAgendaCsv());
   statusText.textContent = 'Task agenda copied as CSV';
 }
 
@@ -8788,7 +8789,7 @@ async function copyTaskAgendaIcs() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  const tasks = taskAgendaUniqueTasks();
+  const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to copy';
     return;
@@ -8802,7 +8803,7 @@ async function copyTaskAgendaTodoTxt() {
     statusText.textContent = 'Clipboard unavailable';
     return;
   }
-  const tasks = taskAgendaUniqueTasks();
+  const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to copy';
     return;
@@ -8811,23 +8812,23 @@ async function copyTaskAgendaTodoTxt() {
   statusText.textContent = 'Task agenda copied as Todo.txt';
 }
 
-function exportTaskAgendaMarkdown() {
-  downloadText('markpad-task-agenda.md', 'text/markdown', taskAgendaMarkdown());
+async function exportTaskAgendaMarkdown() {
+  downloadText('markpad-task-agenda.md', 'text/markdown', await taskAgendaMarkdown());
   statusText.textContent = 'Task agenda exported as Markdown';
 }
 
-function exportTaskAgendaJson() {
-  downloadText('markpad-task-agenda.json', 'application/json', taskAgendaJson());
+async function exportTaskAgendaJson() {
+  downloadText('markpad-task-agenda.json', 'application/json', await taskAgendaJson());
   statusText.textContent = 'Task agenda exported as JSON';
 }
 
-function exportTaskAgendaCsv() {
-  downloadText('markpad-task-agenda.csv', 'text/csv', taskAgendaCsv());
+async function exportTaskAgendaCsv() {
+  downloadText('markpad-task-agenda.csv', 'text/csv', await taskAgendaCsv());
   statusText.textContent = 'Task agenda exported as CSV';
 }
 
-function exportTaskAgendaIcs() {
-  const tasks = taskAgendaUniqueTasks();
+async function exportTaskAgendaIcs() {
+  const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to export';
     return;
@@ -8836,8 +8837,8 @@ function exportTaskAgendaIcs() {
   statusText.textContent = 'Task agenda exported as ICS';
 }
 
-function exportTaskAgendaTodoTxt() {
-  const tasks = taskAgendaUniqueTasks();
+async function exportTaskAgendaTodoTxt() {
+  const tasks = taskAgendaUniqueTasks(await taskAgendaGroups());
   if (!tasks.length) {
     statusText.textContent = 'No agenda tasks to export';
     return;
@@ -8847,7 +8848,7 @@ function exportTaskAgendaTodoTxt() {
 }
 
 async function showTaskAgenda() {
-  const groups = taskAgendaGroups();
+  const groups = await taskAgendaGroups();
   showModal('Task Agenda', `
     <div class="task-summary">${groups.open.length} open task${groups.open.length === 1 ? '' : 's'} from ${escapeHtml(taskSourceFilter)} sources · Markdown stays the source of truth.</div>
     <div class="task-calendar">
@@ -11028,8 +11029,8 @@ async function insertVisibleTasksCanvasBoard() {
   statusText.textContent = `${visible.length} visible task${visible.length === 1 ? '' : 's'} sent to canvas`;
 }
 
-function insertTaskAgendaCanvasBoard() {
-  const groups = taskAgendaGroups();
+async function insertTaskAgendaCanvasBoard() {
+  const groups = await taskAgendaGroups();
   const buckets = [
     ['Overdue', groups.overdue, '#dc2626'],
     ['Due today', groups.dueToday, '#2563eb'],
@@ -14582,17 +14583,17 @@ modalBodyEl.addEventListener('click', async (e) => {
   const copyTaskAgendaTodoBtn = e.target.closest('[data-copy-task-agenda-todo]');
   if (copyTaskAgendaTodoBtn) await copyTaskAgendaTodoTxt();
   const exportTaskAgendaMdBtn = e.target.closest('[data-export-task-agenda-md]');
-  if (exportTaskAgendaMdBtn) exportTaskAgendaMarkdown();
+  if (exportTaskAgendaMdBtn) await exportTaskAgendaMarkdown();
   const exportTaskAgendaJsonBtn = e.target.closest('[data-export-task-agenda-json]');
-  if (exportTaskAgendaJsonBtn) exportTaskAgendaJson();
+  if (exportTaskAgendaJsonBtn) await exportTaskAgendaJson();
   const exportTaskAgendaCsvBtn = e.target.closest('[data-export-task-agenda-csv]');
-  if (exportTaskAgendaCsvBtn) exportTaskAgendaCsv();
+  if (exportTaskAgendaCsvBtn) await exportTaskAgendaCsv();
   const exportTaskAgendaIcsBtn = e.target.closest('[data-export-task-agenda-ics]');
-  if (exportTaskAgendaIcsBtn) exportTaskAgendaIcs();
+  if (exportTaskAgendaIcsBtn) await exportTaskAgendaIcs();
   const exportTaskAgendaTodoBtn = e.target.closest('[data-export-task-agenda-todo]');
-  if (exportTaskAgendaTodoBtn) exportTaskAgendaTodoTxt();
+  if (exportTaskAgendaTodoBtn) await exportTaskAgendaTodoTxt();
   const taskAgendaCanvasBtn = e.target.closest('[data-task-agenda-canvas]');
-  if (taskAgendaCanvasBtn) insertTaskAgendaCanvasBoard();
+  if (taskAgendaCanvasBtn) await insertTaskAgendaCanvasBoard();
   const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
   if (openLocalFootprintBtn) await showLocalFootprint();
   const localUpgradeMapBtn = e.target.closest('[data-local-upgrade-map]');
