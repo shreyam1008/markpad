@@ -33,6 +33,12 @@ Constraints:
 - Bias toward pure-Go/cgo-free candidates for packaging simplicity, but reject any candidate that pushes Markpad over the binary or memory budget.
 - Keep sync/cloud work out of the search index design until the local path is stable.
 
+Measured driver probes on 2026-06-24 against a `9,950,088` byte stripped Wails baseline:
+
+- `modernc.org/sqlite v1.53.0` with a tagged blank-import probe built to `13,699,432` bytes, a `+3,749,344` byte delta. Reject for the current 10 MiB binary budget.
+- `github.com/mattn/go-sqlite3 v1.14.47` with `CGO_ENABLED=1` and `sqlite_fts5` built to `11,801,912` bytes, a `+1,851,824` byte delta. Reject for the current 10 MiB binary budget and keep as higher-packaging-risk fallback only if the cap changes.
+- Phase 2 search should therefore continue with the current bounded in-process search, or use an external optional helper/index process later rather than linking SQLite into the main binary.
+
 Primary references:
 
 - SQLite FTS5 supports external-content tables and documents the consistency responsibility, rebuild path, and trigram tokenizer behavior at https://sqlite.org/fts5.html.
