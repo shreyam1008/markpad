@@ -2584,6 +2584,7 @@ async function runLoadedSearch(query) {
   const token = ++searchToken;
   const plan = parseSearchQuery(query);
   const scopeLabel = searchScope === 'local' ? 'local folder' : searchScope === 'all' ? 'loaded and local files' : 'loaded files';
+  searchLastDedupe = { input: 0, output: 0, removed: 0 };
   searchResults.innerHTML = `<div class="search-empty">Searching ${scopeLabel}...</div>`;
   updateSearchScopeButtons();
   if (searchScope === 'local') {
