@@ -10535,9 +10535,7 @@ function insertDocumentOutlineCanvasMap() {
     const stroke = canvasOutlineStroke(level);
     const parent = anchors[level - 1];
     if (parent) elements.push(canvasTemplateArrow(parent.x, parent.y, x + 8, y + 29, '#6b6e68'));
-    elements.push({ id: canvasId(), type: 'rect', x, y, w: 260, h: 58, stroke, width: 2 });
-    elements.push(canvasTemplateText(x + 14, y + 25, compactCanvasOutlineTitle(item), 14, stroke));
-    elements.push(canvasTemplateText(x + 14, y + 45, `line ${item.line + 1}`, 10, '#6b6e68'));
+    elements.push(canvasTemplateSticky(x, y, 260, 58, `${compactCanvasOutlineTitle(item)}\nline ${item.line + 1}`, stroke));
     anchors[level] = { x: x + 260, y: y + 29 };
     for (let clear = level + 1; clear <= 6; clear++) delete anchors[clear];
   });
@@ -10594,9 +10592,9 @@ function insertLoadedWorkspaceCanvasMap() {
     const x = origin.x + col * 270;
     const y = origin.y + row * 104;
     const stroke = canvasWorkspaceStroke(note);
-    elements.push({ id: canvasId(), type: 'rect', x, y, w: 240, h: 78, stroke, width: note.active ? 4 : 2 });
-    elements.push(canvasTemplateText(x + 14, y + 29, compactCanvasWorkspaceTitle(note), 14, stroke));
-    elements.push(canvasTemplateText(x + 14, y + 54, compactCanvasWorkspaceMeta(note), 10, '#6b6e68'));
+    const card = canvasTemplateSticky(x, y, 240, 78, [compactCanvasWorkspaceTitle(note), compactCanvasWorkspaceMeta(note)].filter(Boolean).join('\n'), stroke);
+    card.width = note.active ? 4 : 2;
+    elements.push(card);
   });
   if (snapshot.notes.length > visible.length) {
     elements.push(canvasTemplateText(origin.x, origin.y + 850, `${snapshot.notes.length - visible.length} additional workspace items omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
