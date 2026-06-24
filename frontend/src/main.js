@@ -4155,6 +4155,15 @@ async function upgradeMapSnapshot() {
   const loadedFileCount = cachedNotes.filter(note => !!note.path).length;
   const draftCount = Math.max(0, cachedNotes.length - loadedFileCount);
   const dirtyCount = cachedNotes.filter(note => !!note.dirty).length;
+  const upgradeStatus = {
+    overall: 'local-ready',
+    search: searchLastQuery ? 'query parsed' : 'idle',
+    tasks: taskItems.length ? 'current parse' : 'open Tasks to sample',
+    canvas: canvasElements ? 'active board' : 'empty draft',
+    trash: trashAudit.total ? 'retaining items' : 'empty',
+    footprint: estimatedUiBytes ? 'sampled' : 'empty',
+    sync: 'planned later',
+  };
   return {
     type: 'markpad-upgrade-map',
     version: 1,
@@ -4169,6 +4178,7 @@ async function upgradeMapSnapshot() {
       sourceOfTruth: 'local files, drafts, tasks, canvas, Trash, and UI state',
       syncPhase: 'not enabled in this local-only phase',
     },
+    status: upgradeStatus,
     syncReadiness: {
       phase: 'local-only now, sync-later planned',
       loadedFiles: loadedFileCount,
@@ -4337,6 +4347,7 @@ function upgradeMapMarkdown(snapshot) {
     '',
     `- Source of truth: ${snapshot.localFirst.sourceOfTruth}`,
     `- Sync phase: ${snapshot.localFirst.syncPhase}`,
+    `- Status: ${snapshot.status.overall}; search ${snapshot.status.search}; tasks ${snapshot.status.tasks}; canvas ${snapshot.status.canvas}; trash ${snapshot.status.trash}; footprint ${snapshot.status.footprint}; sync ${snapshot.status.sync}`,
     `- Sync readiness: ${snapshot.syncReadiness.phase}, ${snapshot.syncReadiness.loadedFiles} loaded files / ${snapshot.syncReadiness.drafts} drafts, ${snapshot.syncReadiness.dirtyItems} dirty, local folder ${snapshot.syncReadiness.localFolderConfigured ? 'configured' : 'not configured'}`,
     `- Portable now: ${(snapshot.syncReadiness.portableNow || []).join(', ')}`,
     `- Device-local: ${(snapshot.syncReadiness.deviceLocal || []).join(', ')}`,
@@ -4367,6 +4378,13 @@ function upgradeMapCsv(snapshot) {
     ['sampled_at', snapshot.sampledAt],
     ['active_title', snapshot.activeFile.title || ''],
     ['active_type', snapshot.activeFile.type || ''],
+    ['status_overall', snapshot.status.overall],
+    ['status_search', snapshot.status.search],
+    ['status_tasks', snapshot.status.tasks],
+    ['status_canvas', snapshot.status.canvas],
+    ['status_trash', snapshot.status.trash],
+    ['status_footprint', snapshot.status.footprint],
+    ['status_sync', snapshot.status.sync],
     ['sync_phase', snapshot.syncReadiness.phase],
     ['sync_loaded_files', Number(snapshot.syncReadiness.loadedFiles || 0)],
     ['sync_drafts', Number(snapshot.syncReadiness.drafts || 0)],
@@ -4504,6 +4522,7 @@ async function showUpgradeMap() {
   showModal('Upgrade Map', `
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.status.overall)}</strong><span>Upgrade status</span><small>search ${escapeHtml(snapshot.status.search)} · tasks ${escapeHtml(snapshot.status.tasks)} · canvas ${escapeHtml(snapshot.status.canvas)}</small></div>
       <div class="diag-card"><strong>later</strong><span>Sync readiness</span><small>${snapshot.syncReadiness.loadedFiles} files · ${snapshot.syncReadiness.drafts} drafts · ${snapshot.syncReadiness.dirtyItems} dirty · folder ${snapshot.syncReadiness.localFolderConfigured ? 'set' : 'unset'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${snapshot.search.operators.total} ops · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.footprint.estimatedUiBytes || 0)}</strong><span>UI footprint</span><small>${formatBytes(snapshot.footprint.localStorageBytes || 0)} localStorage · ${snapshot.footprint.loadedNotes} loaded notes</small></div>
