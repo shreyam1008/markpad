@@ -7912,6 +7912,7 @@ async function openLocalFolderFile(path) {
     const active = cachedNotes.find(n => n.id === activeId);
     setView(defaultViewForFileType(active?.path, active?.kind));
     modalOverlay.classList.add('hidden');
+    if (getFileType(active?.path, active?.kind) === 'canvas') openActiveCanvasOrDraft();
     statusText.textContent = 'Opened local file';
   } catch (err) {
     statusText.textContent = 'Open failed: ' + err;
@@ -13903,6 +13904,15 @@ function loadCurrentDocumentIntoCanvas() {
     statusText.textContent = 'Canvas load failed: ' + (err.message || err);
   }
 }
+
+function openActiveCanvasOrDraft() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (active && getFileType(active.path, active.kind) === 'canvas') {
+    loadCurrentDocumentIntoCanvas();
+    return;
+  }
+  openCanvas();
+}
 async function saveCanvasAsDraft() {
   finishCanvasTextEdit();
   if (!canvasDoc) loadCanvasState();
@@ -14041,6 +14051,7 @@ function makeNoteRow(note) {
     loadContent(await window.go.main.App.GetNoteContent(note.id));
     renderSession(await window.go.main.App.GetSession());
     restoreNoteView();
+    if (getFileType(note.path, note.kind) === 'canvas') openActiveCanvasOrDraft();
   });
 
   row.addEventListener('contextmenu', (e) => {
@@ -15252,7 +15263,7 @@ async function runCanvasWorkflowAction(kind) {
   closeAllMenus();
   switch (kind) {
     case 'draft':
-      openCanvas();
+      openActiveCanvasOrDraft();
       break;
     case 'new':
       await createCanvasFromMenu();
@@ -15280,6 +15291,7 @@ async function doOpen() {
     loadContent(await window.go.main.App.GetActiveContent());
     const active = cachedNotes.find(n => n.id === activeId);
     setView(defaultViewForFileType(active?.path, active?.kind));
+    if (getFileType(active?.path, active?.kind) === 'canvas') openActiveCanvasOrDraft();
     statusText.textContent = `Opened ${typeLabel(getFileType(active?.path, active?.kind))}`;
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
@@ -15347,7 +15359,7 @@ $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);
 $('btn-command').addEventListener('click', openCommandPalette);
 $('btn-tasks').addEventListener('click', () => showTasksView());
-$('btn-canvas').addEventListener('click', openCanvas);
+$('btn-canvas').addEventListener('click', openActiveCanvasOrDraft);
 $('btn-focus').addEventListener('click', toggleFocusMode);
 bindSidebarWorkflowButtons();
 $('btn-wrap')?.addEventListener('click', toggleEditorWrap);

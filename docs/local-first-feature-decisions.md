@@ -104,13 +104,13 @@ Initial implementation constraints:
 
 - `Note` creates a local Markdown note when a default folder is configured, otherwise it falls back to an unsaved Markdown draft.
 - `Task file` opens the portable `Tasks.md` setup and task views rather than inventing a hidden task database.
-- `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend, separate from the top-bar canvas draft.
+- `Canvas` creates a native `.markcanvas.json` file through Markpad's local canvas backend; the top-bar Canvas button opens that active canvas file when selected or falls back to the scratch canvas otherwise.
 - `Other file` must stay disabled until extension validation, template choice, and collision behavior are explicit.
 - The sidebar `+ New` menu must keep the concrete file affordances visible: Note, Task file, Canvas, and a disabled Other file placeholder until the remaining rules are specified.
 - Task file is a file workflow: open or set up `Tasks.md`, then show list, calendar, and kanban views over Markdown task lines from files.
 - Task workflow menus should expose List, Calendar, Kanban, Quick task, and Task setup directly from the sidebar.
-- Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas draft remains a separate scratch surface, not the primary create path.
-- Canvas workflow menus should expose Draft canvas, New canvas file, Write active, Save draft JSON, and Loaded files map without adding a heavy drawing dependency.
+- Canvas creation must produce a native `.markcanvas.json` document. The top-bar Canvas button opens the active native canvas file when selected, otherwise it falls back to the local scratch canvas.
+- Canvas workflow menus should expose Open canvas, New canvas file, Write active, Save draft JSON, and Loaded files map without adding a heavy drawing dependency.
 - Choosing a local folder is a storage prerequisite for file-backed note/canvas creation, not the default product narrative or startup mode.
 - If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.
 - Keep the sidebar as the main place for creation and navigation. Do not introduce a tab system or make folder loading the default mental model.
