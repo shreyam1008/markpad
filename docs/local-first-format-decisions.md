@@ -108,6 +108,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Keep menu and command-palette polish text/CSS based, with category chips and command metadata instead of bitmap or font-icon packs.
 - Track command text-icon usage in Lightweight Assets so menu polish remains measurable without icon fonts or sprite sheets.
 - Keep Theme Lab summaries metadata-only: current theme, light/dark counts, preset matches, and zero theme assets.
+- Let Upgrade Map theme/asset metrics use built-in theme constants and current rendered DOM counters only; do not load asset packs to report them.
 - Keep editor layout polish as local UI state; Layout Profile should expose split, focus, compact, wrap, reading width, and zoom without writing to documents.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
 - Keep Upgrade Map as a metadata dashboard over existing diagnostics; it must not scan workspaces, load assets, or become a new source of truth.
