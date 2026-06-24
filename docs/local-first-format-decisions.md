@@ -106,6 +106,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 
 - Avoid adding large icon packs or canvas libraries to the core bundle.
 - Keep menu and command-palette polish text/CSS based, with category chips and command metadata instead of bitmap or font-icon packs.
+- Keep command empty-state shortcuts text-only and backed by existing command IDs; they should improve discoverability without adding new behavior.
 - Track command text-icon usage in Lightweight Assets so menu polish remains measurable without icon fonts or sprite sheets.
 - Keep Theme Lab summaries metadata-only: current theme, light/dark counts, preset matches, and zero theme assets.
 - Let Upgrade Map theme/asset metrics use built-in theme constants and current rendered DOM counters only; do not load asset packs to report them.
