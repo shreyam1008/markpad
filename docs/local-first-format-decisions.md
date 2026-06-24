@@ -110,6 +110,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Keep Theme Lab summaries metadata-only: current theme, light/dark counts, preset matches, and zero theme assets.
 - Keep editor layout polish as local UI state; Layout Profile should expose split, focus, compact, wrap, reading width, and zoom without writing to documents.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
+- Keep Upgrade Map as a metadata dashboard over existing diagnostics; it must not scan workspaces, load assets, or become a new source of truth.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
