@@ -178,6 +178,13 @@ const THEMES = [
   { id: 'ember', label: 'Ember', mode: 'dark', hint: 'Warm dark notes and review' },
   { id: 'midnight', label: 'Midnight', mode: 'dark', hint: 'Deep night writing surface' },
 ];
+const THEME_RECIPES = [
+  { id: 'writing', label: 'Warm writing', theme: 'linen', layout: 'soft wrap, reading width, 62/38 split', bestFor: 'Long-form Markdown drafting' },
+  { id: 'planning', label: 'Planning board', theme: 'sand', layout: 'task kanban, canvas, compact controls', bestFor: 'Tasks, project planning, and canvas boards' },
+  { id: 'review', label: 'Cool review', theme: 'mist', layout: 'reading width, balanced split', bestFor: 'Proofreading and rendered Markdown review' },
+  { id: 'focus', label: 'Dark focus', theme: 'ink', layout: 'focus mode, editor-first split', bestFor: 'Low-distraction editing' },
+  { id: 'night', label: 'Night notes', theme: 'midnight', layout: 'soft wrap, preview view, low brightness', bestFor: 'Late-session reading and edits' },
+];
 const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
 const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
@@ -276,6 +283,74 @@ function themeCatalogJson() {
   return JSON.stringify(themeCatalogSnapshot(), null, 2) + '\n';
 }
 
+function themeRecipeSnapshot() {
+  return {
+    type: 'markpad-theme-recipes',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    current: currentTheme,
+    implementation: {
+      engine: 'css-variables',
+      assets: 'no image packs, icon fonts, or runtime theme engine',
+      storage: 'localStorage plus UI state JSON exports',
+    },
+    recipes: THEME_RECIPES.map(recipe => {
+      const theme = THEMES.find(item => item.id === recipe.theme);
+      return {
+        id: recipe.id,
+        label: recipe.label,
+        theme: recipe.theme,
+        themeLabel: theme?.label || recipe.theme,
+        mode: theme?.mode || '',
+        layout: recipe.layout,
+        bestFor: recipe.bestFor,
+        command: `Workspace preset: ${recipe.id}`,
+      };
+    }),
+  };
+}
+
+function themeRecipesJson() {
+  return JSON.stringify(themeRecipeSnapshot(), null, 2) + '\n';
+}
+
+function themeRecipesMarkdown() {
+  const snapshot = themeRecipeSnapshot();
+  return [
+    '# Markpad Theme Recipes',
+    '',
+    `Exported: ${new Date(snapshot.exportedAt).toLocaleString()}`,
+    `Current theme: ${snapshot.current}`,
+    '',
+    '| Recipe | Theme | Mode | Layout | Best for |',
+    '| --- | --- | --- | --- | --- |',
+    ...snapshot.recipes.map(recipe => `| ${recipe.label} | ${recipe.themeLabel} | ${recipe.mode} | ${markdownTableCell(recipe.layout)} | ${markdownTableCell(recipe.bestFor)} |`),
+    '',
+    'These recipes use built-in CSS-variable themes and local UI state only. They do not require image packs, icon fonts, or a runtime theme engine.',
+    '',
+  ].join('\n');
+}
+
+async function copyThemeRecipesJson() {
+  await navigator.clipboard.writeText(themeRecipesJson());
+  statusText.textContent = 'Theme recipes copied as JSON';
+}
+
+function exportThemeRecipesJson() {
+  downloadText('markpad-theme-recipes.json', 'application/json', themeRecipesJson());
+  statusText.textContent = 'Theme recipes exported as JSON';
+}
+
+async function copyThemeRecipesMarkdown() {
+  await navigator.clipboard.writeText(themeRecipesMarkdown());
+  statusText.textContent = 'Theme recipes copied as Markdown';
+}
+
+function exportThemeRecipesMarkdown() {
+  downloadText('markpad-theme-recipes.md', 'text/markdown', themeRecipesMarkdown());
+  statusText.textContent = 'Theme recipes exported as Markdown';
+}
+
 async function copyThemeCatalogJson() {
   await navigator.clipboard.writeText(themeCatalogJson());
   statusText.textContent = 'Theme catalog copied as JSON';
@@ -306,6 +381,8 @@ function showThemeLab() {
     <div class="theme-lab-actions">
       <button data-copy-theme-catalog-json>Copy catalog JSON</button>
       <button data-export-theme-catalog-json>Export catalog JSON</button>
+      <button data-copy-theme-recipes-md>Copy recipes MD</button>
+      <button data-export-theme-recipes-md>Export recipes MD</button>
       <button data-theme-guide-open>Guide</button>
       <button data-workspace-preset="writing">Writing preset</button>
       <button data-workspace-preset="planning">Planning preset</button>
@@ -2696,6 +2773,7 @@ function showThemeGuide() {
       <div class="diag-card"><strong>Lightweight</strong><span>CSS variables only</span><small>No icon fonts, image packs, or runtime theme engine</small></div>
       <div class="diag-card"><strong>Fast switch</strong><span>Command palette</span><small>Cycle all themes or only light/dark groups</small></div>
       <div class="diag-card"><strong>Theme Lab</strong><span>Compare + export</span><small>Apply themes and copy a small local JSON catalog</small></div>
+      <div class="diag-card"><strong>Recipes</strong><span>Writing, planning, review, focus, night</span><small>Export lightweight Markdown/JSON guidance</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-theme-choice="paper">Paper</button>
@@ -2705,6 +2783,8 @@ function showThemeGuide() {
       <button data-theme-choice="pine">Pine</button>
       <button data-theme-choice="midnight">Midnight</button>
       <button data-theme-lab-open>Theme Lab</button>
+      <button data-copy-theme-recipes-md>Copy recipes MD</button>
+      <button data-export-theme-recipes-json>Export recipes JSON</button>
     </div>
     <p class="diag-note">Themes intentionally reuse the same DOM and text icons. This keeps memory and binary size stable while giving each workspace mode a distinct feel.</p>
   `);
@@ -4320,6 +4400,10 @@ function commandItems() {
     { id: 'theme-lab', icon: 'TLB', title: 'Theme Lab', hint: 'Compare light/dark themes and export the local theme catalog', run: showThemeLab },
     { id: 'copy-theme-catalog-json', icon: 'TCJ', title: 'Copy theme catalog JSON', hint: 'Copy built-in theme metadata without CSS or image assets', run: copyThemeCatalogJson },
     { id: 'export-theme-catalog-json', icon: 'TEJ', title: 'Export theme catalog JSON', hint: 'Download built-in theme metadata as a small local JSON file', run: exportThemeCatalogJson },
+    { id: 'copy-theme-recipes-md', icon: 'TRM', title: 'Copy theme recipes Markdown', hint: 'Copy lightweight workspace theme recipes as Markdown', run: copyThemeRecipesMarkdown },
+    { id: 'export-theme-recipes-md', icon: 'ERM', title: 'Export theme recipes Markdown', hint: 'Download lightweight workspace theme recipes as Markdown', run: exportThemeRecipesMarkdown },
+    { id: 'copy-theme-recipes-json', icon: 'TRJ', title: 'Copy theme recipes JSON', hint: 'Copy lightweight workspace theme recipes as JSON', run: copyThemeRecipesJson },
+    { id: 'export-theme-recipes-json', icon: 'ERJ', title: 'Export theme recipes JSON', hint: 'Download lightweight workspace theme recipes as JSON', run: exportThemeRecipesJson },
     ...themePresetCommandItems(),
     ...themeCommandItems(),
     { id: 'footprint', icon: 'M', title: 'Local footprint', hint: 'Show loaded text, local canvas, trash, and heap estimates', run: showLocalFootprint },
@@ -11692,6 +11776,14 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyThemeCatalogBtn) await copyThemeCatalogJson();
   const exportThemeCatalogBtn = e.target.closest('[data-export-theme-catalog-json]');
   if (exportThemeCatalogBtn) exportThemeCatalogJson();
+  const copyThemeRecipesMdBtn = e.target.closest('[data-copy-theme-recipes-md]');
+  if (copyThemeRecipesMdBtn) await copyThemeRecipesMarkdown();
+  const exportThemeRecipesMdBtn = e.target.closest('[data-export-theme-recipes-md]');
+  if (exportThemeRecipesMdBtn) exportThemeRecipesMarkdown();
+  const copyThemeRecipesJsonBtn = e.target.closest('[data-copy-theme-recipes-json]');
+  if (copyThemeRecipesJsonBtn) await copyThemeRecipesJson();
+  const exportThemeRecipesJsonBtn = e.target.closest('[data-export-theme-recipes-json]');
+  if (exportThemeRecipesJsonBtn) exportThemeRecipesJson();
   const taskView = e.target.closest('[data-task-view]');
   if (taskView) await showTasksView(taskView.dataset.taskView);
   const taskAgenda = e.target.closest('[data-task-agenda]');
