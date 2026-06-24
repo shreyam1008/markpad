@@ -2648,6 +2648,29 @@ function showWorkspaceSearchPlan() {
   `);
 }
 
+function searchResultPageFootprint(results = searchLastResults) {
+  const items = Array.isArray(results) ? results : [];
+  const compact = items.map(result => ({
+    title: result.title || '',
+    path: result.path || '',
+    source: result.source || 'loaded',
+    line: Number.isFinite(Number(result.line)) ? Number(result.line) : null,
+    score: Number.isFinite(Number(result.score)) ? Number(result.score) : null,
+    kind: result.kind || result.type || '',
+    match: searchResultMatchLabel(result),
+    snippet: result.snippet ? String(result.snippet).replace(/\s+/g, ' ').trim() : '',
+  }));
+  const bytes = byteSize(JSON.stringify(compact));
+  const snippetBytes = compact.reduce((sum, item) => sum + byteSize(item.snippet || ''), 0);
+  return {
+    count: compact.length,
+    bytes,
+    snippetBytes,
+    metadataBytes: Math.max(0, bytes - snippetBytes),
+    averageBytes: compact.length ? Math.round(bytes / compact.length) : 0,
+  };
+}
+
 function searchProfileSnapshot(query = searchLastQuery, results = searchLastResults) {
   const plan = parseSearchQuery(query || '');
   const resultItems = Array.isArray(results) ? results : [];
@@ -2685,6 +2708,7 @@ function searchProfileSnapshot(query = searchLastQuery, results = searchLastResu
       sourceOfTruth: 'local files and loaded editor buffers',
     },
     cache: loadedSearchCacheFootprint(),
+    resultPage: searchResultPageFootprint(resultItems),
     limits: {
       loadedCacheMaxEntries: SEARCH_CACHE_MAX_ENTRIES,
       loadedCacheMaxBytes: SEARCH_CACHE_MAX_BYTES,
@@ -2727,6 +2751,7 @@ function searchProfileMarkdown(snapshot = searchProfileSnapshot()) {
     '## Local performance',
     '',
     `- Loaded search cache: ${formatBytes(snapshot.cache.bytes || 0)} (${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries)`,
+    `- Current result page: ${formatBytes(snapshot.resultPage?.bytes || 0)} (${snapshot.resultPage?.count || 0} results, ${formatBytes(snapshot.resultPage?.snippetBytes || 0)} snippets)`,
     `- Cache cap: ${formatBytes(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)}`,
     `- Per-file content cap: ${formatBytes(snapshot.limits.contentCapBytes || SEARCH_CONTENT_CAP)}`,
     `- Loaded backend bridge: ${snapshot.capabilities.loadedBackend ? 'available' : 'unavailable'}`,
@@ -2750,6 +2775,10 @@ function searchProfileCsv(snapshot = searchProfileSnapshot()) {
     ['query', snapshot.query || ''],
     ['backend_query', snapshot.backendQuery || ''],
     ['result_count', Number(snapshot.resultCount || 0)],
+    ['result_page_bytes', Number(snapshot.resultPage?.bytes || 0)],
+    ['result_page_snippet_bytes', Number(snapshot.resultPage?.snippetBytes || 0)],
+    ['result_page_metadata_bytes', Number(snapshot.resultPage?.metadataBytes || 0)],
+    ['result_page_average_bytes', Number(snapshot.resultPage?.averageBytes || 0)],
     ['cache_bytes', Number(snapshot.cache.bytes || 0)],
     ['cache_entries', Number(snapshot.cache.entries || 0)],
     ['cache_max_bytes', Number(snapshot.cache.maxBytes || SEARCH_CACHE_MAX_BYTES)],
@@ -2771,6 +2800,7 @@ function showSearchProfile() {
     <div class="diag-grid">
       <div class="diag-card"><strong>${escapeHtml(snapshot.scope)}</strong><span>Scope</span><small>loaded / local / all</small></div>
       <div class="diag-card"><strong>${snapshot.resultCount}</strong><span>Current results</span><small>${escapeHtml(sourceText)}</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.resultPage.bytes || 0)}</strong><span>Result page</span><small>${formatBytes(snapshot.resultPage.snippetBytes || 0)} snippets · avg ${formatBytes(snapshot.resultPage.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.cache.bytes || 0)}</strong><span>Loaded cache</span><small>${snapshot.cache.entries || 0}/${snapshot.cache.maxEntries || SEARCH_CACHE_MAX_ENTRIES} entries</small></div>
       <div class="diag-card"><strong>${(snapshot.operators.terms || []).length}</strong><span>Text terms</span><small>${escapeHtml((snapshot.operators.terms || []).join(', ') || 'none')}</small></div>
       <div class="diag-card"><strong>${(snapshot.operators.phrases || []).length}</strong><span>Phrases</span><small>${escapeHtml((snapshot.operators.phrases || []).join(', ') || 'none')}</small></div>
