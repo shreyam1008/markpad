@@ -3279,6 +3279,31 @@ async function collectLoadedSearchResults(query, token, limit) {
   return results.slice(0, limit || 40);
 }
 
+function searchResultDedupeKey(result) {
+  const path = String(result?.path || result?.title || 'draft').replace(/\\/g, '/').toLowerCase();
+  const line = Number.isFinite(Number(result?.line)) ? Number(result.line) : -1;
+  const snippet = String(result?.snippet || '').replace(/\s+/g, ' ').trim().slice(0, 96).toLowerCase();
+  return `${path}:${line}:${snippet}`;
+}
+
+function searchResultSourceWeight(result) {
+  return result?.source === 'local' ? 1 : 2;
+}
+
+function dedupeSearchResults(results) {
+  const byKey = new Map();
+  (Array.isArray(results) ? results : []).forEach((result) => {
+    const key = searchResultDedupeKey(result);
+    const current = byKey.get(key);
+    if (!current
+      || searchResultSourceWeight(result) > searchResultSourceWeight(current)
+      || Number(result?.score || 0) > Number(current?.score || 0)) {
+      byKey.set(key, result);
+    }
+  });
+  return [...byKey.values()];
+}
+
 async function runAllSearch(query, token) {
   const plan = parseSearchQuery(query);
   const [loaded, localPack] = await Promise.all([
@@ -3287,7 +3312,7 @@ async function runAllSearch(query, token) {
   ]);
   if (token !== searchToken) return;
   const local = (localPack.results || []).filter(result => searchResultMatchesPlan(result, plan));
-  const results = [...loaded, ...local]
+  const results = dedupeSearchResults([...loaded, ...local])
     .sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.title || '').localeCompare(String(b.title || '')))
     .slice(0, 70);
   renderSearchResults(results, query);
