@@ -5422,6 +5422,38 @@ function trashRetentionAuditSnapshot(draftItems, fileItems) {
   };
 }
 
+function trashRetentionMeter(audit) {
+  const total = Math.max(1, Number(audit.total || 0));
+  const buckets = [
+    { label: 'Today', value: Number(audit.urgent || 0), className: 'urgent' },
+    { label: 'Soon', value: Number(audit.soon || 0), className: 'soon' },
+    { label: 'Safe', value: Number(audit.safe || 0), className: 'safe' },
+  ];
+  const segments = buckets
+    .filter(bucket => bucket.value > 0)
+    .map(bucket => {
+      const width = Math.round((bucket.value / total) * 1000) / 10;
+      return `<span class="trash-meter-segment ${bucket.className}" style="width:${width}%;" title="${escapeHtml(`${bucket.label}: ${bucket.value}`)}"></span>`;
+    })
+    .join('');
+  const legend = buckets.map(bucket => `
+    <span class="trash-meter-chip ${bucket.className}">
+      <strong>${bucket.value}</strong>
+      ${escapeHtml(bucket.label)}
+    </span>
+  `).join('');
+  return `
+    <div class="trash-meter" aria-label="Trash retention distribution">
+      <div class="trash-meter-top">
+        <strong>${Number(audit.total || 0)} retained</strong>
+        <span>${audit.total ? `Next expiry: ${escapeHtml(audit.nextTitle || 'Untitled')} · ${escapeHtml(audit.nextExpiry)}` : 'No cleanup scheduled'}</span>
+      </div>
+      <div class="trash-meter-track">${segments || '<span class="trash-meter-segment empty" style="width:100%;"></span>'}</div>
+      <div class="trash-meter-legend">${legend}</div>
+    </div>
+  `;
+}
+
 async function showTrashRetentionAudit() {
   const draftItems = loadDraftTrash();
   const fileItems = await loadFileTrash();
@@ -5755,6 +5787,7 @@ async function showTrashView() {
   const items = loadDraftTrash();
   const fileItems = await loadFileTrash();
   const total = items.length + fileItems.length;
+  const audit = trashRetentionAuditSnapshot(items, fileItems);
   showModal('Trash', `
     <div class="trash-head">
       <span>${escapeHtml(trashRetentionSummaryText(items, fileItems))}</span>
@@ -5770,6 +5803,7 @@ async function showTrashView() {
       <button data-trash-clean-expired>Clean Expired</button>
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
+    ${trashRetentionMeter(audit)}
     <h3 style="margin:8px 0 6px;font-size:12px;font-weight:900;">Saved files</h3>
     ${renderFileTrashRows(fileItems)}
     <h3 style="margin:12px 0 6px;font-size:12px;font-weight:900;">Drafts</h3>

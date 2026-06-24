@@ -1496,6 +1496,59 @@ body.markpad-compact #modal-body {
 .trash-head button:hover,
 .trash-actions button:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
 .trash-head button:disabled { opacity: .45; cursor: default; }
+.trash-meter {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--editor) 82%, var(--surface));
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.trash-meter-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.trash-meter-top strong { color: var(--text); font-size: 12px; font-weight: 950; }
+.trash-meter-track {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  margin: 9px 0;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+}
+.trash-meter-segment { display: block; min-width: 1px; background: var(--accent); }
+.trash-meter-segment.urgent { background: #c54b33; }
+.trash-meter-segment.soon { background: #c57933; }
+.trash-meter-segment.safe { background: #4f8f62; }
+.trash-meter-segment.empty { background: var(--border-soft); }
+.trash-meter-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.trash-meter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 10px;
+  font-weight: 850;
+}
+.trash-meter-chip strong { color: var(--text); font-weight: 950; }
+.trash-meter-chip.urgent { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }
+.trash-meter-chip.soon { border-color: #c57933; color: #a85f1d; background: color-mix(in srgb, #c57933 10%, var(--surface)); }
+.trash-meter-chip.safe { border-color: #4f8f62; color: #3f7f50; background: color-mix(in srgb, #4f8f62 10%, var(--surface)); }
 .trash-list { display: flex; flex-direction: column; gap: 8px; }
 .trash-row {
   display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start;
