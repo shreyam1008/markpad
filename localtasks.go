@@ -14,6 +14,8 @@ const (
 	localTaskLimit   = 1000
 )
 
+var localTaskAppendFileCandidates = []string{"tasks.md", "Tasks.md", "tasks.markdown", "Tasks.markdown"}
+
 var localTaskLineRE = regexp.MustCompile(`^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$`)
 
 type LocalFolderTask struct {
@@ -105,7 +107,7 @@ func (a *App) AppendLocalFolderTask(line string) (SessionState, error) {
 	if line == "" {
 		return a.GetSession(), errors.New("task line is empty")
 	}
-	path := filepath.Join(root.Path, "Tasks.md")
+	path := localTaskAppendPath(root.Path)
 	content := "# Tasks\n\n"
 	if data, err := os.ReadFile(path); err == nil {
 		content = string(data)
@@ -119,6 +121,27 @@ func (a *App) AppendLocalFolderTask(line string) (SessionState, error) {
 		return a.GetSession(), err
 	}
 	return a.openPath(path)
+}
+
+func localTaskAppendPath(root string) string {
+	for _, name := range localTaskAppendFileCandidates {
+		path := filepath.Join(root, name)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			return path
+		}
+	}
+	if entries, err := os.ReadDir(root); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			lowerName := strings.ToLower(entry.Name())
+			if lowerName == "tasks.md" || lowerName == "tasks.markdown" {
+				return filepath.Join(root, entry.Name())
+			}
+		}
+	}
+	return filepath.Join(root, "tasks.md")
 }
 
 func parseLocalTasks(root string, path string, content string) []LocalFolderTask {

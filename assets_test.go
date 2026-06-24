@@ -49,6 +49,20 @@ var runtimePDFOrHighlightCDNClaims = []string{
 	"pdfjs-dist from a cdn",
 }
 
+var hostedTaskVendorMarkers = []string{
+	"api.linear.app",
+	"api.notion.com",
+	"api.todoist.com",
+	"api.trello.com",
+	"app.asana.com/api",
+	"asana.com/api/1.0",
+	"graph.microsoft.com/v1.0/me/todo",
+	"linear.app/graphql",
+	"notion.so/api",
+	"todoist.com/oauth",
+	"trello.com/1/",
+}
+
 func TestEmbeddedFrontendAssetsExposeIndexAtRoot(t *testing.T) {
 	frontendAssets, err := fs.Sub(assets, "frontend")
 	if err != nil {
@@ -84,6 +98,23 @@ func TestDocsPageAvoidsCDNFirstPaintDependencies(t *testing.T) {
 	assertTextOmits(t, "docs/index.html", string(data), remoteCDNAndFontHosts)
 }
 
+func TestTaskSystemKeepsPortableMarkdownContract(t *testing.T) {
+	data, err := os.ReadFile("docs/local-first-format-decisions.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "docs/local-first-format-decisions.md", string(data), []string{
+		"Use a Markdown task file as the canonical format.",
+		"Task line format: GitHub-style Markdown tasks",
+		"No lock-in: users can edit the task file in any Markdown editor.",
+		"must be disposable and rebuilt from `tasks.md`",
+	})
+
+	walkStaticTextFiles(t, "frontend", func(path, text string) {
+		assertTextOmits(t, path, text, hostedTaskVendorMarkers)
+	})
+}
+
 func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
 	t.Helper()
 
@@ -91,6 +122,16 @@ func assertTextOmits(t *testing.T, path string, text string, forbidden []string)
 	for _, value := range forbidden {
 		if strings.Contains(lowerText, strings.ToLower(value)) {
 			t.Fatalf("%s must not reference %q", path, value)
+		}
+	}
+}
+
+func assertTextIncludesAll(t *testing.T, path string, text string, required []string) {
+	t.Helper()
+
+	for _, value := range required {
+		if !strings.Contains(text, value) {
+			t.Fatalf("%s must include %q", path, value)
 		}
 	}
 }
