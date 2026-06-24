@@ -2135,6 +2135,37 @@ function searchPlanMetaSuffix(query) {
   return parts.length ? ` · ${parts.join(' · ')}` : '';
 }
 
+function searchQueryChipItems(query) {
+  const plan = parseSearchQuery(query || '');
+  const chips = [];
+  (plan.terms || []).forEach(value => chips.push({ kind: 'term', label: value }));
+  (plan.phrases || []).forEach(value => chips.push({ kind: 'phrase', label: `"${value}"` }));
+  Object.entries(plan.filters || {}).forEach(([key, values]) => {
+    (values || []).forEach(value => chips.push({ kind: 'filter', label: `${key}:${value}` }));
+  });
+  (plan.wildcards || []).forEach(value => chips.push({ kind: 'wildcard', label: value }));
+  (plan.fuzzyTerms || []).forEach(value => chips.push({ kind: 'fuzzy', label: `~${value}` }));
+  (plan.excludeTerms || []).forEach(value => chips.push({ kind: 'exclude', label: `-${value}` }));
+  (plan.excludePhrases || []).forEach(value => chips.push({ kind: 'exclude', label: `-"${value}"` }));
+  Object.entries(plan.excludes || {}).forEach(([key, values]) => {
+    (values || []).forEach(value => chips.push({ kind: 'exclude', label: `-${key}:${value}` }));
+  });
+  (plan.excludeWildcards || []).forEach(value => chips.push({ kind: 'exclude', label: `-${value}` }));
+  (plan.excludeFuzzyTerms || []).forEach(value => chips.push({ kind: 'exclude', label: `-~${value}` }));
+  return chips.slice(0, 12);
+}
+
+function renderSearchQueryChips(query) {
+  const chips = searchQueryChipItems(query);
+  if (!chips.length) return '';
+  return `
+    <div class="search-query-chips" aria-label="Parsed search query">
+      <span>Query plan</span>
+      ${chips.map(chip => `<button type="button" data-search-chip="${escapeHtml(chip.label)}" class="${escapeHtml(chip.kind)}" title="Add ${escapeHtml(chip.label)}">${escapeHtml(chip.label)}</button>`).join('')}
+    </div>
+  `;
+}
+
 function searchContentMatchesTaskFilters(content, filters) {
   if (!filters.length) return true;
   const lines = String(content || '').split('\n');
@@ -2831,9 +2862,10 @@ function updateSearchScopeButtons() {
         : 'Search loaded files with type:md path:notes tag:idea task:open plan* ~pln...';
   }
   if (searchMeta) {
-    searchMeta.textContent = searchScope === 'local'
+    const metaText = searchScope === 'local'
       ? 'Local folder search supports phrases, wildcards, fuzzy ~term, exclusions, and type:, path:, title:, tag:, task: filters. Ctrl+1/2/3 switches scope.'
       : 'Filters: type:, path:, title:, tag:, task:open/task:done. Add phrases, wildcards like plan*, fuzzy ~term, or exclusions like -archive.';
+    searchMeta.innerHTML = `<span>${escapeHtml(metaText)}</span>${renderSearchQueryChips(searchInput?.value || searchLastQuery || '')}`;
   }
 }
 
@@ -3027,6 +3059,11 @@ $('search-filter-hints')?.addEventListener('click', (event) => {
   const btn = event.target.closest('[data-search-example]');
   if (!btn) return;
   appendSearchExample(btn.dataset.searchExample || '');
+});
+searchMeta?.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-search-chip]');
+  if (!btn) return;
+  appendSearchExample(btn.dataset.searchChip || '');
 });
 
 async function runLocalFolderSearch(query, token) {

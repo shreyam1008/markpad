@@ -742,6 +742,55 @@ body.markpad-compact #modal-body {
   background: var(--hover);
   color: var(--text);
 }
+.search-query-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  max-width: min(100%, 760px);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.search-query-chips span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.search-query-chips button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 2px 7px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.search-query-chips button.filter,
+.search-query-chips button.phrase {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.search-query-chips button.exclude {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--border));
+}
+.search-query-chips button.fuzzy,
+.search-query-chips button.wildcard {
+  color: var(--text);
+  background: var(--hover);
+}
+.search-query-chips button:hover {
+  color: var(--accent-text);
+  border-color: var(--accent);
+  background: var(--accent);
+}
 .search-recents {
   display: flex;
   align-items: center;
