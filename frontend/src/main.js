@@ -376,6 +376,38 @@ function renderThemeLabCards(mode) {
     `).join('');
 }
 
+function renderThemeLabSummary() {
+  const current = THEMES.find(theme => theme.id === currentTheme) || THEMES[0];
+  const lightCount = THEMES.filter(theme => theme.mode === 'light').length;
+  const darkCount = THEMES.filter(theme => theme.mode === 'dark').length;
+  const recipes = THEME_RECIPES.filter(recipe => recipe.theme === current.id);
+  const recipeText = recipes.map(recipe => recipe.label).join(', ') || 'No preset uses this theme directly';
+  return `
+    <div class="theme-lab-summary">
+      <div class="theme-lab-stat">
+        <strong>${escapeHtml(current.label)}</strong>
+        <span>Current theme</span>
+        <small>${escapeHtml(current.mode)} · ${escapeHtml(current.hint)}</small>
+      </div>
+      <div class="theme-lab-stat">
+        <strong>${lightCount}/${darkCount}</strong>
+        <span>Light / dark</span>
+        <small>${THEMES.length} CSS-variable themes</small>
+      </div>
+      <div class="theme-lab-stat">
+        <strong>${recipes.length}</strong>
+        <span>Preset matches</span>
+        <small>${escapeHtml(recipeText)}</small>
+      </div>
+      <div class="theme-lab-stat">
+        <strong>0</strong>
+        <span>Theme assets</span>
+        <small>No image packs, icon fonts, or runtime engine</small>
+      </div>
+    </div>
+  `;
+}
+
 function showThemeLab() {
   showModal('Theme Lab', `
     <div class="theme-lab-actions">
@@ -390,6 +422,7 @@ function showThemeLab() {
       <button data-workspace-preset="canvas">Canvas preset</button>
       <button data-workspace-preset="night">Night preset</button>
     </div>
+    ${renderThemeLabSummary()}
     <h3 class="theme-lab-heading">Light themes</h3>
     <div class="theme-lab-grid">${renderThemeLabCards('light')}</div>
     <h3 class="theme-lab-heading">Dark themes</h3>
