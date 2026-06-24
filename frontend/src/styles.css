@@ -2321,6 +2321,7 @@ body.markpad-compact #modal-body {
   border: 1px solid var(--border-soft); border-radius: 999px; padding: 6px 10px;
   background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--muted);
   font-size: 11px; font-weight: 750; pointer-events: none;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow) 65%, transparent);
 }
 
 @media (max-width: 760px) {

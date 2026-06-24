@@ -165,6 +165,7 @@ const canvasColor  = $('canvas-color');
 const canvasWidth  = $('canvas-width');
 const canvasImportFile = $('canvas-import-file');
 const canvasStatus = $('canvas-status');
+const canvasHint = $('canvas-hint');
 
 const THEMES = [
   { id: 'paper', label: 'Paper', mode: 'light', hint: 'Default low-glare writing surface' },
@@ -9573,7 +9574,43 @@ function updateCanvasStatus() {
   const bytes = byteSize(JSON.stringify(canvasDoc || newCanvasDoc()));
   const bg = canvasDoc?.appState?.viewBackgroundColor || '#ffffff';
   canvasStatus.textContent = `${count} element${count === 1 ? '' : 's'} · ${zoom}% · ${formatBytes(bytes)} · bg ${bg}${canvasSelectionStatus(count)}`;
+  updateCanvasHint(count);
   updateCanvasSelectionButtons();
+}
+
+function updateCanvasHint(count = (canvasDoc?.elements || []).length) {
+  if (!canvasHint) return;
+  if (!count) {
+    canvasHint.textContent = 'Empty local canvas: choose Pen, Rect, Arrow, or Text. Wheel zooms, Pan moves the board, JSON stays on this machine.';
+    return;
+  }
+  if (canvasDoc && canvasSelectedIndex >= 0 && canvasSelectedIndex < count) {
+    const element = canvasDoc.elements[canvasSelectedIndex];
+    const label = String(element?.type || 'element');
+    canvasHint.textContent = `Selected ${label}: drag to move, Color/Width edits style, Ctrl+C/V copies locally, Front/Back changes layers.`;
+    return;
+  }
+  if (canvasTool === 'select') {
+    canvasHint.textContent = 'Select mode: click an element for copy, duplicate, style, layer, inspector, and fit actions.';
+    return;
+  }
+  if (canvasTool === 'pan') {
+    canvasHint.textContent = 'Pan mode: drag the board, wheel zooms, Fit recenters visible content, Write saves to the active local canvas file.';
+    return;
+  }
+  canvasHint.textContent = `${canvasToolLabel(canvasTool)} mode: drag on the canvas to create an element. Use Select to move and style it after drawing.`;
+}
+
+function canvasToolLabel(tool) {
+  return ({
+    pen: 'Pen',
+    rect: 'Rectangle',
+    ellipse: 'Oval',
+    line: 'Line',
+    arrow: 'Arrow',
+    text: 'Text',
+    erase: 'Erase',
+  })[tool] || 'Canvas';
 }
 
 function canvasSelectionStatus(count) {
