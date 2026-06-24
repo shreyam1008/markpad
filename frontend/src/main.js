@@ -4235,6 +4235,8 @@ function commandItems() {
     { id: 'canvas-load-current', icon: 'CL', title: 'Load current document into canvas', hint: 'Parse current Markpad or Obsidian canvas JSON from the editor', run: loadCurrentDocumentIntoCanvas },
     { id: 'canvas-import', icon: 'CI', title: 'Import canvas JSON', hint: 'Load Markpad or Obsidian .canvas JSON into the canvas draft', run: importCanvasJson },
     { id: 'copy-canvas-json', icon: 'CJ', title: 'Copy canvas JSON', hint: 'Copy the current Markpad canvas document as portable JSON', run: copyCanvasJson },
+    { id: 'copy-markcanvas-json', icon: 'CMJ', title: 'Copy .markcanvas.json', hint: 'Copy the current native Markpad canvas JSON with elements and appState', run: copyMarkcanvasJson },
+    { id: 'export-markcanvas-json', icon: 'EMJ', title: 'Export .markcanvas.json', hint: 'Download the current native Markpad canvas as a portable .markcanvas.json file', run: exportMarkcanvasJson },
     { id: 'canvas-svg', icon: 'SV', title: 'Export canvas SVG', hint: 'Download the current canvas as a lightweight SVG', run: exportCanvasSvg },
     { id: 'copy-canvas-svg', icon: 'CSV', title: 'Copy canvas SVG', hint: 'Copy the current canvas as lightweight SVG markup', run: copyCanvasSvg },
     { id: 'canvas-png-viewport', icon: 'PG', title: 'Export canvas viewport PNG', hint: 'Download the currently visible canvas viewport as a PNG image', run: exportCanvasPngViewport },
@@ -9361,6 +9363,25 @@ function exportCanvasJson() {
   statusText.textContent = 'Canvas JSON exported';
 }
 
+function markcanvasJson() {
+  if (!canvasDoc) loadCanvasState();
+  return `${JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc(), { includeExportedAt: true }), null, 2)}\n`;
+}
+
+function exportMarkcanvasJson() {
+  downloadText('markpad-canvas.markcanvas.json', 'application/json', markcanvasJson());
+  statusText.textContent = 'Native .markcanvas.json exported';
+}
+
+async function copyMarkcanvasJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(markcanvasJson());
+  statusText.textContent = 'Native .markcanvas.json copied';
+}
+
 async function copyCanvasJson() {
   if (!canvasDoc) loadCanvasState();
   const json = JSON.stringify(canvasPortableDoc(canvasDoc || newCanvasDoc(), { includeExportedAt: true }), null, 2);
@@ -9784,7 +9805,9 @@ function showCanvasHelp() {
       <div class="diag-card"><strong>outline</strong><span>Heading map</span><small>Append active Markdown headings as a hierarchy</small></div>
       <div class="diag-card"><strong>workspace</strong><span>Loaded item map</span><small>Append open files and drafts as cards</small></div>
       <div class="diag-card"><strong>backlinks</strong><span>Reference map</span><small>Append active-note backlinks as cards</small></div>
-      <div class="diag-card"><strong>format</strong><span>.canvas / JSON</span><small>Local text format, no binary lock-in</small></div>
+      <div class="diag-card"><strong>native</strong><span>.markcanvas.json</span><small>Plain Markpad JSON, no binary lock-in</small></div>
+      <div class="diag-card"><strong>state split</strong><span>elements + appState</span><small>Content stays separate from camera and UI state</small></div>
+      <div class="diag-card"><strong>legacy</strong><span>.canvas / JSON</span><small>Existing local text exports still work</small></div>
       <div class="diag-card"><strong>interchange</strong><span>Obsidian + Excalidraw</span><small>Export scenes without bundling their runtimes</small></div>
       <div class="diag-card"><strong>exports</strong><span>SVG, PNG, Markdown, CSV, JSON</span><small>Use the current viewport or full content</small></div>
       <div class="diag-card"><strong>shortcuts</strong><span>Copy, nudge, undo</span><small>Open the focused shortcut guide</small></div>
@@ -9797,10 +9820,12 @@ function showCanvasHelp() {
       <button data-canvas-element-inspector-open>Selected Inspector</button>
       <button data-canvas-fit-content>Fit Content</button>
       <button data-canvas-clear-undo>Clear Undo</button>
+      <button data-export-markcanvas-json>Export .markcanvas.json</button>
+      <button data-copy-markcanvas-json>Copy .markcanvas.json</button>
       <button data-export-excalidraw-canvas>Export .excalidraw</button>
       <button data-copy-excalidraw-canvas>Copy Excalidraw JSON</button>
     </div>
-    <p class="diag-note">Markpad canvas stores lightweight JSON elements and view state locally. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
+    <p class="diag-note">Markpad canvas stores lightweight JSON elements and appState locally. Export .markcanvas.json for the native file, .canvas for Obsidian/JSON Canvas, or .excalidraw for external drawing tools. Viewport wheel changes use a short debounced local save to reduce synchronous storage writes while drawing and element edits still save as completed local actions.</p>
   `);
 }
 
@@ -11471,6 +11496,10 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (copyCanvasInventoryJsonBtn) await copyCanvasInventoryJson();
   const exportCanvasInventoryJsonBtn = e.target.closest('[data-export-canvas-inventory-json]');
   if (exportCanvasInventoryJsonBtn) exportCanvasInventoryJson();
+  const copyMarkcanvasJsonBtn = e.target.closest('[data-copy-markcanvas-json]');
+  if (copyMarkcanvasJsonBtn) await copyMarkcanvasJson();
+  const exportMarkcanvasJsonBtn = e.target.closest('[data-export-markcanvas-json]');
+  if (exportMarkcanvasJsonBtn) exportMarkcanvasJson();
   const copyCanvasViewStateBtn = e.target.closest('[data-copy-canvas-view-state]');
   if (copyCanvasViewStateBtn) await copyCanvasViewStateMarkdown();
   const exportCanvasViewStateBtn = e.target.closest('[data-export-canvas-view-state]');
