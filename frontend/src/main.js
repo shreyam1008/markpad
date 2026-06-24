@@ -5068,6 +5068,14 @@ function lightweightAssetSnapshot() {
   const imagePixels = images.reduce((sum, image) => sum + Math.max(0, Number(image.width || 0) * Number(image.height || 0)), 0);
   const remoteImages = images.filter(image => /^https?:\/\//i.test(image.src || '')).length;
   const embeddedImages = images.filter(image => /^data:/i.test(image.src || '')).length;
+  const estimatedDecodedImageBytes = imagePixels * 4;
+  const budget = {
+    status: images.length <= 8 && estimatedDecodedImageBytes <= 16 * 1024 * 1024 ? 'ok' : 'review',
+    domImageLimit: 8,
+    decodedImageByteLimit: 16 * 1024 * 1024,
+    domImagesWithinBudget: images.length <= 8,
+    decodedImagesWithinBudget: estimatedDecodedImageBytes <= 16 * 1024 * 1024,
+  };
   const commandIcons = commandIconMetrics();
   return {
     type: 'markpad-lightweight-assets',
@@ -5091,7 +5099,7 @@ function lightweightAssetSnapshot() {
       remoteImages,
       embeddedImages,
       imagePixels,
-      estimatedDecodedImageBytes: imagePixels * 4,
+      estimatedDecodedImageBytes,
       inlineSvg: document.querySelectorAll('svg').length,
       canvasElements: document.querySelectorAll('canvas').length,
       stylesheets: document.styleSheets.length,
@@ -5100,6 +5108,7 @@ function lightweightAssetSnapshot() {
       longCommandTextIcons: commandIcons.longLabels,
       commandCategories: Object.keys(commandIcons.categories).length,
     },
+    budget,
     commandIcons,
     images: images.slice(0, 20),
     notes: [
@@ -5127,6 +5136,7 @@ function lightweightAssetMarkdown(snapshot = lightweightAssetSnapshot()) {
     `- Themes: ${snapshot.counts.themes} (${snapshot.counts.lightThemes} light, ${snapshot.counts.darkThemes} dark)`,
     `- DOM images: ${snapshot.counts.domImages} (${snapshot.counts.remoteImages} remote, ${snapshot.counts.embeddedImages} embedded)`,
     `- Estimated decoded image bytes: ${formatBytes(snapshot.counts.estimatedDecodedImageBytes || 0)}`,
+    `- Current-view asset budget: ${snapshot.budget.status}${snapshot.budget.status === 'ok' ? '' : ` (limit ${snapshot.budget.domImageLimit} images / ${formatBytes(snapshot.budget.decodedImageByteLimit)})`}`,
     `- Inline SVG elements: ${snapshot.counts.inlineSvg}`,
     `- Canvas elements: ${snapshot.counts.canvasElements}`,
     `- Stylesheets: ${snapshot.counts.stylesheets}`,
@@ -5176,6 +5186,7 @@ function showLightweightAssetReport() {
   showModal('Lightweight Assets', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${snapshot.counts.themes}</strong><span>CSS themes</span><small>${snapshot.counts.lightThemes} light · ${snapshot.counts.darkThemes} dark</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.budget.status)}</strong><span>Asset budget</span><small>${snapshot.budget.domImagesWithinBudget ? 'image count ok' : 'image count review'} · ${snapshot.budget.decodedImagesWithinBudget ? 'decode ok' : 'decode review'}</small></div>
       <div class="diag-card"><strong>${snapshot.counts.domImages}</strong><span>DOM images</span><small>${snapshot.counts.remoteImages} remote · ${snapshot.counts.embeddedImages} embedded</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.counts.estimatedDecodedImageBytes || 0)}</strong><span>Image decode est.</span><small>${snapshot.counts.imagePixels} rendered pixels</small></div>
       <div class="diag-card"><strong>${snapshot.counts.inlineSvg}</strong><span>Inline SVG</span><small>Current toolbar/document DOM</small></div>
