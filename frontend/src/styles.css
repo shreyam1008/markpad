@@ -2038,6 +2038,20 @@ body.markpad-compact #modal-body {
 .trash-meter-chip.urgent { border-color: #c54b33; color: #c54b33; background: color-mix(in srgb, #c54b33 10%, var(--surface)); }
 .trash-meter-chip.soon { border-color: #c57933; color: #a85f1d; background: color-mix(in srgb, #c57933 10%, var(--surface)); }
 .trash-meter-chip.safe { border-color: #4f8f62; color: #3f7f50; background: color-mix(in srgb, #4f8f62 10%, var(--surface)); }
+.trash-cleanup-note {
+  display: grid;
+  gap: 3px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--editor) 88%, var(--surface));
+  color: var(--muted);
+  padding: 8px 10px;
+  margin: -2px 0 10px;
+  font-size: 11px;
+  font-weight: 760;
+}
+.trash-cleanup-note strong { color: var(--text); font-size: 12px; font-weight: 950; }
+.trash-cleanup-note.ready { border-color: #c57933; background: color-mix(in srgb, #c57933 8%, var(--editor)); }
 .trash-list { display: flex; flex-direction: column; gap: 8px; }
 .trash-row {
   display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start;

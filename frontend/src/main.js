@@ -6870,6 +6870,10 @@ async function showTrashView() {
       <button data-trash-empty ${total ? '' : 'disabled'}>Empty Trash</button>
     </div>
     ${trashRetentionMeter(audit)}
+    <div class="trash-cleanup-note ${expiredCleanupCandidates ? 'ready' : 'idle'}">
+      <strong>${expiredCleanupCandidates ? `${expiredCleanupCandidates} expired cleanup candidate${expiredCleanupCandidates === 1 ? '' : 's'}` : 'No expired cleanup candidates'}</strong>
+      <span>${DRAFT_TRASH_DAYS}-day retention is active. Clean Expired only removes items past retention; use Profile before permanent cleanup.</span>
+    </div>
     <h3 style="margin:8px 0 6px;font-size:12px;font-weight:900;">Saved files</h3>
     ${renderFileTrashRows(fileItems)}
     <h3 style="margin:12px 0 6px;font-size:12px;font-weight:900;">Drafts</h3>
