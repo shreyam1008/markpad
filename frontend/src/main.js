@@ -227,6 +227,7 @@ const SEARCH_CACHE_MAX_ENTRIES = 24;
 const SEARCH_CACHE_MAX_BYTES = 6 * 1024 * 1024;
 const SEARCH_RECENTS_KEY = 'markpad-search-recents-v1';
 const SEARCH_RECENTS_LIMIT = 8;
+const SEARCH_RESULTS_RENDER_LIMIT = 80;
 const COMMAND_RECENTS_KEY = 'markpad-command-recents-v1';
 const COMMAND_RECENTS_LIMIT = 8;
 const LOCAL_SETTINGS_KEYS = [
@@ -4042,31 +4043,35 @@ function renderSearchResults(results, query) {
   const trimmedQuery = String(query || '').trim();
   const highlightTerms = searchHighlightTerms(trimmedQuery);
   const planMeta = searchPlanMetaSuffix(trimmedQuery);
-  searchLastResults = Array.isArray(results) ? results : [];
+  const allResults = Array.isArray(results) ? results : [];
+  const visibleResults = allResults.slice(0, SEARCH_RESULTS_RENDER_LIMIT);
+  const hiddenCount = Math.max(0, allResults.length - visibleResults.length);
+  const renderCapMeta = hiddenCount ? ` · showing first ${visibleResults.length}` : '';
+  searchLastResults = allResults;
   searchLastQuery = trimmedQuery;
-  searchResults.innerHTML = renderSearchResultStrip(results, trimmedQuery);
-  searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, results.length - 1));
+  searchResults.innerHTML = renderSearchResultStrip(allResults, trimmedQuery);
+  searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, visibleResults.length - 1));
   if (searchScope === 'all') {
-    const loadedCount = results.filter(result => result.source !== 'local').length;
-    const localCount = results.length - loadedCount;
+    const loadedCount = allResults.filter(result => result.source !== 'local').length;
+    const localCount = allResults.length - loadedCount;
     searchMeta.textContent = trimmedQuery
-      ? `${results.length} result${results.length === 1 ? '' : 's'}${planMeta} · ${loadedCount} loaded · ${localCount} local`
-      : `${results.length} item${results.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local`;
+      ? `${allResults.length} result${allResults.length === 1 ? '' : 's'}${planMeta} · ${loadedCount} loaded · ${localCount} local${renderCapMeta}`
+      : `${allResults.length} item${allResults.length === 1 ? '' : 's'} · ${loadedCount} loaded · ${localCount} local${renderCapMeta}`;
   } else if (searchScope !== 'local') {
     searchMeta.textContent = trimmedQuery
-      ? `${results.length} result${results.length === 1 ? '' : 's'} across loaded files${planMeta}`
+      ? `${allResults.length} result${allResults.length === 1 ? '' : 's'} across loaded files${planMeta}${renderCapMeta}`
       : 'Type to search content. Empty state lists loaded files.';
   }
-  if (!results.length) {
+  if (!allResults.length) {
     searchInput?.removeAttribute('aria-activedescendant');
     searchResults.insertAdjacentHTML('beforeend', searchEmptyHtml(searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.', trimmedQuery));
     return;
   }
   searchResults.setAttribute('role', 'listbox');
-  results.forEach((result, index) => {
+  visibleResults.forEach((result, index) => {
     const row = el('button', `search-row${index === searchActiveIndex ? ' active' : ''}`);
     const matchLabel = searchResultMatchLabel(result);
-    const rowLabel = searchResultKeyboardLabel(result, index, results.length);
+    const rowLabel = searchResultKeyboardLabel(result, index, allResults.length);
     row.type = 'button';
     row.id = `search-result-${index}`;
     row.setAttribute('role', 'option');
@@ -4093,6 +4098,9 @@ function renderSearchResults(results, query) {
     row.addEventListener('click', () => openSearchResult(result));
     searchResults.appendChild(row);
   });
+  if (hiddenCount) {
+    searchResults.insertAdjacentHTML('beforeend', `<div class="search-empty">Showing the first ${visibleResults.length} of ${allResults.length} results to keep the palette lightweight. Refine the query to narrow the list.</div>`);
+  }
   setSearchActive(searchActiveIndex);
 }
 
@@ -4516,7 +4524,8 @@ function setSearchActive(index, options = {}) {
   }
   const activeResult = searchLastResults[searchActiveIndex];
   if (activeResult && searchMeta) {
-    searchMeta.textContent = searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length);
+    const capMeta = searchLastResults.length > rows.length ? ` · showing first ${rows.length}` : '';
+    searchMeta.textContent = `${searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length)}${capMeta}`;
   }
 }
 
