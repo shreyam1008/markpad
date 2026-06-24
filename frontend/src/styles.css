@@ -892,6 +892,43 @@ body.markpad-compact #modal-body {
   text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid var(--border-soft);
 }
 .command-results { overflow-y: auto; padding: 8px; }
+.command-cats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 4px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.command-cats span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 0 4px;
+}
+.command-cats button {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--editor);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.command-cats button em {
+  margin-left: 3px;
+  color: var(--accent);
+  font-style: normal;
+}
+.command-cats button:hover {
+  border-color: var(--accent);
+  background: var(--hover);
+  color: var(--text);
+}
 .command-row {
   width: 100%; border: 1px solid transparent; border-radius: 14px; background: transparent;
   color: var(--text); display: grid; grid-template-columns: 28px 1fr auto; align-items: center;

@@ -4727,26 +4727,49 @@ function commandCategory(item) {
 }
 
 function commandEmptyHtml(query) {
-  const categories = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
+  const categories = commandPaletteCategories();
   const chips = categories
-    .map(category => `<button class="command-empty-chip" data-command-empty-category="${category}" type="button">${category}</button>`)
+    .map(category => `<button class="command-empty-chip" data-command-empty-category="${escapeHtml(category.label)}" type="button">${escapeHtml(category.label)}</button>`)
     .join('');
   const suffix = query ? ` for &quot;${escapeHtml(query)}&quot;` : '';
   return `<div class="command-empty"><strong>No command matched${suffix}.</strong><span>Try a command category:</span><div class="command-empty-cats">${chips}</div></div>`;
 }
 
+function commandPaletteCategories(items = commandItems()) {
+  const preferred = ['Search', 'Tasks', 'Canvas', 'Local', 'Layout', 'Theme', 'Trash', 'Diagnostics'];
+  const counts = items.reduce((acc, item) => {
+    const category = commandCategory(item);
+    if (!preferred.includes(category)) return acc;
+    acc[category] = (acc[category] || 0) + 1;
+    return acc;
+  }, {});
+  return preferred.map(label => ({ label, count: counts[label] || 0 })).filter(item => item.count);
+}
+
+function renderCommandCategoryStrip(items) {
+  const categories = commandPaletteCategories(items);
+  if (!categories.length) return '';
+  return `
+    <div class="command-cats" aria-label="Command categories">
+      <span>Menus</span>
+      ${categories.map(category => `<button type="button" data-command-category="${escapeHtml(category.label)}">${escapeHtml(category.label)} <em>${category.count}</em></button>`).join('')}
+    </div>
+  `;
+}
+
 function renderCommandPalette() {
   const query = commandInput.value.trim();
-  const items = commandItems()
+  const allItems = commandItems();
+  const items = allItems
     .map(item => ({ item, score: commandScore(item, query) }))
     .filter(row => row.score > 0)
     .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title))
     .slice(0, 18)
     .map(row => row.item);
-  commandResults.innerHTML = '';
+  commandResults.innerHTML = renderCommandCategoryStrip(allItems);
   commandActiveIndex = Math.min(commandActiveIndex, Math.max(0, items.length - 1));
   if (!items.length) {
-    commandResults.innerHTML = commandEmptyHtml(query);
+    commandResults.innerHTML += commandEmptyHtml(query);
     return;
   }
   items.forEach((item, index) => {
@@ -4809,6 +4832,11 @@ commandInput?.addEventListener('input', () => {
 });
 
 commandResults?.addEventListener('click', (event) => {
+  const chip = event.target.closest('[data-command-category]');
+  if (chip) {
+    openCommandPaletteQuery(chip.dataset.commandCategory || '');
+    return;
+  }
   const category = event.target.closest('[data-command-empty-category]');
   if (!category) return;
   openCommandPaletteQuery(category.dataset.commandEmptyCategory || '');
