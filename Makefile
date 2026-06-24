@@ -4,7 +4,7 @@ APP := markpad
 DIST := dist
 TAGS := desktop,production,webkit2_41
 
-.PHONY: run dev build css budget smoke-desktop test test-core vet js-check validate fmt clean
+.PHONY: run dev build css budget smoke-desktop memory test test-core vet js-check validate fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -24,6 +24,9 @@ budget:
 
 smoke-desktop: build
 	sh scripts/smoke-desktop.sh
+
+memory: build
+	sh scripts/measure-memory.sh
 
 test:
 	$(GO) test ./internal/session ./tests

@@ -14,6 +14,7 @@ make test
 node --check frontend/src/main.js
 make build
 make smoke-desktop
+make memory
 stat -c '%s' dist/markpad
 du -h dist/markpad
 ```
@@ -24,6 +25,22 @@ Current validated baseline:
 - Binary: `dist/markpad`
 - Binary size budget: under `10.00 MiB` via `make budget`.
 - Idle native smoke PSS observed by perf agent: about `184 MiB` across the Wails/WebKit process tree on this Linux/WebKit machine.
+
+## Memory measurement
+
+Use `make memory` for the default clean-profile desktop measurement. The target builds `dist/markpad`, launches it with `MARKPAD_DEBUG_BOOT=1`, waits for the DOM probe, then samples process-tree RSS and PSS from `/proc/*/smaps_rollup` once per second.
+
+For repeat runs or a longer steady-state window:
+
+```sh
+RUNS=3 SAMPLE_SECONDS=10 make memory
+```
+
+To measure an existing binary directly:
+
+```sh
+MARKPAD_MEMORY_BINARY=dist/markpad RUNS=1 SAMPLE_SECONDS=5 sh scripts/measure-memory.sh
+```
 
 ## Perf guardrails
 
