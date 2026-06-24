@@ -30,8 +30,8 @@
       <!-- Sidebar expanded content -->
       <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
         <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
-          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)" aria-label="New note">+ New</button>
+          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-2 pb-2">
@@ -62,8 +62,8 @@
 
       <!-- Sidebar collapsed content -->
       <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
-        <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note">+</button>
+        <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note" aria-label="New note">+</button>
       </div>
     </aside>
 
@@ -74,7 +74,7 @@
       <div class="flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
         <div class="flex items-center gap-2 min-w-0">
           <span id="note-title" class="font-semibold text-sm truncate max-w-[220px]">Untitled</span>
-          <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info">i</button>
+          <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info" aria-label="File info">i</button>
           <span id="dirty-indicator" class="hidden text-[13px] font-bold text-unsaved whitespace-nowrap animate-pulse">NOT SAVED</span>
         </div>
         <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
@@ -98,19 +98,19 @@
           <button data-split-swap title="Swap editor and preview widths" aria-pressed="false">Swap</button>
         </div>
         <div class="flex gap-1.5">
-          <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
-          <button id="btn-command" class="icon-btn" title="Command palette (Ctrl+P)" aria-label="Command palette"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/><path d="m16 10 3 2-3 2"/></svg></button>
-          <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
-          <button id="btn-canvas" class="icon-btn" title="Canvas draft" aria-label="Canvas draft"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
-          <button id="btn-focus" class="icon-btn" title="Focus mode (Ctrl+Shift+L)" aria-label="Focus mode"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg></button>
-          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
-          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
-          <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
-          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
+          <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
+          <button id="btn-command" class="icon-btn" title="Command palette (Ctrl+P)" aria-label="Command palette"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/><path d="m16 10 3 2-3 2"/></svg></button>
+          <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
+          <button id="btn-canvas" class="icon-btn" title="Canvas draft" aria-label="Canvas draft"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
+          <button id="btn-focus" class="icon-btn" title="Focus mode (Ctrl+Shift+L)" aria-label="Focus mode"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg></button>
+          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
+          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
+          <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes" aria-label="Revert changes">Cancel</button>
+          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)" aria-label="Save current file">Save</button>
           <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           </button>
-          <button id="btn-theme" class="theme-chip" data-theme-mode="light" title="Paper (light) - Default low-glare writing surface">Paper</button>
+          <button id="btn-theme" class="theme-chip" data-theme-mode="light" title="Paper (light) - Default low-glare writing surface" aria-label="Theme: Paper, light. Default low-glare writing surface">Paper</button>
         </div>
       </div>
 
