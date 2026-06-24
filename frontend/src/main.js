@@ -10350,11 +10350,15 @@ function insertSearchResultsCanvasBoard() {
     const x = origin.x + col * 260;
     const y = origin.y + row * 118;
     const stroke = result.source === 'local' ? '#2563eb' : '#2f6f61';
-    elements.push({ id: canvasId(), type: 'rect', x, y, w: 230, h: 92, stroke, width: 2 });
-    elements.push(canvasTemplateText(x + 14, y + 28, compactCanvasSearchTitle(result), 14, stroke));
-    elements.push(canvasTemplateText(x + 14, y + 50, compactCanvasSearchMeta(result), 10, '#6b6e68'));
     const snippet = compactCanvasSearchSnippet(result);
-    if (snippet) elements.push(canvasTemplateText(x + 14, y + 72, snippet, 10, '#1f2937'));
+    elements.push(canvasTemplateSticky(
+      x,
+      y,
+      230,
+      92,
+      [compactCanvasSearchTitle(result), compactCanvasSearchMeta(result), snippet].filter(Boolean).join('\n'),
+      stroke
+    ));
   });
   if (searchLastResults.length > visible.length) {
     elements.push(canvasTemplateText(origin.x, origin.y + 970, `${searchLastResults.length - visible.length} additional results omitted to keep the canvas lightweight.`, 13, '#6b6e68'));
