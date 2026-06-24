@@ -796,6 +796,30 @@ func TestContextMenuDraftSaveAsIsGuarded(t *testing.T) {
 	})
 }
 
+func TestCanvasCreationUsesMarkpadModalPrompt(t *testing.T) {
+	mainJS, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(mainJS)
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"function promptCanvasTitleModal()",
+		"function resolveCanvasTitlePrompt(value)",
+		"function submitCanvasTitlePrompt()",
+		"const title = await promptCanvasTitleModal();",
+		`data-canvas-title-input`,
+		`data-canvas-title-create`,
+		`data-canvas-title-cancel`,
+		`New Canvas File`,
+		`Canvas.markcanvas.json`,
+		`e.target.closest('[data-canvas-title-input]')`,
+		"resolveCanvasTitlePrompt(null);",
+	})
+	assertTextOmits(t, "frontend/src/main.js", text, []string{
+		"window.prompt('New local canvas title')",
+	})
+}
+
 func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {

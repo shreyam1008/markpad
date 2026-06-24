@@ -7804,8 +7804,44 @@ async function createLocalFolderNote() {
   }
 }
 
+let canvasTitlePromptResolve = null;
+
+function resolveCanvasTitlePrompt(value) {
+  if (!canvasTitlePromptResolve) return;
+  const resolve = canvasTitlePromptResolve;
+  canvasTitlePromptResolve = null;
+  modalOverlay.classList.add('hidden');
+  resolve(value);
+}
+
+function submitCanvasTitlePrompt() {
+  const input = modalBodyEl.querySelector('[data-canvas-title-input]');
+  resolveCanvasTitlePrompt(String(input?.value ?? ''));
+}
+
+function promptCanvasTitleModal() {
+  if (canvasTitlePromptResolve) resolveCanvasTitlePrompt(null);
+  return new Promise(resolve => {
+    canvasTitlePromptResolve = resolve;
+    showModal('New Canvas File', `
+      <div class="diag-grid">
+        <div class="diag-card"><strong>.markcanvas.json</strong><span>Native file</span><small>Portable local JSON saved in the configured workspace folder</small></div>
+        <div class="diag-card"><strong>local</strong><span>No sync in phase 1</span><small>Title, file path, and drawing data stay on this computer</small></div>
+        <div class="diag-card"><strong>empty ok</strong><span>Default name</span><small>Leave blank to create Canvas.markcanvas.json with collision-safe numbering</small></div>
+      </div>
+      <div class="local-search-row" style="margin-top:10px;">
+        <input data-canvas-title-input type="text" autocomplete="off" spellcheck="false" placeholder="Canvas title" aria-label="Canvas title" />
+        <button data-canvas-title-create type="button">Create</button>
+        <button data-canvas-title-cancel type="button">Cancel</button>
+      </div>
+      <p class="diag-note">Use short file names. Markpad will normalize the extension and keep view state out of the portable canvas file.</p>
+    `);
+    requestAnimationFrame(() => modalBodyEl.querySelector('[data-canvas-title-input]')?.focus());
+  });
+}
+
 async function createLocalFolderCanvas() {
-  const title = window.prompt('New local canvas title');
+  const title = await promptCanvasTitleModal();
   if (title === null) return;
   try {
     if (!window.go?.main?.App?.CreateLocalFolderCanvas) {
@@ -15391,9 +15427,27 @@ function showModal(t, html, wide) {
   modalOverlay.classList.toggle('tasks-modal', !!wide);
   modalOverlay.classList.remove('hidden');
 }
-$('modal-close').addEventListener('click', () => modalOverlay.classList.add('hidden'));
-modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.add('hidden'); });
+$('modal-close').addEventListener('click', () => {
+  resolveCanvasTitlePrompt(null);
+  modalOverlay.classList.add('hidden');
+});
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) {
+    resolveCanvasTitlePrompt(null);
+    modalOverlay.classList.add('hidden');
+  }
+});
 modalBodyEl.addEventListener('click', async (e) => {
+  const canvasTitleCreate = e.target.closest('[data-canvas-title-create]');
+  if (canvasTitleCreate && !canvasTitleCreate.disabled) {
+    submitCanvasTitlePrompt();
+    return;
+  }
+  const canvasTitleCancel = e.target.closest('[data-canvas-title-cancel]');
+  if (canvasTitleCancel && !canvasTitleCancel.disabled) {
+    resolveCanvasTitlePrompt(null);
+    return;
+  }
   const folder = e.target.closest('[data-open-folder]');
   if (folder) window.go.main.App.OpenContainingFolder(folder.dataset.openFolder);
   const exportSettings = e.target.closest('[data-export-local-settings]');
@@ -15980,6 +16034,13 @@ modalBodyEl.addEventListener('drop', async (e) => {
 modalBodyEl.addEventListener('dragend', clearTaskBoardDragState);
 
 modalBodyEl.addEventListener('keydown', async (e) => {
+  if (e.target.closest('[data-canvas-title-input]')) {
+    if (e.key !== 'Enter' && e.key !== 'Escape') return;
+    e.preventDefault();
+    if (e.key === 'Enter') submitCanvasTitlePrompt();
+    else resolveCanvasTitlePrompt(null);
+    return;
+  }
   if (e.key !== 'Enter') return;
   if (e.target.closest('[data-task-search]')) {
     e.preventDefault();
