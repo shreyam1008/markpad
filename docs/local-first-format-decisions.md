@@ -43,7 +43,7 @@ Use a Markdown task file as the canonical format.
 - Controls: task view, source, status filters, and query examples should expose clear labels and active pressed state while remaining projections over Markdown.
 - No lock-in: users can edit the task file in any Markdown editor.
 - Diagnostics: Task Source Profile must expose loaded/local counts, due buckets, active filters, generated `tasks.md` size, and export readiness.
-- Task Source Profile should report visible task page bytes from already parsed task metadata only.
+- Task Source Profile should report visible task page bytes and generated portable export sizes from already parsed task metadata only.
 - Portable exports should include compact loaded/local and line provenance where the target format supports text metadata.
 - Main view: summarize visible/total tasks, loaded/local sources, task files, and due buckets from the current parsed Markdown only.
 - Empty states: offer text-only actions to add a task, create/open the task file workflow, show task format help, inspect source profile, and reset filters without adding another task store.
