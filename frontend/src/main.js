@@ -4107,6 +4107,17 @@ async function upgradeMapSnapshot() {
   const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
   const localResults = searchLastResults.length - loadedResults;
   const commandIcons = commandIconMetrics();
+  const taskItems = Array.isArray(latestTasks) ? latestTasks : [];
+  const visibleTaskItems = visibleTasksForView(taskItems);
+  const taskDueBuckets = taskItems.reduce((acc, task) => {
+    const bucket = taskDueBucket(task);
+    acc[bucket] = (acc[bucket] || 0) + 1;
+    return acc;
+  }, { overdue: 0, today: 0, tomorrow: 0, week: 0, later: 0, unscheduled: 0, done: 0 });
+  const taskSourceCounts = taskItems.reduce((acc, task) => {
+    acc[task.local ? 'local' : 'loaded'] += 1;
+    return acc;
+  }, { loaded: 0, local: 0 });
   return {
     type: 'markpad-upgrade-map',
     version: 1,
@@ -4166,6 +4177,16 @@ async function upgradeMapSnapshot() {
       sourceFilter: taskSourceFilter,
       filter: taskFilter,
       query: taskQuery || '',
+      known: taskItems.length,
+      visible: visibleTaskItems.length,
+      open: taskItems.filter(task => !task.checked).length,
+      done: taskItems.filter(task => task.checked).length,
+      waiting: taskItems.filter(task => !task.checked && task.waiting).length,
+      high: taskItems.filter(isHighPriorityTask).length,
+      loaded: taskSourceCounts.loaded,
+      local: taskSourceCounts.local,
+      dueBuckets: taskDueBuckets,
+      sourceState: taskItems.length ? 'current in-memory task parse' : 'open Tasks to populate current task metadata',
       sourceOfTruth: 'Markdown checkbox lines',
     },
     canvas: {
@@ -4204,7 +4225,7 @@ function upgradeMapMarkdown(snapshot) {
     `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
     `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
-    `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.sourceFilter}, ${snapshot.tasks.filter}${snapshot.tasks.query ? `, ${snapshot.tasks.query}` : ''}, ${snapshot.tasks.sourceOfTruth}`,
+    `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.visible}/${snapshot.tasks.known} visible, ${snapshot.tasks.open} open / ${snapshot.tasks.done} done, ${snapshot.tasks.loaded} loaded / ${snapshot.tasks.local} local, due today ${snapshot.tasks.dueBuckets?.today || 0}, overdue ${snapshot.tasks.dueBuckets?.overdue || 0}, ${snapshot.tasks.sourceOfTruth}`,
     `- Canvas: ${snapshot.canvas.elements} elements, ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
     `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
     '',
@@ -4248,6 +4269,20 @@ function upgradeMapCsv(snapshot) {
     ['task_view_mode', snapshot.tasks.viewMode],
     ['task_source_filter', snapshot.tasks.sourceFilter],
     ['task_filter', snapshot.tasks.filter],
+    ['task_known', Number(snapshot.tasks.known || 0)],
+    ['task_visible', Number(snapshot.tasks.visible || 0)],
+    ['task_open', Number(snapshot.tasks.open || 0)],
+    ['task_done', Number(snapshot.tasks.done || 0)],
+    ['task_waiting', Number(snapshot.tasks.waiting || 0)],
+    ['task_high', Number(snapshot.tasks.high || 0)],
+    ['task_loaded', Number(snapshot.tasks.loaded || 0)],
+    ['task_local', Number(snapshot.tasks.local || 0)],
+    ['task_due_overdue', Number(snapshot.tasks.dueBuckets?.overdue || 0)],
+    ['task_due_today', Number(snapshot.tasks.dueBuckets?.today || 0)],
+    ['task_due_tomorrow', Number(snapshot.tasks.dueBuckets?.tomorrow || 0)],
+    ['task_due_week', Number(snapshot.tasks.dueBuckets?.week || 0)],
+    ['task_due_later', Number(snapshot.tasks.dueBuckets?.later || 0)],
+    ['task_due_unscheduled', Number(snapshot.tasks.dueBuckets?.unscheduled || 0)],
     ['canvas_elements', Number(snapshot.canvas.elements || 0)],
     ['canvas_bytes', Number(snapshot.canvas.bytes || 0)],
     ['canvas_undo_snapshots', Number(snapshot.canvas.undoSnapshots || 0)],
@@ -4297,7 +4332,8 @@ async function showUpgradeMap() {
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.urgent}</strong><span>Trash expiry</span><small>${snapshot.trash.soon} soon · ${snapshot.trash.safe} safe · next ${escapeHtml(snapshot.trash.nextExpiry || 'None')}</small></div>
-      <div class="diag-card"><strong>${escapeHtml(snapshot.tasks.viewMode)}</strong><span>Tasks</span><small>${escapeHtml(snapshot.tasks.sourceFilter)} · ${escapeHtml(snapshot.tasks.filter)}${snapshot.tasks.query ? ` · ${escapeHtml(snapshot.tasks.query)}` : ''} · Markdown source</small></div>
+      <div class="diag-card"><strong>${snapshot.tasks.visible}/${snapshot.tasks.known}</strong><span>Tasks</span><small>${snapshot.tasks.open} open · ${snapshot.tasks.done} done · ${snapshot.tasks.loaded} loaded/${snapshot.tasks.local} local</small></div>
+      <div class="diag-card"><strong>${snapshot.tasks.dueBuckets.today || 0}</strong><span>Task due today</span><small>${snapshot.tasks.dueBuckets.overdue || 0} overdue · ${snapshot.tasks.dueBuckets.week || 0} this week · ${escapeHtml(snapshot.tasks.sourceState)}</small></div>
       <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
       <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
     </div>
