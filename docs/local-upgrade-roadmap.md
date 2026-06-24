@@ -9,6 +9,7 @@ This roadmap keeps the app local-first, small, and memory-conscious while borrow
 - Phase 1: expose visible search diagnostics: scope, loaded/local count, skipped files, match count, and elapsed time.
 - Phase 1: keep last-run search diagnostics in renderer state only, then surface them in the result strip, Search Profile, and exports.
 - Phase 1 follow-up: add a backend content-preview/search API for loaded files so large notes do not need to cross into the renderer before being capped.
+- Phase 1 follow-up: make local-folder scans cancellable or serialized in Go so fast typing cannot leave multiple disk scans running after the renderer has moved on.
 - Phase 2: add an optional SQLite FTS5 index for large folders, preferably external-content/contentless style so the Markdown source is not duplicated unnecessarily.
 - Avoid bundling ripgrep as a dependency for now. Copy the useful behavior: gitignore-aware defaults, binary skipping, and line-oriented snippets.
 
