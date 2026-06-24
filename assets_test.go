@@ -271,6 +271,11 @@ func TestTaskRenderingBoundsAreGuarded(t *testing.T) {
 		"renderTaskCalendar(visibleTasks, page)",
 		"renderTaskBoard(visibleTasks, page)",
 		"renderTaskList(visibleTasks, page)",
+		"const taskTarget = findTaskTargetNote();",
+		"data-task-file-source",
+		"Open Tasks.md",
+		"Create Tasks.md",
+		"await openTaskFileFromMenu();",
 	})
 }
 

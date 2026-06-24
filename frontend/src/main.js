@@ -9214,11 +9214,13 @@ async function showTasksView(mode = taskViewMode, options = {}) {
   const body = taskViewMode === 'calendar' ? renderTaskCalendar(visibleTasks, page)
     : taskViewMode === 'kanban' ? renderTaskBoard(visibleTasks, page)
     : renderTaskList(visibleTasks, page);
+  const taskTarget = findTaskTargetNote();
   showModal('Tasks', `
     <div class="task-view-tabs">
       <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list" aria-pressed="${taskViewMode === 'list' ? 'true' : 'false'}">List</button>
       <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar" aria-pressed="${taskViewMode === 'calendar' ? 'true' : 'false'}">Calendar</button>
       <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban" aria-pressed="${taskViewMode === 'kanban' ? 'true' : 'false'}">Kanban</button>
+      <button class="task-tab" data-task-file-source>${taskTarget ? 'Open Tasks.md' : 'Create Tasks.md'}</button>
       <button class="task-tab" data-task-agenda>Agenda</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
@@ -15851,6 +15853,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (currentFileSearchJump) jumpToCurrentFileSearchMatch(currentFileSearchJump.dataset.currentFileSearchJump, currentFileSearchJump.dataset.currentFileSearchLength);
   const taskFileSetupBtn = e.target.closest('[data-task-file-setup]');
   if (taskFileSetupBtn) showTaskFileSetup();
+  const taskFileSourceBtn = e.target.closest('[data-task-file-source]');
+  if (taskFileSourceBtn) await openTaskFileFromMenu();
   const taskFileInboxBtn = e.target.closest('[data-task-file-inbox]');
   if (taskFileInboxBtn) await addTaskStarterTemplate('inbox', 'Inbox');
   const taskFileWeeklyBtn = e.target.closest('[data-task-file-weekly]');
