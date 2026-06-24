@@ -9042,6 +9042,7 @@ function taskToTodoTxtLine(task) {
       if (token) parts.push(`+${token}`);
     });
   }
+  parts.push(`source:${task.local ? 'local' : 'loaded'}`);
   const sourceToken = taskTodoTxtToken(task.noteTitle || (task.path ? String(task.path).split(/[\\/]/).pop() : ''));
   if (sourceToken) parts.push(`src:${sourceToken}`);
   if (Number.isFinite(Number(task.line))) parts.push(`line:${Number(task.line) + 1}`);
