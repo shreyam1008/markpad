@@ -4551,6 +4551,9 @@ async function showUpgradeMap() {
       <button data-task-source-profile>Task Source</button>
       <button data-canvas-storage-profile-open>Canvas Storage</button>
       <button data-open-local-footprint>Local Footprint</button>
+      <button data-run-memory-cleanup-report>Cleanup + Footprint</button>
+      <button data-clear-loaded-search-cache>Clear Search Cache</button>
+      <button data-clear-all-undo-history>Clear Undo</button>
       <button data-workspace-search-plan>Search Plan</button>
     </div>
     <p class="diag-note">${escapeHtml(snapshot.note)}</p>
