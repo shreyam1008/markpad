@@ -1453,7 +1453,7 @@ function showUiStateSummary() {
       <div class="diag-card"><strong>${escapeHtml(viewMode)}</strong><span>View</span><small>${Math.round(splitRatio)}/${Math.round(100 - splitRatio)} split</small></div>
       <div class="diag-card"><strong>${focusMode ? 'On' : 'Off'} / ${compactMode ? 'On' : 'Off'}</strong><span>Focus / Compact</span><small>local UI chrome</small></div>
       <div class="diag-card"><strong>${editorSoftWrap ? 'Wrap' : 'No wrap'}</strong><span>Editor</span><small>${editorReadingWidth ? 'reading width' : 'full width'} · ${Math.round(fontSize / ZOOM_DEFAULT * 100)}% zoom</small></div>
-      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search scope</span><small>loaded / local / all</small></div>
+      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search scope</span><small>${searchLastResults.length} results · ${escapeHtml(searchTelemetrySummary())}</small></div>
       <div class="diag-card"><strong>${escapeHtml(taskViewMode)}</strong><span>Tasks</span><small>${escapeHtml(taskSourceFilter)} · ${escapeHtml(taskFilter)}${taskQuery ? ` · ${escapeHtml(taskQuery)}` : ''}</small></div>
       <div class="diag-card"><strong>${escapeHtml(canvasTool)}</strong><span>Canvas tool</span><small>${canvasZoom} · grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'} · snap ${canvasSnapToGrid ? 'on' : 'off'}</small></div>
       <div class="diag-card"><strong>${escapeHtml(canvasBg)}</strong><span>Canvas background</span><small>stored with canvas exports</small></div>
@@ -1481,7 +1481,7 @@ function uiStateSummaryMarkdown() {
     `- Focus: ${focusMode ? 'on' : 'off'}`,
     `- Compact: ${compactMode ? 'on' : 'off'}`,
     `- Editor: ${editorSoftWrap ? 'soft wrap' : 'no wrap'}, ${editorReadingWidth ? 'reading width' : 'full width'}, ${Math.round(fontSize / ZOOM_DEFAULT * 100)}% zoom`,
-    `- Search scope: ${searchScope}`,
+    `- Search scope: ${searchScope} (${searchLastResults.length} results, ${searchTelemetrySummary()})`,
     `- Tasks: ${taskViewMode}, ${taskSourceFilter}, ${taskFilter}${taskQuery ? `, ${taskQuery}` : ''}`,
     `- Canvas: ${canvasTool}, ${canvasZoom}, grid ${canvasGridVisible ? `${canvasGridSize}px` : 'off'}, snap ${canvasSnapToGrid ? 'on' : 'off'}, background ${canvasBg}`,
     '',
@@ -1514,6 +1514,7 @@ function uiStateSummaryJson() {
       scope: searchScope,
       lastQuery: searchLastQuery || '',
       resultCount: searchLastResults.length,
+      telemetry: { ...searchLastTelemetry },
     },
     tasks: {
       viewMode: taskViewMode,
