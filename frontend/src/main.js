@@ -1070,6 +1070,193 @@ function toggleCompactMode() {
   applyCompactMode();
 }
 
+function layoutProfileSnapshot() {
+  const active = cachedNotes.find(note => note.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  const zoomPercent = Math.round(fontSize / ZOOM_DEFAULT * 100);
+  return {
+    type: 'markpad-layout-profile',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    activeFile: {
+      title: active?.title || '',
+      path: active?.path || '',
+      type,
+      readOnly: isReadOnlyType(type),
+      markdownSplitAvailable: type === 'md',
+    },
+    view: {
+      mode: viewMode,
+      splitRatio: Math.round(splitRatio * 10) / 10,
+      splitLabel: splitRatioText(),
+      editorVisible: viewMode === 'markdown' || viewMode === 'split',
+      previewVisible: viewMode === 'viewer' || viewMode === 'split',
+    },
+    editor: {
+      softWrap: !!editorSoftWrap,
+      readingWidth: !!editorReadingWidth,
+      fontSize,
+      zoomPercent,
+      zoomMin: Math.round(ZOOM_MIN / ZOOM_DEFAULT * 100),
+      zoomMax: Math.round(ZOOM_MAX / ZOOM_DEFAULT * 100),
+    },
+    chrome: {
+      focusMode: !!focusMode,
+      compactMode: !!compactMode,
+      sidebarCollapsed: !!sidebarCollapsed,
+      historyOpen: !!historyOpen,
+      findOpen: !!findOpen,
+    },
+    storage: {
+      splitRatio: 'localStorage:markpad-split-ratio',
+      focusMode: 'localStorage:markpad-focus',
+      compactMode: 'localStorage:markpad-compact',
+      softWrap: 'localStorage:markpad-editor-wrap',
+      readingWidth: 'localStorage:markpad-editor-reading-width',
+      zoom: 'localStorage:markpad-zoom',
+    },
+    note: 'Layout Profile samples current local UI state only; it does not scan files or write document content.',
+  };
+}
+
+function layoutProfileMarkdown(snapshot = layoutProfileSnapshot()) {
+  return [
+    '# Markpad Layout Profile',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    '',
+    '## Active file',
+    '',
+    `- Title: ${snapshot.activeFile.title || '(none)'}`,
+    `- Type: ${snapshot.activeFile.type || '(unknown)'}`,
+    `- Read-only: ${snapshot.activeFile.readOnly ? 'yes' : 'no'}`,
+    `- Markdown split available: ${snapshot.activeFile.markdownSplitAvailable ? 'yes' : 'no'}`,
+    '',
+    '## View',
+    '',
+    `- Mode: ${snapshot.view.mode}`,
+    `- Split: ${snapshot.view.splitLabel}`,
+    `- Editor visible: ${snapshot.view.editorVisible ? 'yes' : 'no'}`,
+    `- Preview visible: ${snapshot.view.previewVisible ? 'yes' : 'no'}`,
+    '',
+    '## Editor',
+    '',
+    `- Soft wrap: ${snapshot.editor.softWrap ? 'on' : 'off'}`,
+    `- Reading width: ${snapshot.editor.readingWidth ? 'on' : 'off'}`,
+    `- Font size: ${snapshot.editor.fontSize}px`,
+    `- Zoom: ${snapshot.editor.zoomPercent}%`,
+    '',
+    '## Chrome',
+    '',
+    `- Focus mode: ${snapshot.chrome.focusMode ? 'on' : 'off'}`,
+    `- Compact mode: ${snapshot.chrome.compactMode ? 'on' : 'off'}`,
+    `- Sidebar collapsed: ${snapshot.chrome.sidebarCollapsed ? 'yes' : 'no'}`,
+    `- History open: ${snapshot.chrome.historyOpen ? 'yes' : 'no'}`,
+    `- Find open: ${snapshot.chrome.findOpen ? 'yes' : 'no'}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function layoutProfileJson(snapshot = layoutProfileSnapshot()) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function layoutProfileCsv(snapshot = layoutProfileSnapshot()) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['active_title', snapshot.activeFile.title || ''],
+    ['active_type', snapshot.activeFile.type || ''],
+    ['active_readonly', snapshot.activeFile.readOnly ? 'true' : 'false'],
+    ['markdown_split_available', snapshot.activeFile.markdownSplitAvailable ? 'true' : 'false'],
+    ['view_mode', snapshot.view.mode],
+    ['split_ratio', Number(snapshot.view.splitRatio || 0)],
+    ['split_label', snapshot.view.splitLabel],
+    ['editor_visible', snapshot.view.editorVisible ? 'true' : 'false'],
+    ['preview_visible', snapshot.view.previewVisible ? 'true' : 'false'],
+    ['soft_wrap', snapshot.editor.softWrap ? 'true' : 'false'],
+    ['reading_width', snapshot.editor.readingWidth ? 'true' : 'false'],
+    ['font_size', Number(snapshot.editor.fontSize || 0)],
+    ['zoom_percent', Number(snapshot.editor.zoomPercent || 0)],
+    ['focus_mode', snapshot.chrome.focusMode ? 'true' : 'false'],
+    ['compact_mode', snapshot.chrome.compactMode ? 'true' : 'false'],
+    ['sidebar_collapsed', snapshot.chrome.sidebarCollapsed ? 'true' : 'false'],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+function showLayoutProfile() {
+  const snapshot = layoutProfileSnapshot();
+  showModal('Layout Profile', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>${escapeHtml(snapshot.view.mode)}</strong><span>View mode</span><small>${snapshot.view.editorVisible ? 'editor' : 'no editor'} · ${snapshot.view.previewVisible ? 'preview' : 'no preview'}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.view.splitLabel)}</strong><span>Split ratio</span><small>${snapshot.activeFile.markdownSplitAvailable ? 'Markdown split available' : 'Split unavailable for active type'}</small></div>
+      <div class="diag-card"><strong>${snapshot.editor.zoomPercent}%</strong><span>Editor zoom</span><small>${snapshot.editor.fontSize}px · ${snapshot.editor.softWrap ? 'wrap' : 'no wrap'}</small></div>
+      <div class="diag-card"><strong>${snapshot.editor.readingWidth ? 'on' : 'off'}</strong><span>Reading width</span><small>Constrained editor and preview lane</small></div>
+      <div class="diag-card"><strong>${snapshot.chrome.focusMode ? 'on' : 'off'}</strong><span>Focus mode</span><small>${snapshot.chrome.compactMode ? 'compact on' : 'compact off'}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.activeFile.type || 'none')}</strong><span>Active type</span><small>${snapshot.activeFile.readOnly ? 'read-only' : 'editable'}</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-layout-profile-md>Copy MD</button>
+      <button data-export-layout-profile-md>Export MD</button>
+      <button data-copy-layout-profile-json>Copy JSON</button>
+      <button data-export-layout-profile-json>Export JSON</button>
+      <button data-copy-layout-profile-csv>Copy CSV</button>
+      <button data-export-layout-profile-csv>Export CSV</button>
+      <button data-split-preset="50">50/50</button>
+      <button data-split-preset="62">62/38</button>
+      <button data-split-swap-guide>Swap Split</button>
+      <button data-layout-guide-open>Layout Guide</button>
+      <button data-split-workflow-open>Split Guide</button>
+    </div>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
+  `);
+}
+
+async function copyLayoutProfileMarkdown() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(layoutProfileMarkdown());
+  statusText.textContent = 'Layout profile copied as Markdown';
+}
+
+function exportLayoutProfileMarkdown() {
+  downloadText('markpad-layout-profile.md', 'text/markdown', layoutProfileMarkdown());
+  statusText.textContent = 'Layout profile exported as Markdown';
+}
+
+async function copyLayoutProfileJson() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(layoutProfileJson());
+  statusText.textContent = 'Layout profile copied as JSON';
+}
+
+function exportLayoutProfileJson() {
+  downloadText('markpad-layout-profile.json', 'application/json', layoutProfileJson());
+  statusText.textContent = 'Layout profile exported as JSON';
+}
+
+async function copyLayoutProfileCsv() {
+  if (!navigator.clipboard?.writeText) {
+    statusText.textContent = 'Clipboard unavailable';
+    return;
+  }
+  await navigator.clipboard.writeText(layoutProfileCsv());
+  statusText.textContent = 'Layout profile copied as CSV';
+}
+
+function exportLayoutProfileCsv() {
+  downloadText('markpad-layout-profile.csv', 'text/csv', layoutProfileCsv());
+  statusText.textContent = 'Layout profile exported as CSV';
+}
+
 function applyWritingFocusPreset() {
   focusMode = true;
   compactMode = true;
@@ -4608,6 +4795,11 @@ function commandItems() {
     { id: 'restore-ui-state-json', icon: 'RUJ', title: 'Restore UI state JSON', hint: 'Restore local theme, layout, task, search, editor, and canvas preferences from clipboard JSON', run: restoreUiStateJsonFromClipboard },
     { id: 'editor-wrap', icon: 'W', title: editorSoftWrap ? 'Disable soft wrap' : 'Enable soft wrap', hint: 'Wrap long editor lines visually without changing file content', run: toggleEditorWrap },
     { id: 'editor-reading-width', icon: 'RW', title: editorReadingWidth ? 'Disable reading width' : 'Enable reading width', hint: 'Constrain editor and preview text to a focused reading lane', run: toggleEditorReadingWidth },
+    { id: 'layout-profile', icon: 'LP', title: 'Layout profile', hint: 'Show view, split, wrap, reading width, zoom, focus, and compact state', run: showLayoutProfile },
+    { id: 'copy-layout-profile', icon: 'CLP', title: 'Copy layout profile', hint: 'Copy current editor and split layout state as Markdown', run: copyLayoutProfileMarkdown },
+    { id: 'export-layout-profile', icon: 'ELP', title: 'Export layout profile', hint: 'Download current editor and split layout state as Markdown', run: exportLayoutProfileMarkdown },
+    { id: 'copy-layout-profile-json', icon: 'CLJ', title: 'Copy layout profile JSON', hint: 'Copy current editor and split layout state as JSON', run: copyLayoutProfileJson },
+    { id: 'export-layout-profile-json', icon: 'ELJ', title: 'Export layout profile JSON', hint: 'Download current editor and split layout state as JSON', run: exportLayoutProfileJson },
     { id: 'layout-guide', icon: 'LG', title: 'Layout guide', hint: 'Show editor, split, preview, reading width, focus, and low-memory layout notes', run: showLayoutGuide },
     { id: 'split-workflow-guide', icon: 'SWG', title: 'Split workflow guide', hint: 'Show split presets, swap, nudges, and local split-state behavior', run: showSplitWorkflowGuide },
     { id: 'split', icon: '||', title: 'Split view', hint: 'Editor and preview side by side', kbd: 'Ctrl+Shift+E', run: () => setView('split') },
@@ -12641,6 +12833,22 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (exportUiStateJsonBtn) exportUiStateJson();
   const restoreUiStateJsonBtn = e.target.closest('[data-restore-ui-state-json]');
   if (restoreUiStateJsonBtn) await restoreUiStateJsonFromClipboard();
+  const copyLayoutProfileMdBtn = e.target.closest('[data-copy-layout-profile-md]');
+  if (copyLayoutProfileMdBtn) await copyLayoutProfileMarkdown();
+  const exportLayoutProfileMdBtn = e.target.closest('[data-export-layout-profile-md]');
+  if (exportLayoutProfileMdBtn) exportLayoutProfileMarkdown();
+  const copyLayoutProfileJsonBtn = e.target.closest('[data-copy-layout-profile-json]');
+  if (copyLayoutProfileJsonBtn) await copyLayoutProfileJson();
+  const exportLayoutProfileJsonBtn = e.target.closest('[data-export-layout-profile-json]');
+  if (exportLayoutProfileJsonBtn) exportLayoutProfileJson();
+  const copyLayoutProfileCsvBtn = e.target.closest('[data-copy-layout-profile-csv]');
+  if (copyLayoutProfileCsvBtn) await copyLayoutProfileCsv();
+  const exportLayoutProfileCsvBtn = e.target.closest('[data-export-layout-profile-csv]');
+  if (exportLayoutProfileCsvBtn) exportLayoutProfileCsv();
+  const layoutGuideOpenBtn = e.target.closest('[data-layout-guide-open]');
+  if (layoutGuideOpenBtn) showLayoutGuide();
+  const splitWorkflowOpenBtn = e.target.closest('[data-split-workflow-open]');
+  if (splitWorkflowOpenBtn) showSplitWorkflowGuide();
   const outlineJump = e.target.closest('[data-outline-jump]');
   if (outlineJump) jumpToOutlineOffset(Number(outlineJump.dataset.outlineJump || 0));
   const themeChoice = e.target.closest('[data-theme-choice]');
