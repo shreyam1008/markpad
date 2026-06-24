@@ -391,6 +391,7 @@
           <span>Portable local JSON. Camera, grid, and tool state stay on this device.</span>
         </div>
         <div class="canvas-actions">
+          <span class="canvas-action-label" aria-hidden="true">Tools</span>
           <button data-canvas-tool="select" class="canvas-tool" aria-pressed="false" title="Select and move canvas elements" aria-label="Select canvas tool">Select</button>
           <button data-canvas-tool="pan" class="canvas-tool active" aria-pressed="true" title="Pan the canvas" aria-label="Pan canvas tool">Pan</button>
           <button data-canvas-tool="pen" class="canvas-tool" aria-pressed="false" title="Draw freehand paths" aria-label="Pen canvas tool">Pen</button>
@@ -401,14 +402,17 @@
           <button data-canvas-tool="text" class="canvas-tool" aria-pressed="false" title="Add text" aria-label="Text canvas tool">Text</button>
           <button data-canvas-tool="sticky" class="canvas-tool" aria-pressed="false" title="Add sticky note" aria-label="Sticky note canvas tool">Sticky</button>
           <button data-canvas-tool="erase" class="canvas-tool" aria-pressed="false" title="Erase canvas elements" aria-label="Erase canvas tool">Erase</button>
+          <span class="canvas-action-label" aria-hidden="true">Style</span>
           <input id="canvas-color" type="color" value="#2f6f61" title="Stroke color" aria-label="Canvas stroke color" />
           <input id="canvas-width" type="range" min="1" max="14" value="3" title="Stroke width" aria-label="Canvas stroke width" />
+          <span class="canvas-action-label" aria-hidden="true">Edit</span>
           <button id="canvas-undo" class="canvas-tool" title="Canvas undo" aria-label="Canvas undo">Undo</button>
           <button id="canvas-redo" class="canvas-tool" title="Canvas redo" aria-label="Canvas redo">Redo</button>
           <button id="canvas-copy" class="canvas-tool" title="Copy selected element" aria-label="Copy selected canvas element">Copy</button>
           <button id="canvas-paste" class="canvas-tool" title="Paste copied element" aria-label="Paste copied canvas element">Paste</button>
           <button id="canvas-duplicate" class="canvas-tool" title="Duplicate selected element" aria-label="Duplicate selected canvas element">Duplicate</button>
           <button id="canvas-delete" class="canvas-tool danger" title="Delete selected element" aria-label="Delete selected canvas element">Delete</button>
+          <span class="canvas-action-label" aria-hidden="true">View</span>
           <button id="canvas-reset-view" class="canvas-tool" title="Reset canvas view" aria-label="Reset canvas view">Reset view</button>
           <button id="canvas-fit" class="canvas-tool" title="Fit canvas content" aria-label="Fit canvas content">Fit</button>
           <button id="canvas-zoom-out" class="canvas-tool" title="Zoom canvas out" aria-label="Zoom canvas out">-</button>
@@ -418,12 +422,15 @@
           <button id="canvas-snap" class="canvas-tool" aria-pressed="false" title="Toggle canvas snap" aria-label="Toggle canvas snap">Snap</button>
           <button id="canvas-snap-selected" class="canvas-tool" title="Snap selected element to grid" aria-label="Snap selected canvas element to grid">Snap selected</button>
           <button id="canvas-minimap-toggle" class="canvas-tool active" aria-pressed="true" title="Toggle canvas minimap" aria-label="Toggle canvas minimap">Mini</button>
+          <span class="canvas-action-label" aria-hidden="true">Arrange</span>
           <button id="canvas-layer-back" class="canvas-tool" title="Send selected canvas element backward" aria-label="Send selected canvas element backward">Back</button>
           <button id="canvas-layer-front" class="canvas-tool" title="Bring selected canvas element forward" aria-label="Bring selected canvas element forward">Front</button>
+          <span class="canvas-action-label" aria-hidden="true">Export</span>
           <button id="canvas-import" class="canvas-tool" title="Import canvas JSON" aria-label="Import canvas JSON">Import</button>
           <button id="canvas-export" class="canvas-tool" title="Export Markpad canvas JSON" aria-label="Export Markpad canvas JSON">JSON</button>
           <button id="canvas-export-svg" class="canvas-tool" title="Export canvas as SVG" aria-label="Export canvas as SVG">SVG</button>
           <button id="canvas-export-obsidian" class="canvas-tool" title="Export Obsidian JSON Canvas" aria-label="Export Obsidian JSON Canvas">Obsidian</button>
+          <span class="canvas-action-label" aria-hidden="true">Save</span>
           <button id="canvas-save-active" class="canvas-tool" title="Write canvas to active local canvas document" aria-label="Write canvas to active local canvas document">Write</button>
           <button id="canvas-save-draft" class="canvas-tool" title="Save canvas as local draft JSON" aria-label="Save canvas as local draft JSON">Draft</button>
           <button id="canvas-clear" class="canvas-tool danger" title="Clear local canvas draft" aria-label="Clear local canvas draft">Clear</button>

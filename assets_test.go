@@ -728,6 +728,37 @@ func TestCanvasImportCapsContractIsGuarded(t *testing.T) {
 	})
 }
 
+func TestCanvasToolbarGroupsStayStaticAndLightweight(t *testing.T) {
+	indexHTML, err := os.ReadFile("frontend/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/index.html", string(indexHTML), []string{
+		`<div class="canvas-actions">`,
+		`<span class="canvas-action-label" aria-hidden="true">Tools</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">Style</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">Edit</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">View</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">Arrange</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">Export</span>`,
+		`<span class="canvas-action-label" aria-hidden="true">Save</span>`,
+		`data-canvas-tool="pen"`,
+		`id="canvas-export-svg"`,
+		`id="canvas-save-active"`,
+	})
+
+	styles, err := os.ReadFile("frontend/src/styles.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "frontend/src/styles.css", string(styles), []string{
+		".canvas-action-label",
+		".canvas-action-label:first-child",
+		"flex-basis: 100%;",
+		"border-top: 1px solid var(--border-soft);",
+	})
+}
+
 func TestCanvasRenderSchedulingAndBoundsCacheAreGuarded(t *testing.T) {
 	data, err := os.ReadFile("frontend/src/main.js")
 	if err != nil {
