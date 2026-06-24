@@ -3118,3 +3118,69 @@ html[data-theme] .markdown-body code {
   outline-offset: 3px;
   box-shadow: 0 0 0 5px var(--focus-halo);
 }
+
+/* Search pagination polish: actual runtime classes only. */
+.search-page-controls {
+  display: grid;
+  gap: 8px;
+  margin: 10px 8px 8px;
+  border-style: solid;
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 34%),
+    var(--editor);
+}
+
+.search-page-controls strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.search-page-controls span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.search-page-controls .search-empty-actions {
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.search-page-controls .search-empty-chip {
+  min-width: 104px;
+}
+
+.search-page-controls .search-empty-chip:disabled {
+  opacity: .52;
+  cursor: default;
+}
+
+.search-row > span {
+  min-width: 0;
+}
+
+.search-row strong,
+.search-path,
+.search-snippet {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-row strong,
+.search-path {
+  white-space: nowrap;
+}
+
+.search-snippet {
+  display: block;
+}
+
+ (max-width: 580px) {
+  .search-page-controls .search-empty-actions {
+    flex-direction: column;
+  }
+
+  .search-page-controls .search-empty-chip {
+    width: 100%;
+  }
+}

@@ -33,6 +33,7 @@ let searchToken = 0;
 let searchActiveIndex = 0;
 let searchLastResults = [];
 let searchLastQuery = '';
+let searchResultPageStart = 0;
 let searchLastDedupe = { input: 0, output: 0, removed: 0 };
 let searchLastDiagnostics = { scope: 'loaded', elapsedMs: 0, backendElapsedMs: null, searched: 0, scanned: 0, skipped: 0, oversize: 0, capped: false, resultCount: 0 };
 let searchRecentQueries = [];
@@ -2955,6 +2956,7 @@ function renderSearchIdleState(query, startedAt) {
   setSearchDiagnostics({ scope: searchScope, startedAt, searched: 0, scanned: 0, resultCount: 0 });
   searchLastResults = [];
   searchLastQuery = trimmedQuery;
+  searchResultPageStart = 0;
   searchActiveIndex = 0;
   searchInput?.removeAttribute('aria-activedescendant');
   searchResults.innerHTML = searchEmptyHtml(message, trimmedQuery);
@@ -3927,6 +3929,7 @@ async function runLocalFolderSearch(query, token) {
   if (pack.message) {
     searchLastResults = [];
     searchLastQuery = String(query || '').trim();
+    searchResultPageStart = 0;
     searchActiveIndex = 0;
     searchInput?.removeAttribute('aria-activedescendant');
     searchResults.innerHTML = searchEmptyHtml(pack.message, query);
@@ -4073,18 +4076,65 @@ function highlightSearchText(value, terms) {
   return html;
 }
 
-function renderSearchResults(results, query) {
+function searchResultPageBounds(total) {
+  const count = Math.max(0, Number(total) || 0);
+  const size = Math.max(1, Number(SEARCH_RESULTS_RENDER_LIMIT) || 80);
+  const maxStart = count ? Math.floor((count - 1) / size) * size : 0;
+  searchResultPageStart = Math.max(0, Math.min(maxStart, Number(searchResultPageStart) || 0));
+  return {
+    count,
+    size,
+    start: searchResultPageStart,
+    end: Math.min(count, searchResultPageStart + size),
+    page: count ? Math.floor(searchResultPageStart / size) + 1 : 0,
+    pages: count ? Math.ceil(count / size) : 0,
+  };
+}
+
+function renderSearchPagination(bounds) {
+  if (!bounds || bounds.count <= bounds.size) return '';
+  const prevStart = Math.max(0, bounds.start - bounds.size);
+  const nextStart = Math.min(Math.max(0, bounds.count - 1), bounds.start + bounds.size);
+  const nextCount = Math.max(0, Math.min(bounds.size, bounds.count - bounds.end));
+  return `
+    <div class="search-empty search-page-controls" aria-live="polite">
+      <strong>Showing ${bounds.start + 1}-${bounds.end} of ${bounds.count} results</strong>
+      <span>Only ${bounds.size} rows render at once to keep the palette lightweight.</span>
+      <div class="search-empty-actions">
+        <button type="button" class="search-empty-chip action" data-search-page-start="${prevStart}" ${bounds.start <= 0 ? 'disabled' : ''}>Previous ${bounds.size}</button>
+        <button type="button" class="search-empty-chip action" data-search-page-start="${nextStart}" ${bounds.end >= bounds.count ? 'disabled' : ''}>Next ${nextCount || bounds.size}</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSearchResultPage(start) {
+  searchResultPageStart = Math.max(0, Number(start) || 0);
+  const bounds = searchResultPageBounds(searchLastResults.length);
+  searchActiveIndex = bounds.start;
+  renderSearchResults(searchLastResults, searchLastQuery, { preservePage: true });
+  searchResults.scrollTop = 0;
+  searchInput?.focus();
+}
+
+function renderSearchResults(results, query, options = {}) {
   const trimmedQuery = String(query || '').trim();
   const highlightTerms = searchHighlightTerms(trimmedQuery);
   const planMeta = searchPlanMetaSuffix(trimmedQuery);
   const allResults = Array.isArray(results) ? results : [];
-  const visibleResults = allResults.slice(0, SEARCH_RESULTS_RENDER_LIMIT);
+  if (!options.preservePage) searchResultPageStart = 0;
+  const bounds = searchResultPageBounds(allResults.length);
+  const visibleResults = allResults.slice(bounds.start, bounds.end);
   const hiddenCount = Math.max(0, allResults.length - visibleResults.length);
-  const renderCapMeta = hiddenCount ? ` · showing first ${visibleResults.length}` : '';
+  const renderCapMeta = hiddenCount ? ` · showing ${bounds.start + 1}-${bounds.end}` : '';
   searchLastResults = allResults;
   searchLastQuery = trimmedQuery;
   searchResults.innerHTML = renderSearchResultStrip(allResults, trimmedQuery);
-  searchActiveIndex = Math.min(searchActiveIndex, Math.max(0, visibleResults.length - 1));
+  if (visibleResults.length) {
+    searchActiveIndex = Math.max(bounds.start, Math.min(searchActiveIndex, bounds.end - 1));
+  } else {
+    searchActiveIndex = 0;
+  }
   if (searchScope === 'all') {
     const loadedCount = allResults.filter(result => result.source !== 'local').length;
     const localCount = allResults.length - loadedCount;
@@ -4097,22 +4147,25 @@ function renderSearchResults(results, query) {
       : 'Type to search content. Empty state lists loaded files.';
   }
   if (!allResults.length) {
+    searchResultPageStart = 0;
     searchInput?.removeAttribute('aria-activedescendant');
     searchResults.insertAdjacentHTML('beforeend', searchEmptyHtml(searchScope === 'local' ? 'No local folder results.' : searchScope === 'all' ? 'No loaded or local files matched.' : 'No loaded files matched. Open more files or use exact text from the current document.', trimmedQuery));
     return;
   }
   searchResults.setAttribute('role', 'listbox');
   visibleResults.forEach((result, index) => {
-    const row = el('button', `search-row${index === searchActiveIndex ? ' active' : ''}`);
+    const resultIndex = bounds.start + index;
+    const row = el('button', `search-row${resultIndex === searchActiveIndex ? ' active' : ''}`);
     const matchLabel = searchResultMatchLabel(result);
-    const rowLabel = searchResultKeyboardLabel(result, index, allResults.length);
+    const rowLabel = searchResultKeyboardLabel(result, resultIndex, allResults.length);
     row.type = 'button';
-    row.id = `search-result-${index}`;
+    row.id = `search-result-${resultIndex}`;
     row.setAttribute('role', 'option');
-    row.setAttribute('aria-selected', index === searchActiveIndex ? 'true' : 'false');
+    row.setAttribute('aria-selected', resultIndex === searchActiveIndex ? 'true' : 'false');
     row.setAttribute('aria-label', rowLabel);
     row.title = rowLabel;
     row.dataset.searchId = result.id;
+    row.dataset.searchIndex = String(resultIndex);
     row.dataset.matchIndex = String(result.matchIndex);
     row.dataset.matchLength = String(result.matchLength);
     row.innerHTML = `
@@ -4128,12 +4181,12 @@ function renderSearchResults(results, query) {
         <span class="search-path">${highlightSearchText(result.path, highlightTerms)}</span>
         ${result.snippet ? `<span class="search-snippet">${highlightSearchText(result.snippet, highlightTerms)}</span>` : ''}
       </span>`;
-    row.addEventListener('mousemove', () => setSearchActive(index));
+    row.addEventListener('mousemove', () => setSearchActive(resultIndex));
     row.addEventListener('click', () => openSearchResult(result));
     searchResults.appendChild(row);
   });
   if (hiddenCount) {
-    searchResults.insertAdjacentHTML('beforeend', `<div class="search-empty">Showing the first ${visibleResults.length} of ${allResults.length} results to keep the palette lightweight. Refine the query to narrow the list.</div>`);
+    searchResults.insertAdjacentHTML('beforeend', renderSearchPagination(bounds));
   }
   setSearchActive(searchActiveIndex);
 }
@@ -4538,16 +4591,35 @@ function searchActiveMetaLine(result, index, total) {
 }
 
 function setSearchActive(index, options = {}) {
+  const total = searchLastResults.length;
+  if (total) {
+    const size = Math.max(1, Number(SEARCH_RESULTS_RENDER_LIMIT) || 80);
+    const targetIndex = Math.max(0, Math.min(total - 1, Number(index) || 0));
+    const targetPageStart = Math.floor(targetIndex / size) * size;
+    if (targetPageStart !== searchResultPageStart) {
+      searchResultPageStart = targetPageStart;
+      searchActiveIndex = targetIndex;
+      renderSearchResults(searchLastResults, searchLastQuery, { preservePage: true });
+      if (options.scroll) {
+        const activeRow = [...searchResults.querySelectorAll('.search-row')]
+          .find(row => Number(row.dataset.searchIndex) === targetIndex);
+        activeRow?.scrollIntoView({ block: 'nearest' });
+      }
+      return;
+    }
+    searchActiveIndex = targetIndex;
+  }
   const rows = [...searchResults.querySelectorAll('.search-row')];
   if (!rows.length) {
     searchActiveIndex = 0;
     searchInput?.removeAttribute('aria-activedescendant');
     return;
   }
-  searchActiveIndex = Math.max(0, Math.min(rows.length - 1, Number(index) || 0));
+  const bounds = searchResultPageBounds(searchLastResults.length);
   let activeRow = null;
   rows.forEach((row, i) => {
-    const active = i === searchActiveIndex;
+    const rowIndex = Number(row.dataset.searchIndex ?? bounds.start + i);
+    const active = rowIndex === searchActiveIndex;
     row.classList.toggle('active', active);
     row.setAttribute('aria-selected', active ? 'true' : 'false');
     if (active) activeRow = row;
@@ -4558,12 +4630,17 @@ function setSearchActive(index, options = {}) {
   }
   const activeResult = searchLastResults[searchActiveIndex];
   if (activeResult && searchMeta) {
-    const capMeta = searchLastResults.length > rows.length ? ` · showing first ${rows.length}` : '';
+    const capMeta = searchLastResults.length > rows.length ? ` · showing ${bounds.start + 1}-${bounds.end}` : '';
     searchMeta.textContent = `${searchActiveMetaLine(activeResult, searchActiveIndex, searchLastResults.length)}${capMeta}`;
   }
 }
 
 searchResults?.addEventListener('click', (event) => {
+  const pageButton = event.target.closest('[data-search-page-start]');
+  if (pageButton && !pageButton.disabled) {
+    renderSearchResultPage(pageButton.dataset.searchPageStart);
+    return;
+  }
   const chip = event.target.closest('[data-search-chip]');
   if (chip) {
     appendSearchExample(chip.dataset.searchChip || '');
@@ -4682,22 +4759,23 @@ async function openSearchResult(result) {
 
 searchInput?.addEventListener('input', queueLoadedSearch);
 searchInput?.addEventListener('keydown', (e) => {
-  const rows = [...searchResults.querySelectorAll('.search-row')];
+  const maxResultIndex = searchLastResults.length ? searchLastResults.length - 1 : 0;
   if ((e.ctrlKey || e.metaKey) && ['1', '2', '3'].includes(e.key)) {
     e.preventDefault();
     const scope = e.key === '1' ? 'loaded' : e.key === '2' ? 'local' : 'all';
     setSearchScope(scope);
+    searchResultPageStart = 0;
     searchActiveIndex = 0;
     runLoadedSearch(searchInput.value);
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 1), { scroll: true });
+    setSearchActive(Math.min(maxResultIndex, searchActiveIndex + 1), { scroll: true });
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     setSearchActive(Math.max(0, searchActiveIndex - 1), { scroll: true });
   } else if (e.key === 'PageDown') {
     e.preventDefault();
-    setSearchActive(Math.min(rows.length - 1, searchActiveIndex + 5), { scroll: true });
+    setSearchActive(Math.min(maxResultIndex, searchActiveIndex + 5), { scroll: true });
   } else if (e.key === 'PageUp') {
     e.preventDefault();
     setSearchActive(Math.max(0, searchActiveIndex - 5), { scroll: true });
@@ -4706,10 +4784,11 @@ searchInput?.addEventListener('keydown', (e) => {
     setSearchActive(0, { scroll: true });
   } else if (e.key === 'End') {
     e.preventDefault();
-    setSearchActive(rows.length - 1, { scroll: true });
+    setSearchActive(maxResultIndex, { scroll: true });
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    rows[searchActiveIndex]?.click();
+    const targetResult = searchLastResults[searchActiveIndex] || searchLastResults[0];
+    if (targetResult) openSearchResult(targetResult);
   } else if (e.key === 'Escape') {
     e.preventDefault();
     closeSearchPalette();
@@ -4718,6 +4797,7 @@ searchInput?.addEventListener('keydown', (e) => {
 document.querySelectorAll('[data-search-scope]').forEach(btn => {
   btn.addEventListener('click', () => {
     setSearchScope(btn.dataset.searchScope || 'loaded');
+    searchResultPageStart = 0;
     searchActiveIndex = 0;
     runLoadedSearch(searchInput.value);
   });
