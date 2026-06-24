@@ -56,6 +56,7 @@ Use plain JSON snapshots with document and session split.
 - Export: support `.excalidraw` JSON for broad compatibility.
 - Import: accept `.excalidraw` JSON where practical and convert to Markpad elements.
 - Diagnostics: Canvas Storage Profile must expose document bytes, session bytes, undo snapshot bytes, format version, and export targets.
+- Inventory: include element type counts in storage diagnostics so canvas complexity is visible without rendering or scanning assets.
 
 Minimal shape:
 
