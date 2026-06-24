@@ -145,6 +145,25 @@ func TestFrontendAvoidsHeavyBundledAssets(t *testing.T) {
 	}
 }
 
+func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
+	data, err := os.ReadFile("frontend/src/main.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+
+	assertTextIncludesAll(t, "frontend/src/main.js", text, []string{
+		"const DRAFT_TRASH_BYTES = 1536 * 1024;",
+		"const retained = (Array.isArray(items) ? items : []).slice(0, 80);",
+		"while (retained.length && byteSize(serialized) > DRAFT_TRASH_BYTES) {",
+		"retained.pop();",
+		"localStorage.setItem(DRAFT_TRASH_KEY, payload.serialized);",
+		"draftCapBytes: DRAFT_TRASH_BYTES",
+		"draftOverCap: trashBytes > DRAFT_TRASH_BYTES",
+		"Newest 80 drafts stay first; oldest drafts are trimmed to fit the byte cap",
+	})
+}
+
 func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
 	t.Helper()
 

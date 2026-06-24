@@ -7231,7 +7231,7 @@ function showTrashGuide() {
   showModal('Trash Guide', `
     <div class="diag-grid">
       <div class="diag-card"><strong>${DRAFT_TRASH_DAYS} days</strong><span>Retention</span><small>Expired items can be cleaned manually</small></div>
-      <div class="diag-card"><strong>${formatBytes(DRAFT_TRASH_BYTES)}</strong><span>Draft cap</span><small>Oldest retained drafts are trimmed after the 80-item limit</small></div>
+      <div class="diag-card"><strong>${formatBytes(DRAFT_TRASH_BYTES)}</strong><span>Draft cap</span><small>Newest 80 drafts stay first; oldest drafts are trimmed to fit the byte cap</small></div>
       <div class="diag-card"><strong>drafts</strong><span>localStorage</span><small>Unsaved notes stay restorable without disk files</small></div>
       <div class="diag-card"><strong>saved files</strong><span>disk Trash manifest</span><small>Restored through the Wails backend</small></div>
       <div class="diag-card"><strong>reports</strong><span>MD / JSON / CSV</span><small>Audit what is retained before cleanup</small></div>

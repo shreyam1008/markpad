@@ -37,11 +37,11 @@ Updated: 2026-06-24
 
 - Runtime: keep watching native startup because one parallel perf run exited before the DOM probe even though validation and memory reruns passed.
 - UI: keep direct visual checks in the loop; static browser screenshots do not prove Wails/WebKit runtime behavior.
-- Search: field exclusions are now implemented and discoverable, but local-folder scans still need cancellation or serialization before any FTS sidecar work.
+- Search: field exclusions are implemented and discoverable; local-folder scans are serialized so fast repeated searches do not publish stale older results.
 - Tasks: rendering should be paged or virtualized before task features expand further.
-- Trash: draft trash needs a byte cap, not just an item-count cap.
+- Trash: draft trash has a localStorage byte cap and guardrail coverage; keep manual UI checks around restore/copy before expanding Trash reports.
 - Canvas: bounds caching and render scheduling should come before heavier infinite-canvas features.
-- Canvas: native `.markcanvas.json` and JSON Canvas `.canvas` interchange need a clearer boundary before import/export expands.
+- Canvas: native `.markcanvas.json` and JSON Canvas `.canvas` interchange are separated; import caps and export/import round-trip tests should come before richer adapters.
 
 ## Working rules for the next phase
 
