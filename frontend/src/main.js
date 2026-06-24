@@ -4093,7 +4093,7 @@ function showHelpModal() {
   `);
 }
 
-function showUpgradeMap() {
+function upgradeMapSnapshot() {
   const active = cachedNotes.find(note => note.id === activeId);
   const type = getFileType(active?.path, active?.kind);
   const theme = THEMES.find(item => item.id === currentTheme) || THEMES[0];
@@ -4105,18 +4105,188 @@ function showUpgradeMap() {
   const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
   const localResults = searchLastResults.length - loadedResults;
   const commandIcons = commandIconMetrics();
+  return {
+    type: 'markpad-upgrade-map',
+    version: 1,
+    sampledAt: new Date().toISOString(),
+    activeFile: {
+      title: active?.title || '',
+      path: active?.path || '',
+      type,
+      readOnly: isReadOnlyType(type),
+    },
+    localFirst: {
+      sourceOfTruth: 'local files, drafts, tasks, canvas, Trash, and UI state',
+      syncPhase: 'not enabled in this local-only phase',
+    },
+    search: {
+      scope: searchScope,
+      results: searchLastResults.length,
+      loadedResults,
+      localResults,
+      cacheBytes: searchCache.bytes || 0,
+      cacheEntries: searchCache.entries || 0,
+      plannedIndex: 'SQLite FTS5 sidecar, rebuildable later',
+    },
+    theme: {
+      id: currentTheme,
+      label: theme.label,
+      mode: theme.mode,
+      lightThemes: LIGHT_THEMES.length,
+      darkThemes: DARK_THEMES.length,
+      implementation: 'CSS variables, no image packs',
+    },
+    layout: {
+      viewMode,
+      splitLabel: splitRatioText(),
+      splitRatio: Math.round(splitRatio * 10) / 10,
+      softWrap: !!editorSoftWrap,
+      readingWidth: !!editorReadingWidth,
+      focusMode: !!focusMode,
+      compactMode: !!compactMode,
+    },
+    trash: {
+      retentionDays: DRAFT_TRASH_DAYS,
+      retainedDrafts: draftTrash.length,
+      fileTrashBridge: !!window.go?.main?.App?.ListFileTrash,
+    },
+    tasks: {
+      viewMode: taskViewMode,
+      sourceFilter: taskSourceFilter,
+      filter: taskFilter,
+      query: taskQuery || '',
+      sourceOfTruth: 'Markdown checkbox lines',
+    },
+    canvas: {
+      elements: canvasElements,
+      bytes: canvasBytes,
+      undoSnapshots: canvasHistory.length,
+      undoLimit: CANVAS_HISTORY_LIMIT,
+      format: MARKPAD_CANVAS_FORMAT,
+    },
+    assets: {
+      commandTextIcons: commandIcons.total,
+      uniqueCommandTextIcons: commandIcons.unique,
+      iconFonts: false,
+      imageThemePacks: false,
+      runtimeThemeEngine: false,
+    },
+    note: 'Upgrade Map samples existing local metadata only; it does not scan workspaces, load assets, or create a new source of truth.',
+  };
+}
+
+function upgradeMapMarkdown(snapshot = upgradeMapSnapshot()) {
+  return [
+    '# Markpad Upgrade Map',
+    '',
+    `Sampled: ${snapshot.sampledAt}`,
+    `Active file: ${snapshot.activeFile.title || '(none)'} (${snapshot.activeFile.type || 'unknown'})`,
+    '',
+    '## Local-first',
+    '',
+    `- Source of truth: ${snapshot.localFirst.sourceOfTruth}`,
+    `- Sync phase: ${snapshot.localFirst.syncPhase}`,
+    '',
+    '## Feature coverage',
+    '',
+    `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache`,
+    `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark, ${snapshot.theme.implementation}`,
+    `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
+    `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} retained drafts, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
+    `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.sourceFilter}, ${snapshot.tasks.filter}${snapshot.tasks.query ? `, ${snapshot.tasks.query}` : ''}, ${snapshot.tasks.sourceOfTruth}`,
+    `- Canvas: ${snapshot.canvas.elements} elements, ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
+    `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
+    '',
+    snapshot.note,
+    '',
+  ].join('\n');
+}
+
+function upgradeMapJson(snapshot = upgradeMapSnapshot()) {
+  return JSON.stringify(snapshot, null, 2) + '\n';
+}
+
+function upgradeMapCsv(snapshot = upgradeMapSnapshot()) {
+  const rows = [
+    ['metric', 'value'],
+    ['sampled_at', snapshot.sampledAt],
+    ['active_title', snapshot.activeFile.title || ''],
+    ['active_type', snapshot.activeFile.type || ''],
+    ['search_scope', snapshot.search.scope],
+    ['search_results', Number(snapshot.search.results || 0)],
+    ['search_loaded_results', Number(snapshot.search.loadedResults || 0)],
+    ['search_local_results', Number(snapshot.search.localResults || 0)],
+    ['search_cache_bytes', Number(snapshot.search.cacheBytes || 0)],
+    ['theme_id', snapshot.theme.id],
+    ['theme_mode', snapshot.theme.mode],
+    ['layout_view_mode', snapshot.layout.viewMode],
+    ['layout_split_ratio', Number(snapshot.layout.splitRatio || 0)],
+    ['layout_soft_wrap', snapshot.layout.softWrap ? 'true' : 'false'],
+    ['layout_reading_width', snapshot.layout.readingWidth ? 'true' : 'false'],
+    ['trash_retention_days', Number(snapshot.trash.retentionDays || 0)],
+    ['trash_retained_drafts', Number(snapshot.trash.retainedDrafts || 0)],
+    ['task_view_mode', snapshot.tasks.viewMode],
+    ['task_source_filter', snapshot.tasks.sourceFilter],
+    ['task_filter', snapshot.tasks.filter],
+    ['canvas_elements', Number(snapshot.canvas.elements || 0)],
+    ['canvas_bytes', Number(snapshot.canvas.bytes || 0)],
+    ['canvas_undo_snapshots', Number(snapshot.canvas.undoSnapshots || 0)],
+    ['command_text_icons', Number(snapshot.assets.commandTextIcons || 0)],
+    ['unique_command_text_icons', Number(snapshot.assets.uniqueCommandTextIcons || 0)],
+  ];
+  return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+}
+
+async function copyUpgradeMapMarkdown() {
+  await navigator.clipboard.writeText(upgradeMapMarkdown());
+  statusText.textContent = 'Upgrade Map copied as Markdown';
+}
+
+function exportUpgradeMapMarkdown() {
+  downloadText('markpad-upgrade-map.md', 'text/markdown', upgradeMapMarkdown());
+  statusText.textContent = 'Upgrade Map exported as Markdown';
+}
+
+async function copyUpgradeMapJson() {
+  await navigator.clipboard.writeText(upgradeMapJson());
+  statusText.textContent = 'Upgrade Map copied as JSON';
+}
+
+function exportUpgradeMapJson() {
+  downloadText('markpad-upgrade-map.json', 'application/json', upgradeMapJson());
+  statusText.textContent = 'Upgrade Map exported as JSON';
+}
+
+async function copyUpgradeMapCsv() {
+  await navigator.clipboard.writeText(upgradeMapCsv());
+  statusText.textContent = 'Upgrade Map copied as CSV';
+}
+
+function exportUpgradeMapCsv() {
+  downloadText('markpad-upgrade-map.csv', 'text/csv', upgradeMapCsv());
+  statusText.textContent = 'Upgrade Map exported as CSV';
+}
+
+function showUpgradeMap() {
+  const snapshot = upgradeMapSnapshot();
   showModal('Upgrade Map', `
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
-      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search</span><small>${searchLastResults.length} results · ${loadedResults} loaded · ${localResults} local · ${formatBytes(searchCache.bytes || 0)} cache</small></div>
-      <div class="diag-card"><strong>${escapeHtml(theme.label)}</strong><span>Themes</span><small>${LIGHT_THEMES.length} light · ${DARK_THEMES.length} dark · CSS variables only</small></div>
-      <div class="diag-card"><strong>${escapeHtml(splitRatioText())}</strong><span>Split/edit</span><small>${editorSoftWrap ? 'wrap' : 'no wrap'} · ${editorReadingWidth ? 'reading width' : 'full width'} · ${focusMode ? 'focus' : 'standard'}</small></div>
-      <div class="diag-card"><strong>${DRAFT_TRASH_DAYS}d</strong><span>Trash</span><small>${draftTrash.length} retained drafts · file bridge ${window.go?.main?.App?.ListFileTrash ? 'on' : 'off'}</small></div>
-      <div class="diag-card"><strong>${escapeHtml(taskViewMode)}</strong><span>Tasks</span><small>${escapeHtml(taskSourceFilter)} · ${escapeHtml(taskFilter)}${taskQuery ? ` · ${escapeHtml(taskQuery)}` : ''} · Markdown source</small></div>
-      <div class="diag-card"><strong>${canvasElements}</strong><span>Canvas</span><small>${formatBytes(canvasBytes)} native JSON · ${canvasHistory.length}/${CANVAS_HISTORY_LIMIT} undo</small></div>
-      <div class="diag-card"><strong>${commandIcons.total}</strong><span>Command icons</span><small>${commandIcons.unique} unique text labels · no icon font</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.lightThemes} light · ${snapshot.theme.darkThemes} dark · CSS variables only</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
+      <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} retained drafts · file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.tasks.viewMode)}</strong><span>Tasks</span><small>${escapeHtml(snapshot.tasks.sourceFilter)} · ${escapeHtml(snapshot.tasks.filter)}${snapshot.tasks.query ? ` · ${escapeHtml(snapshot.tasks.query)}` : ''} · Markdown source</small></div>
+      <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
+      <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
+      <button data-copy-upgrade-map-md>Copy MD</button>
+      <button data-export-upgrade-map-md>Export MD</button>
+      <button data-copy-upgrade-map-json>Copy JSON</button>
+      <button data-export-upgrade-map-json>Export JSON</button>
+      <button data-copy-upgrade-map-csv>Copy CSV</button>
+      <button data-export-upgrade-map-csv>Export CSV</button>
       <button data-search-profile-open>Search Profile</button>
       <button data-theme-lab-open>Theme Lab</button>
       <button data-trash-guide>Trash Guide</button>
@@ -4125,7 +4295,7 @@ function showUpgradeMap() {
       <button data-open-local-footprint>Local Footprint</button>
       <button data-workspace-search-plan>Search Plan</button>
     </div>
-    <p class="diag-note">Upgrade Map is metadata-only. It samples existing UI state, current result arrays, localStorage counters, and bounded diagnostic counters; it does not scan the workspace or load external assets.</p>
+    <p class="diag-note">${escapeHtml(snapshot.note)}</p>
   `);
 }
 
@@ -4636,6 +4806,12 @@ function commandItems() {
     { id: 'command-guide', icon: 'CG', title: 'Command workflow guide', hint: 'Show categories, recents, bridges, and diagnostics in the command palette', run: showCommandWorkflowGuide },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
     { id: 'local-upgrade-map', icon: 'UP', title: 'Local upgrade map', hint: 'Show local-first feature coverage, footprint budget, and diagnostic shortcuts', run: showUpgradeMap },
+    { id: 'copy-upgrade-map-md', icon: 'CUP', title: 'Copy Upgrade Map Markdown', hint: 'Copy local-first feature coverage and footprint budget as Markdown', run: copyUpgradeMapMarkdown },
+    { id: 'export-upgrade-map-md', icon: 'EUP', title: 'Export Upgrade Map Markdown', hint: 'Download local-first feature coverage and footprint budget as Markdown', run: exportUpgradeMapMarkdown },
+    { id: 'copy-upgrade-map-json', icon: 'CUJ', title: 'Copy Upgrade Map JSON', hint: 'Copy local-first feature coverage and footprint budget as JSON', run: copyUpgradeMapJson },
+    { id: 'export-upgrade-map-json', icon: 'EUJ', title: 'Export Upgrade Map JSON', hint: 'Download local-first feature coverage and footprint budget as JSON', run: exportUpgradeMapJson },
+    { id: 'copy-upgrade-map-csv', icon: 'CUC', title: 'Copy Upgrade Map CSV', hint: 'Copy local-first feature coverage and footprint budget as CSV', run: copyUpgradeMapCsv },
+    { id: 'export-upgrade-map-csv', icon: 'EUC', title: 'Export Upgrade Map CSV', hint: 'Download local-first feature coverage and footprint budget as CSV', run: exportUpgradeMapCsv },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
@@ -13041,6 +13217,18 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (searchPerformanceOpenBtn) showSearchPerformanceGuide();
   const searchProfileOpenBtn = e.target.closest('[data-search-profile-open]');
   if (searchProfileOpenBtn) showSearchProfile();
+  const copyUpgradeMapMdBtn = e.target.closest('[data-copy-upgrade-map-md]');
+  if (copyUpgradeMapMdBtn) await copyUpgradeMapMarkdown();
+  const exportUpgradeMapMdBtn = e.target.closest('[data-export-upgrade-map-md]');
+  if (exportUpgradeMapMdBtn) exportUpgradeMapMarkdown();
+  const copyUpgradeMapJsonBtn = e.target.closest('[data-copy-upgrade-map-json]');
+  if (copyUpgradeMapJsonBtn) await copyUpgradeMapJson();
+  const exportUpgradeMapJsonBtn = e.target.closest('[data-export-upgrade-map-json]');
+  if (exportUpgradeMapJsonBtn) exportUpgradeMapJson();
+  const copyUpgradeMapCsvBtn = e.target.closest('[data-copy-upgrade-map-csv]');
+  if (copyUpgradeMapCsvBtn) await copyUpgradeMapCsv();
+  const exportUpgradeMapCsvBtn = e.target.closest('[data-export-upgrade-map-csv]');
+  if (exportUpgradeMapCsvBtn) exportUpgradeMapCsv();
   const copySearchProfileMdBtn = e.target.closest('[data-copy-search-profile-md]');
   if (copySearchProfileMdBtn) await copySearchProfileMarkdown();
   const exportSearchProfileMdBtn = e.target.closest('[data-export-search-profile-md]');
