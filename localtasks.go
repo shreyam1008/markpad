@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -16,7 +17,10 @@ const (
 
 var localTaskAppendFileCandidates = []string{"tasks.md", "Tasks.md", "tasks.markdown", "Tasks.markdown"}
 
-var localTaskLineRE = regexp.MustCompile(`^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$`)
+var (
+	localTaskLineRE     = regexp.MustCompile(`^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+\[)( |x|X)(\].*)$`)
+	localTaskDueTokenRE = regexp.MustCompile(`(?i)^due:\d{4}-\d{2}-\d{2}$`)
+)
 
 type LocalFolderTask struct {
 	ID         string   `json:"id"`
@@ -147,16 +151,38 @@ func (a *App) ToggleLocalFolderTask(id string, checked bool) []LocalFolderTask {
 	if root.Path == "" || root.Missing {
 		return []LocalFolderTask{}
 	}
-	rel, index, ok := splitLocalTaskID(id)
+	path, index, ok := localTaskPathFromID(root.Path, id)
 	if !ok {
 		return a.ListLocalFolderTasks(localTaskLimit)
 	}
-	path := filepath.Join(root.Path, filepath.FromSlash(rel))
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return a.ListLocalFolderTasks(localTaskLimit)
 	}
 	next := toggleLocalTaskAtIndex(string(content), index, checked)
+	if next != string(content) {
+		_ = localFolderAtomicWrite(path, []byte(next), 0o644)
+	}
+	return a.ListLocalFolderTasks(localTaskLimit)
+}
+
+func (a *App) MoveLocalFolderTask(id string, status string) []LocalFolderTask {
+	root := a.GetLocalFolder()
+	if root.Path == "" || root.Missing {
+		return []LocalFolderTask{}
+	}
+	if !isLocalTaskMoveStatus(status) {
+		return a.ListLocalFolderTasks(localTaskLimit)
+	}
+	path, index, ok := localTaskPathFromID(root.Path, id)
+	if !ok {
+		return a.ListLocalFolderTasks(localTaskLimit)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return a.ListLocalFolderTasks(localTaskLimit)
+	}
+	next := setLocalTaskStatusAtIndex(string(content), index, status, time.Now())
 	if next != string(content) {
 		_ = localFolderAtomicWrite(path, []byte(next), 0o644)
 	}
@@ -316,6 +342,83 @@ func toggleLocalTaskAtIndex(markdown string, taskIndex int, checked bool) string
 	return markdown
 }
 
+func setLocalTaskStatusAtIndex(markdown string, taskIndex int, status string, now time.Time) string {
+	if !isLocalTaskMoveStatus(status) {
+		return markdown
+	}
+	lines := strings.Split(markdown, "\n")
+	inFence := false
+	fenceMarker := ""
+	current := 0
+	for i, line := range lines {
+		if marker, ok := localFenceMarker(line); ok {
+			if !inFence {
+				inFence = true
+				fenceMarker = marker
+			} else if marker == fenceMarker {
+				inFence = false
+				fenceMarker = ""
+			}
+			continue
+		}
+		if inFence {
+			continue
+		}
+		if localTaskLineRE.FindStringSubmatch(line) == nil {
+			continue
+		}
+		if current == taskIndex {
+			lines[i] = localTaskLineWithStatus(line, status, now)
+			return strings.Join(lines, "\n")
+		}
+		current++
+	}
+	return markdown
+}
+
+func localTaskLineWithStatus(line string, status string, now time.Time) string {
+	match := localTaskLineRE.FindStringSubmatch(line)
+	if match == nil || !isLocalTaskMoveStatus(status) {
+		return line
+	}
+	body := strings.TrimSpace(strings.TrimPrefix(match[3], "]"))
+	fields := strings.Fields(body)
+	kept := make([]string, 0, len(fields)+1)
+	for _, field := range fields {
+		lower := strings.ToLower(field)
+		if localTaskDueTokenRE.MatchString(field) || lower == "@waiting" {
+			continue
+		}
+		kept = append(kept, field)
+	}
+	switch status {
+	case "today":
+		kept = append(kept, "due:"+now.Format("2006-01-02"))
+	case "upcoming":
+		kept = append(kept, "due:"+now.AddDate(0, 0, 1).Format("2006-01-02"))
+	case "waiting":
+		kept = append(kept, "@waiting")
+	}
+	box := " "
+	if status == "done" {
+		box = "x"
+	}
+	tail := strings.Join(kept, " ")
+	if tail == "" {
+		return match[1] + box + "]"
+	}
+	return match[1] + box + "] " + tail
+}
+
+func isLocalTaskMoveStatus(status string) bool {
+	switch status {
+	case "today", "upcoming", "waiting", "done":
+		return true
+	default:
+		return false
+	}
+}
+
 func localTaskLineStatus(line string) (open bool, done bool, ok bool) {
 	match := localTaskLineRE.FindStringSubmatch(line)
 	if match == nil {
@@ -391,4 +494,27 @@ func splitLocalTaskID(id string) (string, int, bool) {
 		return "", 0, false
 	}
 	return id[:pos], index, true
+}
+
+func localTaskPathFromID(rootPath string, id string) (string, int, bool) {
+	rel, index, ok := splitLocalTaskID(id)
+	if !ok {
+		return "", 0, false
+	}
+	cleanRel := filepath.Clean(filepath.FromSlash(rel))
+	if cleanRel == "." || filepath.IsAbs(cleanRel) || cleanRel == ".." || strings.HasPrefix(cleanRel, ".."+string(filepath.Separator)) {
+		return "", 0, false
+	}
+	rootAbs, err := filepath.Abs(rootPath)
+	if err != nil {
+		return "", 0, false
+	}
+	pathAbs, err := filepath.Abs(filepath.Join(rootAbs, cleanRel))
+	if err != nil {
+		return "", 0, false
+	}
+	if pathAbs != rootAbs && !strings.HasPrefix(pathAbs, rootAbs+string(filepath.Separator)) {
+		return "", 0, false
+	}
+	return pathAbs, index, true
 }

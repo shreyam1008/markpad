@@ -288,6 +288,8 @@ func TestTaskKanbanMoveActionsStayMarkdownBacked(t *testing.T) {
 		"data-task-board-column=",
 		"data-task-board-empty=",
 		"Drop Markdown tasks here to move them.",
+		"const canMoveLocalTask = !!(task.local && window.go?.main?.App?.MoveLocalFolderTask);",
+		"await window.go.main.App.MoveLocalFolderTask(task.localId, status)",
 		"Drag to another board column or use the Move buttons",
 		`draggable="true"`,
 		"data-task-move=",

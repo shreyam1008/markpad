@@ -5,7 +5,19 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"markpad/internal/session"
 )
+
+func newLocalTaskTestApp(t *testing.T) *App {
+	t.Helper()
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &App{store: store}
+}
 
 func TestLocalTaskAppendPathPrefersExistingCanonicalTaskFile(t *testing.T) {
 	root := t.TempDir()
@@ -110,6 +122,115 @@ func TestToggleLocalTaskAtIndexSerializesCanonicalCheckboxState(t *testing.T) {
 	}, "\n")
 	if got != want {
 		t.Fatalf("toggleLocalTaskAtIndex(open to done) = %q, want %q", got, want)
+	}
+}
+
+func TestLocalTaskLineWithStatusRewritesPortableTokens(t *testing.T) {
+	now := time.Date(2026, 6, 24, 12, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name   string
+		line   string
+		status string
+		want   string
+	}{
+		{
+			name:   "today removes prior due waiting and opens checkbox",
+			line:   "- [x] Ship release due:2026-01-01 @waiting #release !high",
+			status: "today",
+			want:   "- [ ] Ship release #release !high due:2026-06-24",
+		},
+		{
+			name:   "upcoming uses tomorrow",
+			line:   "1. [x] Plan sprint",
+			status: "upcoming",
+			want:   "1. [ ] Plan sprint due:2026-06-25",
+		},
+		{
+			name:   "waiting preserves quote marker",
+			line:   "> - [ ] Blocked due:2026-06-24",
+			status: "waiting",
+			want:   "> - [ ] Blocked @waiting",
+		},
+		{
+			name:   "done clears scheduling tokens",
+			line:   "+ [ ] Publish @waiting due:2026-06-24",
+			status: "done",
+			want:   "+ [x] Publish",
+		},
+		{
+			name:   "non task unchanged",
+			line:   "plain text",
+			status: "done",
+			want:   "plain text",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := localTaskLineWithStatus(tc.line, tc.status, now); got != tc.want {
+				t.Fatalf("localTaskLineWithStatus() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSetLocalTaskStatusAtIndexSkipsFencedTasks(t *testing.T) {
+	now := time.Date(2026, 6, 24, 12, 0, 0, 0, time.UTC)
+	markdown := strings.Join([]string{
+		"```",
+		"- [ ] ignored code task",
+		"```",
+		"- [ ] outside due:2026-01-01",
+	}, "\n")
+
+	got := setLocalTaskStatusAtIndex(markdown, 0, "waiting", now)
+	want := strings.Join([]string{
+		"```",
+		"- [ ] ignored code task",
+		"```",
+		"- [ ] outside @waiting",
+	}, "\n")
+	if got != want {
+		t.Fatalf("setLocalTaskStatusAtIndex() = %q, want %q", got, want)
+	}
+}
+
+func TestMoveLocalFolderTaskRewritesMarkdownSource(t *testing.T) {
+	app := newLocalTaskTestApp(t)
+	root := t.TempDir()
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: root}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "tasks.md")
+	content := strings.Join([]string{
+		"- [ ] alpha due:2026-01-01 @waiting",
+		"- [ ] beta",
+	}, "\n")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := app.MoveLocalFolderTask("tasks.md#0", "done")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := strings.Join([]string{
+		"- [x] alpha",
+		"- [ ] beta",
+	}, "\n")
+	if string(data) != want {
+		t.Fatalf("moved task markdown = %q, want %q", string(data), want)
+	}
+	if len(tasks) != 2 || !tasks[0].Checked || tasks[0].Due != "" || tasks[0].Waiting {
+		t.Fatalf("rescanned task = %#v, want done without due/waiting metadata", tasks)
+	}
+}
+
+func TestLocalTaskPathFromIDRejectsTraversal(t *testing.T) {
+	root := t.TempDir()
+	if _, _, ok := localTaskPathFromID(root, "../outside.md#0"); ok {
+		t.Fatal("localTaskPathFromID accepted traversal task id")
 	}
 }
 

@@ -8895,13 +8895,14 @@ const TASK_BOARD_ACTIONS = [
 
 function renderTaskBoardActions(task) {
   const current = taskStatus(task);
+  const canMoveLocalTask = !!(task.local && window.go?.main?.App?.MoveLocalFolderTask);
   return `
     <div class="task-board-actions" aria-label="Move task column">
       <span>Move</span>
       ${TASK_BOARD_ACTIONS.map(([status, label]) => {
         const isCurrent = status === current;
-        const disabled = task.local || isCurrent;
-        const title = task.local ? 'Open the local task source to move this task' : isCurrent ? 'Current column' : `Move to ${label}`;
+        const disabled = isCurrent || (task.local && !canMoveLocalTask);
+        const title = task.local && !canMoveLocalTask ? 'Open the local task source to move this task' : isCurrent ? 'Current column' : `Move to ${label}`;
         const attrs = disabled ? 'disabled' : `data-task-move="${escapeAttr(task.id)}" data-task-move-status="${status}"`;
         return `<button type="button" class="${isCurrent ? 'active' : ''}" ${attrs} title="${escapeAttr(title)}">${escapeHtml(label)}</button>`;
       }).join('')}
@@ -8910,8 +8911,9 @@ function renderTaskBoardActions(task) {
 
 function renderTaskBoardRow(task) {
   const status = taskStatus(task);
-  const dragAttrs = task.local ? '' : ' draggable="true"';
-  const dragTitle = task.local ? 'Open the local task source to move this task' : 'Drag to another board column or use the Move buttons';
+  const canDrag = !task.local || !!window.go?.main?.App?.MoveLocalFolderTask;
+  const dragAttrs = canDrag ? ' draggable="true"' : '';
+  const dragTitle = canDrag ? 'Drag to another board column or use the Move buttons' : 'Open the local task source to move this task';
   return `<div class="task-board-row" data-task-board-card data-task-id="${escapeAttr(task.id)}" data-task-status="${escapeAttr(status)}"${dragAttrs} title="${escapeAttr(dragTitle)}">${renderTaskRow(task, true)}${renderTaskBoardActions(task)}</div>`;
 }
 
@@ -10478,6 +10480,13 @@ async function moveLoadedTask(taskId, status) {
   const task = latestTasks.find(item => item.id === taskId);
   if (!task || !TASK_BOARD_ACTIONS.some(([id]) => id === status)) return;
   if (task.local) {
+    if (window.go?.main?.App?.MoveLocalFolderTask) {
+      await window.go.main.App.MoveLocalFolderTask(task.localId, status);
+      await showTasksView('kanban', { preserveTaskLimit: true });
+      const label = TASK_BOARD_ACTIONS.find(([id]) => id === status)?.[1] || status;
+      statusText.textContent = `Local task moved to ${label}`;
+      return;
+    }
     statusText.textContent = 'Open the local task source to move this task';
     return;
   }
