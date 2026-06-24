@@ -4093,11 +4093,13 @@ function showHelpModal() {
   `);
 }
 
-function upgradeMapSnapshot() {
+async function upgradeMapSnapshot() {
   const active = cachedNotes.find(note => note.id === activeId);
   const type = getFileType(active?.path, active?.kind);
   const theme = THEMES.find(item => item.id === currentTheme) || THEMES[0];
   const draftTrash = loadDraftTrash();
+  const fileTrash = await loadFileTrash();
+  const trashAudit = trashRetentionAuditSnapshot(draftTrash, fileTrash);
   if (!canvasDoc || !canvasSession) loadCanvasState();
   const canvasElements = (canvasDoc?.elements || []).length;
   const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '');
@@ -4148,6 +4150,15 @@ function upgradeMapSnapshot() {
     trash: {
       retentionDays: DRAFT_TRASH_DAYS,
       retainedDrafts: draftTrash.length,
+      retainedFiles: fileTrash.length,
+      draftBytes: trashAudit.draftBytes,
+      fileBytes: trashAudit.fileBytes,
+      totalBytes: trashAudit.totalBytes,
+      urgent: trashAudit.urgent,
+      soon: trashAudit.soon,
+      safe: trashAudit.safe,
+      nextExpiry: trashAudit.nextExpiry,
+      nextTitle: trashAudit.nextTitle,
       fileTrashBridge: !!window.go?.main?.App?.ListFileTrash,
     },
     tasks: {
@@ -4175,7 +4186,7 @@ function upgradeMapSnapshot() {
   };
 }
 
-function upgradeMapMarkdown(snapshot = upgradeMapSnapshot()) {
+function upgradeMapMarkdown(snapshot) {
   return [
     '# Markpad Upgrade Map',
     '',
@@ -4192,7 +4203,7 @@ function upgradeMapMarkdown(snapshot = upgradeMapSnapshot()) {
     `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache`,
     `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
-    `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} retained drafts, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
+    `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
     `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.sourceFilter}, ${snapshot.tasks.filter}${snapshot.tasks.query ? `, ${snapshot.tasks.query}` : ''}, ${snapshot.tasks.sourceOfTruth}`,
     `- Canvas: ${snapshot.canvas.elements} elements, ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
     `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
@@ -4202,11 +4213,11 @@ function upgradeMapMarkdown(snapshot = upgradeMapSnapshot()) {
   ].join('\n');
 }
 
-function upgradeMapJson(snapshot = upgradeMapSnapshot()) {
+function upgradeMapJson(snapshot) {
   return JSON.stringify(snapshot, null, 2) + '\n';
 }
 
-function upgradeMapCsv(snapshot = upgradeMapSnapshot()) {
+function upgradeMapCsv(snapshot) {
   const rows = [
     ['metric', 'value'],
     ['sampled_at', snapshot.sampledAt],
@@ -4225,6 +4236,15 @@ function upgradeMapCsv(snapshot = upgradeMapSnapshot()) {
     ['layout_reading_width', snapshot.layout.readingWidth ? 'true' : 'false'],
     ['trash_retention_days', Number(snapshot.trash.retentionDays || 0)],
     ['trash_retained_drafts', Number(snapshot.trash.retainedDrafts || 0)],
+    ['trash_retained_files', Number(snapshot.trash.retainedFiles || 0)],
+    ['trash_draft_bytes', Number(snapshot.trash.draftBytes || 0)],
+    ['trash_file_bytes', Number(snapshot.trash.fileBytes || 0)],
+    ['trash_total_bytes', Number(snapshot.trash.totalBytes || 0)],
+    ['trash_urgent', Number(snapshot.trash.urgent || 0)],
+    ['trash_soon', Number(snapshot.trash.soon || 0)],
+    ['trash_safe', Number(snapshot.trash.safe || 0)],
+    ['trash_next_expiry', snapshot.trash.nextExpiry || ''],
+    ['trash_next_title', snapshot.trash.nextTitle || ''],
     ['task_view_mode', snapshot.tasks.viewMode],
     ['task_source_filter', snapshot.tasks.sourceFilter],
     ['task_filter', snapshot.tasks.filter],
@@ -4238,44 +4258,45 @@ function upgradeMapCsv(snapshot = upgradeMapSnapshot()) {
 }
 
 async function copyUpgradeMapMarkdown() {
-  await navigator.clipboard.writeText(upgradeMapMarkdown());
+  await navigator.clipboard.writeText(upgradeMapMarkdown(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map copied as Markdown';
 }
 
-function exportUpgradeMapMarkdown() {
-  downloadText('markpad-upgrade-map.md', 'text/markdown', upgradeMapMarkdown());
+async function exportUpgradeMapMarkdown() {
+  downloadText('markpad-upgrade-map.md', 'text/markdown', upgradeMapMarkdown(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map exported as Markdown';
 }
 
 async function copyUpgradeMapJson() {
-  await navigator.clipboard.writeText(upgradeMapJson());
+  await navigator.clipboard.writeText(upgradeMapJson(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map copied as JSON';
 }
 
-function exportUpgradeMapJson() {
-  downloadText('markpad-upgrade-map.json', 'application/json', upgradeMapJson());
+async function exportUpgradeMapJson() {
+  downloadText('markpad-upgrade-map.json', 'application/json', upgradeMapJson(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map exported as JSON';
 }
 
 async function copyUpgradeMapCsv() {
-  await navigator.clipboard.writeText(upgradeMapCsv());
+  await navigator.clipboard.writeText(upgradeMapCsv(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map copied as CSV';
 }
 
-function exportUpgradeMapCsv() {
-  downloadText('markpad-upgrade-map.csv', 'text/csv', upgradeMapCsv());
+async function exportUpgradeMapCsv() {
+  downloadText('markpad-upgrade-map.csv', 'text/csv', upgradeMapCsv(await upgradeMapSnapshot()));
   statusText.textContent = 'Upgrade Map exported as CSV';
 }
 
-function showUpgradeMap() {
-  const snapshot = upgradeMapSnapshot();
+async function showUpgradeMap() {
+  const snapshot = await upgradeMapSnapshot();
   showModal('Upgrade Map', `
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.lightThemes} light · ${snapshot.theme.darkThemes} dark · CSS variables only</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
-      <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} retained drafts · file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}</small></div>
+      <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
+      <div class="diag-card"><strong>${snapshot.trash.urgent}</strong><span>Trash expiry</span><small>${snapshot.trash.soon} soon · ${snapshot.trash.safe} safe · next ${escapeHtml(snapshot.trash.nextExpiry || 'None')}</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.tasks.viewMode)}</strong><span>Tasks</span><small>${escapeHtml(snapshot.tasks.sourceFilter)} · ${escapeHtml(snapshot.tasks.filter)}${snapshot.tasks.query ? ` · ${escapeHtml(snapshot.tasks.query)}` : ''} · Markdown source</small></div>
       <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
       <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
@@ -13220,15 +13241,15 @@ modalBodyEl.addEventListener('click', async (e) => {
   const copyUpgradeMapMdBtn = e.target.closest('[data-copy-upgrade-map-md]');
   if (copyUpgradeMapMdBtn) await copyUpgradeMapMarkdown();
   const exportUpgradeMapMdBtn = e.target.closest('[data-export-upgrade-map-md]');
-  if (exportUpgradeMapMdBtn) exportUpgradeMapMarkdown();
+  if (exportUpgradeMapMdBtn) await exportUpgradeMapMarkdown();
   const copyUpgradeMapJsonBtn = e.target.closest('[data-copy-upgrade-map-json]');
   if (copyUpgradeMapJsonBtn) await copyUpgradeMapJson();
   const exportUpgradeMapJsonBtn = e.target.closest('[data-export-upgrade-map-json]');
-  if (exportUpgradeMapJsonBtn) exportUpgradeMapJson();
+  if (exportUpgradeMapJsonBtn) await exportUpgradeMapJson();
   const copyUpgradeMapCsvBtn = e.target.closest('[data-copy-upgrade-map-csv]');
   if (copyUpgradeMapCsvBtn) await copyUpgradeMapCsv();
   const exportUpgradeMapCsvBtn = e.target.closest('[data-export-upgrade-map-csv]');
-  if (exportUpgradeMapCsvBtn) exportUpgradeMapCsv();
+  if (exportUpgradeMapCsvBtn) await exportUpgradeMapCsv();
   const copySearchProfileMdBtn = e.target.closest('[data-copy-search-profile-md]');
   if (copySearchProfileMdBtn) await copySearchProfileMarkdown();
   const exportSearchProfileMdBtn = e.target.closest('[data-export-search-profile-md]');
