@@ -19,7 +19,7 @@ Use a rebuildable SQLite FTS5 sidecar index for workspace-wide search.
 - Rebuild behavior: safe to delete and regenerate at any time.
 - Memory rule: keep only the active result page and small snippet windows in the webview.
 - Phase 1 query scope: files Markpad has loaded or indexed locally.
-- Controls: Loaded, Local folder, and All scope buttons should expose active pressed state while remaining local-only search modes.
+- Controls: Loaded, Local folder, and All scope buttons should expose labels, live result metadata, and active pressed state while remaining local-only search modes.
 - Phase 2 sync scope: index remains local per device; sync transfers files and metadata, not search cache.
 - Main view: summarize result count, loaded/local distribution, and parsed operator counts from the current result page only.
 
