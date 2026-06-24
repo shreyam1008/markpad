@@ -7861,8 +7861,22 @@ function renderTaskRow(task, compact) {
 }
 
 function renderTaskList(tasks) {
-  if (!tasks.length) return '<div class="task-empty">No Markdown tasks found in loaded files.</div>';
+  if (!tasks.length) return taskEmptyStateHtml('No Markdown tasks matched this task view.');
   return `<div class="task-list">${tasks.map(task => renderTaskRow(task)).join('')}</div>`;
+}
+
+function taskEmptyStateHtml(message = 'No Markdown tasks found in loaded files.') {
+  return `
+    <div class="task-empty">
+      <strong>${escapeHtml(message)}</strong>
+      <span>Tasks stay as Markdown checkbox lines; these views are just projections.</span>
+      <div class="task-empty-actions">
+        <button type="button" data-task-add>+ Task</button>
+        <button type="button" data-task-file-setup>Task File</button>
+        <button type="button" data-task-source-profile>Source Profile</button>
+        <button type="button" data-task-reset-filters>Reset Filters</button>
+      </div>
+    </div>`;
 }
 
 function renderTaskAgendaSection(title, tasks) {
@@ -8177,6 +8191,7 @@ function renderTaskBoardGroups(tasks) {
 }
 
 function renderTaskBoard(tasks) {
+  if (!tasks.length) return taskEmptyStateHtml('No tasks matched this board view.');
   const columns = [
     ['today', 'Today'],
     ['upcoming', 'Upcoming'],
@@ -8218,7 +8233,7 @@ function renderTaskCalendar(tasks) {
     if (b === 'No due date') return -1;
     return a.localeCompare(b);
   });
-  if (!keys.length) return '<div class="task-empty">No scheduled tasks found in loaded files.</div>';
+  if (!keys.length) return taskEmptyStateHtml('No scheduled tasks matched this calendar view.');
   return `<div class="task-calendar">${keys.map(key => {
     const groupTasks = groups.get(key);
     const state = taskCalendarState(key);
@@ -13806,6 +13821,8 @@ modalBodyEl.addEventListener('click', async (e) => {
     setTaskSourceFilter(taskSourceBtn.dataset.taskSourceFilter || 'all');
     await showTasksView(taskViewMode);
   }
+  const taskResetFilters = e.target.closest('[data-task-reset-filters]');
+  if (taskResetFilters) await resetTaskViewFilters();
   const taskSearchApply = e.target.closest('[data-task-search-apply]');
   if (taskSearchApply) {
     const input = modalBodyEl.querySelector('[data-task-search]');
