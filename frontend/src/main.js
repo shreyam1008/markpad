@@ -10343,8 +10343,10 @@ function compactCanvasTaskMeta(task) {
   if (task.due) bits.push(`due:${task.due}`);
   if (task.priority) bits.push(`!${task.priority}`);
   if (task.waiting) bits.push('@waiting');
+  bits.push(task.local ? 'local' : 'loaded');
+  if (Number.isFinite(Number(task.line))) bits.push(`line ${Number(task.line) + 1}`);
   if (task.noteTitle) bits.push(task.noteTitle);
-  return bits.join(' · ').slice(0, 52);
+  return bits.join(' · ').slice(0, 64);
 }
 
 async function insertVisibleTasksCanvasBoard() {
