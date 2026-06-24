@@ -37,9 +37,11 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 - Create: keep the sidebar `+ New` menu explicit about Note, Task file, Canvas, and a disabled Other file placeholder until extension rules are defined.
 - Search: keep source scopes visible, show operator hints, highlight matches, and make result source counts obvious.
 - Tasks: keep the affordance framed as "Tasks from loaded files" and "Tasks.md setup, list, calendar, kanban"; list/calendar/kanban are views over Markdown files, not a separate workspace type.
+- Task workflow: sidebar Task actions should expose List, Calendar, Kanban, Quick task, and Task setup without introducing virtual tabs.
 - Tasks: one Markdown task source, multiple views. List/calendar/kanban should feel like filters over files, not a separate database.
 - Trash: show retention state clearly, keep cleanup explicit, and avoid hiding permanent delete behind ambiguous language.
 - Canvas: keep the top-bar canvas positioned as a draft scratch surface while sidebar creation writes native local canvas documents with clear Write/Draft actions.
+- Canvas workflow: sidebar Canvas actions should distinguish Draft canvas, New canvas file, Write active, Save draft JSON, and Loaded files map.
 - Canvas: prioritize zoom, pan, selection, keyboard movement, portable exports, and clear save/write options before richer shape libraries.
 - Local folder: choose/open/reveal actions should support file-backed creation and navigation, not turn the app into a folder-first shell.
 - Settings/help: explain local storage, default folder, memory/binary constraints, and sync as a future layer.

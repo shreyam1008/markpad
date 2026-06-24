@@ -15006,9 +15006,30 @@ async function doNew() {
 }
 
 let createMenuAnchor = null;
+let workflowMenuAnchor = null;
+let workflowMenuId = '';
 
 function setCreateMenuExpanded(expanded) {
   ['btn-new', 'btn-new-mini'].forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+}
+
+function workflowMenuButtonIds(menuId) {
+  return menuId === 'task-workflow-menu'
+    ? ['side-tasks', 'side-tasks-mini']
+    : ['side-canvas', 'side-canvas-mini'];
+}
+
+function setWorkflowMenuExpanded(menuId, expanded) {
+  workflowMenuButtonIds(menuId).forEach(id => $(id)?.setAttribute('aria-expanded', expanded ? 'true' : 'false'));
+}
+
+function closeWorkflowMenu() {
+  ['task-workflow-menu', 'canvas-workflow-menu'].forEach(id => {
+    $(id)?.classList.add('hidden');
+    setWorkflowMenuExpanded(id, false);
+  });
+  workflowMenuAnchor = null;
+  workflowMenuId = '';
 }
 
 function closeCreateMenu() {
@@ -15034,6 +15055,7 @@ function positionCreateMenu(anchor) {
 function openCreateMenu(anchor) {
   const menu = $('create-menu');
   if (!menu || !anchor) return;
+  closeWorkflowMenu();
   createMenuAnchor = anchor;
   positionCreateMenu(anchor);
   menu.classList.remove('hidden');
@@ -15049,6 +15071,40 @@ function toggleCreateMenu(anchor) {
     return;
   }
   openCreateMenu(anchor);
+}
+
+function positionWorkflowMenu(menu, anchor) {
+  if (!menu || !anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const menuWidth = Math.min(304, window.innerWidth - 18);
+  const left = Math.max(9, Math.min(window.innerWidth - menuWidth - 9, rect.left));
+  const top = Math.max(9, Math.min(window.innerHeight - 330, rect.bottom + 8));
+  menu.style.width = `${menuWidth}px`;
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function openWorkflowMenu(menuId, anchor) {
+  const menu = $(menuId);
+  if (!menu || !anchor) return;
+  closeCreateMenu();
+  closeWorkflowMenu();
+  workflowMenuAnchor = anchor;
+  workflowMenuId = menuId;
+  positionWorkflowMenu(menu, anchor);
+  menu.classList.remove('hidden');
+  setWorkflowMenuExpanded(menuId, true);
+  requestAnimationFrame(() => menu.querySelector('button:not(:disabled)')?.focus());
+}
+
+function toggleWorkflowMenu(menuId, anchor) {
+  const menu = $(menuId);
+  if (!menu) return;
+  if (!menu.classList.contains('hidden') && workflowMenuId === menuId && workflowMenuAnchor === anchor) {
+    closeWorkflowMenu();
+    return;
+  }
+  openWorkflowMenu(menuId, anchor);
 }
 
 async function hasReadyLocalFolder() {
@@ -15099,6 +15155,51 @@ async function runCreateMenuAction(kind) {
   }
 }
 
+async function runTaskWorkflowAction(kind) {
+  closeWorkflowMenu();
+  switch (kind) {
+    case 'list':
+    case 'calendar':
+    case 'kanban':
+      await showTasksView(kind);
+      break;
+    case 'quick':
+      await addQuickTask();
+      break;
+    case 'setup':
+      showTaskFileSetup();
+      statusText.textContent = 'Task file setup';
+      break;
+    default:
+      break;
+  }
+}
+
+async function runCanvasWorkflowAction(kind) {
+  closeWorkflowMenu();
+  switch (kind) {
+    case 'draft':
+      openCanvas();
+      break;
+    case 'new':
+      await createCanvasFromMenu();
+      break;
+    case 'write':
+      openCanvas();
+      await saveCanvasToActiveDocument();
+      break;
+    case 'draft-file':
+      openCanvas();
+      await saveCanvasAsDraft();
+      break;
+    case 'workspace-map':
+      insertLoadedWorkspaceCanvasMap();
+      break;
+    default:
+      break;
+  }
+}
+
 async function doOpen() {
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
@@ -15113,8 +15214,14 @@ async function doOpen() {
 function bindSidebarWorkflowButtons() {
   const bind = (ids, handler) => ids.forEach(id => $(id)?.addEventListener('click', handler));
   bind(['side-files', 'side-files-mini'], () => { showLocalFolder(); });
-  bind(['side-tasks', 'side-tasks-mini'], () => { showTasksView(); });
-  bind(['side-canvas', 'side-canvas-mini'], openCanvas);
+  bind(['side-tasks', 'side-tasks-mini'], event => {
+    event.stopPropagation();
+    toggleWorkflowMenu('task-workflow-menu', event.currentTarget);
+  });
+  bind(['side-canvas', 'side-canvas-mini'], event => {
+    event.stopPropagation();
+    toggleWorkflowMenu('canvas-workflow-menu', event.currentTarget);
+  });
   bind(['side-search', 'side-search-mini'], openSearchPalette);
   bind(['side-command', 'side-command-mini'], openCommandPalette);
   bind(['side-help'], showHelpModal);
@@ -15136,15 +15243,39 @@ $('create-menu')?.addEventListener('click', event => {
   if (!btn || btn.disabled) return;
   runCreateMenuAction(btn.dataset.createKind);
 });
+$('task-workflow-menu')?.addEventListener('click', event => {
+  event.stopPropagation();
+  const btn = event.target.closest('[data-task-workflow]');
+  if (!btn || btn.disabled) return;
+  runTaskWorkflowAction(btn.dataset.taskWorkflow);
+});
+$('canvas-workflow-menu')?.addEventListener('click', event => {
+  event.stopPropagation();
+  const btn = event.target.closest('[data-canvas-workflow]');
+  if (!btn || btn.disabled) return;
+  runCanvasWorkflowAction(btn.dataset.canvasWorkflow);
+});
 document.addEventListener('click', event => {
-  if ($('create-menu')?.contains(event.target) || event.target.closest?.('#btn-new, #btn-new-mini')) return;
+  if (
+    $('create-menu')?.contains(event.target)
+    || $('task-workflow-menu')?.contains(event.target)
+    || $('canvas-workflow-menu')?.contains(event.target)
+    || event.target.closest?.('#btn-new, #btn-new-mini, #side-tasks, #side-tasks-mini, #side-canvas, #side-canvas-mini')
+  ) return;
   closeCreateMenu();
+  closeWorkflowMenu();
 });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') closeCreateMenu();
+  if (event.key === 'Escape') {
+    closeCreateMenu();
+    closeWorkflowMenu();
+  }
 });
 window.addEventListener('resize', () => {
   if (createMenuAnchor && !$('create-menu')?.classList.contains('hidden')) positionCreateMenu(createMenuAnchor);
+  if (workflowMenuAnchor && workflowMenuId && !$(workflowMenuId)?.classList.contains('hidden')) {
+    positionWorkflowMenu($(workflowMenuId), workflowMenuAnchor);
+  }
 });
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 $('btn-search-all').addEventListener('click', openSearchPalette);

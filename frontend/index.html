@@ -53,11 +53,11 @@
             <small>Local folder, recent files, notes</small>
           </button>
           <div class="sidebar-workflow-grid" aria-label="Files, tasks, and canvas">
-            <button id="side-tasks" class="sidebar-workflow-action" type="button" title="Tasks from loaded files">
+            <button id="side-tasks" class="sidebar-workflow-action" type="button" title="Task workflows" aria-haspopup="menu" aria-expanded="false">
               <b>T</b>
               <span>Tasks</span>
             </button>
-            <button id="side-canvas" class="sidebar-workflow-action" type="button" title="Canvas draft">
+            <button id="side-canvas" class="sidebar-workflow-action" type="button" title="Canvas workflows" aria-haspopup="menu" aria-expanded="false">
               <b>C</b>
               <span>Canvas</span>
             </button>
@@ -76,8 +76,8 @@
         <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
         <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="Create" aria-label="Create note, task, canvas, or file" aria-haspopup="menu" aria-expanded="false">+</button>
         <button id="side-files-mini" class="icon-btn sidebar-rail-btn" title="Local workspace" aria-label="Local workspace"><span>F</span></button>
-        <button id="side-tasks-mini" class="icon-btn sidebar-rail-btn" title="Tasks" aria-label="Tasks"><span>T</span></button>
-        <button id="side-canvas-mini" class="icon-btn sidebar-rail-btn" title="Canvas" aria-label="Canvas"><span>C</span></button>
+        <button id="side-tasks-mini" class="icon-btn sidebar-rail-btn" title="Task workflows" aria-label="Task workflows" aria-haspopup="menu" aria-expanded="false"><span>T</span></button>
+        <button id="side-canvas-mini" class="icon-btn sidebar-rail-btn" title="Canvas workflows" aria-label="Canvas workflows" aria-haspopup="menu" aria-expanded="false"><span>C</span></button>
         <button id="side-search-mini" class="icon-btn sidebar-rail-btn" title="Search" aria-label="Search"><span>/</span></button>
         <button id="side-command-mini" class="icon-btn sidebar-rail-btn" title="Commands" aria-label="Commands"><span>⌘</span></button>
       </div>
@@ -98,6 +98,52 @@
         <button type="button" role="menuitem" data-create-kind="other" disabled>
           <strong>Other file</strong>
           <span>Coming next: choose extension and template</span>
+        </button>
+      </div>
+      <div id="task-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Task workflows">
+        <div class="create-menu-kicker">Tasks.md views</div>
+        <button type="button" role="menuitem" data-task-workflow="list">
+          <strong>List</strong>
+          <span>Open tasks as sortable Markdown rows</span>
+        </button>
+        <button type="button" role="menuitem" data-task-workflow="calendar">
+          <strong>Calendar</strong>
+          <span>Group task lines by due: date</span>
+        </button>
+        <button type="button" role="menuitem" data-task-workflow="kanban">
+          <strong>Kanban</strong>
+          <span>Board view over the same checkbox lines</span>
+        </button>
+        <button type="button" role="menuitem" data-task-workflow="quick">
+          <strong>Quick task</strong>
+          <span>Append to Tasks.md or a local draft</span>
+        </button>
+        <button type="button" role="menuitem" data-task-workflow="setup">
+          <strong>Task setup</strong>
+          <span>Starters, source profile, and exports</span>
+        </button>
+      </div>
+      <div id="canvas-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Canvas workflows">
+        <div class="create-menu-kicker">Canvas files</div>
+        <button type="button" role="menuitem" data-canvas-workflow="draft">
+          <strong>Draft canvas</strong>
+          <span>Open the local scratch canvas</span>
+        </button>
+        <button type="button" role="menuitem" data-canvas-workflow="new">
+          <strong>New canvas file</strong>
+          <span>Create native .markcanvas.json</span>
+        </button>
+        <button type="button" role="menuitem" data-canvas-workflow="write">
+          <strong>Write active</strong>
+          <span>Save canvas JSON to the active local document</span>
+        </button>
+        <button type="button" role="menuitem" data-canvas-workflow="draft-file">
+          <strong>Save draft JSON</strong>
+          <span>Create an editable canvas JSON draft</span>
+        </button>
+        <button type="button" role="menuitem" data-canvas-workflow="workspace-map">
+          <strong>Loaded files map</strong>
+          <span>Send open files to canvas cards</span>
         </button>
       </div>
     </aside>

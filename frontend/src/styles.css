@@ -378,6 +378,7 @@ body.writing-empty #viewer::first-line {
 .tb:focus-visible,
 .view-btn:focus-visible,
 .create-menu button:focus-visible,
+.workflow-menu button:focus-visible,
 .sidebar-workflow button:focus-visible,
 .sidebar-rail-btn:focus-visible,
 .theme-chip:focus-visible,
@@ -403,12 +404,14 @@ body.writing-empty #viewer::first-line {
 .search-palette,
 .command-palette,
 .create-menu,
+.workflow-menu,
 .canvas-shell,
 #modal-overlay > div {
   box-shadow: 0 24px 70px var(--shadow), 0 1px 0 rgba(255,255,255,.22) inset;
 }
 
-.create-menu {
+.create-menu,
+.workflow-menu {
   position: fixed;
   z-index: 80;
   display: grid;
@@ -421,7 +424,8 @@ body.writing-empty #viewer::first-line {
   color: var(--text);
   padding: 9px;
 }
-.create-menu.hidden {
+.create-menu.hidden,
+.workflow-menu.hidden {
   display: none;
 }
 .create-menu-kicker {
@@ -432,7 +436,8 @@ body.writing-empty #viewer::first-line {
   letter-spacing: .11em;
   text-transform: uppercase;
 }
-.create-menu button {
+.create-menu button,
+.workflow-menu button {
   display: grid;
   gap: 2px;
   width: 100%;
@@ -445,19 +450,24 @@ body.writing-empty #viewer::first-line {
   cursor: pointer;
 }
 .create-menu button:hover,
-.create-menu button:focus-visible {
+.create-menu button:focus-visible,
+.workflow-menu button:hover,
+.workflow-menu button:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   background: var(--hover);
 }
-.create-menu button:disabled {
+.create-menu button:disabled,
+.workflow-menu button:disabled {
   cursor: not-allowed;
   opacity: .52;
 }
-.create-menu strong {
+.create-menu strong,
+.workflow-menu strong {
   font-size: 13px;
   font-weight: 950;
 }
-.create-menu span {
+.create-menu span,
+.workflow-menu span {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.35;
