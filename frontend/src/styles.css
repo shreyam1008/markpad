@@ -424,6 +424,17 @@ body.markpad-compact #modal-body {
   background: var(--accent);
   color: var(--accent-text);
 }
+.split-live-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  border-right: 1px solid var(--border-soft);
+  color: var(--text);
+  padding: 0 7px 0 5px;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .04em;
+}
 .layout-lane-meter {
   border: 1px solid var(--border-soft);
   border-radius: 15px;

@@ -1711,11 +1711,16 @@ function updateSplitRatioBadge(value = splitRatio) {
   if (!divider) return;
   const text = splitRatioText(value);
   const ratio = normalizeSplitRatio(value);
+  const liveChip = $('split-live-chip');
   divider.dataset.splitLabel = text;
   divider.setAttribute('aria-valuenow', String(Math.round(ratio)));
   divider.setAttribute('aria-valuetext', text);
   divider.setAttribute('aria-label', `Resize split view, editor preview ratio ${text}`);
   divider.setAttribute('title', `Split ${text}. Drag, use arrow keys, or double-click for 50/50.`);
+  if (liveChip) {
+    liveChip.textContent = text;
+    liveChip.setAttribute('title', `Current split ratio ${text}`);
+  }
 }
 
 function applySplitRatio() {
