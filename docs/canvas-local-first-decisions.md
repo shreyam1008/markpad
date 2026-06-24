@@ -52,7 +52,7 @@ Elements should stay simple: id, kind, position, size, style, text, points, and 
 - Search bridges: render search result cards as sticky notes so query maps stay editable while result data remains a lightweight snapshot.
 - Outline and workspace bridges: render generated heading and loaded-file cards as sticky notes to keep maps editable and reduce generated element count.
 - Style controls: stroke, fill, opacity, width, font size, arrowhead, and rough/smooth line mode.
-- Infinite canvas: virtualize hit testing and drawing by viewport bounds; do not keep DOM nodes for every element.
+- Infinite canvas: virtualize hit testing and drawing by viewport bounds; use bounds-first pointer hit testing before path point scans; do not keep DOM nodes for every element.
 - Canvas status/profile: expose viewport-visible, total, and culled element counts from the current in-memory scene only.
 - Hint/status text: derive from existing in-memory canvas state so empty, drawing, panning, selected, active tool, grid, snap, minimap, and pressed-button states teach the surface without extra persisted data.
 - Toolbar labels: use text buttons, titles, and ARIA labels on existing controls instead of image assets or icon fonts.
