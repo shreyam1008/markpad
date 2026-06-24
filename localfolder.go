@@ -723,7 +723,7 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 			key := parts[0]
 			value := strings.TrimPrefix(parts[1], "#")
 			switch key {
-			case "path":
+			case "path", "file":
 				if negated {
 					plan.ExcludedPathFilters = append(plan.ExcludedPathFilters, value)
 				} else {
@@ -731,7 +731,7 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 				}
 				plan.HasFilters = true
 				continue
-			case "title":
+			case "title", "name":
 				if negated {
 					plan.ExcludedTitleFilters = append(plan.ExcludedTitleFilters, value)
 				} else {
@@ -739,7 +739,7 @@ func parseLocalFolderSearchQuery(query string) localFolderSearchPlan {
 				}
 				plan.HasFilters = true
 				continue
-			case "type", "kind":
+			case "type", "kind", "ext":
 				if negated {
 					plan.ExcludedTypeFilters = append(plan.ExcludedTypeFilters, value)
 				} else {

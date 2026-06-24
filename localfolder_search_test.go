@@ -269,6 +269,51 @@ func TestSearchLocalFolderFilterOnlyMatchKind(t *testing.T) {
 	}
 }
 
+func TestSearchLocalFolderSupportsFrontendFilterAliases(t *testing.T) {
+	store, err := session.NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := t.TempDir()
+	app := &App{store: store}
+	if err := app.writeLocalFolderSettings(localFolderSettings{DefaultFolder: folder}); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"notes/Alpha Plan.md": "launch checklist\n",
+		"notes/beta.txt":      "alpha text note\n",
+		"archive/Alpha.md":    "archived alpha note\n",
+	}
+	for name, content := range files {
+		path := filepath.Join(folder, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cases := []struct {
+		query string
+		want  string
+	}{
+		{query: "file:notes alpha", want: "notes/Alpha Plan.md"},
+		{query: "name:alpha launch", want: "notes/Alpha Plan.md"},
+		{query: "ext:txt alpha", want: "notes/beta.txt"},
+		{query: "alpha -file:archive", want: "notes/Alpha Plan.md"},
+	}
+	for _, tc := range cases {
+		result := app.SearchLocalFolderWithStats(tc.query, 10)
+		if len(result.Hits) == 0 {
+			t.Fatalf("query %q returned no hits, want %q", tc.query, tc.want)
+		}
+		if result.Hits[0].RelPath != tc.want {
+			t.Fatalf("query %q top hit = %q, want %q; hits=%#v", tc.query, result.Hits[0].RelPath, tc.want, result.Hits)
+		}
+	}
+}
+
 func TestSearchLocalFolderDropsStaleOverlappingSearch(t *testing.T) {
 	store, err := session.NewStoreAt(t.TempDir())
 	if err != nil {

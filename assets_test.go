@@ -687,6 +687,8 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"await createLocalFolderWeeklyNote()",
 		"await openConfiguredLocalFolder()",
 		"await searchLocalFolderPrompt()",
+		"openSearchPaletteScope('local')",
+		"statusText.textContent = 'Local folder search opened'",
 		"await createOtherFileFromMenu()",
 		"await doNew()",
 		"function openTaskFileSetup()",
@@ -721,6 +723,9 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		"Notes, daily/weekly notes, tasks, recents, tags, links, backlinks, canvas maps",
 		"Choose a local folder for canvas files",
 		"Choose a local folder before creating files",
+	})
+	assertTextOmits(t, "frontend/src/main.js", string(mainJS), []string{
+		"window.prompt('Search local folder')",
 	})
 
 	featureDecisions, err := os.ReadFile("docs/local-first-feature-decisions.md")

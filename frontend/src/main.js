@@ -7718,9 +7718,9 @@ async function chooseLocalFolder() {
 }
 
 async function searchLocalFolderPrompt() {
-  const query = window.prompt('Search local folder');
-  if (!query || !query.trim()) return;
-  await showLocalFolder(query.trim());
+  if (!(await ensureReadyLocalFolder('Choose a local folder before searching files'))) return;
+  openSearchPaletteScope('local');
+  statusText.textContent = 'Local folder search opened';
 }
 
 async function openConfiguredLocalFolder() {
