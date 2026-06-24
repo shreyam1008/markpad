@@ -64,6 +64,55 @@ func TestLocalTaskLineStatusMatchesPortableMarkdownTasks(t *testing.T) {
 	}
 }
 
+func TestCanonicalLocalTaskAppendLineUsesPortableMarkdownCheckbox(t *testing.T) {
+	cases := []struct {
+		name string
+		line string
+		want string
+	}{
+		{name: "plain text", line: "Draft release note", want: "- [ ] Draft release note"},
+		{name: "trim plain text", line: "  Draft release note  ", want: "- [ ] Draft release note"},
+		{name: "already canonical open", line: "- [ ] Draft release note", want: "- [ ] Draft release note"},
+		{name: "done lower", line: "- [x] Publish changelog", want: "- [x] Publish changelog"},
+		{name: "done upper", line: "* [X] Publish changelog", want: "- [x] Publish changelog"},
+		{name: "ordered", line: "12. [ ] Ordered task", want: "- [ ] Ordered task"},
+		{name: "empty", line: " \t ", want: ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := canonicalLocalTaskAppendLine(tc.line); got != tc.want {
+				t.Fatalf("canonicalLocalTaskAppendLine(%q) = %q, want %q", tc.line, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestToggleLocalTaskAtIndexSerializesCanonicalCheckboxState(t *testing.T) {
+	markdown := strings.Join([]string{
+		"* [X] Done task",
+		"+ [ ] Open task",
+	}, "\n")
+
+	got := toggleLocalTaskAtIndex(markdown, 0, false)
+	want := strings.Join([]string{
+		"* [ ] Done task",
+		"+ [ ] Open task",
+	}, "\n")
+	if got != want {
+		t.Fatalf("toggleLocalTaskAtIndex(done to open) = %q, want %q", got, want)
+	}
+
+	got = toggleLocalTaskAtIndex(markdown, 1, true)
+	want = strings.Join([]string{
+		"* [X] Done task",
+		"+ [x] Open task",
+	}, "\n")
+	if got != want {
+		t.Fatalf("toggleLocalTaskAtIndex(open to done) = %q, want %q", got, want)
+	}
+}
+
 func TestScanLocalFolderTasksReportsLimitsAndPortableCounts(t *testing.T) {
 	root := t.TempDir()
 	content := strings.Join([]string{

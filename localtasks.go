@@ -168,7 +168,7 @@ func (a *App) AppendLocalFolderTask(line string) (SessionState, error) {
 	if root.Path == "" || root.Missing {
 		return a.GetSession(), errors.New("local folder is not set")
 	}
-	line = strings.TrimSpace(line)
+	line = canonicalLocalTaskAppendLine(line)
 	if line == "" {
 		return a.GetSession(), errors.New("task line is empty")
 	}
@@ -207,6 +207,26 @@ func localTaskAppendPath(root string) string {
 		}
 	}
 	return filepath.Join(root, "tasks.md")
+}
+
+func canonicalLocalTaskAppendLine(line string) string {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return ""
+	}
+	match := localTaskLineRE.FindStringSubmatch(line)
+	if match == nil {
+		return "- [ ] " + line
+	}
+	box := " "
+	if strings.EqualFold(match[2], "x") {
+		box = "x"
+	}
+	tail := strings.TrimSpace(strings.TrimPrefix(match[3], "]"))
+	if tail == "" {
+		return "- [" + box + "]"
+	}
+	return "- [" + box + "] " + tail
 }
 
 func parseLocalTasks(root string, path string, content string) []LocalFolderTask {

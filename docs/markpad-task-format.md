@@ -21,6 +21,23 @@ Supported checkbox markers:
 + [ ] Also valid
 ```
 
+## Canonical writes
+
+Markpad should read portable Markdown task variants but write the smallest canonical checkbox form for new local tasks:
+
+```markdown
+- [ ] Open task
+- [x] Done task
+```
+
+Append behavior invariants:
+
+- The Markdown file remains the task source of truth.
+- Appending plain text creates a Markdown checkbox line, not a sidecar record.
+- Appending an existing task line normalizes the bullet to `-` and done state to lowercase `[x]`.
+- Existing scanned files may keep valid Markdown bullets such as `*`, `+`, or ordered-list markers.
+- Toggling a task changes only the checkbox state for that source line.
+
 ## Portable tokens
 
 - `due:YYYY-MM-DD` marks a task due date with an ISO calendar date.
