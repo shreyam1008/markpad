@@ -5084,6 +5084,7 @@ async function localFootprintSnapshot() {
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
   const fileTrashItems = await loadFileTrash();
   const fileTrashBytes = fileTrashItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  const trashAudit = trashRetentionAuditSnapshot(trashItems, fileTrashItems);
   const markpadLocalBytes = localStorageMarkpadBytes();
   return {
     type: 'markpad-local-footprint',
@@ -5114,6 +5115,12 @@ async function localFootprintSnapshot() {
       draftCount: trashItems.length,
       fileBytes: fileTrashBytes,
       fileCount: fileTrashItems.length,
+      retentionDays: trashAudit.retentionDays,
+      urgentCount: trashAudit.urgent,
+      soonCount: trashAudit.soon,
+      safeCount: trashAudit.safe,
+      nextExpiry: trashAudit.nextExpiry,
+      nextTitle: trashAudit.nextTitle,
     },
     localStorage: {
       markpadBytes: markpadLocalBytes,
@@ -5168,6 +5175,11 @@ function localFootprintSnapshotToMarkdown(snapshot) {
     '',
     `- Draft trash: ${formatBytes(snapshot.trash.draftBytes || 0)} (${snapshot.trash.draftCount || 0} drafts)`,
     `- Saved file trash: ${formatBytes(snapshot.trash.fileBytes || 0)} (${snapshot.trash.fileCount || 0} files)`,
+    `- Trash retention: ${snapshot.trash?.retentionDays || DRAFT_TRASH_DAYS} days`,
+    `- Expiring today: ${snapshot.trash?.urgentCount || 0}`,
+    `- Expiring soon: ${snapshot.trash?.soonCount || 0}`,
+    `- Safe window: ${snapshot.trash?.safeCount || 0}`,
+    `- Next expiry: ${snapshot.trash?.nextExpiry || 'None'}${snapshot.trash?.nextTitle ? ` (${snapshot.trash.nextTitle})` : ''}`,
     `- Markpad localStorage: ${formatBytes(snapshot.localStorage.markpadBytes || 0)}`,
     '',
     snapshot.note,
@@ -5202,6 +5214,12 @@ function localFootprintSnapshotToCsv(snapshot) {
     ['draft_trash_count', Number(snapshot.trash.draftCount || 0)],
     ['file_trash_bytes', Number(snapshot.trash.fileBytes || 0)],
     ['file_trash_count', Number(snapshot.trash.fileCount || 0)],
+    ['trash_retention_days', Number(snapshot.trash?.retentionDays || DRAFT_TRASH_DAYS)],
+    ['trash_urgent_count', Number(snapshot.trash?.urgentCount || 0)],
+    ['trash_soon_count', Number(snapshot.trash?.soonCount || 0)],
+    ['trash_safe_count', Number(snapshot.trash?.safeCount || 0)],
+    ['trash_next_expiry', snapshot.trash?.nextExpiry || ''],
+    ['trash_next_title', snapshot.trash?.nextTitle || ''],
     ['markpad_localstorage_bytes', Number(snapshot.localStorage.markpadBytes || 0)],
   ];
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
@@ -5245,6 +5263,7 @@ async function showLocalFootprint() {
   const trashBytes = byteSize(localStorage.getItem(DRAFT_TRASH_KEY) || '');
   const fileTrashItems = await loadFileTrash();
   const fileTrashBytes = fileTrashItems.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  const trashAudit = trashRetentionAuditSnapshot(trashItems, fileTrashItems);
   const markpadLocalBytes = localStorageMarkpadBytes();
   showModal('Local Footprint', `
     <div class="diag-grid">
@@ -5257,6 +5276,8 @@ async function showLocalFootprint() {
       <div class="diag-card"><strong>${formatBytes(undo.canvasBytes)}</strong><span>Canvas undo history</span><small>${undo.canvasStates} canvas snapshot${undo.canvasStates === 1 ? '' : 's'} in memory</small></div>
       <div class="diag-card"><strong>${formatBytes(trashBytes)}</strong><span>Draft trash</span><small>${trashItems.length} retained draft${trashItems.length === 1 ? '' : 's'}</small></div>
       <div class="diag-card"><strong>${formatBytes(fileTrashBytes)}</strong><span>Saved file trash</span><small>${fileTrashItems.length} retained file${fileTrashItems.length === 1 ? '' : 's'} · stored on disk</small></div>
+      <div class="diag-card"><strong>${trashAudit.urgent}</strong><span>Trash expiring today</span><small>${trashAudit.soon} soon · ${trashAudit.safe} safe</small></div>
+      <div class="diag-card"><strong>${escapeHtml(trashAudit.nextExpiry)}</strong><span>Next trash expiry</span><small>${trashAudit.nextTitle ? escapeHtml(trashAudit.nextTitle) : 'No retained trash items'}</small></div>
       <div class="diag-card"><strong>${formatBytes(markpadLocalBytes)}</strong><span>Markpad localStorage</span><small>themes, layout, canvas, draft trash</small></div>
     </div>
     <div class="diag-heap"><strong>Browser heap</strong>${heapFootprintHtml()}</div>
