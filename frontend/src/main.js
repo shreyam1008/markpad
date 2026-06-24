@@ -3658,6 +3658,7 @@ function showSearchSyntaxHelp() {
       <button data-search-results-canvas ${searchLastResults.length ? '' : 'disabled'}>Results to Canvas</button>
     </div>
     <p class="diag-note">Search is local-first and dependency-free. Loaded-file search filters in memory with a bounded content cache; local-folder search uses the Go backend for anchors, then the UI applies filters, phrases, exclusions, wildcards, and explicit fuzzy terms. Pure fuzzy local searches match file names and paths without opening every file.</p>
+    <p class="diag-note">Search Profile shows local diagnostics only. It does not send telemetry; backend follow-ups should cap loaded content before it crosses the Wails bridge and make folder scans cancellable or serialized.</p>
     <p class="diag-note">Shortcuts: Ctrl+Shift+F opens search, Ctrl+1 searches loaded files, Ctrl+2 searches the local folder, and Ctrl+3 searches all local sources.</p>
   `);
 }
