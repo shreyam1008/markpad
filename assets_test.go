@@ -426,6 +426,9 @@ func TestCreateMenuFilesFirstWorkflowIsGuarded(t *testing.T) {
 		`data-create-kind="search-folder"`,
 		`data-create-kind="other" disabled`,
 		"Files first",
+		`class="create-menu-section-label">Create</div>`,
+		`class="create-menu-section-label">Workspace</div>`,
+		`class="create-menu-section-label">Later</div>`,
 		"Today in the local folder",
 		"This week in the local folder",
 		"Open Tasks.md setup, list, calendar, kanban",
@@ -561,6 +564,8 @@ func TestWorkflowMenusStayKeyboardFirst(t *testing.T) {
 		".workflow-menu button:focus-visible::before",
 		".create-menu button:focus-visible strong",
 		".workflow-menu button:focus-visible strong",
+		".create-menu-section-label",
+		".create-menu-section-label::after",
 	})
 }
 

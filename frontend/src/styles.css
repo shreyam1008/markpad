@@ -436,6 +436,23 @@ body.writing-empty #viewer::first-line {
   letter-spacing: .11em;
   text-transform: uppercase;
 }
+.create-menu-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .12em;
+  padding: 5px 5px 1px;
+  text-transform: uppercase;
+}
+.create-menu-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
 .create-menu button,
 .workflow-menu button {
   position: relative;
