@@ -89,6 +89,7 @@ The webview should not keep heavyweight raster previews in memory unless the use
 Current v1 implementation note: Markpad's native export stores `elements`, `appState`, `files`, `meta`, and schema metadata in plain JSON, while local camera/tool/grid state is stored separately as session state. This keeps the exported drawing portable and the active viewport device-local.
 
 Canvas viewport drawing should use cheap bounds-first culling for all element types, including freehand paths, with single-pass path bounds instead of temporary coordinate arrays.
+Viewport culling padding should remain stroke-aware so thick lines do not clip at the viewport edge.
 
 ## Trash
 

@@ -10031,10 +10031,11 @@ function canvasViewportBounds() {
 function canvasElementInViewport(el, view, pad = 100) {
   if (!view) return true;
   const bounds = canvasElementBounds(el);
-  return bounds.x + bounds.w >= view.x - pad
-    && bounds.y + bounds.h >= view.y - pad
-    && bounds.x <= view.x + view.w + pad
-    && bounds.y <= view.y + view.h + pad;
+  const strokePad = Math.max(pad, Number(el.strokeWidth || el.width || 0) * 4);
+  return bounds.x + bounds.w >= view.x - strokePad
+    && bounds.y + bounds.h >= view.y - strokePad
+    && bounds.x <= view.x + view.w + strokePad
+    && bounds.y <= view.y + view.h + strokePad;
 }
 
 function canvasVisibleElementCount() {
@@ -12573,6 +12574,9 @@ function canvasStorageProfileSnapshot() {
   const historyBytes = canvasHistory.reduce((sum, snap) => sum + byteSize(snap || ''), 0);
   const totalElements = (doc.elements || []).length;
   const visibleElements = canvasVisibleElementCount();
+  const view = canvasViewportBounds();
+  const pathElements = (doc.elements || []).filter(element => element?.type === 'path');
+  const visiblePathElements = pathElements.filter(element => canvasElementInViewport(element, view)).length;
   const elementText = JSON.stringify(doc.elements || []);
   const elementBytes = byteSize(elementText);
   const elementTypes = (doc.elements || []).reduce((acc, element) => {
@@ -12618,6 +12622,10 @@ function canvasStorageProfileSnapshot() {
       culledElements: Math.max(0, totalElements - visibleElements),
       viewportPadding: 100,
       pathElementsAlwaysDrawn: false,
+      totalPathElements: pathElements.length,
+      visiblePathElements,
+      culledPathElements: Math.max(0, pathElements.length - visiblePathElements),
+      pathPadding: 'max(100px, stroke width * 4)',
       pathBounds: 'single-pass',
     },
     undo: {
@@ -12660,6 +12668,7 @@ function canvasStorageProfileMarkdown(snapshot = canvasStorageProfileSnapshot())
     `- Elements: ${snapshot.document.elements || 0}`,
     `- Element JSON: ${formatBytes(snapshot.document.elementBytes || 0)} (${formatBytes(snapshot.document.averageElementBytes || 0)} average)`,
     `- Viewport-visible elements: ${snapshot.virtualization?.visibleElements ?? snapshot.document.elements || 0}/${snapshot.virtualization?.totalElements ?? snapshot.document.elements || 0}`,
+    `- Viewport-visible paths: ${snapshot.virtualization?.visiblePathElements || 0}/${snapshot.virtualization?.totalPathElements || 0}`,
     `- Path bounds: ${snapshot.virtualization?.pathBounds || 'single-pass'}; paths always drawn: ${snapshot.virtualization?.pathElementsAlwaysDrawn ? 'yes' : 'no'}`,
     `- Element types: ${canvasElementTypeSummary(snapshot.document.elementTypes)}`,
     `- App state: ${formatBytes(snapshot.document.appStateBytes || 0)}`,
@@ -12714,6 +12723,10 @@ function canvasStorageProfileCsv(snapshot = canvasStorageProfileSnapshot()) {
     ['viewport_visible_elements', Number(snapshot.virtualization?.visibleElements || 0)],
     ['viewport_culled_elements', Number(snapshot.virtualization?.culledElements || 0)],
     ['viewport_padding', Number(snapshot.virtualization?.viewportPadding || 0)],
+    ['viewport_visible_path_elements', Number(snapshot.virtualization?.visiblePathElements || 0)],
+    ['viewport_total_path_elements', Number(snapshot.virtualization?.totalPathElements || 0)],
+    ['viewport_culled_path_elements', Number(snapshot.virtualization?.culledPathElements || 0)],
+    ['path_padding', snapshot.virtualization?.pathPadding || ''],
     ['path_elements_always_drawn', snapshot.virtualization?.pathElementsAlwaysDrawn ? 'true' : 'false'],
     ['path_bounds', snapshot.virtualization?.pathBounds || ''],
     ['document_appstate_bytes', Number(snapshot.document.appStateBytes || 0)],
@@ -12744,6 +12757,7 @@ function showCanvasStorageProfile() {
       <div class="diag-card"><strong>${formatBytes(snapshot.document.bytes || 0)}</strong><span>Document JSON</span><small>${snapshot.document.elements || 0} elements · ${escapeHtml(snapshot.document.key)}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.document.averageElementBytes || 0)}</strong><span>Avg element</span><small>${formatBytes(snapshot.document.elementBytes || 0)} element JSON</small></div>
       <div class="diag-card"><strong>${snapshot.virtualization.visibleElements}/${snapshot.virtualization.totalElements}</strong><span>Viewport draw</span><small>${snapshot.virtualization.culledElements} culled · ${snapshot.virtualization.viewportPadding}px pad</small></div>
+      <div class="diag-card"><strong>${snapshot.virtualization.visiblePathElements}/${snapshot.virtualization.totalPathElements}</strong><span>Visible paths</span><small>${snapshot.virtualization.culledPathElements} path${snapshot.virtualization.culledPathElements === 1 ? '' : 's'} culled</small></div>
       <div class="diag-card"><strong>${Object.keys(snapshot.document.elementTypes || {}).length}</strong><span>Element types</span><small>${escapeHtml(canvasElementTypeSummary(snapshot.document.elementTypes))}</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.session.bytes || 0)}</strong><span>Session JSON</span><small>camera, tool, grid, snap</small></div>
       <div class="diag-card"><strong>${Math.round(Number(camera.scale || 1) * 100)}%</strong><span>Camera</span><small>x ${camera.x || 0} · y ${camera.y || 0}</small></div>
