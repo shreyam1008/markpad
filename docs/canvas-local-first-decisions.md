@@ -48,6 +48,7 @@ Elements should stay simple: id, kind, position, size, style, text, points, and 
 
 - Core tools: select, pan, pencil, rectangle, ellipse, line, arrow, text, sticky note, eraser.
 - Sticky notes: store as native JSON elements with text, fill, stroke, position, and size; derive readable fill from the existing color control; expose via toolbar, command palette, and text-only color presets; open text editing immediately after creation; include sticky text and fill in selected-element reports; and export as visible text/card content where adapters support it.
+- Task bridges: render task canvas cards as sticky notes so derived boards stay editable while Markdown task files remain the source of truth.
 - Style controls: stroke, fill, opacity, width, font size, arrowhead, and rough/smooth line mode.
 - Infinite canvas: virtualize hit testing and drawing by viewport bounds; do not keep DOM nodes for every element.
 - Hint/status text: derive from existing in-memory canvas state so empty, drawing, panning, selected, active tool, grid, snap, minimap, and pressed-button states teach the surface without extra persisted data.
