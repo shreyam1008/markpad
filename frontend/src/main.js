@@ -238,32 +238,47 @@ const THEMES = [
   { id: 'dawn', label: 'Dawn', mode: 'light', hint: 'Bright review and planning surface' },
   { id: 'mist', label: 'Mist', mode: 'light', hint: 'Cool low-contrast reading surface' },
   { id: 'sand', label: 'Sand', mode: 'light', hint: 'Planning, tasks, and canvas boards' },
+  { id: 'sage', label: 'Sage', mode: 'light', hint: 'Soft green writing and research surface' },
+  { id: 'pearl', label: 'Pearl', mode: 'light', hint: 'Quiet neutral reading surface' },
+  { id: 'blueprint', label: 'Blueprint', mode: 'light', hint: 'Crisp technical review surface' },
   { id: 'ink', label: 'Ink', mode: 'dark', hint: 'Neutral dark focus surface' },
   { id: 'pine', label: 'Pine', mode: 'dark', hint: 'Green-black low-glare workspace' },
   { id: 'slate', label: 'Slate', mode: 'dark', hint: 'Cool dark technical review' },
   { id: 'ember', label: 'Ember', mode: 'dark', hint: 'Warm dark notes and review' },
   { id: 'midnight', label: 'Midnight', mode: 'dark', hint: 'Deep night writing surface' },
+  { id: 'graphite', label: 'Graphite', mode: 'dark', hint: 'Balanced dark surface for long editing' },
+  { id: 'harbor', label: 'Harbor', mode: 'dark', hint: 'Blue-green night reading surface' },
+  { id: 'copper', label: 'Copper', mode: 'dark', hint: 'Warm dark planning and review surface' },
 ];
 const THEME_RECIPES = [
   { id: 'writing', label: 'Warm writing', theme: 'linen', layout: 'soft wrap, reading width, 62/38 split', bestFor: 'Long-form Markdown drafting' },
   { id: 'planning', label: 'Planning board', theme: 'sand', layout: 'task kanban, canvas, compact controls', bestFor: 'Tasks, project planning, and canvas boards' },
   { id: 'review', label: 'Cool review', theme: 'mist', layout: 'reading width, balanced split', bestFor: 'Proofreading and rendered Markdown review' },
+  { id: 'research', label: 'Research notes', theme: 'sage', layout: 'soft wrap, reading width, loaded search', bestFor: 'Collecting references and structured notes' },
+  { id: 'technical', label: 'Technical review', theme: 'blueprint', layout: 'split view, no wrap option, compact controls', bestFor: 'Code-adjacent Markdown and specs' },
   { id: 'focus', label: 'Dark focus', theme: 'ink', layout: 'focus mode, editor-first split', bestFor: 'Low-distraction editing' },
   { id: 'night', label: 'Night notes', theme: 'midnight', layout: 'soft wrap, preview view, low brightness', bestFor: 'Late-session reading and edits' },
+  { id: 'archive', label: 'Archive pass', theme: 'graphite', layout: 'viewer mode, search recents, subdued chrome', bestFor: 'Sorting and reading older notes' },
 ];
-const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand'];
-const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight'];
+const LIGHT_THEMES = ['paper', 'linen', 'dawn', 'mist', 'sand', 'sage', 'pearl', 'blueprint'];
+const DARK_THEMES = ['ink', 'pine', 'slate', 'ember', 'midnight', 'graphite', 'harbor', 'copper'];
 const THEME_COMPANIONS = {
   paper: 'ink',
   linen: 'ember',
   dawn: 'slate',
   mist: 'pine',
   sand: 'midnight',
+  sage: 'harbor',
+  pearl: 'graphite',
+  blueprint: 'slate',
   ink: 'paper',
   pine: 'mist',
   slate: 'dawn',
   ember: 'linen',
   midnight: 'sand',
+  graphite: 'pearl',
+  harbor: 'sage',
+  copper: 'sand',
 };
 const SEARCH_CONTENT_CAP = 2 * 1024 * 1024;
 const SEARCH_CACHE_MAX_ENTRIES = 24;

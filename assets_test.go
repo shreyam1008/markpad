@@ -64,6 +64,19 @@ var hostedTaskVendorMarkers = []string{
 	"trello.com/1/",
 }
 
+var selfContainedSVGForbiddenMarkers = []string{
+	"<script",
+	"<foreignobject",
+	"<image",
+	"href=\"http://",
+	"href=\"https://",
+	"xlink:href=\"http://",
+	"xlink:href=\"https://",
+	"url(http://",
+	"url(https://",
+	"@font-face",
+}
+
 const (
 	frontendBundledAssetTotalMaxBytes = 128 * 1024
 	frontendRasterAssetMaxBytes       = 48 * 1024
@@ -165,6 +178,36 @@ func TestFrontendAvoidsHeavyBundledAssets(t *testing.T) {
 	if total > frontendBundledAssetTotalMaxBytes {
 		t.Fatalf("frontend bundled visual assets total %d bytes, max %d bytes", total, frontendBundledAssetTotalMaxBytes)
 	}
+}
+
+func TestFrontendSVGAssetsStaySelfContained(t *testing.T) {
+	walkFrontendSVGAssets(t, func(path, text string) {
+		assertTextOmits(t, path, text, selfContainedSVGForbiddenMarkers)
+	})
+}
+
+func TestThemeAndIconAssetDocsStayExplicit(t *testing.T) {
+	uiDirection, err := os.ReadFile("docs/ui-direction.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "docs/ui-direction.md", string(uiDirection), []string{
+		"Themes: CSS-variable themes only.",
+		"Do not add theme screenshots, texture PNGs, paper scans, or packaged theme variants.",
+		"Icons: prefer inline SVG or short text glyphs.",
+		"Do not add icon webfonts, runtime icon loaders, or framework-sized SVG/icon bundles.",
+		"Every shipped SVG must stay self-contained: no external hrefs, embedded raster payloads, scripts, or font-face rules.",
+	})
+
+	featureDecisions, err := os.ReadFile("docs/local-first-feature-decisions.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertTextIncludesAll(t, "docs/local-first-feature-decisions.md", string(featureDecisions), []string{
+		"| Theme/Icon assets | CSS variables plus tiny self-contained SVG only; keep the existing asset budgets as hard guardrails | Theme screenshots, texture packs, icon webfonts, framework-scale icon bundles |",
+		"Theme and icon changes must stay in CSS variables, tiny self-contained SVG, and the existing asset budgets rather than new packaged media.",
+		"Do not ship theme screenshots, texture packs, icon webfonts, or framework-sized icon bundles.",
+	})
 }
 
 func TestDraftTrashByteCapContractIsGuarded(t *testing.T) {
@@ -314,6 +357,36 @@ func walkFrontendAssetFiles(t *testing.T, check func(path string, info fs.FileIn
 			return err
 		}
 		check("frontend/"+strings.TrimPrefix(path, "./"), info)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func walkFrontendSVGAssets(t *testing.T, check func(path, text string)) {
+	t.Helper()
+
+	rootFS := os.DirFS("frontend")
+	if err := fs.WalkDir(rootFS, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case ".vite", "build", "dist", "node_modules", "wailsjs":
+				return fs.SkipDir
+			default:
+				return nil
+			}
+		}
+		if strings.ToLower(filepath.Ext(path)) != ".svg" {
+			return nil
+		}
+		data, err := fs.ReadFile(rootFS, path)
+		if err != nil {
+			return err
+		}
+		check("frontend/"+strings.TrimPrefix(path, "./"), string(data))
 		return nil
 	}); err != nil {
 		t.Fatal(err)

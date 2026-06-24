@@ -9,6 +9,7 @@ Updated: 2026-06-24
 | Search | Rebuildable SQLite FTS5 sidecar over local files, merged with in-memory loaded buffers | Embeddings, bundled search daemons, trigram indexes by default |
 | Tasks | Markdown task list items as source of truth, with visible metadata tokens | Calendar-grade VTODO sync, hidden IDs until line-hash identity is insufficient |
 | Canvas | Markpad-owned versioned JSON canvas files | Bundling tldraw/Excalidraw/InfiniPaint as the primary engine before measurement |
+| Theme/Icon assets | CSS variables plus tiny self-contained SVG only; keep the existing asset budgets as hard guardrails | Theme screenshots, texture packs, icon webfonts, framework-scale icon bundles |
 
 ## Search direction
 
@@ -82,6 +83,17 @@ Primary references:
 - tldraw persistence docs: https://tldraw.dev/docs/persistence
 - tldraw license docs: https://tldraw.dev/community/license
 - InfiniPaint repository: https://github.com/ErrorAtLine0/infinipaint
+
+## Theme and icon asset direction
+
+Theme and icon changes must stay in CSS variables, tiny self-contained SVG, and the existing asset budgets rather than new packaged media.
+
+Initial implementation constraints:
+
+- Do not ship theme screenshots, texture packs, icon webfonts, or framework-sized icon bundles.
+- Keep theme differentiation in variables, borders, shadows, and typography scale instead of separate image assets.
+- Keep shipped SVG assets self-contained: no external hrefs, embedded raster payloads, scripts, or font-face rules.
+- Treat the asset byte caps in `assets_test.go` as hard release guardrails, not soft goals.
 
 ## Phase order
 

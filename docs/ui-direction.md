@@ -19,9 +19,18 @@ Markpad should feel like a fast local workbench, not a heavy web app. The visual
 ## Visual language
 
 - Themes: CSS-variable themes only. Keep Paper/Linen/Dawn/Mist for light work and Ink/Pine/Slate/Ember for dark work.
+- Do not add theme screenshots, texture PNGs, paper scans, or packaged theme variants. Theme identity should come from variables, spacing, borders, and contrast.
 - Texture: use subtle borders, inset highlights, and shadows from variables instead of raster backgrounds.
 - Icons: prefer inline SVG or short text glyphs. No bundled icon packs unless a tiny curated subset is hand-inlined.
+- Do not add icon webfonts, runtime icon loaders, or framework-sized SVG/icon bundles. If a new glyph is necessary, hand-inline a purpose-built SVG and keep it small.
+- Every shipped SVG must stay self-contained: no external hrefs, embedded raster payloads, scripts, or font-face rules.
 - Motion: small lift/focus effects only, with reduced-motion support.
+
+## Asset discipline
+
+- Asset budgets in `assets_test.go` are hard guardrails, not targets. Prefer zero new files unless the UI meaningfully improves.
+- New visual assets must be product-generic, not theme-specific. A theme should still be a palette and surface treatment, not a separate media pack.
+- If a visual idea needs heavy imagery or a bundled library to read correctly, it is the wrong fit for Phase 1.
 
 ## Feature-specific polish
 
