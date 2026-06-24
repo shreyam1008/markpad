@@ -118,6 +118,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Let Upgrade Map task counts use the current in-memory task parse only; opening the map must not trigger a workspace task scan.
 - Let Upgrade Map canvas metrics use the current canvas document/session only: element types, view state, grid, snap, minimap, and undo count.
 - Let Upgrade Map footprint metrics use cheap counters only: Markpad localStorage bytes, current buffer bytes, search cache, undo snapshots, and loaded-note counts.
+- Let Upgrade Map sync readiness list portable formats and device-local state boundaries only; do not implement sync or mark caches/indexes as portable data.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
