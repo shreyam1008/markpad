@@ -4126,6 +4126,10 @@ async function upgradeMapSnapshot() {
     + searchFilterCount
     + searchExcludeCount;
   const commandIcons = commandIconMetrics();
+  const activeThemeRecipes = THEME_RECIPES.filter(recipe => recipe.theme === currentTheme);
+  const domImages = document.images?.length || 0;
+  const inlineSvg = document.querySelectorAll('svg').length;
+  const canvasSurfaces = document.querySelectorAll('canvas').length;
   const taskItems = Array.isArray(latestTasks) ? latestTasks : [];
   const visibleTaskItems = visibleTasksForView(taskItems);
   const taskDueBuckets = taskItems.reduce((acc, task) => {
@@ -4180,8 +4184,14 @@ async function upgradeMapSnapshot() {
       id: currentTheme,
       label: theme.label,
       mode: theme.mode,
+      totalThemes: THEMES.length,
       lightThemes: LIGHT_THEMES.length,
       darkThemes: DARK_THEMES.length,
+      recipes: THEME_RECIPES.length,
+      activeRecipes: activeThemeRecipes.length,
+      activeRecipeLabels: activeThemeRecipes.map(recipe => recipe.label),
+      catalogBytes: byteSize(JSON.stringify(THEMES)),
+      recipeBytes: byteSize(JSON.stringify(THEME_RECIPES)),
       implementation: 'CSS variables, no image packs',
     },
     layout: {
@@ -4247,6 +4257,9 @@ async function upgradeMapSnapshot() {
     assets: {
       commandTextIcons: commandIcons.total,
       uniqueCommandTextIcons: commandIcons.unique,
+      domImages,
+      inlineSvg,
+      canvasSurfaces,
       iconFonts: false,
       imageThemePacks: false,
       runtimeThemeEngine: false,
@@ -4270,12 +4283,12 @@ function upgradeMapMarkdown(snapshot) {
     '## Feature coverage',
     '',
     `- Search: ${snapshot.search.scope}, ${snapshot.search.results} results (${snapshot.search.loadedResults} loaded, ${snapshot.search.localResults} local), ${formatBytes(snapshot.search.cacheBytes)} cache, ${snapshot.search.operators?.total || 0} query operators (${snapshot.search.operators?.filters || 0} filters, ${snapshot.search.operators?.excludes || 0} excludes)`,
-    `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark, ${snapshot.theme.implementation}`,
+    `- Themes: ${snapshot.theme.label} (${snapshot.theme.mode}), ${snapshot.theme.totalThemes} CSS themes (${snapshot.theme.lightThemes} light / ${snapshot.theme.darkThemes} dark), ${snapshot.theme.recipes} recipes (${snapshot.theme.activeRecipes} active), catalog ${formatBytes(snapshot.theme.catalogBytes || 0)}, ${snapshot.theme.implementation}`,
     `- Split/edit: ${snapshot.layout.viewMode}, ${snapshot.layout.splitLabel}, ${snapshot.layout.softWrap ? 'wrap' : 'no wrap'}, ${snapshot.layout.readingWidth ? 'reading width' : 'full width'}`,
     `- Trash: ${snapshot.trash.retentionDays} days, ${snapshot.trash.retainedDrafts} drafts / ${snapshot.trash.retainedFiles} files, ${formatBytes(snapshot.trash.totalBytes || 0)} retained, ${snapshot.trash.urgent} today / ${snapshot.trash.soon} soon / ${snapshot.trash.safe} safe, next ${snapshot.trash.nextExpiry || 'None'}, file bridge ${snapshot.trash.fileTrashBridge ? 'on' : 'off'}`,
     `- Tasks: ${snapshot.tasks.viewMode}, ${snapshot.tasks.visible}/${snapshot.tasks.known} visible, ${snapshot.tasks.open} open / ${snapshot.tasks.done} done, ${snapshot.tasks.loaded} loaded / ${snapshot.tasks.local} local, due today ${snapshot.tasks.dueBuckets?.today || 0}, overdue ${snapshot.tasks.dueBuckets?.overdue || 0}, ${snapshot.tasks.sourceOfTruth}`,
     `- Canvas: ${snapshot.canvas.elements} elements (${canvasElementTypeSummary(snapshot.canvas.elementTypes)}), ${formatBytes(snapshot.canvas.bytes)}, ${snapshot.canvas.tool}, zoom ${snapshot.canvas.camera?.zoomPercent || 100}%, grid ${snapshot.canvas.gridVisible ? `${snapshot.canvas.gridSize}px` : 'off'}, snap ${snapshot.canvas.snapToGrid ? 'on' : 'off'}, minimap ${snapshot.canvas.minimapVisible ? 'on' : 'off'}, ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo, ${snapshot.canvas.format}`,
-    `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
+    `- Assets: ${snapshot.assets.commandTextIcons} command text icons (${snapshot.assets.uniqueCommandTextIcons} unique), ${snapshot.assets.domImages} DOM images, ${snapshot.assets.inlineSvg} inline SVG, ${snapshot.assets.canvasSurfaces} canvas surfaces, icon fonts ${snapshot.assets.iconFonts ? 'yes' : 'no'}, image theme packs ${snapshot.assets.imageThemePacks ? 'yes' : 'no'}`,
     '',
     snapshot.note,
     '',
@@ -4313,6 +4326,13 @@ function upgradeMapCsv(snapshot) {
     ['search_filter_task', Number(snapshot.search.operators?.taskFilters || 0)],
     ['theme_id', snapshot.theme.id],
     ['theme_mode', snapshot.theme.mode],
+    ['theme_total', Number(snapshot.theme.totalThemes || 0)],
+    ['theme_light', Number(snapshot.theme.lightThemes || 0)],
+    ['theme_dark', Number(snapshot.theme.darkThemes || 0)],
+    ['theme_recipes', Number(snapshot.theme.recipes || 0)],
+    ['theme_active_recipes', Number(snapshot.theme.activeRecipes || 0)],
+    ['theme_catalog_bytes', Number(snapshot.theme.catalogBytes || 0)],
+    ['theme_recipe_bytes', Number(snapshot.theme.recipeBytes || 0)],
     ['layout_view_mode', snapshot.layout.viewMode],
     ['layout_split_ratio', Number(snapshot.layout.splitRatio || 0)],
     ['layout_soft_wrap', snapshot.layout.softWrap ? 'true' : 'false'],
@@ -4360,6 +4380,9 @@ function upgradeMapCsv(snapshot) {
     ['canvas_undo_snapshots', Number(snapshot.canvas.undoSnapshots || 0)],
     ['command_text_icons', Number(snapshot.assets.commandTextIcons || 0)],
     ['unique_command_text_icons', Number(snapshot.assets.uniqueCommandTextIcons || 0)],
+    ['asset_dom_images', Number(snapshot.assets.domImages || 0)],
+    ['asset_inline_svg', Number(snapshot.assets.inlineSvg || 0)],
+    ['asset_canvas_surfaces', Number(snapshot.assets.canvasSurfaces || 0)],
   ];
   return rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
 }
@@ -4400,7 +4423,7 @@ async function showUpgradeMap() {
     <div class="diag-grid">
       <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.search.scope)}</strong><span>Search</span><small>${snapshot.search.results} results · ${snapshot.search.loadedResults} loaded · ${snapshot.search.localResults} local · ${snapshot.search.operators.total} ops · ${formatBytes(snapshot.search.cacheBytes || 0)} cache</small></div>
-      <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.lightThemes} light · ${snapshot.theme.darkThemes} dark · CSS variables only</small></div>
+      <div class="diag-card"><strong>${escapeHtml(snapshot.theme.label)}</strong><span>Themes</span><small>${snapshot.theme.totalThemes} CSS themes · ${snapshot.theme.recipes} recipes · ${snapshot.theme.activeRecipes} active</small></div>
       <div class="diag-card"><strong>${escapeHtml(snapshot.layout.splitLabel)}</strong><span>Split/edit</span><small>${snapshot.layout.softWrap ? 'wrap' : 'no wrap'} · ${snapshot.layout.readingWidth ? 'reading width' : 'full width'} · ${snapshot.layout.focusMode ? 'focus' : 'standard'}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.retentionDays}d</strong><span>Trash</span><small>${snapshot.trash.retainedDrafts} drafts · ${snapshot.trash.retainedFiles} files · ${formatBytes(snapshot.trash.totalBytes || 0)}</small></div>
       <div class="diag-card"><strong>${snapshot.trash.urgent}</strong><span>Trash expiry</span><small>${snapshot.trash.soon} soon · ${snapshot.trash.safe} safe · next ${escapeHtml(snapshot.trash.nextExpiry || 'None')}</small></div>
@@ -4409,6 +4432,7 @@ async function showUpgradeMap() {
       <div class="diag-card"><strong>${snapshot.canvas.elements}</strong><span>Canvas</span><small>${snapshot.canvas.elementTypeCount} types · ${formatBytes(snapshot.canvas.bytes)} native JSON · ${snapshot.canvas.undoSnapshots}/${snapshot.canvas.undoLimit} undo</small></div>
       <div class="diag-card"><strong>${snapshot.canvas.camera.zoomPercent}%</strong><span>Canvas view</span><small>${escapeHtml(snapshot.canvas.tool)} · grid ${snapshot.canvas.gridVisible ? `${snapshot.canvas.gridSize}px` : 'off'} · snap ${snapshot.canvas.snapToGrid ? 'on' : 'off'} · minimap ${snapshot.canvas.minimapVisible ? 'on' : 'off'}</small></div>
       <div class="diag-card"><strong>${snapshot.assets.commandTextIcons}</strong><span>Command icons</span><small>${snapshot.assets.uniqueCommandTextIcons} unique text labels · no icon font</small></div>
+      <div class="diag-card"><strong>${snapshot.assets.domImages}</strong><span>Rendered assets</span><small>${snapshot.assets.inlineSvg} inline SVG · ${snapshot.assets.canvasSurfaces} canvas · no theme packs</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
       <button data-copy-upgrade-map-md>Copy MD</button>
