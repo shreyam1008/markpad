@@ -78,15 +78,15 @@
           <span id="dirty-indicator" class="hidden text-[13px] font-bold text-unsaved whitespace-nowrap animate-pulse">NOT SAVED</span>
         </div>
         <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
-          <button data-mode="markdown" class="view-btn" title="Editor only">
+          <button data-mode="markdown" class="view-btn" title="Editor only" aria-pressed="false">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
             <span>Editor</span>
           </button>
-          <button data-mode="split" class="view-btn" title="Split view">
+          <button data-mode="split" class="view-btn" title="Split view" aria-pressed="false">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
             <span>Split</span>
           </button>
-          <button data-mode="viewer" class="view-btn active" title="Preview only">
+          <button data-mode="viewer" class="view-btn active" title="Preview only" aria-pressed="true">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
             <span>Preview</span>
           </button>

@@ -12697,7 +12697,9 @@ function setView(mode) {
   viewMode = mode;
   if (activeId) noteViewModes[activeId] = mode;
   document.querySelectorAll('.view-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.mode === mode);
+    const isActiveView = b.dataset.mode === mode;
+    b.classList.toggle('active', isActiveView);
+    b.setAttribute('aria-pressed', isActiveView ? 'true' : 'false');
     if (b.dataset.mode === 'split') b.classList.toggle('hidden', ft !== 'md');
     if (b.dataset.mode === 'markdown') b.classList.toggle('hidden', isReadOnlyType(ft));
   });
