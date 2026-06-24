@@ -7805,7 +7805,7 @@ function renderTaskControls(tasks, visibleTasks) {
     ['local', 'Local', totalLocal],
   ];
   const sourceChips = sourceFilters.map(([id, label, count]) => `
-    <button class="task-filter${taskSourceFilter === id ? ' active' : ''}" data-task-source-filter="${id}">
+    <button class="task-filter${taskSourceFilter === id ? ' active' : ''}" data-task-source-filter="${id}" aria-pressed="${taskSourceFilter === id ? 'true' : 'false'}">
       ${label} <span>${count || 0}</span>
     </button>
   `).join('');
@@ -7819,7 +7819,7 @@ function renderTaskControls(tasks, visibleTasks) {
     ['done', 'Done'],
   ];
   const chips = filters.map(([id, label]) => `
-    <button class="task-filter${taskFilter === id ? ' active' : ''}" data-task-filter="${id}">
+    <button class="task-filter${taskFilter === id ? ' active' : ''}" data-task-filter="${id}" aria-pressed="${taskFilter === id ? 'true' : 'false'}">
       ${label} <span>${counts[id] || 0}</span>
     </button>
   `).join('');
@@ -8285,9 +8285,9 @@ async function showTasksView(mode = taskViewMode) {
     : renderTaskList(visibleTasks);
   showModal('Tasks', `
     <div class="task-view-tabs">
-      <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list">List</button>
-      <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar">Calendar</button>
-      <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban">Kanban</button>
+      <button class="task-tab${taskViewMode === 'list' ? ' active' : ''}" data-task-view="list" aria-pressed="${taskViewMode === 'list' ? 'true' : 'false'}">List</button>
+      <button class="task-tab${taskViewMode === 'calendar' ? ' active' : ''}" data-task-view="calendar" aria-pressed="${taskViewMode === 'calendar' ? 'true' : 'false'}">Calendar</button>
+      <button class="task-tab${taskViewMode === 'kanban' ? ' active' : ''}" data-task-view="kanban" aria-pressed="${taskViewMode === 'kanban' ? 'true' : 'false'}">Kanban</button>
       <button class="task-tab" data-task-agenda>Agenda</button>
         <button class="task-tab push" data-task-add>+ Task</button>
         <button class="task-tab" data-task-format>Format</button>
