@@ -3208,8 +3208,10 @@ function showLocalFirstGuide() {
       <div class="diag-card"><strong>canvas</strong><span>.canvas / JSON</span><small>Lightweight local scene data, not a bundled drawing engine</small></div>
       <div class="diag-card"><strong>Trash</strong><span>${DRAFT_TRASH_DAYS}-day retention</span><small>Restore first, clean expired later</small></div>
       <div class="diag-card"><strong>low memory</strong><span>Footprint + undo cleanup</span><small>Inspect heap/storage and release undo snapshots from commands</small></div>
+      <div class="diag-card"><strong>upgrade map</strong><span>One local dashboard</span><small>Search, tasks, canvas, Trash, themes, footprint, and sync-later boundaries</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
+      <button data-local-upgrade-map>Upgrade Map</button>
       <button data-local-workspace-setup>Workspace Setup</button>
       <button data-task-file-setup>Task File</button>
       <button data-search-performance-open>Search Performance</button>
@@ -13464,6 +13466,8 @@ modalBodyEl.addEventListener('click', async (e) => {
   if (taskAgendaCanvasBtn) insertTaskAgendaCanvasBoard();
   const openLocalFootprintBtn = e.target.closest('[data-open-local-footprint]');
   if (openLocalFootprintBtn) await showLocalFootprint();
+  const localUpgradeMapBtn = e.target.closest('[data-local-upgrade-map]');
+  if (localUpgradeMapBtn) await showUpgradeMap();
   const clearLoadedSearchCacheBtn = e.target.closest('[data-clear-loaded-search-cache]');
   if (clearLoadedSearchCacheBtn) clearLoadedSearchCacheAction();
   const runMemoryCleanupReportBtn = e.target.closest('[data-run-memory-cleanup-report]');
