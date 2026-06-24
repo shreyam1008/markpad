@@ -115,6 +115,27 @@ Initial implementation constraints:
 - If open-file chips, recents, or history evolve, they remain secondary to sidebar file navigation and must not redefine Markpad as a tabs app.
 - Keep the sidebar as the main place for creation and navigation. Do not introduce a tab system or make folder loading the default mental model.
 
+## Reference app borrow/avoid list
+
+The active reference checkout is `temp/zennotes`; `/temp/zencode`, `/tmp/zencode`, `temp/zencode`, and `./temp/zencode` are not present in this workspace.
+
+Borrow these patterns in Markpad's local-first shape:
+
+- Typed create actions: explicit Note, Daily note, Weekly note, Task file, Canvas, Open folder, Search folder, and future validated Other file actions.
+- Command-backed menus: every sidebar/menu affordance should map to a command action so keyboard, context menu, and button paths stay consistent.
+- Layered search: keep command search, file search, active-document find, and folder text search as distinct scopes with visible counts and truthful status.
+- Trash workflow: preserve explicit restore, report, clean-expired, empty, and permanent-delete confirmations with clear retention language.
+- Task views: keep list, calendar, and kanban as views over Markdown task lines, with visible file provenance and no hidden task database.
+- Canvas workflow: make native `.markcanvas.json` create/open/write actions first-class, and keep heavier library-style shape palettes deferred until measured.
+
+Avoid these reference-app patterns in Phase 1:
+
+- Do not copy Electron host, preload, packaging, or installer asset trees.
+- Do not pull monorepo packages wholesale; port small ideas into Markpad's current Go/Wails/vanilla frontend structure.
+- Do not add runtime icon packs, webfont icons, theme media packs, or generated build artifacts.
+- Do not import Excalidraw/tldraw-style runtimes as the default canvas engine before a binary, startup, and PSS budget pass.
+- Do not turn Markpad into a tabs-first or folder-first app; files are opened directly, closed directly, and retained in history/recents rather than persistent tabs.
+
 ## Phase order
 
 1. Stabilize diagnostics and budgets.
