@@ -9404,6 +9404,7 @@ function taskSourceProfileSnapshot(allTasks, visibleTasks) {
   }, { high: 0, medium: 0, normal: 0, low: 0 });
   const target = findTaskTargetNote();
   const sourceMarkdown = tasksToSourceMarkdown(visible);
+  const todoText = tasksToTodoTxt(visible);
   return {
     type: 'markpad-task-source-profile',
     version: 1,
@@ -9446,6 +9447,7 @@ function taskSourceProfileSnapshot(allTasks, visibleTasks) {
       views: ['list', 'calendar', 'kanban'],
       exports: ['tasks.md', 'Markdown report', 'JSON', 'CSV', 'ICS', 'Todo.txt', 'canvas board'],
       generatedSourceBytes: byteSize(sourceMarkdown),
+      generatedTodoBytes: byteSize(todoText),
     },
     footprint: taskVisiblePageFootprint(visible),
     backend: {
@@ -9499,6 +9501,7 @@ function taskSourceProfileMarkdown(snapshot) {
     `- Views: ${snapshot.formats.views.join(', ')}`,
     `- Exports: ${snapshot.formats.exports.join(', ')}`,
     `- Generated visible tasks.md size: ${formatBytes(snapshot.formats.generatedSourceBytes || 0)}`,
+    `- Generated visible Todo.txt size: ${formatBytes(snapshot.formats.generatedTodoBytes || 0)}`,
     `- Visible task page footprint: ${formatBytes(snapshot.footprint?.bytes || 0)} (${snapshot.footprint?.count || 0} tasks, ${formatBytes(snapshot.footprint?.textBytes || 0)} text)`,
     '',
     '## Backend bridges',
@@ -9541,6 +9544,7 @@ function taskSourceProfileCsv(snapshot) {
     ['task_file_found', snapshot.taskFile.found ? 'true' : 'false'],
     ['task_file_path', snapshot.taskFile.path || ''],
     ['generated_source_bytes', Number(snapshot.formats.generatedSourceBytes || 0)],
+    ['generated_todo_bytes', Number(snapshot.formats.generatedTodoBytes || 0)],
     ['visible_page_bytes', Number(snapshot.footprint?.bytes || 0)],
     ['visible_page_text_bytes', Number(snapshot.footprint?.textBytes || 0)],
     ['visible_page_metadata_bytes', Number(snapshot.footprint?.metadataBytes || 0)],
@@ -9561,6 +9565,7 @@ async function showTaskSourceProfile() {
       <div class="diag-card"><strong>${snapshot.dueBuckets.overdue || 0}</strong><span>Overdue</span><small>${snapshot.dueBuckets.today || 0} today · ${snapshot.dueBuckets.week || 0} this week</small></div>
       <div class="diag-card"><strong>${snapshot.counts.waiting}</strong><span>Waiting</span><small>${snapshot.counts.high} high priority</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.formats.generatedSourceBytes || 0)}</strong><span>Visible tasks.md</span><small>Clean editable source export</small></div>
+      <div class="diag-card"><strong>${formatBytes(snapshot.formats.generatedTodoBytes || 0)}</strong><span>Visible Todo.txt</span><small>Portable task list export</small></div>
       <div class="diag-card"><strong>${formatBytes(snapshot.footprint.bytes || 0)}</strong><span>Visible page</span><small>${formatBytes(snapshot.footprint.textBytes || 0)} text · avg ${formatBytes(snapshot.footprint.averageBytes || 0)}</small></div>
       <div class="diag-card"><strong>${snapshot.taskFile.found ? 'found' : 'missing'}</strong><span>Task file</span><small>${escapeHtml(snapshot.taskFile.path || 'Use setup or starter')}</small></div>
       <div class="diag-card"><strong>${snapshot.backend.localFolderTasks ? 'yes' : 'no'}</strong><span>Local scan bridge</span><small>${snapshot.backend.appendLocalFolderTask ? 'append available' : 'append fallback to draft'}</small></div>
