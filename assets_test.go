@@ -7,6 +7,48 @@ import (
 	"testing"
 )
 
+var remoteCDNAndFontHosts = []string{
+	"ajax.googleapis.com",
+	"cdn.jsdelivr.net",
+	"cdn.tailwindcss.com",
+	"cdnjs.cloudflare.com",
+	"code.jquery.com",
+	"esm.sh",
+	"fonts.bunny.net",
+	"fonts.googleapis.com",
+	"fonts.gstatic.com",
+	"ga.jspm.io",
+	"jspm.dev",
+	"kit.fontawesome.com",
+	"p.typekit.net",
+	"rsms.me",
+	"skypack.dev",
+	"unpkg.com",
+	"use.fontawesome.com",
+	"use.typekit.net",
+}
+
+var runtimePDFOrHighlightCDNClaims = []string{
+	"cdn highlight.js",
+	"cdn highlightjs",
+	"cdn hljs",
+	"cdn pdf.js",
+	"cdn pdfjs",
+	"cdn pdfjs-dist",
+	"highlight.js cdn",
+	"highlight.js from a cdn",
+	"highlightjs cdn",
+	"highlightjs from a cdn",
+	"hljs cdn",
+	"hljs from a cdn",
+	"pdf.js cdn",
+	"pdf.js from a cdn",
+	"pdfjs cdn",
+	"pdfjs from a cdn",
+	"pdfjs-dist cdn",
+	"pdfjs-dist from a cdn",
+}
+
 func TestEmbeddedFrontendAssetsExposeIndexAtRoot(t *testing.T) {
 	frontendAssets, err := fs.Sub(assets, "frontend")
 	if err != nil {
@@ -19,29 +61,19 @@ func TestEmbeddedFrontendAssetsExposeIndexAtRoot(t *testing.T) {
 	if !strings.Contains(string(data), "src/main.js") {
 		t.Fatalf("embedded index.html does not reference the Markpad frontend script")
 	}
-	if strings.Contains(string(data), "https://cdnjs.cloudflare.com") {
-		t.Fatalf("embedded index.html must not block first paint on CDN assets")
-	}
+	assertTextOmits(t, "embedded frontend/index.html", string(data), remoteCDNAndFontHosts)
 }
 
 func TestFrontendRuntimeAvoidsRemoteCDNLoaders(t *testing.T) {
-	for _, path := range []string{"frontend/index.html", "frontend/src/main.js"} {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		text := string(data)
-		for _, forbidden := range []string{
-			"cdn.tailwindcss.com",
-			"cdnjs.cloudflare.com",
-			"fonts.googleapis.com",
-			"fonts.gstatic.com",
-		} {
-			if strings.Contains(text, forbidden) {
-				t.Fatalf("%s must not load remote CDN resource %q", path, forbidden)
-			}
-		}
-	}
+	walkStaticTextFiles(t, "frontend", func(path, text string) {
+		assertTextOmits(t, path, text, remoteCDNAndFontHosts)
+	})
+}
+
+func TestFrontendDoesNotClaimRuntimePDFOrHighlightCDNs(t *testing.T) {
+	walkStaticTextFiles(t, "frontend", func(path, text string) {
+		assertTextOmits(t, path, text, runtimePDFOrHighlightCDNClaims)
+	})
 }
 
 func TestDocsPageAvoidsCDNFirstPaintDependencies(t *testing.T) {
@@ -49,14 +81,65 @@ func TestDocsPageAvoidsCDNFirstPaintDependencies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(data)
-	for _, forbidden := range []string{
-		"cdn.tailwindcss.com",
-		"fonts.googleapis.com",
-		"fonts.gstatic.com",
-	} {
-		if strings.Contains(text, forbidden) {
-			t.Fatalf("docs/index.html must not depend on %q for first paint", forbidden)
+	assertTextOmits(t, "docs/index.html", string(data), remoteCDNAndFontHosts)
+}
+
+func assertTextOmits(t *testing.T, path string, text string, forbidden []string) {
+	t.Helper()
+
+	lowerText := strings.ToLower(text)
+	for _, value := range forbidden {
+		if strings.Contains(lowerText, strings.ToLower(value)) {
+			t.Fatalf("%s must not reference %q", path, value)
 		}
 	}
+}
+
+func walkStaticTextFiles(t *testing.T, root string, check func(path, text string)) {
+	t.Helper()
+
+	rootFS := os.DirFS(root)
+	if err := fs.WalkDir(rootFS, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case ".vite", "build", "dist", "node_modules":
+				return fs.SkipDir
+			default:
+				return nil
+			}
+		}
+		if !isStaticTextFile(path) {
+			return nil
+		}
+		data, err := fs.ReadFile(rootFS, path)
+		if err != nil {
+			return err
+		}
+		check(root+"/"+strings.TrimPrefix(path, "./"), string(data))
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func isStaticTextFile(path string) bool {
+	for _, suffix := range []string{
+		".css",
+		".html",
+		".js",
+		".jsx",
+		".mjs",
+		".svelte",
+		".ts",
+		".tsx",
+		".vue",
+	} {
+		if strings.HasSuffix(path, suffix) {
+			return true
+		}
+	}
+	return false
 }

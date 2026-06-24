@@ -187,6 +187,44 @@ const canvasImportFile = $('canvas-import-file');
 const canvasStatus = $('canvas-status');
 const canvasHint = $('canvas-hint');
 
+const EMPTY_MARKDOWN_PLACEHOLDER = [
+  'Start with a heading, a thought, or a task.',
+  'Markdown shortcuts work here: # Title, - list, - [ ] task.'
+].join('\n\n');
+
+function placeholderForActiveWritingType() {
+  const type = typeof activeType === 'function' ? activeType() : 'md';
+  if (type === 'code') return 'Start typing code...';
+  if (type === 'text') return 'Start typing text...';
+  return EMPTY_MARKDOWN_PLACEHOLDER;
+}
+
+function refreshWritingEmptyState() {
+  const type = typeof activeType === 'function' ? activeType() : 'md';
+  const canShowWritingEmpty = !isReadOnlyType(type) && ['md', 'text', 'code'].includes(type);
+  const source = editor && typeof editor.value === 'string' ? editor.value : currentContent;
+  if (editor) editor.placeholder = placeholderForActiveWritingType();
+  document.body.classList.toggle('writing-empty', canShowWritingEmpty && !source.trim());
+}
+
+function scheduleWritingEmptyState() {
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(refreshWritingEmptyState);
+  } else {
+    refreshWritingEmptyState();
+  }
+}
+
+if (editor) {
+  editor.addEventListener('input', scheduleWritingEmptyState);
+}
+
+if (viewer && typeof MutationObserver !== 'undefined') {
+  new MutationObserver(scheduleWritingEmptyState).observe(viewer, { childList: true, characterData: true, subtree: true });
+}
+
+scheduleWritingEmptyState();
+
 const THEMES = [
   { id: 'paper', label: 'Paper', mode: 'light', hint: 'Default low-glare writing surface' },
   { id: 'linen', label: 'Linen', mode: 'light', hint: 'Warm long-form writing surface' },

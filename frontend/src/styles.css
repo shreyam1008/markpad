@@ -216,6 +216,55 @@ html[data-theme] .doc-path { background: var(--hover); color: var(--muted); }
 html[data-theme] ::-webkit-scrollbar-thumb { background: var(--border); }
 html[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
+/* First-paint empty writing state: native editor placeholder + lightweight preview card */
+body.writing-empty #editor:placeholder-shown {
+  background-color: var(--editor) !important;
+  background-image:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%),
+    linear-gradient(90deg, color-mix(in srgb, var(--border-soft) 52%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--border-soft) 36%, transparent) 1px, transparent 1px) !important;
+  background-size: auto, 34px 34px, 34px 34px !important;
+}
+
+#editor::placeholder {
+  color: color-mix(in srgb, var(--muted) 78%, transparent);
+  font-style: italic;
+  line-height: 1.75;
+}
+
+body.writing-empty #viewer {
+  position: relative;
+  min-height: 100%;
+}
+
+body.writing-empty #viewer::before {
+  content: "Blank page\AStart in the editor, paste Markdown, or switch views when you are ready to review.";
+  display: block;
+  max-width: 380px;
+  margin: clamp(28px, 10vh, 88px) auto;
+  padding: 22px 24px;
+  border: 1px solid var(--border-soft);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--surface) 90%, transparent), color-mix(in srgb, var(--editor) 96%, transparent)),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 42%);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--shadow) 58%, transparent), inset 0 1px 0 rgba(255,255,255,.2);
+  color: var(--muted);
+  font-size: .92rem;
+  line-height: 1.55;
+  letter-spacing: -.01em;
+  text-align: left;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+body.writing-empty #viewer::first-line {
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 2.1;
+}
+
 /* Shared polish: zero assets, theme-native, reduced-motion safe */
 .icon-btn:focus-visible,
 .tb:focus-visible,
