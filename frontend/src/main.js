@@ -7873,6 +7873,7 @@ function taskEmptyStateHtml(message = 'No Markdown tasks found in loaded files.'
       <div class="task-empty-actions">
         <button type="button" data-task-add>+ Task</button>
         <button type="button" data-task-file-setup>Task File</button>
+        <button type="button" data-task-format>Format Help</button>
         <button type="button" data-task-source-profile>Source Profile</button>
         <button type="button" data-task-reset-filters>Reset Filters</button>
       </div>
