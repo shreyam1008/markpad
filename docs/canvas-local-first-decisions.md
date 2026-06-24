@@ -13,7 +13,7 @@ Markpad should keep the drawing canvas lightweight and local-first. The canvas c
 
 Use a plaintext JSON canvas file so users are not locked into Markpad.
 
-Suggested extension: `.mpcanvas.json`.
+Canonical extension: `.markcanvas.json`.
 
 Minimum shape:
 
@@ -23,13 +23,13 @@ Minimum shape:
   "version": 1,
   "createdAt": "2026-06-24T00:00:00Z",
   "updatedAt": "2026-06-24T00:00:00Z",
-  "viewport": { "x": 0, "y": 0, "zoom": 1 },
   "elements": [],
-  "assets": []
+  "assets": [],
+  "meta": {}
 }
 ```
 
-Elements should stay simple: id, kind, position, size, style, text, points, and z-index. Avoid per-frame runtime state in the file.
+Elements should stay simple: id, kind, position, size, style, text, points, and z-index. Avoid per-frame runtime state in the file. Camera, selected tool, selection, minimap visibility, grid visibility, and snap state are session state and should stay device-local.
 
 ## Save model
 
