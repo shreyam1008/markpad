@@ -111,6 +111,7 @@ Do not code sync in phase 1, but keep the file model sync-friendly.
 - Keep editor layout polish as local UI state; Layout Profile should expose split, focus, compact, wrap, reading width, and zoom without writing to documents.
 - Show editor/preview lane share in Layout Profile from existing split state; do not persist layout metadata into document files.
 - Keep Upgrade Map as a metadata dashboard over existing diagnostics; it must not scan workspaces, load assets, or become a new source of truth.
+- Keep Upgrade Map exports limited to Markdown, JSON, and CSV metadata snapshots; do not include document bodies or deleted draft contents.
 - Keep files as the source of truth and databases as rebuildable accelerators.
 - Prefer streaming, paging, and lazy parsing over loading a whole workspace into the webview.
 - Keep localStorage for small preferences and draft/session state only.
