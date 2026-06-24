@@ -12,23 +12,23 @@ const (
 )
 
 type LocalFolderOverview struct {
-	Path          string `json:"path"`
-	Missing       bool   `json:"missing"`
-	Files         int    `json:"files"`
-	Folders       int    `json:"folders"`
-	Notes         int    `json:"notes"`
-	Canvases      int    `json:"canvases"`
-	OtherText     int    `json:"otherText"`
-	Tasks         int    `json:"tasks"`
-	OpenTasks     int    `json:"openTasks"`
-	DoneTasks     int    `json:"doneTasks"`
-	TotalBytes    int64  `json:"totalBytes"`
-	ScannedFiles  int    `json:"scannedFiles"`
-	SkippedFiles  int    `json:"skippedFiles"`
-	Truncated     bool   `json:"truncated"`
-	LargestRel    string `json:"largestRel"`
-	LargestBytes  int64  `json:"largestBytes"`
-	NewestRel     string `json:"newestRel"`
+	Path           string `json:"path"`
+	Missing        bool   `json:"missing"`
+	Files          int    `json:"files"`
+	Folders        int    `json:"folders"`
+	Notes          int    `json:"notes"`
+	Canvases       int    `json:"canvases"`
+	OtherText      int    `json:"otherText"`
+	Tasks          int    `json:"tasks"`
+	OpenTasks      int    `json:"openTasks"`
+	DoneTasks      int    `json:"doneTasks"`
+	TotalBytes     int64  `json:"totalBytes"`
+	ScannedFiles   int    `json:"scannedFiles"`
+	SkippedFiles   int    `json:"skippedFiles"`
+	Truncated      bool   `json:"truncated"`
+	LargestRel     string `json:"largestRel"`
+	LargestBytes   int64  `json:"largestBytes"`
+	NewestRel      string `json:"newestRel"`
 	NewestModified string `json:"newestModified"`
 }
 
@@ -82,6 +82,10 @@ func (a *App) GetLocalFolderOverview() LocalFolderOverview {
 }
 
 func localOverviewClassify(path string, size int64, overview *LocalFolderOverview) {
+	if strings.HasSuffix(strings.ToLower(path), markpadCanvasExtension) {
+		overview.Canvases++
+		return
+	}
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".md", ".markdown", ".mdown":

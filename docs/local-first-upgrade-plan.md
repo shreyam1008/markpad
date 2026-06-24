@@ -6,7 +6,7 @@ This plan keeps Markpad lightweight: local files remain the source of truth, the
 
 - Search: prefer a Go-backed SQLite FTS5 index for the local folder because SQLite FTS5 is built for full-text search over document collections and supports ranking through `bm25()`: https://sqlite.org/fts5.html
 - Loaded-file search: keep the current in-memory path for open/cached files. If richer loaded-document ranking is needed later, evaluate tiny in-browser indexes such as MiniSearch before FlexSearch: https://github.com/lucaong/minisearch and https://github.com/nextapps-de/flexsearch
-- Canvas storage: keep `.canvas` / JSON Canvas as the portable interchange format because it is open, readable, and intended for infinite-canvas interoperability: https://jsoncanvas.org/ and https://github.com/obsidianmd/jsoncanvas
+- Canvas storage: keep native Markpad documents as `.markcanvas.json`; keep `.canvas` / JSON Canvas as the portable interchange format because it is open, readable, and intended for infinite-canvas interoperability: https://jsoncanvas.org/ and https://github.com/obsidianmd/jsoncanvas
 - Canvas editor: do not bundle tldraw or Excalidraw for now. Borrow interaction patterns, but keep Markpad's custom canvas renderer. tldraw's document/session split is still a good persistence model: https://tldraw.dev/docs/persistence
 - Desktop shell: continue leaning on Wails for the Go/local OS bridge and web UI runtime rather than shipping a Chromium bundle: https://wails.io/docs/reference/runtime/intro/
 

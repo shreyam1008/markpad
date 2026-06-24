@@ -1885,10 +1885,13 @@ const OFFICE_EXTS = new Set(['doc', 'docx', 'odt', 'rtf', 'pages']);
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'ico']);
 const ARCHIVE_EXTS = new Set(['zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar']);
 function fileExt(path) { return path ? path.split('.').pop().toLowerCase() : ''; }
+function isMarkpadCanvasPath(path) { return String(path || '').toLowerCase().endsWith('.markcanvas.json'); }
 function getFileType(path, kind) {
+  if (isMarkpadCanvasPath(path) || kind === 'canvas') return 'canvas';
   if (kind) return kind === 'markdown' ? 'md' : kind;
   if (!path) return 'md';
   const ext = fileExt(path);
+  if (ext === 'canvas') return 'canvas';
   if (MD_EXTS.has(ext)) return 'md';
   if (TEXT_EXTS.has(ext)) return 'text';
   if (CODE_EXTS.has(ext)) return 'code';
@@ -1901,7 +1904,7 @@ function getFileType(path, kind) {
 }
 function activeType() { const active = cachedNotes.find(n => n.id === activeId); return getFileType(active?.path, active?.kind); }
 function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'archive'].includes(type); }
-function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
+function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', canvas: 'Canvas', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
 function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function slugifyHeading(value) { return String(value || '').toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '') || 'section'; }
 
@@ -6255,8 +6258,8 @@ function commandItems() {
     { id: 'copy-canvas-view-state-csv', icon: 'CVC', title: 'Copy canvas view state CSV', hint: 'Copy camera, grid, snap, minimap, and element count as CSV', run: copyCanvasViewStateCsv },
     { id: 'export-canvas-view-state-csv', icon: 'EVC', title: 'Export canvas view state CSV', hint: 'Download camera, grid, snap, minimap, and element count as CSV', run: exportCanvasViewStateCsv },
     { id: 'canvas-restore-view-state', icon: 'RVJ', title: 'Restore canvas view state JSON', hint: 'Restore camera, grid, snap, minimap, background, and tool from clipboard JSON', run: restoreCanvasViewStateFromClipboard },
-    { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .canvas, JSON, or draft document with current canvas JSON', run: saveCanvasToActiveDocument },
-    { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as a .canvas file', run: saveCanvasAsDraft },
+    { id: 'canvas-write-active', icon: 'CW', title: 'Write canvas to active document', hint: 'Update the active .markcanvas.json, JSON, or draft document with native canvas JSON', run: saveCanvasToActiveDocument },
+    { id: 'canvas-draft', icon: 'CD', title: 'Save canvas as draft', hint: 'Create an editable JSON draft that can be saved as .markcanvas.json', run: saveCanvasAsDraft },
     { id: 'focus', icon: 'L', title: focusMode ? 'Exit focus mode' : 'Enter focus mode', hint: 'Hide secondary chrome for writing', kbd: 'Ctrl+Shift+L', run: toggleFocusMode },
     { id: 'compact-mode', icon: 'CP', title: compactMode ? 'Disable compact mode' : 'Enable compact mode', hint: 'Tighten sidebar, toolbar, modal, search, task, and canvas spacing', run: toggleCompactMode },
     { id: 'writing-focus-preset', icon: 'WF', title: 'Writing focus preset', hint: 'Focus + compact + soft wrap + reading width + editor-wide split', run: applyWritingFocusPreset },
@@ -6328,7 +6331,7 @@ function commandItems() {
     { id: 'recent-local-files', icon: 'LR', title: 'Recent local files', hint: 'Show recently modified files from the default local folder', run: showRecentLocalFiles },
     { id: 'local-tags', icon: '#', title: 'Local tags', hint: 'Show Markdown tags found in the default local folder', run: showLocalTags },
     { id: 'local-links', icon: '[[]]', title: 'Local links', hint: 'Show wiki and Markdown links found in the default local folder', run: showLocalLinks },
-    { id: 'local-links-canvas', icon: 'LG', title: 'Local links canvas', hint: 'Generate a lightweight .canvas map from local Markdown links', run: createLocalLinksCanvas },
+    { id: 'local-links-canvas', icon: 'LG', title: 'Local links canvas', hint: 'Generate a lightweight .markcanvas.json map from local Markdown links', run: createLocalLinksCanvas },
     { id: 'active-backlinks', icon: 'BL', title: 'Backlinks for active note', hint: 'Find local Markdown files linking to the active saved note', run: showActiveBacklinks },
     { id: 'active-backlinks-to-canvas', icon: 'B2C', title: 'Send backlinks to canvas', hint: 'Append active-note backlinks as a lightweight local canvas map', run: insertActiveBacklinksCanvasMap },
     { id: 'copy-active-path', icon: 'CAP', title: 'Copy active file path', hint: 'Copy the active saved file path to the clipboard', run: copyActiveFilePath },
@@ -6349,7 +6352,7 @@ function commandItems() {
     { id: 'new-local-note', icon: 'LN', title: 'New local note', hint: 'Create a Markdown note in the default local folder', run: createLocalFolderNote },
     { id: 'daily-note', icon: 'DN', title: 'Daily note', hint: 'Create or open today in the default local folder', run: createLocalFolderDailyNote },
     { id: 'weekly-note', icon: 'WN', title: 'Weekly note', hint: 'Create or open this ISO week in the default local folder', run: createLocalFolderWeeklyNote },
-    { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .canvas JSON file in the default local folder', run: createLocalFolderCanvas },
+    { id: 'new-local-canvas', icon: 'LC', title: 'New local canvas', hint: 'Create a .markcanvas.json file in the default local folder', run: createLocalFolderCanvas },
     { id: 'search-local-folder', icon: 'LS', title: 'Search local folder', hint: 'Search text files in the default local folder', run: searchLocalFolderPrompt },
     { id: 'export-local-settings', icon: 'EX', title: 'Export local settings', hint: 'Download a small JSON snapshot of local preferences and UI state', run: exportLocalSettings },
     { id: 'copy-local-settings', icon: 'CX', title: 'Copy local settings', hint: 'Copy a small JSON snapshot of local preferences and UI state', run: copyLocalSettings },
@@ -7724,7 +7727,7 @@ async function showLocalWorkspaceSetupGuide() {
       <div class="diag-card"><strong>local</strong><span>No sync in phase 1</span><small>Files, tasks, canvases, search, tags, and links stay on this computer</small></div>
       <div class="diag-card"><strong>notes</strong><span>Markdown first</span><small>Daily, weekly, and quick notes are plain files</small></div>
       <div class="diag-card"><strong>tasks</strong><span>Checkbox source</span><small>List, calendar, and kanban read Markdown tasks from this folder</small></div>
-      <div class="diag-card"><strong>canvas</strong><span>Portable JSON</span><small>Local .canvas files use inspectable JSON</small></div>
+      <div class="diag-card"><strong>canvas</strong><span>Portable JSON</span><small>Native .markcanvas.json files use inspectable JSON</small></div>
       <div class="diag-card"><strong>search</strong><span>Bounded scans</span><small>Local search avoids eager full-workspace loading</small></div>
     </div>
     <div class="local-actions" style="margin-top:10px;">
@@ -13660,7 +13663,7 @@ async function saveCanvasAsDraft() {
   renderSession(await window.go.main.App.GetSession());
   setView('markdown');
   editor.focus();
-  statusText.textContent = 'Canvas JSON draft created. Use Save As for .canvas';
+  statusText.textContent = 'Canvas JSON draft created. Use Save As for .markcanvas.json';
 }
 
 async function saveCanvasToActiveDocument() {
@@ -13672,8 +13675,12 @@ async function saveCanvasToActiveDocument() {
     return;
   }
   const ext = fileExt(active.path || '').toLowerCase();
-  if (active.path && ext !== 'canvas' && ext !== 'json') {
-    statusText.textContent = 'Active file is not .canvas or JSON. Use Draft instead.';
+  if (active.path && ext === 'canvas') {
+    statusText.textContent = 'Use Export Obsidian JSON Canvas for .canvas files, or Save As .markcanvas.json for native edits.';
+    return;
+  }
+  if (active.path && ext !== 'json') {
+    statusText.textContent = 'Active file is not .markcanvas.json or JSON. Use Draft instead.';
     return;
   }
   const type = getFileType(active.path, active.kind);
@@ -15665,7 +15672,7 @@ async function showPreferences() {
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Local-first read-only card + Open Externally</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Canvas</td><td style="padding:4px 6px;">Native .markcanvas.json export, local JSON canvas view, Obsidian/JSON Canvas import/export, Excalidraw import/export, SVG, PNG viewport/full export, Markdown summary, Write to active .markcanvas.json/.canvas/JSON/draft</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Canvas</td><td style="padding:4px 6px;">Native .markcanvas.json export, local JSON canvas view, Obsidian/JSON Canvas import/export, Excalidraw import/export, SVG, PNG viewport/full export, Markdown summary, Write to active .markcanvas.json/JSON/draft</td></tr>
       <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
     </table>
     <h3 style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:700;">Canvas</h3>

@@ -46,8 +46,8 @@ When sync is eventually implemented, prefer folder-level sync with explicit conf
 ```text
 note.md
 note.conflict-2026-06-24-device.md
-board.canvas
-board.conflict-2026-06-24-device.canvas
+board.markcanvas.json
+board.conflict-2026-06-24-device.markcanvas.json
 ```
 
 For canvas JSON, conflict handling should preserve both documents first. Smarter element-level merging can come later only if the document schema has stable element identifiers and a tested merge story.

@@ -19,6 +19,7 @@ const (
 type localGraphCanvasDoc struct {
 	Type     string                    `json:"type"`
 	Version  int                       `json:"version"`
+	Schema   string                    `json:"schema"`
 	Source   string                    `json:"source"`
 	Elements []localGraphCanvasElement `json:"elements"`
 	AppState map[string]string         `json:"appState"`
@@ -65,7 +66,7 @@ func (a *App) CreateLocalFolderLinksCanvas(limit int) (SessionState, error) {
 	if err != nil {
 		return a.GetSession(), err
 	}
-	path := localCollisionPath(filepath.Join(root.Path, "Local Links.canvas"))
+	path := localCollisionPath(filepath.Join(root.Path, "Local Links"+markpadCanvasExtension))
 	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
 		return a.GetSession(), err
 	}
@@ -213,6 +214,7 @@ func localGraphBuildCanvas(nodes map[string]*localGraphNode, edges []localGraphE
 	return localGraphCanvasDoc{
 		Type:     "markpad-canvas",
 		Version:  1,
+		Schema:   "https://markpad.local/schemas/canvas-v1.json",
 		Source:   "markpad-local-links",
 		Elements: elements,
 		AppState: map[string]string{"viewBackgroundColor": "#ffffff"},

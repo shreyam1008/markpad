@@ -19,6 +19,7 @@ const (
 	localFolderSettingsFile = "local-folder.json"
 	localFolderSearchCap    = 1024 * 1024
 	localFolderSearchPool   = 300
+	markpadCanvasExtension  = ".markcanvas.json"
 )
 
 var (
@@ -167,7 +168,7 @@ func (a *App) ListLocalFolderFiles(limit int) []LocalFolderFile {
 		if err != nil {
 			rel = filepath.Base(path)
 		}
-		kind := fileKind(path)
+		kind := localFolderFileKind(path)
 		files = append(files, LocalFolderFile{
 			Path:     path,
 			RelPath:  filepath.ToSlash(rel),
@@ -231,7 +232,7 @@ func (a *App) SearchLocalFolderWithStats(query string, limit int) (result LocalF
 			return nil
 		}
 		result.Scanned++
-		kind := fileKind(path)
+		kind := localFolderFileKind(path)
 		if isReadOnlyPath(path) || kind == "archive" {
 			result.Skipped++
 			return nil
@@ -319,26 +320,62 @@ func (a *App) CreateLocalFolderCanvas(title string) (SessionState, error) {
 	if title == "" {
 		title = "Canvas"
 	}
-	name := safeLocalFileName(title)
-	if !strings.HasSuffix(strings.ToLower(name), ".canvas") {
-		name += ".canvas"
-	}
+	name := localCanvasFileName(title)
 	path := localCollisionPath(filepath.Join(root.Path, name))
-	content := `{
-  "type": "markpad-canvas",
-  "version": 1,
-  "source": "markpad",
-  "elements": [],
-  "appState": {
-    "viewBackgroundColor": "#ffffff"
-  },
-  "files": {}
-}
-`
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(markpadCanvasDocumentJSON("markpad")), 0o644); err != nil {
 		return a.GetSession(), err
 	}
 	return a.openPath(path)
+}
+
+func localCanvasFileName(title string) string {
+	name := safeLocalFileName(title)
+	lower := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(lower, markpadCanvasExtension):
+		return name
+	case strings.HasSuffix(lower, ".canvas"):
+		return name[:len(name)-len(".canvas")] + markpadCanvasExtension
+	case strings.HasSuffix(lower, ".json"):
+		return name[:len(name)-len(".json")] + markpadCanvasExtension
+	default:
+		return name + markpadCanvasExtension
+	}
+}
+
+func localFolderFileKind(path string) string {
+	if strings.HasSuffix(strings.ToLower(path), markpadCanvasExtension) {
+		return "canvas"
+	}
+	return fileKind(path)
+}
+
+func markpadCanvasDocumentJSON(source string) string {
+	if strings.TrimSpace(source) == "" {
+		source = "markpad"
+	}
+	doc := struct {
+		Type     string            `json:"type"`
+		Version  int               `json:"version"`
+		Schema   string            `json:"schema"`
+		Source   string            `json:"source"`
+		Elements []any             `json:"elements"`
+		AppState map[string]string `json:"appState"`
+		Files    map[string]any    `json:"files"`
+	}{
+		Type:     "markpad-canvas",
+		Version:  1,
+		Schema:   "https://markpad.local/schemas/canvas-v1.json",
+		Source:   source,
+		Elements: []any{},
+		AppState: map[string]string{"viewBackgroundColor": "#ffffff"},
+		Files:    map[string]any{},
+	}
+	data, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return ""
+	}
+	return string(append(data, '\n'))
 }
 
 func safeLocalFileName(title string) string {
