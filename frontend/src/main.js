@@ -4093,6 +4093,42 @@ function showHelpModal() {
   `);
 }
 
+function showUpgradeMap() {
+  const active = cachedNotes.find(note => note.id === activeId);
+  const type = getFileType(active?.path, active?.kind);
+  const theme = THEMES.find(item => item.id === currentTheme) || THEMES[0];
+  const draftTrash = loadDraftTrash();
+  if (!canvasDoc || !canvasSession) loadCanvasState();
+  const canvasElements = (canvasDoc?.elements || []).length;
+  const canvasBytes = byteSize(localStorage.getItem(CANVAS_DOC_KEY) || '');
+  const searchCache = loadedSearchCacheFootprint();
+  const loadedResults = searchLastResults.filter(result => result.source !== 'local').length;
+  const localResults = searchLastResults.length - loadedResults;
+  const commandIcons = commandIconMetrics();
+  showModal('Upgrade Map', `
+    <div class="diag-grid">
+      <div class="diag-card"><strong>local</strong><span>Source of truth</span><small>Files, drafts, tasks, canvas, Trash, and UI state stay on this computer</small></div>
+      <div class="diag-card"><strong>${escapeHtml(searchScope)}</strong><span>Search</span><small>${searchLastResults.length} results · ${loadedResults} loaded · ${localResults} local · ${formatBytes(searchCache.bytes || 0)} cache</small></div>
+      <div class="diag-card"><strong>${escapeHtml(theme.label)}</strong><span>Themes</span><small>${LIGHT_THEMES.length} light · ${DARK_THEMES.length} dark · CSS variables only</small></div>
+      <div class="diag-card"><strong>${escapeHtml(splitRatioText())}</strong><span>Split/edit</span><small>${editorSoftWrap ? 'wrap' : 'no wrap'} · ${editorReadingWidth ? 'reading width' : 'full width'} · ${focusMode ? 'focus' : 'standard'}</small></div>
+      <div class="diag-card"><strong>${DRAFT_TRASH_DAYS}d</strong><span>Trash</span><small>${draftTrash.length} retained drafts · file bridge ${window.go?.main?.App?.ListFileTrash ? 'on' : 'off'}</small></div>
+      <div class="diag-card"><strong>${escapeHtml(taskViewMode)}</strong><span>Tasks</span><small>${escapeHtml(taskSourceFilter)} · ${escapeHtml(taskFilter)}${taskQuery ? ` · ${escapeHtml(taskQuery)}` : ''} · Markdown source</small></div>
+      <div class="diag-card"><strong>${canvasElements}</strong><span>Canvas</span><small>${formatBytes(canvasBytes)} native JSON · ${canvasHistory.length}/${CANVAS_HISTORY_LIMIT} undo</small></div>
+      <div class="diag-card"><strong>${commandIcons.total}</strong><span>Command icons</span><small>${commandIcons.unique} unique text labels · no icon font</small></div>
+    </div>
+    <div class="local-actions" style="margin-top:10px;">
+      <button data-search-profile-open>Search Profile</button>
+      <button data-theme-lab-open>Theme Lab</button>
+      <button data-trash-guide>Trash Guide</button>
+      <button data-task-source-profile>Task Source</button>
+      <button data-canvas-storage-profile-open>Canvas Storage</button>
+      <button data-open-local-footprint>Local Footprint</button>
+      <button data-workspace-search-plan>Search Plan</button>
+    </div>
+    <p class="diag-note">Upgrade Map is metadata-only. It samples existing UI state, current result arrays, localStorage counters, and bounded diagnostic counters; it does not scan the workspace or load external assets.</p>
+  `);
+}
+
 function themeCommandItems() {
   return THEMES.map(theme => ({
     id: `theme-${theme.id}`,
@@ -4599,6 +4635,7 @@ function commandItems() {
     { id: 'commands-trash', icon: 'CMD', title: 'Show Trash commands', hint: 'Filter the command palette to local Trash, restore, cleanup, and report actions', run: () => openCommandPaletteQuery('Trash') },
     { id: 'command-guide', icon: 'CG', title: 'Command workflow guide', hint: 'Show categories, recents, bridges, and diagnostics in the command palette', run: showCommandWorkflowGuide },
     { id: 'local-first-guide', icon: 'LF', title: 'Local-first guide', hint: 'Show local storage, export, Trash, memory, and sync-later design notes', run: showLocalFirstGuide },
+    { id: 'local-upgrade-map', icon: 'UP', title: 'Local upgrade map', hint: 'Show local-first feature coverage, footprint budget, and diagnostic shortcuts', run: showUpgradeMap },
     { id: 'search', icon: '/', title: 'Search loaded files', hint: 'Search currently loaded documents', kbd: 'Ctrl+Shift+F', run: openSearchPalette },
     { id: 'search-loaded', icon: 'SL', title: 'Search loaded scope', hint: 'Open search limited to currently loaded files', run: () => openSearchPaletteScope('loaded') },
     { id: 'search-local', icon: 'SF', title: 'Search local folder scope', hint: 'Open search for the configured local folder', run: () => openSearchPaletteScope('local') },
