@@ -321,10 +321,10 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 
 func (a *App) OpenFileDialog() (SessionState, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Open File",
+		Title: "Open",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "All Files", Pattern: "*"},
 			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
+			{DisplayName: "All Files", Pattern: "*"},
 			{DisplayName: "Text & Logs", Pattern: "*.txt;*.log;*.csv;*.tsv;*.env;*.gitignore;*.editorconfig"},
 			{DisplayName: "Data & Config", Pattern: "*.json;*.yaml;*.yml;*.xml;*.toml;*.ini;*.cfg;*.conf;*.properties"},
 			{DisplayName: "Code", Pattern: "*.py;*.js;*.ts;*.jsx;*.tsx;*.go;*.rs;*.rb;*.lua;*.java;*.c;*.cpp;*.h;*.cs;*.php;*.swift;*.kt;*.dart;*.r;*.sql"},
