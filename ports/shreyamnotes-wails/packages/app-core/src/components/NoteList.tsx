@@ -1,0 +1,1136 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useStore } from '../store'
+import type { AssetMeta, NoteMeta } from '@shared/ipc'
+import { isDatabaseCsvPath } from '@shared/databases'
+import {
+  ArchiveIcon,
+  ArrowUpRightIcon,
+  ColumnsIcon,
+  PlusIcon,
+  TrashIcon
+} from './icons'
+import { ContextMenu, type ContextMenuItem } from './ContextMenu'
+import { ResizeHandle } from './ResizeHandle'
+import { Button, IconButton } from './ui/Button'
+import { confirmMoveToTrash } from '../lib/confirm-trash'
+import { buildMoveNotePrompt, parseMoveNoteTarget } from '../lib/move-note'
+import { naturalCompare } from '../lib/natural-sort'
+import { extractTags } from '../lib/tags'
+import { setDragPayload } from '../lib/dnd'
+import { promptApp } from '../lib/prompt-requests'
+import { confirmApp } from '../lib/confirm-requests'
+import { resolveSystemFolderLabels } from '../lib/system-folder-labels'
+import {
+  assetBelongsToFolderView,
+  isPrimaryNotesAtRoot,
+  noteBelongsToFolderView
+} from '../lib/vault-layout'
+import { assetTabPath } from '../lib/asset-tabs'
+import { getScrollTopForVirtualIndex, getVirtualRange } from '../lib/virtual-list'
+
+function formatDate(ms: number): string {
+  const d = new Date(ms)
+  const now = new Date()
+  const sameYear = d.getFullYear() === now.getFullYear()
+  return d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: sameYear ? undefined : 'numeric'
+  })
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes >= 10 * 1024 ? 0 : 1)} KB`
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`
+  }
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
+const ASSET_LAYOUT_KEY = 'zen:assets-layout:v1'
+type AssetLayout = 'grid' | 'list'
+type FolderEntry = { type: 'note'; note: NoteMeta } | { type: 'asset'; asset: AssetMeta }
+
+const VIRTUAL_OVERSCAN_ROWS = 8
+const FOLDER_ENTRY_ROW_HEIGHT = 76
+const ASSET_LIST_ROW_HEIGHT = 64
+const ASSET_GRID_ROW_HEIGHT = 166
+
+function folderEntryPath(entry: FolderEntry): string {
+  return entry.type === 'note' ? entry.note.path : entry.asset.path
+}
+
+export function NoteList(): JSX.Element {
+  const vault = useStore((s) => s.vault)
+  const notes = useStore((s) => s.notes)
+  const folders = useStore((s) => s.folders)
+  const assetFiles = useStore((s) => s.assetFiles)
+  const activeNote = useStore((s) => s.activeNote)
+  const view = useStore((s) => s.view)
+  const vaultSettings = useStore((s) => s.vaultSettings)
+  const selectedPath = useStore((s) => s.selectedPath)
+  const selectNote = useStore((s) => s.selectNote)
+  const previewNote = useStore((s) => s.previewNote)
+  const createAndOpen = useStore((s) => s.createAndOpen)
+  const toggleNoteList = useStore((s) => s.toggleNoteList)
+  const refreshNotes = useStore((s) => s.refreshNotes)
+  const refreshAssets = useStore((s) => s.refreshAssets)
+  const deleteAssetAction = useStore((s) => s.deleteAsset)
+  const noteListWidth = useStore((s) => s.noteListWidth)
+  const setNoteListWidth = useStore((s) => s.setNoteListWidth)
+  const noteSortOrder = useStore((s) => s.noteSortOrder)
+  const renameNote = useStore((s) => s.renameNote)
+  const moveNote = useStore((s) => s.moveNote)
+  const tabsEnabled = useStore((s) => s.tabsEnabled)
+  const openNoteInTab = useStore((s) => s.openNoteInTab)
+  const openDatabase = useStore((s) => s.openDatabase)
+  const prefetchNotes = useStore((s) => s.prefetchNotes)
+  const focusedPanel = useStore((s) => s.focusedPanel)
+  const noteListCursorIndex = useStore((s) => s.noteListCursorIndex)
+  const setFocusedPanel = useStore((s) => s.setFocusedPanel)
+  const systemFolderLabels = useStore((s) => s.systemFolderLabels)
+  const workspaceMode = useStore((s) => s.workspaceMode)
+  const canRevealInFileManager =
+    window.zen.getAppInfo().runtime === 'desktop' && workspaceMode !== 'remote'
+  const canManageAssetFiles =
+    window.zen.getAppInfo().runtime === 'desktop' &&
+    workspaceMode !== 'remote' &&
+    typeof window.zen.renameAsset === 'function' &&
+    typeof window.zen.moveAsset === 'function' &&
+    typeof window.zen.duplicateAsset === 'function'
+  const canDeleteAssets =
+    window.zen.getAppInfo().runtime === 'desktop' &&
+    workspaceMode !== 'remote'
+  const absolutePathLabel =
+    workspaceMode === 'remote' ? 'Copy Server Path' : 'Copy Absolute Path'
+  const folderLabels = useMemo(
+    () => resolveSystemFolderLabels(systemFolderLabels),
+    [systemFolderLabels]
+  )
+  const [menu, setMenu] = useState<{ x: number; y: number; path: string } | null>(null)
+  const [assetMenu, setAssetMenu] = useState<{ x: number; y: number; path: string } | null>(null)
+  const [assetLayout, setAssetLayout] = useState<AssetLayout>(() => {
+    try {
+      const raw = localStorage.getItem(ASSET_LAYOUT_KEY)
+      return raw === 'list' ? 'list' : 'grid'
+    } catch {
+      return 'grid'
+    }
+  })
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [listScrollTop, setListScrollTop] = useState(0)
+  const [listViewportHeight, setListViewportHeight] = useState(0)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ASSET_LAYOUT_KEY, assetLayout)
+    } catch {
+      /* ignore */
+    }
+  }, [assetLayout])
+
+  useEffect(() => {
+    const node = scrollRef.current
+    if (!node) return
+
+    const updateSize = (): void => {
+      setListViewportHeight(node.clientHeight)
+      setListScrollTop(node.scrollTop)
+    }
+
+    updateSize()
+    if (typeof ResizeObserver === 'undefined') return
+
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+  const emptyTrash = async (): Promise<void> => {
+    await window.zen.emptyTrash()
+    await useStore.getState().refreshNotes()
+  }
+
+  const menuItems = useMemo<ContextMenuItem[]>(() => {
+    if (!menu) return []
+    const n = notes.find((note) => note.path === menu.path)
+    if (!n) return []
+    const onOpen = async (): Promise<void> => {
+      await selectNote(n.path)
+    }
+    const onDuplicate = async (): Promise<void> => {
+      const meta = await window.zen.duplicateNote(n.path)
+      await refreshNotes()
+      await selectNote(meta.path)
+    }
+    const onReveal = async (): Promise<void> => {
+      await window.zen.revealNote(n.path)
+    }
+    const onCopyWikilink = async (): Promise<void> => {
+      await navigator.clipboard.writeText(`[[${n.title}]]`)
+    }
+    const onArchive = async (): Promise<void> => {
+      await window.zen.archiveNote(n.path)
+      await refreshNotes()
+      if (selectedPath === n.path) await selectNote(null)
+    }
+    const onUnarchive = async (): Promise<void> => {
+      const meta = await window.zen.unarchiveNote(n.path)
+      await refreshNotes()
+      if (selectedPath === n.path) await selectNote(meta.path)
+    }
+    const onTrash = async (): Promise<void> => {
+      if (!(await confirmMoveToTrash(n.title))) return
+      await window.zen.moveToTrash(n.path)
+      await refreshNotes()
+      if (selectedPath === n.path) await selectNote(null)
+    }
+    const onMove = async (): Promise<void> => {
+      const target = await promptApp(buildMoveNotePrompt(n, folders))
+      if (!target) return
+      const dest = parseMoveNoteTarget(target)
+      await moveNote(n.path, dest.folder, dest.subpath)
+    }
+    const onRestore = async (): Promise<void> => {
+      const meta = await window.zen.restoreFromTrash(n.path)
+      await refreshNotes()
+      if (selectedPath === n.path) await selectNote(meta.path)
+    }
+    const onDeleteForever = async (): Promise<void> => {
+      await window.zen.deleteNote(n.path)
+      await refreshNotes()
+      if (selectedPath === n.path) await selectNote(null)
+    }
+    const onNew = async (): Promise<void> => {
+      await useStore
+        .getState()
+        .createAndOpen(n.folder === 'trash' ? 'inbox' : n.folder, '', { focusTitle: true })
+    }
+
+    const items: ContextMenuItem[] = []
+    items.push({ label: 'Open', onSelect: onOpen })
+    if (tabsEnabled) {
+      items.push({ label: 'Open in New Tab', onSelect: async () => openNoteInTab(n.path) })
+    }
+
+    if (n.folder !== 'trash') {
+      items.push({
+        label: 'Rename…',
+        onSelect: async () => {
+          const next = await promptApp({
+            title: 'Rename note',
+            initialValue: n.title,
+            okLabel: 'Rename',
+            validate: (v) => {
+              if (/[\\/]/.test(v)) return 'Title cannot contain / or \\'
+              return null
+            }
+          })
+          if (!next || next === n.title) return
+          await renameNote(n.path, next)
+        }
+      })
+      items.push({ label: 'Move…', onSelect: onMove })
+      items.push({ label: 'Duplicate', onSelect: onDuplicate })
+    }
+    items.push({ label: 'Copy as Wiki Link', onSelect: onCopyWikilink })
+    items.push({
+      label: 'Open in Floating Window',
+      onSelect: async () => {
+        await window.zen.openNoteWindow(n.path)
+      }
+    })
+    if (canRevealInFileManager) {
+      items.push({ label: 'Reveal in File Manager', onSelect: onReveal })
+    }
+    items.push({ kind: 'separator' })
+
+    if (n.folder === 'inbox' || n.folder === 'quick') {
+      items.push({ label: folderLabels.archive, icon: <ArchiveIcon />, onSelect: onArchive })
+      items.push({
+        label: `Move to ${folderLabels.trash}`,
+        icon: <TrashIcon />,
+        danger: true,
+        onSelect: onTrash
+      })
+    } else if (n.folder === 'archive') {
+      items.push({
+        label: `Move to ${folderLabels.inbox}`,
+        icon: <ArrowUpRightIcon />,
+        onSelect: onUnarchive
+      })
+      items.push({
+        label: `Move to ${folderLabels.trash}`,
+        icon: <TrashIcon />,
+        danger: true,
+        onSelect: onTrash
+      })
+    } else {
+      items.push({
+        label: 'Restore',
+        icon: <ArrowUpRightIcon />,
+        onSelect: onRestore
+      })
+      items.push({
+        label: 'Delete Permanently',
+        icon: <TrashIcon />,
+        danger: true,
+        onSelect: onDeleteForever
+      })
+    }
+
+    return items
+  }, [
+    canRevealInFileManager,
+    menu,
+    notes,
+    folders,
+    refreshNotes,
+    selectedPath,
+    selectNote,
+    prompt,
+    renameNote,
+    moveNote,
+    tabsEnabled,
+    openNoteInTab,
+    folderLabels.archive,
+    folderLabels.inbox,
+    folderLabels.trash
+  ])
+
+  const assetMenuItems = useMemo<ContextMenuItem[]>(() => {
+    if (!assetMenu) return []
+    const asset = assetFiles.find((entry) => entry.path === assetMenu.path)
+    if (!asset) return []
+
+    const root = vault?.root ?? ''
+    const sep = root.includes('\\') ? '\\' : '/'
+    const abs = [root.replace(/[\\/]+$/, ''), ...asset.path.split('/').filter(Boolean)].join(sep)
+    const currentDir = asset.path.split('/').slice(0, -1).join('/')
+    const openAsset = async (): Promise<void> => {
+      if (isDatabaseCsvPath(asset.path)) {
+        await openDatabase(asset.path)
+        return
+      }
+      await openNoteInTab(assetTabPath(asset.path))
+    }
+
+    const items: ContextMenuItem[] = [
+      {
+        label: 'Open',
+        onSelect: openAsset
+      },
+      {
+        label: 'Open in New Tab',
+        onSelect: openAsset
+      }
+    ]
+
+    if (canManageAssetFiles) {
+      items.push({
+        label: 'Rename…',
+        onSelect: async () => {
+          const next = await promptApp({
+            title: 'Rename asset',
+            initialValue: asset.name,
+            okLabel: 'Rename',
+            validate: (value) => {
+              const clean = value.trim()
+              if (!clean) return 'Asset name is required'
+              if (/[\\/]/.test(clean)) return 'Use only a file name'
+              if (/\.md$/i.test(clean)) return 'Use note actions for markdown notes'
+              return null
+            }
+          })
+          if (!next || next === asset.name) return
+          await window.zen.renameAsset(asset.path, next)
+          await refreshAssets()
+        }
+      })
+      items.push({
+        label: 'Move…',
+        onSelect: async () => {
+          const target = await promptApp({
+            title: 'Move asset',
+            description: 'Enter a vault-relative folder path. Leave empty to move to the vault root.',
+            initialValue: currentDir,
+            placeholder: 'media/screenshots',
+            okLabel: 'Move',
+            allowEmptySubmit: true,
+            validate: (value) => {
+              const clean = value.trim()
+              if (clean.includes('..')) return 'Path cannot contain ..'
+              if (clean.split('/').includes('.zennotes')) {
+                return 'Cannot move assets into internal ShreyamNotes files'
+              }
+              return null
+            }
+          })
+          if (target === null || target === currentDir) return
+          await window.zen.moveAsset(asset.path, target)
+          await refreshAssets()
+        }
+      })
+      items.push({
+        label: 'Duplicate',
+        onSelect: async () => {
+          await window.zen.duplicateAsset(asset.path)
+          await refreshAssets()
+        }
+      })
+    }
+
+    items.push({
+      label: 'Copy as Embed',
+      onSelect: async () => {
+        window.zen.clipboardWriteText(`![[${asset.path}]]`)
+      }
+    })
+    items.push({
+      label: 'Copy Path',
+      onSelect: async () => {
+        window.zen.clipboardWriteText(asset.path)
+      }
+    })
+    items.push({
+      label: absolutePathLabel,
+      onSelect: async () => {
+        window.zen.clipboardWriteText(abs)
+      }
+    })
+
+    if (canRevealInFileManager) {
+      items.push({
+        label: 'Reveal in File Manager',
+        onSelect: async () => {
+          await window.zen.revealNote(asset.path)
+        }
+      })
+    }
+
+    if (canDeleteAssets) {
+      items.push({ kind: 'separator' })
+      items.push({
+        label: 'Delete Asset…',
+        icon: <TrashIcon />,
+        danger: true,
+        onSelect: async () => {
+          const ok = await confirmApp({
+            title: `Delete ${asset.name}?`,
+            description:
+              'This removes the file from the vault. Notes that embed it will keep the link, but the media will no longer render.',
+            confirmLabel: 'Delete asset',
+            danger: true
+          })
+          if (!ok) return
+          await deleteAssetAction(asset.path)
+        }
+      })
+    }
+
+    return items
+  }, [
+    assetMenu,
+    assetFiles,
+    canRevealInFileManager,
+    canManageAssetFiles,
+    canDeleteAssets,
+    absolutePathLabel,
+    vault,
+    openNoteInTab,
+    refreshAssets,
+    deleteAssetAction
+  ])
+
+  /**
+   * Filter notes for the current view. For folder views we match the
+   * top-level folder AND, when a subpath is active, limit to notes
+   * inside that subfolder (including deeper descendants). The tag view
+   * is its own full-surface tab now (see TagView), so NoteList no longer
+   * handles tag filtering.
+   */
+  const filtered = useMemo<NoteMeta[]>(() => {
+    if (view.kind === 'assets') return []
+    return notes.filter((n) =>
+      noteBelongsToFolderView(n, view.folder, view.subpath, vaultSettings)
+    )
+  }, [notes, view, vaultSettings])
+
+  const filteredAssets = useMemo<AssetMeta[]>(() => {
+    if (view.kind === 'assets') return assetFiles
+    return assetFiles.filter((asset) =>
+      assetBelongsToFolderView(asset, view.folder, view.subpath, vaultSettings)
+    )
+  }, [assetFiles, view, vaultSettings])
+
+  /**
+   * Stable ordering: we want the list sorted by updatedAt when the user
+   * switches views or the set of notes changes, but not re-sorted every
+   * time an edit bumps a single note's mtime (that makes the row the
+   * user is typing in jump to the top mid-sentence). We cache the last
+   * known ordering as a path list, and only rebuild it when the view
+   * changes or a note is added / removed.
+   */
+  const orderRef = useRef<{ viewKey: string; paths: string[] }>({
+    viewKey: '',
+    paths: []
+  })
+  const viewKey =
+    view.kind === 'folder'
+      ? `folder:${view.folder}:${view.subpath}`
+      : 'assets'
+  const sortComparator = useMemo<((a: NoteMeta, b: NoteMeta) => number) | null>(() => {
+    switch (noteSortOrder) {
+      case 'none':
+        return null
+      case 'updated-asc':
+        return (a: NoteMeta, b: NoteMeta) => a.updatedAt - b.updatedAt
+      case 'created-desc':
+        return (a: NoteMeta, b: NoteMeta) => b.createdAt - a.createdAt
+      case 'created-asc':
+        return (a: NoteMeta, b: NoteMeta) => a.createdAt - b.createdAt
+      case 'name-asc':
+        return (a: NoteMeta, b: NoteMeta) => naturalCompare(a.title, b.title)
+      case 'name-desc':
+        return (a: NoteMeta, b: NoteMeta) => naturalCompare(b.title, a.title)
+      case 'updated-desc':
+      default:
+        return (a: NoteMeta, b: NoteMeta) => b.updatedAt - a.updatedAt
+    }
+  }, [noteSortOrder])
+
+  const assetSortComparator = useMemo<((a: AssetMeta, b: AssetMeta) => number) | null>(() => {
+    switch (noteSortOrder) {
+      case 'none':
+        return null
+      case 'updated-asc':
+        return (a: AssetMeta, b: AssetMeta) => a.updatedAt - b.updatedAt
+      case 'created-desc':
+      case 'updated-desc':
+        return (a: AssetMeta, b: AssetMeta) => b.updatedAt - a.updatedAt
+      case 'created-asc':
+        return (a: AssetMeta, b: AssetMeta) => a.updatedAt - b.updatedAt
+      case 'name-asc':
+        return (a: AssetMeta, b: AssetMeta) => naturalCompare(a.name, b.name)
+      case 'name-desc':
+        return (a: AssetMeta, b: AssetMeta) => naturalCompare(b.name, a.name)
+      default:
+        return (a: AssetMeta, b: AssetMeta) => b.updatedAt - a.updatedAt
+    }
+  }, [noteSortOrder])
+
+  const orderedFiltered = useMemo(() => {
+    if (noteSortOrder === 'none' || !sortComparator) {
+      orderRef.current = {
+        viewKey: viewKey + ':' + noteSortOrder,
+        paths: filtered.map((n) => n.path)
+      }
+      return filtered
+    }
+
+    const prev = orderRef.current
+    const currentSet = new Set(filtered.map((n) => n.path))
+
+    const viewChanged = prev.viewKey !== viewKey + ':' + noteSortOrder
+    const prevKnown = new Set(prev.paths)
+    const added = filtered.filter((n) => !prevKnown.has(n.path))
+    const removed = prev.paths.filter((p) => !currentSet.has(p))
+    const structuralChange = added.length > 0 || removed.length > 0
+
+    if (viewChanged || structuralChange || prev.paths.length === 0) {
+      const fresh = filtered.slice().sort(sortComparator)
+      orderRef.current = {
+        viewKey: viewKey + ':' + noteSortOrder,
+        paths: fresh.map((n) => n.path)
+      }
+      return fresh
+    }
+
+    // Reuse the previous order but swap in the new NoteMeta references
+    // (so updated `updatedAt` / tags / excerpt still flow through to
+    // the row without changing position).
+    const byPath = new Map(filtered.map((n) => [n.path, n] as const))
+    const result: NoteMeta[] = []
+    for (const p of prev.paths) {
+      const n = byPath.get(p)
+      if (n) result.push(n)
+    }
+    return result
+  }, [filtered, viewKey, sortComparator, noteSortOrder])
+
+  const orderedFolderEntries = useMemo<FolderEntry[]>(() => {
+    if (view.kind === 'assets') {
+      return filteredAssets.map((asset) => ({ type: 'asset' as const, asset }))
+    }
+
+    if (noteSortOrder === 'none') {
+      return [
+        ...orderedFiltered.map((note) => ({
+          type: 'note' as const,
+          note,
+          siblingOrder: note.siblingOrder
+        })),
+        ...filteredAssets.map((asset) => ({
+          type: 'asset' as const,
+          asset,
+          siblingOrder: asset.siblingOrder
+        }))
+      ]
+        .sort((a, b) => a.siblingOrder - b.siblingOrder)
+        .map(({ siblingOrder: _siblingOrder, ...entry }) => entry)
+    }
+
+    return [
+      ...orderedFiltered.map((note) => ({ type: 'note' as const, note })),
+      ...filteredAssets
+        .slice()
+        .sort(assetSortComparator ?? ((a, b) => a.siblingOrder - b.siblingOrder))
+        .map((asset) => ({ type: 'asset' as const, asset }))
+    ]
+  }, [assetSortComparator, filteredAssets, noteSortOrder, orderedFiltered, view.kind])
+
+  const notePrefetchPaths = useMemo(() => {
+    const paths = orderedFolderEntries
+      .filter((entry): entry is { type: 'note'; note: NoteMeta } => entry.type === 'note')
+      .map((entry) => entry.note.path)
+    if (paths.length === 0) return []
+    const selectedIndex = selectedPath ? paths.indexOf(selectedPath) : -1
+    const start = selectedIndex >= 0 ? selectedIndex : 0
+    return paths.slice(start, start + 12)
+  }, [orderedFolderEntries, selectedPath])
+
+  useEffect(() => {
+    if (notePrefetchPaths.length === 0) return
+    const timer = window.setTimeout(() => prefetchNotes(notePrefetchPaths), 80)
+    return () => window.clearTimeout(timer)
+  }, [notePrefetchPaths, prefetchNotes])
+
+  const folderEntryRange = useMemo(
+    () =>
+      getVirtualRange({
+        itemCount: orderedFolderEntries.length,
+        itemSize: FOLDER_ENTRY_ROW_HEIGHT,
+        scrollTop: listScrollTop,
+        viewportHeight: listViewportHeight,
+        overscan: VIRTUAL_OVERSCAN_ROWS
+      }),
+    [listScrollTop, listViewportHeight, orderedFolderEntries.length]
+  )
+  const visibleFolderEntries = useMemo(
+    () => orderedFolderEntries.slice(folderEntryRange.start, folderEntryRange.end),
+    [folderEntryRange.end, folderEntryRange.start, orderedFolderEntries]
+  )
+  const selectedEntryIndex = useMemo(() => {
+    if (!selectedPath) return -1
+    return orderedFolderEntries.findIndex((entry) => folderEntryPath(entry) === selectedPath)
+  }, [orderedFolderEntries, selectedPath])
+
+  const assetListRange = useMemo(
+    () =>
+      getVirtualRange({
+        itemCount: assetFiles.length,
+        itemSize: ASSET_LIST_ROW_HEIGHT,
+        scrollTop: listScrollTop,
+        viewportHeight: listViewportHeight,
+        overscan: VIRTUAL_OVERSCAN_ROWS
+      }),
+    [assetFiles.length, listScrollTop, listViewportHeight]
+  )
+  const visibleAssetRows = useMemo(
+    () => assetFiles.slice(assetListRange.start, assetListRange.end),
+    [assetFiles, assetListRange.end, assetListRange.start]
+  )
+  const assetGridRows = useMemo(() => {
+    const rows: AssetMeta[][] = []
+    for (let index = 0; index < assetFiles.length; index += 2) {
+      rows.push(assetFiles.slice(index, index + 2))
+    }
+    return rows
+  }, [assetFiles])
+  const assetGridRange = useMemo(
+    () =>
+      getVirtualRange({
+        itemCount: assetGridRows.length,
+        itemSize: ASSET_GRID_ROW_HEIGHT,
+        scrollTop: listScrollTop,
+        viewportHeight: listViewportHeight,
+        overscan: VIRTUAL_OVERSCAN_ROWS
+      }),
+    [assetGridRows.length, listScrollTop, listViewportHeight]
+  )
+  const visibleAssetGridRows = useMemo(
+    () => assetGridRows.slice(assetGridRange.start, assetGridRange.end),
+    [assetGridRange.end, assetGridRange.start, assetGridRows]
+  )
+
+  const heading =
+    view.kind === 'assets'
+      ? 'Files'
+      : view.subpath
+        ? view.subpath.split('/').slice(-1)[0]
+        : view.folder === 'inbox' && isPrimaryNotesAtRoot(vaultSettings)
+          ? vault?.name ?? 'Vault'
+          : folderLabels[view.folder]
+
+  const newTarget =
+    view.kind === 'folder' && view.folder !== 'trash'
+      ? { folder: view.folder, subpath: view.subpath }
+      : { folder: 'inbox' as const, subpath: '' }
+
+  const isNoteListFocused = focusedPanel === 'notelist'
+
+  const scrollFolderIndexIntoView = (index: number): void => {
+    const node = scrollRef.current
+    if (!node || index < 0 || orderedFolderEntries.length === 0) return
+    const nextScrollTop = getScrollTopForVirtualIndex({
+      index,
+      itemCount: orderedFolderEntries.length,
+      itemSize: FOLDER_ENTRY_ROW_HEIGHT,
+      currentScrollTop: node.scrollTop,
+      viewportHeight: node.clientHeight
+    })
+    if (nextScrollTop !== node.scrollTop) {
+      node.scrollTop = nextScrollTop
+      setListScrollTop(nextScrollTop)
+    }
+  }
+
+  useEffect(() => {
+    if (!isNoteListFocused) return
+    const next =
+      orderedFolderEntries.length === 0
+        ? 0
+        : Math.min(noteListCursorIndex, orderedFolderEntries.length - 1)
+    if (next !== noteListCursorIndex) {
+      useStore.getState().setNoteListCursorIndex(next)
+    }
+  }, [isNoteListFocused, noteListCursorIndex, orderedFolderEntries.length])
+
+  useEffect(() => {
+    if (!isNoteListFocused || selectedEntryIndex < 0) return
+    useStore.getState().setNoteListCursorIndex(selectedEntryIndex)
+    scrollFolderIndexIntoView(selectedEntryIndex)
+  }, [isNoteListFocused, selectedEntryIndex])
+
+  useEffect(() => {
+    if (!isNoteListFocused || noteListCursorIndex < 0 || orderedFolderEntries.length === 0) return
+    scrollFolderIndexIntoView(Math.min(noteListCursorIndex, orderedFolderEntries.length - 1))
+  }, [isNoteListFocused, noteListCursorIndex, orderedFolderEntries.length, listViewportHeight])
+
+  return (
+    <section
+      className={`glass-column relative flex shrink-0 flex-col${isNoteListFocused ? ' panel-focused' : ''}`}
+      style={{ width: noteListWidth }}
+      onMouseDownCapture={() => setFocusedPanel('notelist')}
+      onFocusCapture={() => setFocusedPanel('notelist')}
+    >
+      <header className="glass-header flex h-12 shrink-0 items-center justify-between px-4">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-sm font-semibold text-ink-900">{heading}</h2>
+          <span className="text-xs text-ink-500">
+            {view.kind === 'assets' ? assetFiles.length : orderedFolderEntries.length}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {view.kind === 'assets' ? (
+            <div className="flex items-center gap-1 rounded-md bg-paper-200/70 p-0.5 text-xs">
+              {(['grid', 'list'] as const).map((layout) => (
+                <button
+                  key={layout}
+                  onClick={() => setAssetLayout(layout)}
+                  className={[
+                    'rounded px-2 py-1 transition-colors',
+                    assetLayout === layout
+                      ? 'bg-paper-50 text-ink-900 shadow-sm'
+                      : 'text-ink-500 hover:text-ink-800'
+                  ].join(' ')}
+                >
+                  {layout === 'grid' ? 'Grid' : 'List'}
+                </button>
+              ))}
+            </div>
+          ) : view.kind === 'folder' && view.folder === 'trash' && filtered.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => void emptyTrash()}>
+              Empty
+            </Button>
+          )}
+          {view.kind !== 'assets' && (
+            <IconButton
+              size="sm"
+              title="New note"
+              onClick={() => void createAndOpen(newTarget.folder, newTarget.subpath, { focusTitle: true })}
+            >
+              <PlusIcon />
+            </IconButton>
+          )}
+          <IconButton size="sm" title="Hide note list" onClick={toggleNoteList}>
+            <ColumnsIcon />
+          </IconButton>
+        </div>
+      </header>
+
+      <div
+        ref={scrollRef}
+        data-notelist-count={view.kind === 'assets' ? assetFiles.length : orderedFolderEntries.length}
+        className="min-h-0 flex-1 overflow-y-auto px-2 py-2"
+        onScroll={(event) => setListScrollTop(event.currentTarget.scrollTop)}
+      >
+        {view.kind === 'assets' ? (
+          assetFiles.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-ink-500">
+              No files yet. Files anywhere inside the vault show up here.
+            </div>
+          ) : assetLayout === 'grid' ? (
+            <div className="relative" style={{ height: assetGridRange.totalSize }}>
+              {visibleAssetGridRows.map((row, offset) => (
+                <div
+                  key={row[0]?.path ?? `asset-row-${assetGridRange.start + offset}`}
+                  className="absolute left-1 right-1 grid grid-cols-2 gap-2"
+                  style={{
+                    height: ASSET_GRID_ROW_HEIGHT - 8,
+                    transform: `translateY(${(assetGridRange.start + offset) * ASSET_GRID_ROW_HEIGHT}px)`
+                  }}
+                >
+                  {row.map((asset) => (
+                    <AssetCard
+                      key={asset.path}
+                      asset={asset}
+                      vaultRoot={vault?.root ?? null}
+                      onOpen={() =>
+                        void (isDatabaseCsvPath(asset.path)
+                          ? openDatabase(asset.path)
+                          : openNoteInTab(assetTabPath(asset.path)))
+                      }
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setAssetMenu({ x: e.clientX, y: e.clientY, path: asset.path })
+                      }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="relative" style={{ height: assetListRange.totalSize }}>
+              {visibleAssetRows.map((asset, offset) => (
+                <div
+                  key={asset.path}
+                  className="absolute inset-x-0"
+                  style={{
+                    height: ASSET_LIST_ROW_HEIGHT,
+                    transform: `translateY(${(assetListRange.start + offset) * ASSET_LIST_ROW_HEIGHT}px)`
+                  }}
+                >
+                  <AssetRow
+                    asset={asset}
+                    vaultRoot={vault?.root ?? null}
+                    onOpen={() => void openNoteInTab(assetTabPath(asset.path))}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setAssetMenu({ x: e.clientX, y: e.clientY, path: asset.path })
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )
+        ) : orderedFolderEntries.length === 0 ? (
+          <div className="px-4 py-10 text-center text-sm text-ink-500">
+            {view.kind === 'folder' && view.folder === 'trash'
+              ? `${folderLabels.trash} is empty.`
+              : 'No files here yet.'}
+          </div>
+        ) : (
+          <div className="relative" style={{ height: folderEntryRange.totalSize }}>
+            {visibleFolderEntries.map((entry, offset) => {
+              const i = folderEntryRange.start + offset
+              const path = folderEntryPath(entry)
+              return (
+                <div
+                  key={path}
+                  className="absolute inset-x-0"
+                  style={{
+                    height: FOLDER_ENTRY_ROW_HEIGHT,
+                    transform: `translateY(${i * FOLDER_ENTRY_ROW_HEIGHT}px)`
+                  }}
+                >
+                  {entry.type === 'note' ? (
+                    <NoteRow
+                      note={entry.note}
+                      active={entry.note.path === selectedPath}
+                      onSelect={() =>
+                        void (tabsEnabled ? previewNote : selectNote)(entry.note.path)
+                      }
+                      onOpenPermanent={() => void selectNote(entry.note.path)}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setMenu({ x: e.clientX, y: e.clientY, path: entry.note.path })
+                      }}
+                      noteListIdx={i}
+                      vimHighlight={isNoteListFocused && noteListCursorIndex === i}
+                    />
+                  ) : (
+                    <FolderAssetRow
+                      asset={entry.asset}
+                      vaultRoot={vault?.root ?? null}
+                      onOpen={() => void openNoteInTab(assetTabPath(entry.asset.path))}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setAssetMenu({ x: e.clientX, y: e.clientY, path: entry.asset.path })
+                      }}
+                      noteListIdx={i}
+                      vimHighlight={isNoteListFocused && noteListCursorIndex === i}
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={menuItems}
+          onClose={() => setMenu(null)}
+        />
+      )}
+      {assetMenu && (
+        <ContextMenu
+          x={assetMenu.x}
+          y={assetMenu.y}
+          items={assetMenuItems}
+          onClose={() => setAssetMenu(null)}
+        />
+      )}
+
+      <ResizeHandle
+        getWidth={() => noteListWidth}
+        onResize={(next) => {
+          if (next === 0) return
+          setNoteListWidth(next)
+        }}
+      />
+    </section>
+  )
+}
+
+function NoteRow({
+  note,
+  active,
+  onSelect,
+  onOpenPermanent,
+  onContextMenu,
+  noteListIdx,
+  vimHighlight
+}: {
+  note: NoteMeta
+  active: boolean
+  onSelect: () => void
+  /** Double-click: open as a permanent tab instead of a preview. */
+  onOpenPermanent?: () => void
+  onContextMenu: (e: React.MouseEvent) => void
+  noteListIdx?: number
+  vimHighlight?: boolean
+}): JSX.Element {
+  return (
+    <button
+      onClick={onSelect}
+      onDoubleClick={onOpenPermanent}
+      onContextMenu={onContextMenu}
+      draggable
+      onDragStart={(e) => setDragPayload(e, { kind: 'note', path: note.path })}
+      className={[
+        'list-row flex h-[72px] w-full flex-col gap-1 rounded-lg px-3 py-2 text-left outline-none focus:outline-none',
+        active
+          ? `${vimHighlight ? 'vim-cursor-on-selected ' : ''}bg-paper-200`
+          : vimHighlight
+            ? 'vim-cursor'
+            : 'hover:bg-paper-200/60'
+      ].join(' ')}
+      style={
+        active
+          ? {
+              boxShadow: vimHighlight
+                ? 'inset 0 0 0 1px rgb(var(--z-accent) / 0.35), inset 0 0 0 2px rgb(var(--z-accent) / 0.65)'
+                : 'inset 0 0 0 1px rgb(var(--z-accent) / 0.35)'
+            }
+          : vimHighlight
+            ? { boxShadow: 'inset 0 0 0 1px rgb(var(--z-accent) / 0.35)' }
+            : undefined
+      }
+      {...(noteListIdx != null ? {
+        'data-notelist-idx': noteListIdx,
+        'data-notelist-path': note.path
+      } : {})}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-sm font-medium text-ink-900">{note.title}</span>
+        <span className="shrink-0 text-xs text-ink-500">{formatDate(note.updatedAt)}</span>
+      </div>
+      <span className="line-clamp-2 text-xs text-ink-500">
+        {note.excerpt || 'Empty note'}
+      </span>
+    </button>
+  )
+}
+
+function FolderAssetRow({
+  asset,
+  vaultRoot,
+  onOpen,
+  onContextMenu,
+  noteListIdx,
+  vimHighlight
+}: {
+  asset: AssetMeta
+  vaultRoot: string | null
+  onOpen: () => void
+  onContextMenu: (e: React.MouseEvent) => void
+  noteListIdx?: number
+  vimHighlight?: boolean
+}): JSX.Element {
+  const url = assetUrl(vaultRoot, asset.path)
+  const extension = asset.name.includes('.') ? asset.name.split('.').pop()?.toUpperCase() ?? '' : ''
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      onContextMenu={onContextMenu}
+      draggable
+      onDragStart={(e) => setDragPayload(e, { kind: 'asset', path: asset.path })}
+      className={[
+        'list-row flex h-[72px] w-full items-center gap-3 rounded-lg px-3 py-2 text-left outline-none focus:outline-none',
+        vimHighlight ? 'vim-cursor' : 'hover:bg-paper-200/60'
+      ].join(' ')}
+      style={vimHighlight ? { boxShadow: 'inset 0 0 0 1px rgb(var(--z-accent) / 0.35)' } : undefined}
+      {...(noteListIdx != null
+        ? {
+            'data-notelist-idx': noteListIdx,
+            'data-notelist-path': asset.path
+          }
+        : {})}
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-200/45">
+        {asset.kind === 'image' && url ? (
+          <img
+            src={url}
+            alt={asset.name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-2xs uppercase tracking-[0.16em] text-ink-500">
+            {asset.kind}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-ink-900">{asset.name}</div>
+        <div className="truncate text-xs text-ink-500">{asset.path}</div>
+      </div>
+      <div className="form-label shrink-0">
+        {extension || formatBytes(asset.size)}
+      </div>
+    </button>
+  )
+}
+
+function assetUrl(vaultRoot: string | null, assetPath: string): string | null {
+  if (!vaultRoot) return null
+  return window.zen.resolveVaultAssetUrl(vaultRoot, assetPath)
+}
+
+function AssetCard({
+  asset,
+  vaultRoot,
+  onOpen,
+  onContextMenu
+}: {
+  asset: AssetMeta
+  vaultRoot: string | null
+  onOpen: () => void
+  onContextMenu?: (e: React.MouseEvent) => void
+}): JSX.Element {
+  const url = assetUrl(vaultRoot, asset.path)
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      onContextMenu={onContextMenu}
+      draggable
+      onDragStart={(e) => setDragPayload(e, { kind: 'asset', path: asset.path })}
+      className="flex h-full min-h-[154px] flex-col overflow-hidden rounded-xl border border-paper-300/70 bg-paper-50/24 text-left transition-colors hover:border-paper-400 hover:bg-paper-100/40"
+    >
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-paper-200/25">
+        {asset.kind === 'image' && url ? (
+          <img
+            src={url}
+            alt={asset.name}
+            className="max-h-[170px] w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="px-4 text-xs uppercase tracking-[0.18em] text-ink-500">
+            {asset.kind}
+          </div>
+        )}
+      </div>
+      <div className="border-t border-paper-300/70 px-3 py-2">
+        <div className="truncate text-sm font-medium text-ink-900">{asset.name}</div>
+        <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-ink-500">
+          <span className="truncate">{asset.path}</span>
+          <span className="shrink-0">{formatBytes(asset.size)}</span>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+function AssetRow({
+  asset,
+  vaultRoot,
+  onOpen,
+  onContextMenu
+}: {
+  asset: AssetMeta
+  vaultRoot: string | null
+  onOpen: () => void
+  onContextMenu?: (e: React.MouseEvent) => void
+}): JSX.Element {
+  const url = assetUrl(vaultRoot, asset.path)
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      onContextMenu={onContextMenu}
+      draggable
+      onDragStart={(e) => setDragPayload(e, { kind: 'asset', path: asset.path })}
+      className="flex h-[60px] items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-colors hover:border-paper-300/70 hover:bg-paper-200/45"
+    >
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-paper-200/45">
+        {asset.kind === 'image' && url ? (
+          <img
+            src={url}
+            alt={asset.name}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-2xs uppercase tracking-[0.16em] text-ink-500">{asset.kind}</span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-ink-900">{asset.name}</div>
+        <div className="truncate text-xs text-ink-500">{asset.path}</div>
+      </div>
+      <div className="shrink-0 text-xs text-ink-500">
+        {formatBytes(asset.size)}
+      </div>
+    </button>
+  )
+}

@@ -1,0 +1,70 @@
+# syntax=docker/dockerfile:1.7
+
+# ShreyamNotes self-hosted build from the Wails port monorepo.
+#
+# Stages:
+#   1. web-build     -> Bun workspace install + Vite build for apps/web
+#   2. server-build  -> Go build for apps/server with the web bundle embedded
+#   3. runtime       -> minimal image with only the server binary
+
+# web-build emits a platform-agnostic static bundle, so always run it on the
+# native build platform (never under emulation) regardless of the target arch.
+FROM --platform=$BUILDPLATFORM oven/bun:1.3.14-alpine AS web-build
+WORKDIR /app
+
+COPY package.json bun.lock turbo.json tsconfig.base.json tsconfig.json tailwind.config.js ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/app-core/package.json packages/app-core/package.json
+COPY packages/bridge-contract/package.json packages/bridge-contract/package.json
+COPY packages/shared-domain/package.json packages/shared-domain/package.json
+COPY packages/shared-ui/package.json packages/shared-ui/package.json
+COPY apps/server/package.json apps/server/package.json
+
+RUN bun install --frozen-lockfile
+
+COPY apps apps
+COPY packages packages
+
+RUN bun --filter @zennotes/web build
+
+# Run the Go toolchain on the native build platform and cross-compile to the
+# target arch (CGO is off, so this is a fast pure-Go cross-build — no QEMU).
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS server-build
+WORKDIR /app
+
+COPY apps/server/go.mod apps/server/go.sum ./apps/server/
+WORKDIR /app/apps/server
+RUN go mod download
+
+WORKDIR /app
+COPY apps/server apps/server
+COPY --from=web-build /app/apps/web/dist/ /app/apps/server/web/dist/
+
+# TARGETARCH is provided by buildx (e.g. amd64, arm64) for the image being built.
+ARG TARGETARCH
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=$TARGETARCH \
+    GOFLAGS=-trimpath
+
+WORKDIR /app/apps/server
+RUN go build -ldflags="-s -w" -o /out/zennotes-server ./cmd/zennotes-server
+
+FROM scratch
+LABEL org.opencontainers.image.title="ShreyamNotes" \
+      org.opencontainers.image.description="Self-hosted ShreyamNotes web/server bundle from the Wails port." \
+      org.opencontainers.image.source="https://github.com/shreyam1008/shreyamnotes"
+
+COPY --from=server-build /out/zennotes-server /zennotes-server
+
+ENV ZENNOTES_BIND=0.0.0.0:7878 \
+    ZENNOTES_CONFIG_PATH=/data/server.json \
+    ZENNOTES_DEFAULT_VAULT_PATH=/workspace \
+    ZENNOTES_BROWSE_ROOTS=/workspace
+
+USER 65532:65532
+
+EXPOSE 7878
+VOLUME ["/workspace", "/data"]
+
+ENTRYPOINT ["/zennotes-server"]

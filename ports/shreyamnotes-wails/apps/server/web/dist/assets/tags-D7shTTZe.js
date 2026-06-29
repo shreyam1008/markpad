@@ -1,0 +1,1 @@
+function e(e){let t=e.replace(/```[\s\S]*?```/g,` `).replace(/`[^`\n]*`/g,` `),n=/(?:^|\s)#(\p{L}[\p{L}\d_/-]*)/gu,r=new Set,i;for(;(i=n.exec(t))!==null;)r.add(i[1]);return[...r]}function t(e,t,n){if(t.length===0)return!1;let r=new Set(e.map(e=>e.toLowerCase())),i=t.map(e=>e.toLowerCase());return n===`any`?i.some(e=>r.has(e)):i.every(e=>r.has(e))}export{t as n,e as t};

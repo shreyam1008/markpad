@@ -1,0 +1,31 @@
+node_modules
+out
+dist
+!apps/server/cmd/shreyamnotes-wails/dist/
+!apps/server/cmd/shreyamnotes-wails/dist/.gitkeep
+!apps/server/web/dist/
+!apps/server/web/dist/.gitkeep
+.turbo
+apps/*/.turbo
+.playwright-cli/
+apps/web/dist
+apps/server/bin
+bench/results/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.vscode/*
+!.vscode/extensions.json
+.idea
+.claude/
+*.tsbuildinfo
+data/
+/vault/
+/remotevault/
+# Nix build outputs
+result
+result-*
+# Release notes / launch copy are kept local only, never committed.
+docs/releases/

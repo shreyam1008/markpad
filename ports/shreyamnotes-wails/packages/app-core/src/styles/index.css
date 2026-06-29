@@ -1,0 +1,4145 @@
+/* KaTeX + highlight.js are pulled in by the markdown pipeline. */
+@import "katex/dist/katex.min.css";
+@import "highlight.js/styles/atom-one-light.css";
+
+@import "tailwindcss";
+@config "../../../../apps/web/tailwind.config.js";
+
+/* ===========================================================================
+ * Shared component utilities
+ * --------------------------------------------------------------------------
+ * Single source of truth for small, repeated UI treatments. Form/eyebrow
+ * labels previously shipped in three slightly different variants; these two
+ * classes unify them (de-emphasized, uppercase, ink-500 — not ink-400).
+ * =======================================================================*/
+@layer components {
+  .form-label {
+    @apply text-2xs font-medium uppercase tracking-wide text-ink-500;
+  }
+
+  .form-hint {
+    @apply text-xs text-ink-400;
+  }
+}
+
+/* ===========================================================================
+ * Web client: full-height shell + mobile safe areas
+ * --------------------------------------------------------------------------
+ * Mobile browsers resolve 100vh to the *large* viewport (toolbar retracted),
+ * so a 100vh app shell lays its footer below the visible fold while the
+ * browser's bottom toolbar is showing. 100dvh tracks the actually-visible
+ * height; the 100vh line above it is the fallback for engines without dvh.
+ * Desktop is unaffected (dvh == vh there). See #116.
+ * =======================================================================*/
+.zn-app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Keep the sidebar footer's controls above the iOS home indicator once
+ * viewport-fit=cover lets content extend into the safe area. 0 on desktop. */
+.zn-sidebar-footer-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: content-box;
+}
+
+.task-kanban-column.is-drop-target {
+  border-color: rgb(var(--z-accent) / 0.62);
+  box-shadow: 0 0 0 1px rgb(var(--z-accent) / 0.28);
+}
+
+.task-kanban-drag-preview {
+  opacity: 0.98;
+  transform-origin: 0 0;
+  will-change: transform;
+  contain: layout paint;
+  animation: task-kanban-drag-preview-in 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.task-kanban-drag-preview > * {
+  box-shadow:
+    0 18px 34px -18px rgb(var(--z-shadow) / 0.55),
+    0 0 0 1px rgb(var(--z-accent) / 0.18);
+}
+
+.task-kanban-drop-indicator {
+  height: 2px;
+  opacity: 0;
+  border-radius: 999px;
+  background: rgb(var(--z-accent) / 0.95);
+  box-shadow:
+    0 0 0 1px rgb(var(--z-bg) / 0.72),
+    0 0 14px rgb(var(--z-accent) / 0.42);
+  transform: translate3d(-9999px, -9999px, 0);
+  transform-origin: 0 50%;
+  will-change: transform, width, opacity;
+  transition: opacity 90ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.task-kanban-drop-indicator::before,
+.task-kanban-drop-indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgb(var(--z-accent));
+  box-shadow: 0 0 0 2px rgb(var(--z-bg) / 0.72);
+  transform: translateY(-50%);
+}
+
+.task-kanban-drop-indicator::before {
+  left: -2px;
+}
+
+.task-kanban-drop-indicator::after {
+  right: -2px;
+}
+
+@keyframes task-kanban-drag-preview-in {
+  from {
+    opacity: 0.74;
+    filter: saturate(0.96);
+  }
+  to {
+    opacity: 0.98;
+    filter: saturate(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-kanban-drag-preview {
+    animation: none;
+  }
+
+  .task-kanban-drop-indicator {
+    transition: none;
+  }
+}
+
+/* ===========================================================================
+ * Gruvbox Material theme tokens
+ * --------------------------------------------------------------------------
+ * All theme-sensitive colors live here as CSS custom properties using
+ * space-separated RGB triplets. Tailwind references these via the
+ * `rgb(var(--z-*) / <alpha-value>)` pattern in tailwind.config.js, so
+ * every existing utility class automatically picks up the active theme.
+ *
+ * Variants follow sainnhe/gruvbox-material:
+ *   background:   hard | medium (default) | soft
+ *   mode:         light | dark
+ * The user's final theme is the product of those two, e.g. `dark-soft`.
+ * =======================================================================*/
+
+:root {
+  color-scheme: light;
+
+  /* ---- Light Medium (default) -------------------------------------- */
+  --z-bg: 251 241 199; /* #fbf1c7 */
+  --z-bg-softer: 249 245 215; /* #f9f5d7 */
+  --z-bg-1: 242 229 188; /* #f2e5bc */
+  --z-bg-2: 229 213 173; /* #e5d5ad */
+  --z-bg-3: 213 196 161; /* #d5c4a1 */
+  --z-bg-4: 189 174 147; /* #bdae93 */
+
+  --z-fg: 80 73 69; /* #504945 (a touch lighter than pure fg) */
+  --z-fg-1: 60 56 54; /* #3c3836 */
+  --z-fg-2: 101 71 53; /* #654735 */
+  --z-grey-2: 90 82 76; /* #5a524c */
+  --z-grey-1: 124 111 100; /* #7c6f64 */
+  --z-grey-0: 146 131 116; /* #928374 */
+  --z-grey-dim: 189 174 147; /* #bdae93 */
+
+  --z-accent: 195 94 10; /* #c35e0a — orange */
+  --z-accent-soft: 180 113 9; /* #b47109 — yellow */
+  --z-accent-muted: 108 120 46; /* #6c782e — green */
+
+  --z-red: 193 74 74; /* #c14a4a */
+  --z-green: 108 120 46; /* #6c782e */
+  --z-yellow: 180 113 9; /* #b47109 */
+  --z-blue: 69 112 122; /* #45707a */
+  --z-purple: 148 94 128; /* #945e80 */
+  --z-aqua: 76 122 93; /* #4c7a5d */
+
+  --z-shadow: 42 38 32;
+
+  /* Glass layer alphas. These get retinted per mode below so dark
+     themes use cooler, more translucent glass. */
+  --z-glass-a1: 0.62;
+  --z-glass-a2: 0.5;
+  --z-glass-a3: 0.35;
+  --z-glass-a4: 0.25;
+  --z-glass-blur: 22px;
+  --z-glass-sat: 180%;
+
+  --scrollbar: rgb(var(--z-shadow) / 0.18);
+  --glass-stroke: rgb(var(--z-shadow) / 0.08);
+  --glass-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 0 0 1px var(--glass-stroke),
+    0 16px 40px -18px rgb(var(--z-shadow) / 0.22);
+}
+
+/* ===========================================================================
+ * Apple — clean macOS-style system palette (default theme family)
+ * =======================================================================*/
+
+:root[data-theme="apple-light"] {
+  color-scheme: light;
+  --z-bg: 255 255 255; /* content: pure white */
+  --z-bg-softer: 245 245 247; /* sidebar aluminum */
+  --z-bg-1: 242 242 247; /* systemGroupedBackground */
+  --z-bg-2: 229 229 234; /* secondarySystemBackground */
+  --z-bg-3: 209 209 214; /* separator */
+  --z-bg-4: 174 174 178; /* tertiaryLabel */
+  --z-fg: 29 29 31; /* primary label #1d1d1f */
+  --z-fg-1: 38 38 41; /* slightly lighter, still dark body */
+  --z-fg-2: 60 60 63; /* darkened from secondaryLabel so rows
+                                   read as body text, not muted captions */
+  --z-grey-2: 90 90 94; /* was 110 — bumped darker for readability */
+  --z-grey-1: 128 128 133; /* muted label */
+  --z-grey-0: 174 174 178;
+  --z-grey-dim: 209 209 214;
+  --z-accent: 0 122 255; /* systemBlue */
+  --z-accent-soft: 255 149 0; /* systemOrange */
+  --z-accent-muted: 52 199 89; /* systemGreen */
+  --z-red: 255 59 48; /* systemRed */
+  --z-green: 52 199 89;
+  --z-yellow: 255 149 0;
+  --z-blue: 0 122 255;
+  --z-purple: 175 82 222; /* systemPurple */
+  --z-aqua: 90 200 250; /* systemTeal */
+  --z-shadow: 42 38 32;
+}
+
+:root[data-theme="apple-dark"] {
+  color-scheme: dark;
+  --z-bg: 28 28 30; /* systemBackground dark */
+  --z-bg-softer: 22 22 24; /* slightly darker for chrome */
+  --z-bg-1: 44 44 46; /* secondarySystemBackground */
+  --z-bg-2: 58 58 60; /* tertiarySystemBackground */
+  --z-bg-3: 72 72 74; /* separator */
+  --z-bg-4: 99 99 102;
+  --z-fg: 255 255 255;
+  --z-fg-1: 235 235 245;
+  --z-fg-2: 152 152 157; /* secondary label dark */
+  --z-grey-2: 142 142 147;
+  --z-grey-1: 124 124 128;
+  --z-grey-0: 99 99 102;
+  --z-grey-dim: 72 72 74;
+  --z-accent: 10 132 255; /* systemBlue dark */
+  --z-accent-soft: 255 159 10; /* systemOrange dark */
+  --z-accent-muted: 48 209 88; /* systemGreen dark */
+  --z-red: 255 69 58; /* systemRed dark */
+  --z-green: 48 209 88;
+  --z-yellow: 255 214 10; /* systemYellow dark */
+  --z-blue: 10 132 255;
+  --z-purple: 191 90 242; /* systemPurple dark */
+  --z-aqua: 100 210 255; /* systemTeal dark */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Light Hard ---------------------------------------------------- */
+:root[data-theme="light-hard"] {
+  color-scheme: light;
+  --z-bg: 249 245 215; /* #f9f5d7 */
+  --z-bg-softer: 251 241 199;
+  --z-bg-1: 242 229 188;
+  --z-bg-2: 229 213 173;
+}
+
+/* ---- Light Medium (explicit selector, same as :root defaults) ----- */
+:root[data-theme="light-medium"] {
+  color-scheme: light;
+  --z-bg: 251 241 199;
+  --z-bg-softer: 249 245 215;
+}
+
+/* ---- Light Soft ---------------------------------------------------- */
+:root[data-theme="light-soft"] {
+  color-scheme: light;
+  --z-bg: 242 229 188; /* #f2e5bc */
+  --z-bg-softer: 251 241 199;
+  --z-bg-1: 237 222 184;
+  --z-bg-2: 229 213 173;
+}
+
+/* ---- Dark (shared) ------------------------------------------------- */
+:root[data-theme="dark-hard"],
+:root[data-theme="dark-medium"],
+:root[data-theme="dark-soft"] {
+  color-scheme: dark;
+
+  --z-bg-1: 50 48 47; /* #32302f */
+  --z-bg-2: 60 56 54; /* #3c3836 */
+  --z-bg-3: 69 64 61; /* #45403d */
+  --z-bg-4: 80 73 69; /* #504945 */
+
+  --z-fg: 212 190 152; /* #d4be98 */
+  --z-fg-1: 221 199 161; /* #ddc7a1 */
+  --z-fg-2: 221 199 161;
+  --z-grey-2: 168 153 132; /* #a89984 */
+  --z-grey-1: 146 131 116; /* #928374 */
+  --z-grey-0: 124 111 100; /* #7c6f64 */
+  --z-grey-dim: 80 73 69;
+
+  --z-accent: 231 138 78; /* #e78a4e — orange */
+  --z-accent-soft: 216 166 87; /* #d8a657 — yellow */
+  --z-accent-muted: 169 182 101; /* #a9b665 — green */
+
+  --z-red: 234 105 98; /* #ea6962 */
+  --z-green: 169 182 101;
+  --z-yellow: 216 166 87;
+  --z-blue: 125 174 163; /* #7daea3 */
+  --z-purple: 211 134 155; /* #d3869b */
+  --z-aqua: 137 180 130; /* #89b482 */
+
+  --z-shadow: 0 0 0;
+
+  --z-glass-a1: 0.58;
+  --z-glass-a2: 0.46;
+  --z-glass-a3: 0.32;
+  --z-glass-a4: 0.22;
+
+  --glass-stroke: rgb(255 255 255 / 0.06);
+  --glass-shadow:
+    0 1px 0 rgb(255 255 255 / 0.04) inset, 0 0 0 1px var(--glass-stroke),
+    0 16px 40px -18px rgb(0 0 0 / 0.55);
+}
+
+:root[data-theme="dark-hard"] {
+  --z-bg: 29 32 33; /* #1d2021 */
+  --z-bg-softer: 40 40 40;
+}
+:root[data-theme="dark-medium"] {
+  --z-bg: 40 40 40; /* #282828 */
+  --z-bg-softer: 50 48 47;
+}
+:root[data-theme="dark-soft"] {
+  --z-bg: 50 48 47; /* #32302f */
+  --z-bg-softer: 60 56 54;
+}
+
+/* Shared dark-theme glass overrides so every dark variant picks up
+   darker panel backgrounds and a darker stroke. */
+:root[data-theme="apple-dark"],
+:root[data-theme="catppuccin-frappe"],
+:root[data-theme="catppuccin-macchiato"],
+:root[data-theme="catppuccin-mocha"],
+:root[data-theme="github-dark"],
+:root[data-theme="github-dark-dimmed"],
+:root[data-theme="github-dark-high-contrast"],
+:root[data-theme="github-dark-colorblind"],
+:root[data-theme="github-dark-tritanopia"],
+:root[data-theme="solarized-dark"],
+:root[data-theme="one-dark"],
+:root[data-theme="nord-dark"],
+:root[data-theme="tokyo-night-storm"],
+:root[data-theme="kanagawa-wave"],
+:root[data-theme="kanagawa-dragon"],
+:root[data-theme="black-metal"] {
+  --z-glass-a1: 0.58;
+  --z-glass-a2: 0.46;
+  --z-glass-a3: 0.32;
+  --z-glass-a4: 0.22;
+  --glass-stroke: rgb(255 255 255 / 0.06);
+  --glass-shadow:
+    0 1px 0 rgb(255 255 255 / 0.04) inset, 0 0 0 1px var(--glass-stroke),
+    0 16px 40px -18px rgb(0 0 0 / 0.55);
+}
+
+/* ===========================================================================
+ * Catppuccin — https://github.com/catppuccin/nvim
+ * All four flavors, exact palette values.
+ * =======================================================================*/
+
+/* ---- Latte (light) ------------------------------------------------- */
+:root[data-theme="catppuccin-latte"] {
+  color-scheme: light;
+  --z-bg: 239 241 245; /* base    #eff1f5 */
+  --z-bg-softer: 230 233 239; /* mantle  #e6e9ef */
+  --z-bg-1: 220 224 232; /* crust   #dce0e8 */
+  --z-bg-2: 204 208 218; /* surface0 #ccd0da */
+  --z-bg-3: 188 192 204; /* surface1 #bcc0cc */
+  --z-bg-4: 172 176 190; /* surface2 #acb0be */
+  --z-fg: 76 79 105; /* text    #4c4f69 */
+  --z-fg-1: 92 95 119; /* subtext1 #5c5f77 */
+  --z-fg-2: 108 111 133; /* subtext0 #6c6f85 */
+  --z-grey-2: 124 127 147; /* overlay2 #7c7f93 */
+  --z-grey-1: 140 143 161; /* overlay1 #8c8fa1 */
+  --z-grey-0: 156 160 176; /* overlay0 #9ca0b0 */
+  --z-grey-dim: 188 192 204;
+  --z-accent: 254 100 11; /* peach   #fe640b */
+  --z-accent-soft: 223 142 29; /* yellow  #df8e1d */
+  --z-accent-muted: 136 57 239; /* mauve   #8839ef */
+  --z-red: 210 15 57; /* red     #d20f39 */
+  --z-green: 64 160 43; /* green   #40a02b */
+  --z-yellow: 223 142 29;
+  --z-blue: 30 102 245; /* blue    #1e66f5 */
+  --z-purple: 136 57 239;
+  --z-aqua: 23 146 153; /* teal    #179299 */
+  --z-shadow: 42 38 32;
+}
+
+/* ---- Frappé (dark, warmest) ---------------------------------------- */
+:root[data-theme="catppuccin-frappe"] {
+  color-scheme: dark;
+  --z-bg: 48 52 70; /* base    #303446 */
+  --z-bg-softer: 41 44 60; /* mantle  #292c3c */
+  --z-bg-1: 35 38 52; /* crust   #232634 */
+  --z-bg-2: 65 69 89; /* surface0 #414559 */
+  --z-bg-3: 81 87 109; /* surface1 #51576d */
+  --z-bg-4: 98 104 128; /* surface2 #626880 */
+  --z-fg: 198 208 245; /* text    #c6d0f5 */
+  --z-fg-1: 181 191 226; /* subtext1 #b5bfe2 */
+  --z-fg-2: 165 173 206; /* subtext0 #a5adce */
+  --z-grey-2: 148 156 187; /* overlay2 #949cbb */
+  --z-grey-1: 131 139 167; /* overlay1 #838ba7 */
+  --z-grey-0: 115 121 148; /* overlay0 #737994 */
+  --z-grey-dim: 98 104 128;
+  --z-accent: 239 159 118; /* peach   #ef9f76 */
+  --z-accent-soft: 229 200 144; /* yellow  #e5c890 */
+  --z-accent-muted: 166 209 137; /* green   #a6d189 */
+  --z-red: 231 130 132; /* red     #e78284 */
+  --z-green: 166 209 137;
+  --z-yellow: 229 200 144;
+  --z-blue: 140 170 238; /* blue    #8caaee */
+  --z-purple: 202 158 230; /* mauve   #ca9ee6 */
+  --z-aqua: 129 200 190; /* teal    #81c8be */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Macchiato (dark) ---------------------------------------------- */
+:root[data-theme="catppuccin-macchiato"] {
+  color-scheme: dark;
+  --z-bg: 36 39 58; /* base    #24273a */
+  --z-bg-softer: 30 32 48; /* mantle  #1e2030 */
+  --z-bg-1: 24 25 38; /* crust   #181926 */
+  --z-bg-2: 54 58 79; /* surface0 #363a4f */
+  --z-bg-3: 73 77 100; /* surface1 #494d64 */
+  --z-bg-4: 91 96 120; /* surface2 #5b6078 */
+  --z-fg: 202 211 245; /* text    #cad3f5 */
+  --z-fg-1: 184 192 224; /* subtext1 #b8c0e0 */
+  --z-fg-2: 165 173 203; /* subtext0 #a5adcb */
+  --z-grey-2: 147 154 183; /* overlay2 #939ab7 */
+  --z-grey-1: 128 135 162; /* overlay1 #8087a2 */
+  --z-grey-0: 110 115 141; /* overlay0 #6e738d */
+  --z-grey-dim: 91 96 120;
+  --z-accent: 245 169 127; /* peach   #f5a97f */
+  --z-accent-soft: 238 212 159; /* yellow  #eed49f */
+  --z-accent-muted: 166 218 149; /* green   #a6da95 */
+  --z-red: 237 135 150; /* red     #ed8796 */
+  --z-green: 166 218 149;
+  --z-yellow: 238 212 159;
+  --z-blue: 138 173 244; /* blue    #8aadf4 */
+  --z-purple: 198 160 246; /* mauve   #c6a0f6 */
+  --z-aqua: 139 213 202; /* teal    #8bd5ca */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Mocha (dark, deepest) ---------------------------------------- */
+:root[data-theme="catppuccin-mocha"] {
+  color-scheme: dark;
+  --z-bg: 30 30 46; /* base    #1e1e2e */
+  --z-bg-softer: 24 24 37; /* mantle  #181825 */
+  --z-bg-1: 17 17 27; /* crust   #11111b */
+  --z-bg-2: 49 50 68; /* surface0 #313244 */
+  --z-bg-3: 69 71 90; /* surface1 #45475a */
+  --z-bg-4: 88 91 112; /* surface2 #585b70 */
+  --z-fg: 205 214 244; /* text    #cdd6f4 */
+  --z-fg-1: 186 194 222; /* subtext1 #bac2de */
+  --z-fg-2: 166 173 200; /* subtext0 #a6adc8 */
+  --z-grey-2: 147 153 178; /* overlay2 #9399b2 */
+  --z-grey-1: 127 132 156; /* overlay1 #7f849c */
+  --z-grey-0: 108 112 134; /* overlay0 #6c7086 */
+  --z-grey-dim: 88 91 112;
+  --z-accent: 250 179 135; /* peach   #fab387 */
+  --z-accent-soft: 249 226 175; /* yellow  #f9e2af */
+  --z-accent-muted: 166 227 161; /* green   #a6e3a1 */
+  --z-red: 243 139 168; /* red     #f38ba8 */
+  --z-green: 166 227 161;
+  --z-yellow: 249 226 175;
+  --z-blue: 137 180 250; /* blue    #89b4fa */
+  --z-purple: 203 166 247; /* mauve   #cba6f7 */
+  --z-aqua: 148 226 213; /* teal    #94e2d5 */
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * GitHub — https://github.com/projekt0n/github-nvim-theme
+ * Light, Light High Contrast, Dark, Dark Dimmed, Dark High Contrast.
+ * =======================================================================*/
+
+/* ---- github-light (default) ---------------------------------------- */
+:root[data-theme="github-light"] {
+  color-scheme: light;
+  --z-bg: 255 255 255; /* canvas.default  #ffffff */
+  --z-bg-softer: 246 248 250; /* canvas.subtle   #f6f8fa */
+  --z-bg-1: 246 248 250;
+  --z-bg-2: 234 238 242; /* neutral.muted   #eaeef2 */
+  --z-bg-3: 208 215 222; /* border.default  #d0d7de */
+  --z-bg-4: 175 184 193;
+  --z-fg: 31 35 40; /* fg.default      #1f2328 */
+  --z-fg-1: 31 35 40;
+  --z-fg-2: 60 67 76; /* darkened from fg.muted #656d76 */
+  --z-grey-2: 80 87 96; /* still readable body-level gray */
+  --z-grey-1: 101 109 118; /* was fg.muted */
+  --z-grey-0: 141 149 158;
+  --z-grey-dim: 216 222 228;
+  --z-accent: 9 105 218; /* accent.fg       #0969da */
+  --z-accent-soft: 191 75 0; /* open.fg         #bf4b00 */
+  --z-accent-muted: 26 127 55; /* success.fg      #1a7f37 */
+  --z-red: 209 36 47; /* danger.fg       #d1242f */
+  --z-green: 26 127 55;
+  --z-yellow: 154 103 0; /* attention.fg    #9a6700 */
+  --z-blue: 9 105 218;
+  --z-purple: 130 80 223; /* done.fg         #8250df */
+  --z-aqua: 27 124 131;
+  --z-shadow: 42 38 32;
+}
+
+/* ---- github-light-high-contrast ------------------------------------ */
+:root[data-theme="github-light-high-contrast"] {
+  color-scheme: light;
+  --z-bg: 255 255 255; /* #ffffff */
+  --z-bg-softer: 220 222 228; /* pushed darker for obvious contrast */
+  --z-bg-1: 220 222 228;
+  --z-bg-2: 190 196 210; /* darker than default */
+  --z-bg-3: 88 96 110; /* strong borders — the hallmark of HC */
+  --z-bg-4: 55 62 74;
+  --z-fg: 0 0 0; /* absolute black */
+  --z-fg-1: 0 0 0;
+  --z-fg-2: 28 33 43;
+  --z-grey-2: 28 33 43;
+  --z-grey-1: 55 62 74;
+  --z-grey-0: 88 96 110;
+  --z-grey-dim: 155 163 178;
+  --z-accent: 3 73 180; /* accent.fg       #0349b4 */
+  --z-accent-soft: 148 47 0;
+  --z-accent-muted: 5 80 38;
+  --z-red: 166 0 23;
+  --z-green: 5 80 38;
+  --z-yellow: 112 75 0;
+  --z-blue: 3 73 180;
+  --z-purple: 80 45 151;
+  --z-aqua: 20 98 104;
+  --z-shadow: 42 38 32;
+}
+
+/* ---- github-dark (default) ----------------------------------------- */
+:root[data-theme="github-dark"] {
+  color-scheme: dark;
+  --z-bg: 13 17 23; /* canvas.default  #0d1117 */
+  --z-bg-softer: 1 4 9; /* canvas.inset    #010409 */
+  --z-bg-1: 22 27 34; /* canvas.subtle   #161b22 */
+  --z-bg-2: 33 38 45; /* neutral.muted   #21262d */
+  --z-bg-3: 48 54 61; /* border.default  #30363d */
+  --z-bg-4: 110 118 129; /* border.muted    #6e7681 */
+  --z-fg: 230 237 243; /* fg.default      #e6edf3 */
+  --z-fg-1: 230 237 243;
+  --z-fg-2: 125 133 144; /* fg.muted        #7d8590 */
+  --z-grey-2: 125 133 144;
+  --z-grey-1: 110 118 129; /* fg.subtle       #6e7681 */
+  --z-grey-0: 72 79 88;
+  --z-grey-dim: 48 54 61;
+  --z-accent: 47 129 247; /* accent.fg       #2f81f7 */
+  --z-accent-soft: 219 109 40; /* open.fg         #db6d28 */
+  --z-accent-muted: 63 185 80; /* success.fg      #3fb950 */
+  --z-red: 248 81 73; /* danger.fg       #f85149 */
+  --z-green: 63 185 80;
+  --z-yellow: 210 153 34; /* attention.fg    #d29922 */
+  --z-blue: 47 129 247;
+  --z-purple: 163 113 247; /* done.fg         #a371f7 */
+  --z-aqua: 86 196 180;
+  --z-shadow: 0 0 0;
+}
+
+/* ---- github-dark-dimmed -------------------------------------------- */
+:root[data-theme="github-dark-dimmed"] {
+  color-scheme: dark;
+  --z-bg: 34 39 46; /* canvas.default  #22272e */
+  --z-bg-softer: 29 33 38;
+  --z-bg-1: 45 51 59; /* canvas.subtle   #2d333b */
+  --z-bg-2: 55 62 71; /* #373e47 */
+  --z-bg-3: 68 76 86; /* border.default  #444c56 */
+  --z-bg-4: 118 131 144; /* fg.subtle       #768390 */
+  --z-fg: 173 186 199; /* fg.default      #adbac7 */
+  --z-fg-1: 173 186 199;
+  --z-fg-2: 118 131 144;
+  --z-grey-2: 118 131 144;
+  --z-grey-1: 99 110 123;
+  --z-grey-0: 83 93 104;
+  --z-grey-dim: 68 76 86;
+  --z-accent: 83 155 245; /* accent.fg       #539bf5 */
+  --z-accent-soft: 232 129 35; /* open.fg         #e88123 */
+  --z-accent-muted: 87 171 90; /* success.fg      #57ab5a */
+  --z-red: 229 83 75; /* danger.fg       #e5534b */
+  --z-green: 87 171 90;
+  --z-yellow: 198 144 38; /* attention.fg    #c69026 */
+  --z-blue: 83 155 245;
+  --z-purple: 181 126 220; /* done.fg         #b57edc */
+  --z-aqua: 86 196 180;
+  --z-shadow: 0 0 0;
+}
+
+/* ---- github-light-colorblind (Protanopia / Deuteranopia) ----------- */
+:root[data-theme="github-light-colorblind"] {
+  color-scheme: light;
+  --z-bg: 255 255 255;
+  --z-bg-softer: 246 248 250;
+  --z-bg-1: 246 248 250;
+  --z-bg-2: 234 238 242;
+  --z-bg-3: 208 215 222;
+  --z-bg-4: 175 184 193;
+  --z-fg: 31 35 40;
+  --z-fg-1: 31 35 40;
+  --z-fg-2: 60 67 76;
+  --z-grey-2: 80 87 96;
+  --z-grey-1: 110 119 129;
+  --z-grey-0: 141 149 158;
+  --z-grey-dim: 216 222 228;
+  --z-accent: 9 105 218; /* accent.fg    #0969da */
+  --z-accent-soft: 188 76 0; /* open.fg      #bc4c00 */
+  --z-accent-muted: 5 80 174; /* success → blue (was green) #0550ae */
+  --z-red: 172 94 0; /* danger → orange  #ac5e00 */
+  --z-green: 5 80 174; /* green → blue */
+  --z-yellow: 154 103 0;
+  --z-blue: 9 105 218;
+  --z-purple: 130 80 223;
+  --z-aqua: 27 124 131;
+  --z-shadow: 42 38 32;
+}
+
+/* ---- github-light-tritanopia --------------------------------------- */
+:root[data-theme="github-light-tritanopia"] {
+  color-scheme: light;
+  --z-bg: 255 255 255;
+  --z-bg-softer: 246 248 250;
+  --z-bg-1: 246 248 250;
+  --z-bg-2: 234 238 242;
+  --z-bg-3: 208 215 222;
+  --z-bg-4: 175 184 193;
+  --z-fg: 31 35 40;
+  --z-fg-1: 31 35 40;
+  --z-fg-2: 60 67 76;
+  --z-grey-2: 80 87 96;
+  --z-grey-1: 110 119 129;
+  --z-grey-0: 141 149 158;
+  --z-grey-dim: 216 222 228;
+  --z-accent: 9 105 218;
+  --z-accent-soft: 188 76 0;
+  --z-accent-muted: 26 127 55;
+  --z-red: 210 34 81; /* danger shifted  #d22251 */
+  --z-green: 26 127 55;
+  --z-yellow: 188 76 0; /* attention → orange to help tritans */
+  --z-blue: 9 105 218;
+  --z-purple: 130 80 223;
+  --z-aqua: 27 124 131;
+  --z-shadow: 42 38 32;
+}
+
+/* ---- github-dark-high-contrast ------------------------------------- */
+:root[data-theme="github-dark-high-contrast"] {
+  color-scheme: dark;
+  --z-bg: 0 0 0; /* pure black canvas for max contrast */
+  --z-bg-softer: 0 0 0;
+  --z-bg-1: 14 17 23; /* panels slightly above black */
+  --z-bg-2: 28 33 43;
+  --z-bg-3: 155 163 178; /* bright borders — HC hallmark */
+  --z-bg-4: 190 196 210;
+  --z-fg: 255 255 255; /* absolute white */
+  --z-fg-1: 255 255 255;
+  --z-fg-2: 220 222 228;
+  --z-grey-2: 220 222 228;
+  --z-grey-1: 190 196 210;
+  --z-grey-0: 155 163 178;
+  --z-grey-dim: 88 96 110;
+  --z-accent: 113 183 255; /* accent.fg       #71b7ff */
+  --z-accent-soft: 255 148 68; /* open.fg         #ff9444 */
+  --z-accent-muted: 38 205 92; /* success.fg      #26cd4d */
+  --z-red: 255 106 105; /* danger.fg       #ff6a69 */
+  --z-green: 38 205 92;
+  --z-yellow: 246 161 47; /* attention.fg    #f6a147 */
+  --z-blue: 113 183 255;
+  --z-purple: 184 135 255;
+  --z-aqua: 86 196 180;
+  --z-shadow: 0 0 0;
+}
+
+/* ---- github-dark-colorblind (Protanopia / Deuteranopia) ----------- */
+:root[data-theme="github-dark-colorblind"] {
+  color-scheme: dark;
+  --z-bg: 13 17 23;
+  --z-bg-softer: 1 4 9;
+  --z-bg-1: 22 27 34;
+  --z-bg-2: 33 38 45;
+  --z-bg-3: 48 54 61;
+  --z-bg-4: 110 118 129;
+  --z-fg: 230 237 243;
+  --z-fg-1: 230 237 243;
+  --z-fg-2: 125 133 144;
+  --z-grey-2: 125 133 144;
+  --z-grey-1: 110 118 129;
+  --z-grey-0: 72 79 88;
+  --z-grey-dim: 48 54 61;
+  --z-accent: 47 129 247; /* accent stays blue */
+  --z-accent-soft: 236 119 66; /* open.fg → orange  #ec7742 */
+  --z-accent-muted: 88 166 255; /* success → blue  #58a6ff */
+  --z-red: 236 119 66; /* danger → orange (distinct from blue) */
+  --z-green: 88 166 255; /* "green" now reads as blue for colorblind */
+  --z-yellow: 210 153 34;
+  --z-blue: 47 129 247;
+  --z-purple: 163 113 247;
+  --z-aqua: 86 196 180;
+  --z-shadow: 0 0 0;
+}
+
+/* ---- github-dark-tritanopia --------------------------------------- */
+:root[data-theme="github-dark-tritanopia"] {
+  color-scheme: dark;
+  --z-bg: 13 17 23;
+  --z-bg-softer: 1 4 9;
+  --z-bg-1: 22 27 34;
+  --z-bg-2: 33 38 45;
+  --z-bg-3: 48 54 61;
+  --z-bg-4: 110 118 129;
+  --z-fg: 230 237 243;
+  --z-fg-1: 230 237 243;
+  --z-fg-2: 125 133 144;
+  --z-grey-2: 125 133 144;
+  --z-grey-1: 110 118 129;
+  --z-grey-0: 72 79 88;
+  --z-grey-dim: 48 54 61;
+  --z-accent: 47 129 247;
+  --z-accent-soft: 247 129 102;
+  --z-accent-muted: 63 185 80;
+  --z-red: 255 120 140; /* pink shifted  #ff788c */
+  --z-green: 63 185 80;
+  --z-yellow: 247 129 102; /* yellow → orange for tritans */
+  --z-blue: 47 129 247;
+  --z-purple: 163 113 247;
+  --z-aqua: 86 196 180;
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * Solarized — https://ethanschoonover.com/solarized/
+ * Canonical palette: base03 / base02 / base01 / base00 / base0 / base1
+ * base2 / base3 + accent wheel (yellow, orange, red, magenta, violet, blue,
+ * cyan, green).
+ * =======================================================================*/
+
+/* ---- Solarized Light ---------------------------------------------- */
+:root[data-theme="solarized-light"] {
+  color-scheme: light;
+  --z-bg: 253 246 227; /* base3  #fdf6e3 */
+  --z-bg-softer: 245 238 213; /* between base3 and base2 */
+  --z-bg-1: 238 232 213; /* base2  #eee8d5 */
+  --z-bg-2: 223 215 182; /* derived */
+  --z-bg-3: 147 161 161; /* base1  #93a1a1 */
+  --z-bg-4: 131 148 150; /* base0  #839496 */
+  --z-fg: 101 123 131; /* base00 #657b83 */
+  --z-fg-1: 88 110 117; /* base01 #586e75 */
+  --z-fg-2: 131 148 150; /* base0  #839496 */
+  --z-grey-2: 88 110 117; /* base01 */
+  --z-grey-1: 101 123 131; /* base00 */
+  --z-grey-0: 131 148 150; /* base0  */
+  --z-grey-dim: 147 161 161; /* base1  */
+  --z-accent: 38 139 210; /* blue    #268bd2 */
+  --z-accent-soft: 203 75 22; /* orange  #cb4b16 */
+  --z-accent-muted: 133 153 0; /* green   #859900 */
+  --z-red: 220 50 47; /* red     #dc322f */
+  --z-green: 133 153 0; /* green   #859900 */
+  --z-yellow: 181 137 0; /* yellow  #b58900 */
+  --z-blue: 38 139 210; /* blue    #268bd2 */
+  --z-purple: 108 113 196; /* violet  #6c71c4 */
+  --z-aqua: 42 161 152; /* cyan    #2aa198 */
+  --z-shadow: 7 54 66;
+}
+
+/* ---- Solarized Dark ----------------------------------------------- */
+:root[data-theme="solarized-dark"] {
+  color-scheme: dark;
+  --z-bg: 0 43 54; /* base03  #002b36 */
+  --z-bg-softer: 1 38 48; /* slightly darker for chrome */
+  --z-bg-1: 7 54 66; /* base02  #073642 */
+  --z-bg-2: 14 73 84; /* derived between base02 and base01 */
+  --z-bg-3: 88 110 117; /* base01  #586e75 */
+  --z-bg-4: 101 123 131; /* base00  #657b83 */
+  --z-fg: 131 148 150; /* base0   #839496 */
+  --z-fg-1: 147 161 161; /* base1   #93a1a1 */
+  --z-fg-2: 101 123 131; /* base00  #657b83 */
+  --z-grey-2: 147 161 161; /* base1 */
+  --z-grey-1: 131 148 150; /* base0 */
+  --z-grey-0: 101 123 131; /* base00 */
+  --z-grey-dim: 88 110 117; /* base01 */
+  --z-accent: 38 139 210; /* blue    #268bd2 */
+  --z-accent-soft: 203 75 22; /* orange  #cb4b16 */
+  --z-accent-muted: 133 153 0; /* green   #859900 */
+  --z-red: 220 50 47;
+  --z-green: 133 153 0;
+  --z-yellow: 181 137 0;
+  --z-blue: 38 139 210;
+  --z-purple: 108 113 196; /* violet */
+  --z-aqua: 42 161 152; /* cyan */
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * One (Atom) — https://github.com/atom/atom/tree/master/packages/one-light-syntax
+ *              https://github.com/atom/atom/tree/master/packages/one-dark-syntax
+ * =======================================================================*/
+
+/* ---- One Light ---------------------------------------------------- */
+:root[data-theme="one-light"] {
+  color-scheme: light;
+  --z-bg: 250 250 250; /* editor bg     #fafafa */
+  --z-bg-softer: 243 243 245; /* slightly darker chrome */
+  --z-bg-1: 229 229 230; /* selection     #e5e5e6 */
+  --z-bg-2: 211 211 213; /* derived */
+  --z-bg-3: 179 179 182; /* derived */
+  --z-bg-4: 144 144 149;
+  --z-fg: 56 58 66; /* mono-1        #383a42 */
+  --z-fg-1: 56 58 66;
+  --z-fg-2: 105 108 119; /* mono-2        #696c77 */
+  --z-grey-2: 105 108 119;
+  --z-grey-1: 160 161 167; /* mono-3        #a0a1a7 */
+  --z-grey-0: 179 179 182;
+  --z-grey-dim: 211 211 213;
+  --z-accent: 64 120 242; /* blue          #4078f2 */
+  --z-accent-soft: 152 104 1; /* orange        #986801 */
+  --z-accent-muted: 80 161 79; /* green         #50a14f */
+  --z-red: 228 86 73; /* red           #e45649 */
+  --z-green: 80 161 79; /* green         #50a14f */
+  --z-yellow: 193 132 1; /* yellow        #c18401 */
+  --z-blue: 64 120 242; /* blue */
+  --z-purple: 166 38 164; /* purple        #a626a4 */
+  --z-aqua: 1 132 188; /* cyan          #0184bc */
+  --z-shadow: 42 38 32;
+}
+
+/* ---- One Dark ----------------------------------------------------- */
+:root[data-theme="one-dark"] {
+  color-scheme: dark;
+  --z-bg: 40 44 52; /* editor bg     #282c34 */
+  --z-bg-softer: 33 37 43; /* slightly darker chrome */
+  --z-bg-1: 44 49 58; /* sub-bg        #2c313a */
+  --z-bg-2: 62 68 81; /* selection     #3e4451 */
+  --z-bg-3: 92 99 112; /* comments      #5c6370 */
+  --z-bg-4: 116 116 116;
+  --z-fg: 171 178 191; /* mono-1        #abb2bf */
+  --z-fg-1: 218 218 219;
+  --z-fg-2: 92 99 112; /* mono-3        #5c6370 */
+  --z-grey-2: 171 178 191;
+  --z-grey-1: 132 140 153;
+  --z-grey-0: 92 99 112;
+  --z-grey-dim: 62 68 81;
+  --z-accent: 97 175 239; /* blue          #61afef */
+  --z-accent-soft: 209 154 102; /* orange        #d19a66 */
+  --z-accent-muted: 152 195 121; /* green         #98c379 */
+  --z-red: 224 108 117; /* red           #e06c75 */
+  --z-green: 152 195 121; /* green         #98c379 */
+  --z-yellow: 229 192 123; /* yellow        #e5c07b */
+  --z-blue: 97 175 239; /* blue */
+  --z-purple: 198 120 221; /* purple        #c678dd */
+  --z-aqua: 86 182 194; /* cyan          #56b6c2 */
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * Nord — https://www.nordtheme.com/
+ * Polar Night (nord0–nord3), Snow Storm (nord4–nord6), Frost (nord7–nord10),
+ * Aurora (nord11–nord15).
+ * =======================================================================*/
+
+/* ---- Nord Light --------------------------------------------------- */
+:root[data-theme="nord-light"] {
+  color-scheme: light;
+  --z-bg: 236 239 244; /* nord6  #eceff4 */
+  --z-bg-softer: 229 233 240; /* nord5  #e5e9f0 */
+  --z-bg-1: 216 222 233; /* nord4  #d8dee9 */
+  --z-bg-2: 201 208 221; /* derived */
+  --z-bg-3: 182 192 208; /* derived */
+  --z-bg-4: 160 172 190; /* derived */
+  --z-fg: 46 52 64; /* nord0  #2e3440 */
+  --z-fg-1: 59 66 82; /* nord1  #3b4252 */
+  --z-fg-2: 76 86 106; /* nord3  #4c566a */
+  --z-grey-2: 67 76 94; /* nord2  */
+  --z-grey-1: 76 86 106; /* nord3  */
+  --z-grey-0: 123 133 149; /* derived */
+  --z-grey-dim: 216 222 233; /* nord4  */
+  --z-accent: 94 129 172; /* nord10 (frost 3) */
+  --z-accent-soft: 208 135 112; /* nord12 (aurora orange) */
+  --z-accent-muted: 163 190 140; /* nord14 (aurora green) */
+  --z-red: 191 97 106; /* nord11 */
+  --z-green: 163 190 140; /* nord14 */
+  --z-yellow: 185 144 0; /* darker aurora-yellow for readability */
+  --z-blue: 94 129 172; /* nord10 */
+  --z-purple: 180 142 173; /* nord15 */
+  --z-aqua: 143 188 187; /* nord7 (frost cyan) */
+  --z-shadow: 46 52 64;
+}
+
+/* ---- Nord Dark ---------------------------------------------------- */
+:root[data-theme="nord-dark"] {
+  color-scheme: dark;
+  --z-bg: 46 52 64; /* nord0  #2e3440 */
+  --z-bg-softer: 39 43 53; /* derived darker chrome */
+  --z-bg-1: 59 66 82; /* nord1  #3b4252 */
+  --z-bg-2: 67 76 94; /* nord2  #434c5e */
+  --z-bg-3: 76 86 106; /* nord3  #4c566a */
+  --z-bg-4: 92 103 121; /* between nord3 and nord4 */
+  --z-fg: 216 222 233; /* nord4  #d8dee9 */
+  --z-fg-1: 229 233 240; /* nord5  #e5e9f0 */
+  --z-fg-2: 141 150 164; /* derived — lighter than nord3 so readable */
+  --z-grey-2: 216 222 233; /* nord4 */
+  --z-grey-1: 141 150 164;
+  --z-grey-0: 76 86 106; /* nord3 */
+  --z-grey-dim: 67 76 94; /* nord2 */
+  --z-accent: 136 192 208; /* nord8 — iconic frost */
+  --z-accent-soft: 208 135 112; /* nord12 orange */
+  --z-accent-muted: 163 190 140; /* nord14 green */
+  --z-red: 191 97 106; /* nord11 */
+  --z-green: 163 190 140; /* nord14 */
+  --z-yellow: 235 203 139; /* nord13 */
+  --z-blue: 94 129 172; /* nord10 */
+  --z-purple: 180 142 173; /* nord15 */
+  --z-aqua: 143 188 187; /* nord7 */
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * Tokyo Night — https://github.com/folke/tokyonight.nvim
+ * "Day" (light) and "Storm" (dark) variants.
+ * =======================================================================*/
+
+/* ---- Tokyo Night Day (light) -------------------------------------- */
+:root[data-theme="tokyo-night-day"] {
+  color-scheme: light;
+  --z-bg: 225 226 231; /* bg         #e1e2e7 */
+  --z-bg-softer: 208 213 227; /* bg-dark    #d0d5e3 */
+  --z-bg-1: 196 200 218; /* bg-hl      #c4c8da */
+  --z-bg-2: 168 174 203; /* fg-gutter  #a8aecb */
+  --z-bg-3: 161 166 197; /* terminal-black #a1a6c5 */
+  --z-bg-4: 137 144 179; /* dark3      #8990b3 */
+  --z-fg: 55 96 191; /* fg         #3760bf */
+  --z-fg-1: 97 114 176; /* fg-dark    #6172b0 */
+  --z-fg-2: 132 140 181; /* comment    #848cb5 */
+  --z-grey-2: 97 114 176;
+  --z-grey-1: 132 140 181;
+  --z-grey-0: 137 144 179;
+  --z-grey-dim: 168 174 203;
+  --z-accent: 46 125 233; /* blue       #2e7de9 */
+  --z-accent-soft: 177 92 0; /* orange     #b15c00 */
+  --z-accent-muted: 88 117 57; /* green      #587539 */
+  --z-red: 245 42 101; /* red        #f52a65 */
+  --z-green: 88 117 57; /* green */
+  --z-yellow: 140 108 62; /* yellow     #8c6c3e */
+  --z-blue: 46 125 233;
+  --z-purple: 120 71 189; /* purple     #7847bd */
+  --z-aqua: 0 113 151; /* cyan       #007197 */
+  --z-shadow: 55 96 191;
+}
+
+/* ---- Tokyo Night Storm (dark) ------------------------------------- */
+:root[data-theme="tokyo-night-storm"] {
+  color-scheme: dark;
+  --z-bg: 36 40 59; /* bg         #24283b */
+  --z-bg-softer: 31 35 53; /* bg-dark    #1f2335 */
+  --z-bg-1: 41 46 66; /* bg-hl      #292e42 */
+  --z-bg-2: 59 66 97; /* fg-gutter  #3b4261 */
+  --z-bg-3: 65 72 104; /* term-black #414868 */
+  --z-bg-4: 84 92 126; /* dark3      #545c7e */
+  --z-fg: 192 202 245; /* fg         #c0caf5 */
+  --z-fg-1: 169 177 214; /* fg-dark    #a9b1d6 */
+  --z-fg-2: 86 95 137; /* comment    #565f89 */
+  --z-grey-2: 169 177 214;
+  --z-grey-1: 115 122 162; /* dark5      #737aa2 */
+  --z-grey-0: 84 92 126;
+  --z-grey-dim: 65 72 104;
+  --z-accent: 122 162 247; /* blue       #7aa2f7 — iconic */
+  --z-accent-soft: 255 158 100; /* orange     #ff9e64 */
+  --z-accent-muted: 158 206 106; /* green     #9ece6a */
+  --z-red: 247 118 142; /* red        #f7768e */
+  --z-green: 158 206 106;
+  --z-yellow: 224 175 104; /* yellow     #e0af68 */
+  --z-blue: 122 162 247;
+  --z-purple: 187 154 247; /* magenta    #bb9af7 */
+  --z-aqua: 125 207 255; /* cyan       #7dcfff */
+  --z-shadow: 0 0 0;
+}
+
+/* ===========================================================================
+ * Kanagawa — https://github.com/rebelot/kanagawa.nvim
+ * Inspired by Hokusai's "The Great Wave off Kanagawa". Wave (warm default
+ * dark), Dragon (darker, cooler dark), Lotus (light). Official palettes.
+ * ======================================================================== */
+
+/* ---- Wave (dark — the default) ------------------------------------- */
+:root[data-theme="kanagawa-wave"] {
+  color-scheme: dark;
+  --z-bg: 31 31 40; /* sumiInk3   #1f1f28 */
+  --z-bg-softer: 24 24 32; /* sumiInk1   #181820 */
+  --z-bg-1: 22 22 29; /* sumiInk0   #16161d */
+  --z-bg-2: 42 42 55; /* sumiInk4   #2a2a37 */
+  --z-bg-3: 54 54 70; /* sumiInk5   #363646 */
+  --z-bg-4: 84 84 109; /* sumiInk6   #54546d */
+  --z-fg: 220 215 186; /* fujiWhite  #dcd7ba */
+  --z-fg-1: 200 192 147; /* oldWhite   #c8c093 */
+  --z-fg-2: 166 160 138; /* dim parchment */
+  --z-grey-2: 142 138 120;
+  --z-grey-1: 114 113 105; /* fujiGray   #727169 */
+  --z-grey-0: 84 84 109; /* sumiInk6   #54546d */
+  --z-grey-dim: 54 54 70;
+  --z-accent: 126 156 216; /* crystalBlue #7e9cd8 — iconic */
+  --z-accent-soft: 230 195 132; /* carpYellow  #e6c384 */
+  --z-accent-muted: 152 187 108; /* springGreen #98bb6c */
+  --z-red: 228 104 118; /* waveRed     #e46876 */
+  --z-green: 152 187 108;
+  --z-yellow: 230 195 132;
+  --z-blue: 126 156 216;
+  --z-purple: 149 127 184; /* oniViolet   #957fb8 */
+  --z-aqua: 122 168 159; /* waveAqua2   #7aa89f */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Dragon (dark — darker, cooler) -------------------------------- */
+:root[data-theme="kanagawa-dragon"] {
+  color-scheme: dark;
+  --z-bg: 24 22 22; /* dragonBlack3 #181616 */
+  --z-bg-softer: 18 18 15; /* dragonBlack1 #12120f */
+  --z-bg-1: 13 12 12; /* dragonBlack0 #0d0c0c */
+  --z-bg-2: 40 39 39; /* dragonBlack4 #282727 */
+  --z-bg-3: 57 56 54; /* dragonBlack5 #393836 */
+  --z-bg-4: 98 94 90; /* dragonBlack6 #625e5a */
+  --z-fg: 197 201 197; /* dragonWhite  #c5c9c5 */
+  --z-fg-1: 166 166 156; /* dragonGray   #a6a69c */
+  --z-fg-2: 158 155 147; /* dragonGray2  #9e9b93 */
+  --z-grey-2: 122 131 130; /* dragonGray3  #7a8382 */
+  --z-grey-1: 115 124 115; /* dragonAsh    #737c73 */
+  --z-grey-0: 98 94 90;
+  --z-grey-dim: 57 56 54;
+  --z-accent: 139 164 176; /* dragonBlue2  #8ba4b0 */
+  --z-accent-soft: 196 178 138; /* dragonYellow #c4b28a */
+  --z-accent-muted: 135 169 135; /* dragonGreen  #87a987 */
+  --z-red: 196 116 110; /* dragonRed    #c4746e */
+  --z-green: 135 169 135;
+  --z-yellow: 196 178 138;
+  --z-blue: 139 164 176;
+  --z-purple: 162 146 163; /* dragonPink   #a292a3 */
+  --z-aqua: 142 164 162; /* dragonAqua   #8ea4a2 */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Lotus (light) ------------------------------------------------- */
+:root[data-theme="kanagawa-lotus"] {
+  color-scheme: light;
+  --z-bg: 242 236 188; /* lotusWhite3  #f2ecbc */
+  --z-bg-softer: 229 221 176; /* lotusWhite2  #e5ddb0 */
+  --z-bg-1: 220 213 172; /* lotusWhite1  #dcd5ac */
+  --z-bg-2: 213 206 163; /* lotusWhite0  #d5cea3 */
+  --z-bg-3: 201 193 148; /* darker parchment */
+  --z-bg-4: 185 177 135; /* darker parchment */
+  --z-fg: 84 84 100; /* lotusInk1    #545464 */
+  --z-fg-1: 67 67 108; /* lotusInk2    #43436c */
+  --z-fg-2: 110 106 94; /* dim warm */
+  --z-grey-2: 113 110 97; /* lotusGray2   #716e61 */
+  --z-grey-1: 138 137 128; /* lotusGray3   #8a8980 */
+  --z-grey-0: 160 156 172; /* lotusViolet1 #a09cac */
+  --z-grey-dim: 201 193 148;
+  --z-accent: 77 105 155; /* lotusBlue4   #4d699b */
+  --z-accent-soft: 204 109 0; /* lotusOrange  #cc6d00 */
+  --z-accent-muted: 110 145 95; /* lotusGreen2  #6e915f */
+  --z-red: 200 64 83; /* lotusRed     #c84053 */
+  --z-green: 110 145 95;
+  --z-yellow: 222 154 0; /* lotusYellow3 #de9a00 */
+  --z-blue: 77 105 155;
+  --z-purple: 98 76 131; /* lotusViolet4 #624c83 */
+  --z-aqua: 94 133 122; /* lotusAqua2   #5e857a */
+  --z-shadow: 87 82 64;
+}
+
+/* ===========================================================================
+ * Black Metal — https://github.com/metalelf0/black-metal-theme-neovim
+ * Monochrome: a true-black canvas, soft grey ink, one muted teal accent.
+ * Semantic colors are kept (desaturated) so danger/success stay legible.
+ * ======================================================================== */
+
+/* ---- Black Metal (dark — repo default: bathory) ------------------------ */
+:root[data-theme="black-metal"] {
+  color-scheme: dark;
+  --z-bg: 0 0 0; /* #000000 — true black (OLED) */
+  --z-bg-softer: 0 0 0;
+  --z-bg-1: 18 18 18; /* #121212 — raised surfaces */
+  --z-bg-2: 30 30 30; /* #1e1e1e */
+  --z-bg-3: 51 51 51; /* #333333 — borders / selection */
+  --z-bg-4: 80 80 80; /* #505050 */
+  --z-fg: 193 193 193; /* #c1c1c1 — soft white, not pure white */
+  --z-fg-1: 209 209 209;
+  --z-fg-2: 136 136 136; /* #888888 */
+  --z-grey-2: 153 153 153; /* #999999 */
+  --z-grey-1: 112 112 112;
+  --z-grey-0: 80 80 80;
+  --z-grey-dim: 51 51 51;
+  --z-accent: 95 135 135; /* #5f8787 — signature muted teal */
+  --z-accent-soft: 251 203 151; /* #fbcb97 — amber */
+  --z-accent-muted: 231 138 67; /* #e78a43 — orange */
+  --z-red: 197 122 122; /* desaturated brick (danger stays legible) */
+  --z-green: 130 158 130; /* muted sage */
+  --z-yellow: 198 178 130; /* muted gold */
+  --z-blue: 119 153 187; /* #7799bb — steel (links) */
+  --z-purple: 155 145 165;
+  --z-aqua: 95 135 135; /* #5f8787 */
+  --z-shadow: 0 0 0;
+}
+
+/* ---- Black Metal · Day (light monochrome paper) ------------------------ */
+:root[data-theme="black-metal-day"] {
+  color-scheme: light;
+  --z-bg: 244 244 242;
+  --z-bg-softer: 234 234 232;
+  --z-bg-1: 255 255 255;
+  --z-bg-2: 226 226 224;
+  --z-bg-3: 206 206 204; /* borders */
+  --z-bg-4: 168 168 166;
+  --z-fg: 26 26 26; /* near-black ink */
+  --z-fg-1: 51 51 51;
+  --z-fg-2: 102 102 102;
+  --z-grey-2: 112 112 112;
+  --z-grey-1: 140 140 140;
+  --z-grey-0: 168 168 166;
+  --z-grey-dim: 206 206 204;
+  --z-accent: 79 115 115; /* #4f7373 — deep teal, readable on paper */
+  --z-accent-soft: 176 120 64;
+  --z-accent-muted: 150 92 44;
+  --z-red: 168 78 78;
+  --z-green: 92 124 92;
+  --z-yellow: 150 120 56;
+  --z-blue: 74 104 142;
+  --z-purple: 120 102 142;
+  --z-aqua: 79 115 115;
+  --z-shadow: 0 0 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(
+    --z-interface-font,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    Inter,
+    system-ui,
+    sans-serif
+  );
+  background: transparent;
+  color: rgb(var(--z-fg));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  overflow: hidden;
+}
+
+body {
+  background: transparent;
+}
+
+/* Translucent paper tint applied over whatever the window material is.
+   Single flat color so every panel reads the same ambient tone. */
+#root {
+  background: rgb(var(--z-bg) / 0.75);
+}
+
+/* On Windows/Linux (no backdrop-filter support) paint a solid background
+   so the glass panels still have something to sit on. */
+@supports not (
+  (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))
+) {
+  body {
+    background: rgb(var(--z-bg));
+  }
+}
+
+/* --- Reusable glass surfaces ------------------------------------------ */
+
+.glass-panel {
+  background: rgb(var(--z-bg) / var(--z-glass-a1));
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(var(--z-glass-blur));
+  backdrop-filter: saturate(var(--z-glass-sat)) blur(var(--z-glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-raised {
+  background: rgb(var(--z-bg-softer) / 0.88);
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) + 4px));
+  backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) + 4px));
+  box-shadow: var(--glass-shadow);
+}
+
+/*
+ * All chrome surfaces share the same theme background (--z-bg) so
+ * the sidebar, note list, title bar, and editor header read as one
+ * continuous canvas. Panels are separated by the glass stroke hairline,
+ * not by a tonal difference.
+ */
+.glass-sidebar {
+  background: rgb(var(--z-bg) / var(--z-glass-a1));
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(var(--z-glass-blur));
+  backdrop-filter: saturate(var(--z-glass-sat)) blur(var(--z-glass-blur));
+  border-right: 1px solid var(--glass-stroke);
+}
+
+.glass-column {
+  background: rgb(var(--z-bg) / var(--z-glass-a1));
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) - 2px));
+  backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) - 2px));
+  border-right: 1px solid var(--glass-stroke);
+}
+
+.glass-titlebar {
+  background: rgb(var(--z-bg) / var(--z-glass-a1));
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(var(--z-glass-blur));
+  backdrop-filter: saturate(var(--z-glass-sat)) blur(var(--z-glass-blur));
+  border-bottom: 1px solid var(--glass-stroke);
+}
+
+.glass-header {
+  background: rgb(var(--z-bg) / var(--z-glass-a1));
+  -webkit-backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) - 2px));
+  backdrop-filter: saturate(var(--z-glass-sat))
+    blur(calc(var(--z-glass-blur) - 2px));
+  border-bottom: 1px solid var(--glass-stroke);
+}
+
+/* --- Dark sidebar override -------------------------------------------- *
+ * When `data-dark-sidebar` is set, the sidebar surface pulls from a
+ * darkened tint of the theme background rather than the main canvas
+ * color. For light themes this mixes ~8% black, for dark themes ~12%
+ * black — always one visible step darker than the editor area.
+ */
+:root[data-dark-sidebar] .glass-sidebar {
+  background:
+    linear-gradient(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.08)),
+    rgb(var(--z-bg) / var(--z-glass-a1));
+}
+:root[data-dark-sidebar][data-theme^="dark-"] .glass-sidebar,
+:root[data-dark-sidebar][data-theme="apple-dark"] .glass-sidebar,
+:root[data-dark-sidebar][data-theme^="catppuccin-frappe"] .glass-sidebar,
+:root[data-dark-sidebar][data-theme^="catppuccin-macchiato"] .glass-sidebar,
+:root[data-dark-sidebar][data-theme^="catppuccin-mocha"] .glass-sidebar,
+:root[data-dark-sidebar][data-theme^="github-dark"] .glass-sidebar {
+  background:
+    linear-gradient(rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.28)),
+    rgb(var(--z-bg) / var(--z-glass-a1));
+}
+/* Same darken applied when the UI is opaque (no backdrop blur). */
+:root[data-dark-sidebar][data-opaque] .glass-sidebar {
+  background:
+    linear-gradient(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.08)), rgb(var(--z-bg));
+}
+:root[data-dark-sidebar][data-opaque][data-theme^="dark-"] .glass-sidebar,
+:root[data-dark-sidebar][data-opaque][data-theme="apple-dark"] .glass-sidebar,
+:root[data-dark-sidebar][data-opaque][data-theme^="catppuccin-frappe"]
+  .glass-sidebar,
+:root[data-dark-sidebar][data-opaque][data-theme^="catppuccin-macchiato"]
+  .glass-sidebar,
+:root[data-dark-sidebar][data-opaque][data-theme^="catppuccin-mocha"]
+  .glass-sidebar,
+:root[data-dark-sidebar][data-opaque][data-theme^="github-dark"]
+  .glass-sidebar {
+  background:
+    linear-gradient(rgb(0 0 0 / 0.28), rgb(0 0 0 / 0.28)), rgb(var(--z-bg));
+}
+
+/* --- Opaque mode override --------------------------------------------- *
+ * When the user turns off "Translucent interface" in Settings, the
+ * root element gets a `data-opaque` attribute. This kills all glass
+ * blur + alpha so the UI reads as a solid surface instead of the
+ * vibrancy-through layered look.
+ */
+:root[data-opaque] #root {
+  background: rgb(var(--z-bg));
+}
+:root[data-opaque] .glass-panel,
+:root[data-opaque] .glass-raised,
+:root[data-opaque] .glass-sidebar,
+:root[data-opaque] .glass-column,
+:root[data-opaque] .glass-titlebar,
+:root[data-opaque] .glass-header {
+  background: rgb(var(--z-bg));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.cm-editor,
+.prose-zen {
+  user-select: text;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--z-shadow) / 0.32);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.workspace-tab-strip {
+  scrollbar-color: var(--scrollbar) transparent;
+}
+
+.workspace-tab-strip::-webkit-scrollbar {
+  height: 6px;
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag,
+button,
+a,
+input,
+textarea,
+[role="button"] {
+  -webkit-app-region: no-drag;
+}
+
+/* --- CodeMirror editor theme ------------------------------------------- */
+
+.cm-editor {
+  background: transparent !important;
+  --z-heading-line-height: var(--z-editor-line-height, 1.7);
+  --z-heading-bottom-gap: 0px;
+  /* Text font (editor + preview body). Falls back to SF Mono so
+     writing feels code-ish out of the box. */
+  font-family: var(
+    --z-text-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    "Liberation Mono",
+    monospace
+  );
+  font-size: var(--z-editor-font-size, 16px);
+  line-height: var(--z-editor-line-height, 1.7);
+  color: rgb(var(--z-fg));
+  height: 100%;
+  contain: layout style;
+}
+.cm-editor.cm-focused {
+  outline: none !important;
+}
+.cm-editor .cm-scroller {
+  font-family: inherit;
+  line-height: var(--z-editor-line-height, 1.7);
+  padding: 16px 0 35vh 0;
+  overflow-y: auto;
+  /* `auto` so long lines can scroll horizontally when word wrap is
+     off — wrapping mode keeps things short and no scrollbar appears. */
+  overflow-x: auto;
+  overscroll-behavior: contain;
+}
+.cm-editor .cm-content {
+  /* Capped + centered (default) so wide windows don't make every line
+     stretch edge-to-edge. Both the cap and the alignment come from
+     Settings → Editor. */
+  max-width: var(--z-editor-max-width, 920px);
+  margin: 0 auto;
+  padding: 0 32px;
+  caret-color: rgb(var(--z-accent));
+  line-height: var(--z-editor-line-height, 1.7);
+}
+:root[data-content-align="left"] .cm-editor .cm-content {
+  margin: 0;
+}
+:root[data-content-align="left"] .prose-zen {
+  margin-left: 0;
+  margin-right: 0;
+}
+.cm-editor .cm-line {
+  padding: 0;
+  line-height: var(--z-editor-line-height, 1.7);
+}
+.cm-editor .cm-line.cm-markdown-list-line {
+  padding-left: var(--z-list-hanging-indent, 0);
+  text-indent: calc(var(--z-list-hanging-indent, 0) * -1);
+}
+.cm-editor .cm-cursor,
+.cm-editor .cm-dropCursor {
+  border-left: 2px solid rgb(var(--z-accent));
+}
+.cm-editor .cm-selectionBackground,
+.cm-editor ::selection {
+  background: rgb(var(--z-accent) / 0.22) !important;
+}
+
+/* --- Vim block cursor (normal mode) ---------------------------------- */
+/*
+ * @replit/codemirror-vim inserts a `.cm-fat-cursor` element in normal mode
+ * and renders it as a 1px outline on webkit, which looks like a thin
+ * line. We want an Obsidian/Vim-style solid block.
+ */
+.cm-editor .cm-fat-cursor,
+.cm-editor.cm-focused .cm-fat-cursor {
+  background: rgb(var(--z-accent) / 0.92) !important;
+  outline: none !important;
+  border: none !important;
+  /* Block is sized by its inner letter content. Strip any padding,
+   * margin, or inherited text-indent so the box stays exactly one
+   * glyph wide. */
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-indent: 0 !important;
+  letter-spacing: 0 !important;
+  color: rgb(var(--z-bg)) !important;
+  text-shadow: none !important;
+  mix-blend-mode: normal;
+  border-radius: 2px;
+}
+/* Secondary/inactive fat cursor */
+.cm-editor .cm-fat-cursor.cm-cursor-secondary {
+  background: rgb(var(--z-grey-1) / 0.55) !important;
+  outline: none !important;
+}
+/* When in fat-cursor mode, hide the thin bar cursor entirely */
+.cm-editor.cm-focused .cm-fat-cursor ~ .cm-cursor,
+.cm-editor .cm-fat-cursor ~ .cm-cursor {
+  display: none;
+}
+
+/* --- Vim ex command panel (`:` / `/` / `?` input at the bottom) ----- */
+/*
+ * @replit/codemirror-vim mounts its command input as a CM panel. The
+ * default styling is bare white — replace it with theme-aware colors
+ * that match the active Gruvbox / Catppuccin / GitHub / Tokyo Night
+ * palette, and use the same monospace stack as the editor.
+ */
+.cm-editor .cm-panels,
+.cm-editor .cm-panels-bottom,
+.cm-editor .cm-panels-top {
+  background: rgb(var(--z-bg-softer)) !important;
+  border-color: rgb(var(--z-bg-3)) !important;
+  color: rgb(var(--z-fg)) !important;
+}
+.cm-editor .cm-vim-panel {
+  background: rgb(var(--z-bg-softer)) !important;
+  color: rgb(var(--z-fg)) !important;
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  ) !important;
+  border-top: 1px solid rgb(var(--z-bg-3));
+  padding: 4px 10px !important;
+}
+.cm-editor .cm-vim-panel input,
+.cm-editor .cm-vim-panel textarea {
+  background: transparent !important;
+  color: rgb(var(--z-fg)) !important;
+  caret-color: rgb(var(--z-accent)) !important;
+  font-family: inherit !important;
+  font-size: 0.95em !important;
+  outline: none !important;
+  border: none !important;
+  width: 100%;
+}
+.cm-editor .cm-vim-panel ::selection,
+.cm-editor .cm-vim-panel input::selection {
+  background: rgb(var(--z-accent) / 0.3) !important;
+  color: inherit !important;
+}
+/* Vim status text (e.g. the mode indicator "-- INSERT --") */
+.cm-editor .cm-vim-panel span,
+.cm-editor .cm-vim-panel div {
+  color: rgb(var(--z-fg-2));
+}
+/* Hide the "(JavaScript regexp: set pcre)" label in vim search.
+ * codemirror-vim renders a desc span with cursor:pointer as the last
+ * child of the prompt flex container. */
+.cm-editor .cm-vim-panel div[style*="flex"] > span[style*="color"] {
+  display: none;
+}
+
+/* --- CodeMirror search panel (`Ctrl+F` / `Cmd+F`) ------------------- */
+.cm-editor .cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px !important;
+  background: rgb(var(--z-bg-softer)) !important;
+  color: rgb(var(--z-fg)) !important;
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  ) !important;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.cm-editor .cm-search br {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+}
+
+.cm-editor .cm-search .cm-textfield {
+  min-width: min(230px, 42vw);
+  height: 28px;
+  border: 1px solid rgb(var(--z-bg-3)) !important;
+  border-radius: 7px;
+  background: rgb(var(--z-bg)) !important;
+  color: rgb(var(--z-fg)) !important;
+  caret-color: rgb(var(--z-accent));
+  box-shadow: none !important;
+  font: inherit;
+  line-height: 28px;
+  outline: none !important;
+  padding: 0 9px;
+}
+
+.cm-editor .cm-search .cm-textfield::placeholder {
+  color: rgb(var(--z-fg-2) / 0.78);
+}
+
+.cm-editor .cm-search .cm-textfield:focus {
+  border-color: rgb(var(--z-accent)) !important;
+  box-shadow: 0 0 0 2px rgb(var(--z-accent) / 0.22) !important;
+}
+
+.cm-editor .cm-search .cm-button,
+.cm-editor .cm-search button[name="close"] {
+  height: 28px;
+  border: 1px solid rgb(var(--z-bg-3)) !important;
+  border-radius: 7px;
+  background: rgb(var(--z-bg-2)) !important;
+  color: rgb(var(--z-fg)) !important;
+  font: inherit;
+  line-height: 1;
+  padding: 0 10px;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.cm-editor .cm-search .cm-button:hover,
+.cm-editor .cm-search button[name="close"]:hover {
+  border-color: rgb(var(--z-accent) / 0.45) !important;
+  background: rgb(var(--z-accent) / 0.14) !important;
+  color: rgb(var(--z-fg)) !important;
+}
+
+.cm-editor .cm-search .cm-button:focus-visible,
+.cm-editor .cm-search button[name="close"]:focus-visible {
+  outline: 2px solid rgb(var(--z-accent) / 0.45);
+  outline-offset: 1px;
+}
+
+.cm-editor .cm-search button[name="close"] {
+  width: 28px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.cm-editor .cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  color: rgb(var(--z-fg-2));
+  white-space: nowrap;
+}
+
+.cm-editor .cm-search input[type="checkbox"] {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid rgb(var(--z-bg-3));
+  border-radius: 4px;
+  background: rgb(var(--z-bg));
+  box-shadow: inset 0 0 0 2px rgb(var(--z-bg));
+}
+
+.cm-editor .cm-search input[type="checkbox"]:checked {
+  border-color: rgb(var(--z-accent));
+  background: rgb(var(--z-accent));
+}
+
+.cm-editor .cm-search input[type="checkbox"]:focus-visible {
+  outline: 2px solid rgb(var(--z-accent) / 0.45);
+  outline-offset: 2px;
+}
+
+/* Live-preview task checkboxes: the `[ ]` / `[x]` marker on GFM task list
+   items is replaced by this widget when the cursor isn't on the marker. */
+.cm-editor .cm-task-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: text-bottom;
+  width: 1.05em;
+  height: 1.05em;
+  margin-right: 0.15em;
+}
+
+.cm-editor .cm-task-checkbox-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  border: 1.5px solid rgb(var(--z-bg-3));
+  border-radius: 4px;
+  background: rgb(var(--z-bg));
+  cursor: pointer;
+  position: relative;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.cm-editor .cm-task-checkbox-input:hover {
+  border-color: rgb(var(--z-accent) / 0.7);
+}
+
+.cm-editor .cm-task-checkbox-input:checked {
+  border-color: rgb(var(--z-accent));
+  background: rgb(var(--z-accent));
+}
+
+.cm-editor .cm-task-checkbox-input:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 0.32em;
+  height: 0.6em;
+  border: solid rgb(var(--z-bg));
+  border-width: 0 0.16em 0.16em 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+}
+
+.cm-editor .cm-task-checkbox-input:focus-visible {
+  outline: 2px solid rgb(var(--z-accent) / 0.45);
+  outline-offset: 2px;
+}
+
+/* --- Search match highlights (`/` in vim, `Cmd+F`) -------------------- */
+/* The CodeMirror default uses a faint translucent yellow that disappears
+   against the paper theme. Use the theme yellow so matches stay visible
+   on every palette, and clear the inline-code chip background inside a
+   match so the highlight isn't occluded by `tok-monospace`. */
+.cm-editor .cm-searchMatch {
+  background: rgb(var(--z-yellow) / 0.4) !important;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgb(var(--z-yellow) / 0.55);
+}
+.cm-editor .cm-searchMatch-selected {
+  background: rgb(var(--z-accent) / 0.5) !important;
+  box-shadow: 0 0 0 1px rgb(var(--z-accent) / 0.75);
+}
+.cm-editor .cm-searchMatch .tok-monospace {
+  background: transparent !important;
+}
+
+.cm-editor .cm-activeLine {
+  background: transparent;
+}
+.cm-editor .cm-line.cm-task-jump-highlight {
+  border-radius: 6px;
+  background: rgb(var(--z-accent) / 0.18);
+  box-shadow:
+    inset 3px 0 0 rgb(var(--z-accent) / 0.82),
+    0 0 0 4px rgb(var(--z-accent) / 0.1);
+  animation: cm-task-jump-highlight 1400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.cm-editor .cm-comment-anchor-active {
+  text-decoration-line: underline;
+  text-decoration-color: rgb(var(--z-accent) / 0.72);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.16em;
+}
+.cm-editor .cm-line.cm-comment-line {
+  position: relative;
+}
+.cm-editor .cm-comment-marker-wrap {
+  /* Pin the wrap to the right edge of the line. The line itself
+     stretches across `.cm-content`'s content-box, so this is always
+     inside the editor's visible area regardless of window width.
+     The marker (positioned with `right: ...` below) then sits inside
+     `.cm-content`'s 32px right padding zone — no text overlap, no
+     clipping when the window narrows. */
+  position: absolute;
+  top: calc((var(--z-editor-line-height, 1.7) * 0.5em) + var(--z-comment-marker-offset, 0px));
+  right: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  z-index: 4;
+}
+.cm-editor .cm-comment-marker {
+  position: absolute;
+  /* Anchored to the right side of the wrap so it grows leftward into
+     the editor's right padding zone instead of pushing past the
+     visible area. */
+  right: -28px;
+  top: 0;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(var(--z-bg-4) / 0.36);
+  border-radius: 7px;
+  background: rgb(var(--z-bg-1) / 0.78);
+  color: rgb(var(--z-fg-2) / 0.78);
+  box-shadow: 0 8px 18px -14px rgb(var(--z-shadow) / 0.58);
+  opacity: 0.82;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.cm-editor .cm-comment-marker:hover,
+.cm-editor .cm-comment-marker-active {
+  border-color: rgb(var(--z-accent) / 0.4);
+  background: rgb(var(--z-bg) / 0.9);
+  color: rgb(var(--z-accent));
+  opacity: 1;
+  transform: translateY(calc(-50% - 1px));
+}
+@keyframes cm-task-jump-highlight {
+  0% {
+    background: rgb(var(--z-accent) / 0.34);
+    box-shadow:
+      inset 3px 0 0 rgb(var(--z-accent) / 0.9),
+      0 0 0 6px rgb(var(--z-accent) / 0.16);
+  }
+  55% {
+    background: rgb(var(--z-accent) / 0.2);
+    box-shadow:
+      inset 3px 0 0 rgb(var(--z-accent) / 0.72),
+      0 0 0 4px rgb(var(--z-accent) / 0.1);
+  }
+  100% {
+    background: transparent;
+    box-shadow:
+      inset 3px 0 0 rgb(var(--z-accent) / 0),
+      0 0 0 0 rgb(var(--z-accent) / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cm-editor .cm-line.cm-task-jump-highlight {
+    animation: none;
+    background: rgb(var(--z-accent) / 0.24);
+    box-shadow:
+      inset 3px 0 0 rgb(var(--z-accent) / 0.86),
+      0 0 0 4px rgb(var(--z-accent) / 0.12);
+  }
+}
+.cm-editor .cm-gutters {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--z-fg-2) / 0.72);
+  padding-left: 12px;
+  padding-right: 6px;
+  /* Line-number gutter position (Settings → Editor → Line number position, #228).
+     With centered content the column is capped and centered (`margin: 0 auto`);
+     by default ("text") the gutter is given a left auto-margin so the whole
+     [gutter + content] group centers together — the gutter absorbs the left
+     free space, the content the right, so no gap opens between numbers and
+     text. "edge" pins the gutter to the far-left instead (text stays centered).
+     On a narrow editor (or with long, non-wrapped lines) free space is zero and
+     all of this is a no-op. */
+  margin-left: auto;
+}
+.cm-editor .cm-gutters ~ .cm-content {
+  margin-left: 0;
+}
+/* "Editor edge": pin numbers to the far-left; the text column stays centered. */
+:root[data-line-number-position="edge"] .cm-editor .cm-gutters {
+  margin-left: 0;
+}
+:root[data-line-number-position="edge"] .cm-editor .cm-gutters ~ .cm-content {
+  margin-left: auto;
+}
+/* Left-aligned content always packs the gutter + text against the left edge,
+   regardless of the line-number position setting. Listed last so it wins the
+   specificity tie with the "edge" rules above. */
+:root[data-content-align="left"] .cm-editor .cm-gutters {
+  margin-left: 0;
+}
+:root[data-content-align="left"] .cm-editor .cm-gutters ~ .cm-content {
+  margin-left: 0;
+}
+.cm-editor .cm-gutter {
+  background: transparent;
+}
+.cm-editor .cm-lineNumbers .cm-gutterElement {
+  min-width: 2.5ch;
+  padding: 0 8px 0 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--z-editor-line-height, 1.7);
+  background: transparent;
+}
+.cm-editor .cm-activeLineGutter {
+  color: rgb(var(--z-fg));
+  background: transparent !important;
+}
+
+/* Markdown syntax highlight inside CodeMirror.
+ *
+ * All content tokens share the primary foreground color — no gray-on-white
+ * hierarchy. Headings get explicit sizing + weight to match Obsidian's
+ * editor proportions (H1 ≈ 2×, H2 ≈ 1.6×, H3 ≈ 1.3×, …), inheriting the
+ * user's Text font rather than falling back to a serif. Only link/URL
+ * tokens break color.
+ */
+.cm-editor .tok-heading,
+.cm-editor .tok-heading1,
+.cm-editor .tok-heading2,
+.cm-editor .tok-heading3,
+.cm-editor .tok-heading4,
+.cm-editor .tok-heading5,
+.cm-editor .tok-heading6,
+.cm-editor .tok-emphasis,
+.cm-editor .tok-strong,
+.cm-editor .tok-quote,
+.cm-editor .tok-list,
+.cm-editor .tok-meta {
+  color: rgb(var(--z-fg));
+}
+
+/* Leading YAML frontmatter — render as a compact "properties" metadata card
+ * (see cm-frontmatter.ts). For database record pages these values mirror the
+ * database fields, so it should read like a tidy property list, not body text. */
+.cm-editor .cm-frontmatter-line {
+  font-size: 0.84em;
+  line-height: 1.85;
+  color: rgb(var(--z-grey-1));
+  background: rgb(var(--z-bg-1) / 0.5);
+  padding-left: 0.85em;
+  padding-right: 0.85em;
+  border-left: 1px solid rgb(var(--z-grey-0) / 0.13);
+  border-right: 1px solid rgb(var(--z-grey-0) / 0.13);
+}
+.cm-editor .cm-frontmatter-line :is(.tok-meta, .tok-string, .tok-keyword, .tok-atom) {
+  color: inherit;
+}
+/* The key (before the `:`) is a muted label; the value keeps the normal color. */
+.cm-editor .cm-frontmatter-key,
+.cm-editor .cm-frontmatter-key :is(.tok-meta, .tok-string, .tok-keyword, .tok-atom) {
+  color: rgb(var(--z-grey-0) / 0.62);
+  font-weight: 500;
+}
+/* The `---` fences become the card's quiet, rounded top/bottom edges: hide the
+ * dashes (transparent) but keep a thin capped row. */
+.cm-editor .cm-frontmatter-top,
+.cm-editor .cm-frontmatter-bottom {
+  color: transparent;
+  font-size: 0.5em;
+}
+.cm-editor .cm-frontmatter-top {
+  border-top: 1px solid rgb(var(--z-grey-0) / 0.13);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.cm-editor .cm-frontmatter-bottom {
+  border-bottom: 1px solid rgb(var(--z-grey-0) / 0.13);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+.cm-editor .tok-heading,
+.cm-editor .tok-heading1,
+.cm-editor .tok-heading2,
+.cm-editor .tok-heading3,
+.cm-editor .tok-heading4,
+.cm-editor .tok-heading5,
+.cm-editor .tok-heading6 {
+  font-weight: 700;
+  font-style: normal;
+  /* No letter-spacing: the vim block cursor is sized by its inner
+   * glyph's natural width (no letter-spacing), so any spacing on the
+   * line itself accumulates as drift between the block and the
+   * underlying character. Headings already read fine without it. */
+  line-height: var(--z-heading-line-height);
+}
+.cm-editor .tok-heading1 {
+  font-size: 2em;
+}
+.cm-editor .tok-heading2 {
+  font-size: 1.6em;
+}
+.cm-editor .tok-heading3 {
+  font-size: 1.3em;
+}
+.cm-editor .tok-heading4 {
+  font-size: 1.15em;
+}
+.cm-editor .tok-heading5 {
+  font-size: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.cm-editor .tok-heading6 {
+  font-size: 0.92em;
+  color: rgb(var(--z-fg-2));
+}
+.cm-editor .tok-emphasis {
+  font-style: italic;
+}
+.cm-editor .tok-strong {
+  font-weight: 700;
+}
+.cm-editor .tok-strikethrough {
+  text-decoration: line-through;
+}
+.cm-editor .tok-quote {
+  font-style: italic;
+}
+.cm-editor .tok-link,
+.cm-editor .tok-url {
+  color: rgb(var(--z-accent));
+  text-decoration: none;
+}
+.cm-editor .tok-monospace {
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  );
+  font-size: 0.92em;
+  background: rgb(var(--z-bg-2));
+  padding: 1px 4px;
+  border-radius: 4px;
+  /* No explicit color — lets inline code inherit foreground and lets
+     inner language tokens (keyword/string/etc.) show their own color
+     inside fenced code blocks. */
+}
+
+/* Fenced/indented code-block lines render in the configured monospace font,
+   matching inline code and the rendered preview. Covers tokens and the plain
+   whitespace between them (color-only `tok-*` rules can't). */
+.cm-editor .cm-line.cm-code-block-line,
+.cm-editor .cm-line.cm-code-block-line span {
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  );
+}
+
+/* --- Fenced code-block syntax tokens --------------------------------- */
+/* Theme-aware colors that work on both light and dark palettes. Every
+   color here comes from a CSS var defined by every theme block, so the
+   code coloring adapts automatically as the user switches themes. */
+.cm-editor .tok-keyword {
+  color: rgb(var(--z-accent));
+  font-weight: 600;
+}
+.cm-editor .tok-string {
+  color: rgb(var(--z-green));
+}
+.cm-editor .tok-comment {
+  color: rgb(var(--z-fg-2));
+  font-style: italic;
+  opacity: 0.85;
+}
+.cm-editor .tok-number,
+.cm-editor .tok-atom {
+  color: rgb(var(--z-yellow));
+}
+.cm-editor .tok-operator {
+  color: rgb(var(--z-fg-2));
+}
+.cm-editor .tok-type {
+  color: rgb(var(--z-purple));
+}
+.cm-editor .tok-tag {
+  color: rgb(var(--z-red));
+}
+.cm-editor .tok-function {
+  color: rgb(var(--z-blue));
+}
+.cm-editor .tok-variable-def,
+.cm-editor .tok-property {
+  color: rgb(var(--z-fg));
+}
+.cm-editor .tok-punct,
+.cm-editor .tok-bracket {
+  color: rgb(var(--z-fg-2));
+}
+.cm-editor .tok-attr,
+.cm-editor .tok-label {
+  color: rgb(var(--z-purple));
+}
+.cm-editor .tok-variable {
+  /* Plain identifier — readable default, not loud.  */
+  color: rgb(var(--z-fg));
+}
+.cm-editor .tok-meta-code {
+  /* Decorators (Python @dataclass), annotations (Java/Rust #[derive]),
+     preprocessor instructions. Distinctive but not shouty. */
+  color: rgb(var(--z-accent-soft));
+  font-style: italic;
+}
+/*
+ * Markdown list markers (`-`, `*`, `1.`, `2.`) share `tok-meta-code`
+ * with code-block decorators, but inside a list line italic markers
+ * don't pair well with the hanging-indent layout — the italic glyph
+ * width is slightly off from the monospace `ch` units used by the
+ * indent decoration, which knocks the vim block cursor a fraction of
+ * a character to the side. Keep markers upright on list lines and
+ * leave the italic on real meta tokens elsewhere.
+ */
+.cm-editor .cm-markdown-list-line .tok-meta-code {
+  font-style: normal;
+}
+.cm-editor .tok-invalid {
+  color: rgb(var(--z-red));
+  text-decoration: underline wavy rgb(var(--z-red) / 0.6);
+}
+
+/* --- Math diagrams (TikZ / JSXGraph / function-plot) ------------------ */
+.zen-tikz,
+.zen-jsxgraph,
+.zen-function-plot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 1.1rem 0;
+  padding: 0.9rem 0.6rem;
+  border-radius: 10px;
+  background: rgb(var(--z-bg-softer));
+  overflow-x: auto;
+  color: rgb(var(--z-fg-1));
+}
+.zen-diagram-surface {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+/* Inline pan/zoom layer (mermaid + TikZ): the content div fills the
+   viewport so the shared zoom-at-cursor math stays exact, and the
+   transform clips inside the surface instead of reflowing the note. */
+.zen-diagram-inline-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  transform-origin: 0 0;
+}
+.zen-diagram-inline-zoomed {
+  overflow: hidden;
+  cursor: grab;
+  outline: none;
+}
+.zen-diagram-inline-zoomed:active {
+  cursor: grabbing;
+}
+.zen-diagram-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.5rem;
+}
+.zen-diagram-zoom-controls {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgb(var(--z-bg-3) / 0.8);
+  border-radius: 9999px;
+  background: rgb(var(--z-bg) / 0.9);
+}
+/* Fallback: a surface without a toolbar gets the controls as an overlay. */
+.zen-diagram-surface > .zen-diagram-zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+}
+.zen-diagram-zoom-controls button {
+  padding: 0.35rem 0.55rem;
+  color: rgb(var(--z-fg-2));
+  font-size: 12px;
+  line-height: 1;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.zen-diagram-zoom-controls button:hover {
+  background: rgb(var(--z-bg-1));
+  color: rgb(var(--z-fg-1));
+}
+.zen-diagram-zoom-controls .zen-diagram-zoom-label {
+  min-width: 44px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.zen-diagram-expand {
+  border: 1px solid rgb(var(--z-bg-3) / 0.8);
+  border-radius: 9999px;
+  background: rgb(var(--z-bg) / 0.9);
+  color: rgb(var(--z-fg-2));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.45rem 0.7rem;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+.zen-diagram-expand:hover {
+  background: rgb(var(--z-bg-1));
+  border-color: rgb(var(--z-bg-3));
+  color: rgb(var(--z-fg-1));
+}
+.zen-tikz svg {
+  max-width: 100%;
+  height: auto;
+}
+.zen-jsxgraph-host {
+  background: rgb(var(--z-bg));
+  border-radius: 6px;
+  color: rgb(var(--z-fg-1));
+}
+.zen-jsxgraph-host .JXGtext,
+.zen-jsxgraph-host .JXGinfobox {
+  color: rgb(var(--z-fg-1)) !important;
+}
+.zen-function-plot-host {
+  background: rgb(var(--z-bg));
+  border-radius: 6px;
+  color: rgb(var(--z-fg-1));
+}
+/* function-plot writes its axes via D3 with inline styles. Override them
+   so text, axis paths, and ticks match the current theme's foreground. */
+.zen-function-plot-host svg .axis path,
+.zen-function-plot-host svg .axis line {
+  stroke: rgb(var(--z-grey-1));
+  stroke-opacity: 0.75;
+}
+.zen-function-plot-host svg .axis text,
+.zen-function-plot-host svg text {
+  fill: rgb(var(--z-fg-1)) !important;
+}
+.zen-function-plot-host svg .grid line {
+  stroke: rgb(var(--z-grey-dim));
+  stroke-opacity: 0.2;
+}
+.zen-function-plot-host svg .top-right-legend {
+  fill: rgb(var(--z-fg-1)) !important;
+}
+.zen-diagram-error {
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgb(var(--z-red));
+  background: rgb(var(--z-red) / 0.08);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin: 0;
+}
+.zen-tikz-loading {
+  font-size: 11px;
+  color: rgb(var(--z-fg-2));
+  font-style: italic;
+}
+
+/* --- Rendered markdown (preview) --------------------------------------- */
+
+.prose-zen {
+  --z-heading-line-height: var(--z-editor-line-height, 1.7);
+  --z-prose-line-gap: calc(var(--z-editor-line-height, 1.7) * 1em);
+  --z-prose-rendered-gap: calc(var(--z-prose-line-gap) * 0.6);
+  --z-prose-block-gap: var(--z-prose-rendered-gap);
+  --z-prose-section-gap: var(--z-prose-rendered-gap);
+  --z-prose-heading-gap: var(--z-prose-rendered-gap);
+  width: min(100%, var(--z-preview-max-width, 920px));
+  max-width: none;
+  margin: 0 auto;
+  padding: 16px 32px 40vh;
+  font-family: var(
+    --z-text-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    "Liberation Mono",
+    monospace
+  );
+  font-size: var(--z-editor-font-size, 16px);
+  line-height: var(--z-editor-line-height, 1.7);
+  color: rgb(var(--z-fg));
+}
+/* Compact Markdown inside comment cards (CommentsPanel): reuse .prose-zen
+   element styling but drop the full-note container padding/width and scale
+   headings + block spacing down to fit a narrow, small-text comment. */
+.prose-zen.comment-prose {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.prose-zen.comment-prose > :first-child {
+  margin-top: 0;
+}
+.prose-zen.comment-prose > :last-child {
+  margin-bottom: 0;
+}
+.prose-zen.comment-prose h1,
+.prose-zen.comment-prose h2,
+.prose-zen.comment-prose h3,
+.prose-zen.comment-prose h4,
+.prose-zen.comment-prose h5,
+.prose-zen.comment-prose h6 {
+  font-size: 1.05em;
+  margin-top: 0.6em;
+  margin-bottom: 0.2em;
+  line-height: 1.3;
+}
+.prose-zen.comment-prose h1 {
+  font-size: 1.2em;
+}
+.prose-zen.comment-prose h2 {
+  font-size: 1.12em;
+}
+.prose-zen h1,
+.prose-zen h2,
+.prose-zen h3,
+.prose-zen h4,
+.prose-zen h5,
+.prose-zen h6 {
+  /* Inherit the Text font from .prose-zen so user's font picker wins. */
+  font-family: inherit;
+  font-weight: 700;
+  color: rgb(var(--z-fg));
+  letter-spacing: 0;
+  line-height: var(--z-heading-line-height);
+}
+.prose-zen h1 {
+  font-size: 2em;
+  margin-top: 0;
+  margin-bottom: var(--z-prose-heading-gap);
+}
+.prose-zen h2 {
+  font-size: 1.6em;
+  margin-top: var(--z-prose-section-gap);
+  margin-bottom: var(--z-prose-heading-gap);
+}
+.prose-zen h3 {
+  font-size: 1.3em;
+  margin-top: var(--z-prose-section-gap);
+  margin-bottom: var(--z-prose-heading-gap);
+}
+.prose-zen h4 {
+  font-size: 1.15em;
+  margin-top: var(--z-prose-section-gap);
+  margin-bottom: var(--z-prose-heading-gap);
+}
+.prose-zen h5 {
+  font-size: 1em;
+  margin-top: var(--z-prose-section-gap);
+  margin-bottom: var(--z-prose-heading-gap);
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.prose-zen h6 {
+  font-size: 0.92em;
+  margin-top: var(--z-prose-section-gap);
+  margin-bottom: var(--z-prose-heading-gap);
+  color: rgb(var(--z-fg-2));
+}
+.prose-zen > :first-child {
+  margin-top: 0;
+}
+.prose-zen p {
+  margin: var(--z-prose-block-gap) 0;
+}
+.prose-zen a {
+  color: rgb(var(--z-accent));
+  text-decoration: none;
+  border-bottom: 1px solid rgb(var(--z-accent-muted));
+}
+.prose-zen a:hover {
+  border-bottom-color: rgb(var(--z-accent));
+}
+.prose-zen ul,
+.prose-zen ol {
+  padding-left: 1.4em;
+  margin: var(--z-prose-block-gap) 0;
+}
+.prose-zen li {
+  margin: 0;
+}
+.prose-zen ul > li {
+  list-style: disc;
+}
+.prose-zen ol > li {
+  list-style: decimal;
+}
+.prose-zen li.task-list-item {
+  list-style: none;
+  position: relative;
+  margin-left: -1.4em;
+  padding-left: 1.5em;
+}
+.prose-zen li.task-list-item > p:first-child {
+  margin: 0;
+}
+.prose-zen li.task-list-item input[type="checkbox"] {
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  accent-color: rgb(var(--z-accent));
+}
+.prose-zen li.task-list-item > p:not(:first-child) {
+  margin: var(--z-prose-block-gap) 0 0;
+}
+.prose-zen li.task-list-item > ul,
+.prose-zen li.task-list-item > ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.prose-zen blockquote {
+  margin: var(--z-prose-block-gap) 0;
+  padding: 0.2em 1em;
+  border-left: 3px solid rgb(var(--z-bg-3));
+  color: rgb(var(--z-grey-2));
+  font-style: italic;
+  background: rgb(var(--z-bg-softer));
+  border-radius: 0 8px 8px 0;
+}
+.prose-zen code {
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  );
+  font-size: 0.9em;
+  background: rgb(var(--z-bg-1));
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: rgb(var(--z-fg-1));
+}
+.prose-zen pre {
+  background: rgb(var(--z-bg-1));
+  border: 1px solid rgb(var(--z-bg-2));
+  border-radius: 10px;
+  padding: var(--z-prose-line-gap) 16px;
+  overflow-x: auto;
+  margin: var(--z-prose-block-gap) 0;
+}
+.prose-zen pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 1em;
+  line-height: var(--z-editor-line-height, 1.7);
+  color: rgb(var(--z-fg-1));
+}
+.prose-zen .zen-code-block {
+  position: relative;
+  --z-code-toolbar-line: max(var(--z-prose-line-gap), 28px);
+  margin: var(--z-prose-block-gap) 0;
+  background: rgb(var(--z-bg-1));
+  border: 1px solid rgb(var(--z-bg-2));
+  border-radius: 10px;
+  overflow: hidden;
+}
+.prose-zen .zen-code-block pre {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: var(--z-code-toolbar-line) 16px var(--z-prose-line-gap);
+}
+.prose-zen .zen-code-block[data-code-folded="true"] pre {
+  display: none;
+}
+.prose-zen .zen-code-block-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.prose-zen .zen-code-fold-button,
+.prose-zen .zen-code-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 52px;
+  border: 1px solid rgb(var(--z-bg-3) / 0.72);
+  border-radius: 6px;
+  background: rgb(var(--z-bg) / 0.82);
+  color: rgb(var(--z-grey-2));
+  font-family: var(
+    --z-interface-font,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    Inter,
+    system-ui,
+    sans-serif
+  );
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 8px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+.prose-zen .zen-code-fold-button:hover,
+.prose-zen .zen-code-copy-button:hover {
+  background: rgb(var(--z-bg-softer));
+  border-color: rgb(var(--z-bg-3));
+  color: rgb(var(--z-fg));
+}
+.prose-zen .zen-code-fold-button:focus-visible,
+.prose-zen .zen-code-copy-button:focus-visible {
+  outline: 2px solid rgb(var(--z-accent) / 0.45);
+  outline-offset: 2px;
+}
+.prose-zen .zen-code-copy-button[data-copy-state="copied"] {
+  background: rgb(var(--z-green) / 0.08);
+  border-color: rgb(var(--z-green) / 0.45);
+  color: rgb(var(--z-green));
+}
+.prose-zen .zen-code-copy-button[data-copy-state="failed"] {
+  background: rgb(var(--z-red) / 0.08);
+  border-color: rgb(var(--z-red) / 0.45);
+  color: rgb(var(--z-red));
+}
+.prose-zen .zen-code-block-summary {
+  display: none;
+  padding: 42px 16px 14px;
+  color: rgb(var(--z-grey-1));
+  font-family: var(
+    --z-interface-font,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    Inter,
+    system-ui,
+    sans-serif
+  );
+  font-size: 12px;
+  line-height: 1.4;
+}
+.prose-zen .zen-code-block[data-code-folded="true"] .zen-code-block-summary {
+  display: block;
+}
+.prose-zen table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--z-prose-block-gap) 0;
+  font-size: 0.94em;
+}
+.prose-zen th,
+.prose-zen td {
+  border: 1px solid rgb(var(--z-bg-2));
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+/* GFM column alignment (`:--`, `:-:`, `--:`) is emitted as the `align`
+   attribute, a low-specificity presentational hint that the rule above
+   would otherwise override. Honor it with matching attribute selectors. */
+.prose-zen th[align="left"],
+.prose-zen td[align="left"] {
+  text-align: left;
+}
+.prose-zen th[align="center"],
+.prose-zen td[align="center"] {
+  text-align: center;
+}
+.prose-zen th[align="right"],
+.prose-zen td[align="right"] {
+  text-align: right;
+}
+.prose-zen th {
+  background: rgb(var(--z-bg-1));
+  font-weight: 600;
+}
+.prose-zen hr {
+  border: none;
+  border-top: 1px solid rgb(var(--z-bg-2));
+  margin: calc(var(--z-prose-section-gap) * 1.25) 0;
+}
+.prose-zen img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* Block math ($$…$$).
+ * KaTeX wraps display math in `.katex-display`. We give it breathing
+ * room and a subtle paper tint so formulas pop out of the prose
+ * without turning the note into a checklist of cards. Inline math
+ * (`.katex` outside `.katex-display`) stays untouched — it lives
+ * inside its line and should feel typographic, not boxed. Styles
+ * apply to both the rendered preview and the live-preview editor
+ * so the reading experience is consistent across modes. */
+:is(.prose-zen, .cm-editor) .katex-display {
+  margin: 1.35em 0;
+  padding: 0.9em 1.1em;
+  background: color-mix(in srgb, rgb(var(--z-bg-1)) 70%, transparent);
+  border: 1px solid
+    color-mix(in srgb, rgb(var(--z-bg-2)) 70%, transparent);
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+:is(.prose-zen, .cm-editor) .katex-display > .katex {
+  /* KaTeX centers its own math by default; the wrapper already
+   * centers via text-align, but some note layouts inherit a
+   * left-align that pulls the formula against the border. Pin it
+   * centered here so the padding reads symmetric. */
+  text-align: center;
+}
+/* If an author writes multiple block formulas back to back, collapse
+ * the gap so they read as one derivation rather than three cards. */
+:is(.prose-zen, .cm-editor) .katex-display + .katex-display {
+  margin-top: -0.25em;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed {
+  margin: 1.35rem 0;
+}
+
+.cm-editor .local-image-embed {
+  cursor: grab;
+}
+
+.cm-editor .local-image-embed.is-dragging {
+  opacity: 0.72;
+  cursor: grabbing;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--z-bg-2));
+  background: color-mix(in srgb, rgb(var(--z-bg)) 94%, transparent);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed:hover .local-image-embed-frame {
+  border-color: color-mix(
+    in srgb,
+    rgb(var(--z-accent)) 55%,
+    rgb(var(--z-bg-2))
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, rgb(var(--z-accent)) 45%, transparent);
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-controls {
+  position: absolute;
+  inset-inline: 0;
+  display: flex;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+:is(.prose-zen, .cm-editor)
+  .local-image-embed:hover
+  .local-image-embed-controls {
+  opacity: 1;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-controls-top {
+  top: 0.6rem;
+  justify-content: flex-end;
+  padding-inline: 0.6rem;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-controls-bottom {
+  bottom: 0.6rem;
+  justify-content: flex-end;
+  padding-inline: 0.6rem;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-action {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  border: 1px solid rgb(0 0 0 / 0.08);
+  border-radius: 10px;
+  background: rgb(20 19 18 / 0.82);
+  color: rgb(255 255 255 / 0.94);
+  font-family: var(
+    --z-mono-font,
+    "SF Mono",
+    "SFMono-Regular",
+    ui-monospace,
+    "JetBrains Mono",
+    Menlo,
+    Consolas,
+    monospace
+  );
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-action:hover {
+  background: rgb(20 19 18 / 0.92);
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-action:focus-visible {
+  outline: 2px solid rgb(var(--z-accent));
+  outline-offset: 2px;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-action-open {
+  border-radius: 999px;
+  min-width: 2.1rem;
+  font-size: 1rem;
+}
+
+:is(.prose-zen, .cm-editor) .local-image-embed-caption {
+  margin-top: 0.55rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: rgb(var(--z-fg-2));
+}
+
+.cm-editor .cm-local-image-embed {
+  display: block;
+  width: 100%;
+  max-width: min(100%, 980px);
+  margin: 0.5rem 0 0.6rem;
+}
+
+/* The image widget is an inline (side:1) decoration, so its host line still
+ * reserves a full text line-box above and below the block figure — roughly one
+ * line-height of phantom vertical space on each side (issue #261). When the raw
+ * source is hidden (cursor off the line) the live-preview plugin stamps the line
+ * with `cm-image-embed-line`; collapse that line's strut to 0. The class is
+ * absent whenever the source markdown is revealed, so the editable text keeps
+ * its normal line-height. The caption restores its own line-height just below. */
+.cm-editor .cm-image-embed-line {
+  line-height: 0;
+}
+
+.cm-editor .local-image-embed-caption {
+  line-height: 1.4;
+}
+
+/* --- PDF embed widget (CodeMirror live preview) ---------------------- */
+.cm-editor .cm-local-pdf-embed,
+.cm-editor .local-pdf-embed {
+  display: block;
+  margin: 1rem 0;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgb(var(--z-bg-3));
+  background: rgb(var(--z-bg-1));
+}
+.cm-editor .local-pdf-embed-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgb(var(--z-bg-3));
+  background: rgb(var(--z-bg-2) / 0.4);
+  font-size: 0.85rem;
+}
+.cm-editor .local-pdf-embed-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: rgb(var(--z-fg));
+}
+.cm-editor .local-pdf-embed-action {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--z-bg-3));
+  background: rgb(var(--z-bg) / 0.6);
+  color: rgb(var(--z-fg-2));
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms;
+}
+.cm-editor .local-pdf-embed-action:hover {
+  background: rgb(var(--z-accent) / 0.12);
+  color: rgb(var(--z-accent));
+  border-color: rgb(var(--z-accent) / 0.4);
+}
+.cm-editor .local-pdf-embed-frame {
+  display: block;
+  width: 100%;
+  height: 480px;
+  border: 0;
+  background: white;
+}
+
+/* --- Compact "showing in reference pane" card ----------------------- */
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref {
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  /* Cancel the clipping + border-radius that the generic
+     `.local-asset-embed` rule sets — the inner button paints its own
+     rounded dashed border, and we don't want the wrapper's 14px clip
+     slicing into the button's 10px corners. */
+  overflow: visible;
+  border-radius: 0;
+  /* Allow the figure to shrink below its content's intrinsic size when
+     the editor pane is narrow (otherwise the long filename pushes the
+     scroller past the pane's edge and triggers horizontal scroll). */
+  min-width: 0;
+  width: 100%;
+}
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref-button {
+  flex: 1 1 auto;
+  /* Same — without min-width: 0 the button refuses to shrink and the
+     truncating text never gets a chance to ellipsis. */
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed rgb(var(--z-accent) / 0.45);
+  background: rgb(var(--z-accent) / 0.06);
+  color: rgb(var(--z-fg));
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms;
+}
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref-button:hover {
+  background: rgb(var(--z-accent) / 0.12);
+}
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  color: rgb(var(--z-accent));
+}
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+:is(.prose-zen, .cm-editor) .local-asset-pinned-ref-badge {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(var(--z-accent));
+  opacity: 0.85;
+}
+.cm-editor .local-asset-pinned-ref-edit,
+.cm-editor .local-asset-pinned-ref-preview {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--z-bg-3));
+  background: rgb(var(--z-bg) / 0.6);
+  color: rgb(var(--z-fg-2));
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms,
+    border-color 120ms;
+}
+.cm-editor .local-asset-pinned-ref-edit:hover,
+.cm-editor .local-asset-pinned-ref-preview:hover {
+  background: rgb(var(--z-accent) / 0.12);
+  color: rgb(var(--z-accent));
+  border-color: rgb(var(--z-accent) / 0.4);
+}
+
+.prose-zen .local-asset-embed {
+  margin: 1.25rem 0;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgb(var(--z-bg-2));
+  background: color-mix(in srgb, rgb(var(--z-bg)) 90%, transparent);
+}
+
+.prose-zen .local-asset-embed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgb(var(--z-bg-2));
+  padding: 0.65rem 0.85rem;
+}
+
+.prose-zen .local-asset-embed-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgb(var(--z-fg-1));
+}
+
+.prose-zen .local-asset-embed-open {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgb(var(--z-bg-1));
+  padding: 0.2rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prose-zen .local-asset-embed-frame,
+.prose-zen .local-asset-embed-video {
+  display: block;
+  width: 100%;
+  min-height: 420px;
+  border: 0;
+  background: rgb(var(--z-bg-softer));
+}
+
+.prose-zen .local-asset-embed-audio {
+  display: block;
+  width: calc(100% - 1.7rem);
+  margin: 0.85rem;
+}
+
+/* Wiki links */
+.prose-zen a.wikilink {
+  background: rgb(var(--z-bg-1));
+  padding: 1px 6px;
+  border-radius: 4px;
+  border-bottom: none;
+  font-weight: 500;
+}
+.prose-zen a.wikilink.broken {
+  color: rgb(var(--z-grey-1));
+  border: 1px dashed rgb(var(--z-bg-3));
+}
+.prose-zen a.wikilink:hover {
+  background: rgb(var(--z-bg-2));
+}
+
+.prose-hover-preview {
+  font-size: 13px;
+  line-height: var(--z-editor-line-height, 1.7);
+}
+
+.prose-hover-preview :is(h1, h2, h3) {
+  margin-top: 0;
+}
+
+.prose-hover-preview p:first-child,
+.prose-hover-preview :is(h1, h2, h3):first-child {
+  margin-top: 0;
+}
+
+.prose-hover-preview > :last-child {
+  margin-bottom: 0;
+}
+
+/* Inline hashtags */
+.prose-zen .hashtag {
+  display: inline-block;
+  background: rgb(var(--z-bg-1));
+  color: rgb(var(--z-fg-2));
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: none !important;
+}
+
+/* Callouts (Obsidian style) */
+/* --- Markdown highlight: `==text==` and `<mark class="hl-*">` ---------- */
+/* One shared palette (R G B triplets) drives the rendered preview/PDF
+   (`.prose-zen mark`), the editor live-preview decoration (`.cm-hl-*`), and the
+   right-click swatches. Translucent so the text keeps the theme foreground and
+   the color reads on both light and dark pages. */
+:root {
+  --hl-yellow: 245 208 70;
+  --hl-orange: 246 153 63;
+  --hl-red: 240 110 110;
+  --hl-pink: 240 120 180;
+  --hl-purple: 176 132 235;
+  --hl-blue: 96 170 240;
+  --hl-green: 120 200 130;
+  --hl-gray: 165 172 184;
+}
+.prose-zen mark,
+.cm-editor .cm-hl {
+  background-color: rgb(var(--hl-yellow) / 0.34);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0.15em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.prose-zen mark.hl-yellow,
+.cm-editor .cm-hl-yellow {
+  background-color: rgb(var(--hl-yellow) / 0.34);
+}
+.prose-zen mark.hl-orange,
+.cm-editor .cm-hl-orange {
+  background-color: rgb(var(--hl-orange) / 0.34);
+}
+.prose-zen mark.hl-red,
+.cm-editor .cm-hl-red {
+  background-color: rgb(var(--hl-red) / 0.32);
+}
+.prose-zen mark.hl-pink,
+.cm-editor .cm-hl-pink {
+  background-color: rgb(var(--hl-pink) / 0.32);
+}
+.prose-zen mark.hl-purple,
+.cm-editor .cm-hl-purple {
+  background-color: rgb(var(--hl-purple) / 0.34);
+}
+.prose-zen mark.hl-blue,
+.cm-editor .cm-hl-blue {
+  background-color: rgb(var(--hl-blue) / 0.32);
+}
+.prose-zen mark.hl-green,
+.cm-editor .cm-hl-green {
+  background-color: rgb(var(--hl-green) / 0.32);
+}
+.prose-zen mark.hl-gray,
+.cm-editor .cm-hl-gray {
+  background-color: rgb(var(--hl-gray) / 0.34);
+}
+
+.prose-zen .callout {
+  margin: var(--z-prose-block-gap) 0;
+  padding: 0.8em 1em;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--z-bg-2));
+  background: rgb(var(--z-bg-softer));
+}
+.prose-zen .callout-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: 600;
+  margin-bottom: 0.35em;
+}
+.prose-zen .callout[data-callout="note"],
+.prose-zen .callout[data-callout="info"] {
+  border-color: rgb(var(--z-blue) / 0.35);
+  background: rgb(var(--z-blue) / 0.08);
+}
+.prose-zen .callout[data-callout="note"] .callout-title,
+.prose-zen .callout[data-callout="info"] .callout-title {
+  color: rgb(var(--z-blue));
+}
+.prose-zen .callout[data-callout="tip"],
+.prose-zen .callout[data-callout="hint"] {
+  border-color: rgb(var(--z-green) / 0.35);
+  background: rgb(var(--z-green) / 0.08);
+}
+.prose-zen .callout[data-callout="tip"] .callout-title,
+.prose-zen .callout[data-callout="hint"] .callout-title {
+  color: rgb(var(--z-green));
+}
+.prose-zen .callout[data-callout="warning"],
+.prose-zen .callout[data-callout="warn"] {
+  border-color: rgb(var(--z-yellow) / 0.4);
+  background: rgb(var(--z-yellow) / 0.08);
+}
+.prose-zen .callout[data-callout="warning"] .callout-title,
+.prose-zen .callout[data-callout="warn"] .callout-title {
+  color: rgb(var(--z-yellow));
+}
+.prose-zen .callout[data-callout="danger"],
+.prose-zen .callout[data-callout="error"] {
+  border-color: rgb(var(--z-red) / 0.35);
+  background: rgb(var(--z-red) / 0.08);
+}
+.prose-zen .callout[data-callout="danger"] .callout-title,
+.prose-zen .callout[data-callout="error"] .callout-title {
+  color: rgb(var(--z-red));
+}
+
+/* Mermaid diagram container */
+/* Mermaid block chrome — adapts to the current theme via CSS vars so
+   the card never clashes with the active palette. The SVG itself is
+   themed at render time via `buildMermaidTheme()` in Preview.tsx. */
+.prose-zen .mermaid {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgb(var(--z-bg-softer) / 0.6);
+  border: 1px solid rgb(var(--z-bg-3) / 0.4);
+  border-radius: 10px;
+  padding: 14px;
+  margin: 1em 0;
+  text-align: center;
+  overflow-x: auto;
+}
+.prose-zen .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.zen-diagram-modal-host .zen-tikz,
+.zen-diagram-modal-host .zen-jsxgraph,
+.zen-diagram-modal-host .zen-function-plot,
+.zen-diagram-modal-host .mermaid {
+  margin: 0;
+}
+.zen-diagram-modal-host {
+  width: 100%;
+}
+.zen-diagram-modal-host .zen-diagram-surface-expanded > svg {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: min(78vh, 1200px);
+  margin: 0 auto;
+}
+.zen-diagram-modal-control,
+.zen-diagram-modal-zoom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border: 1px solid rgb(var(--z-bg-3) / 0.8);
+  border-radius: 7px;
+  background: rgb(var(--z-bg) / 0.82);
+  color: rgb(var(--z-fg-1));
+  font-family:
+    "SF Mono", "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo,
+    Consolas, monospace;
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+.zen-diagram-modal-shell-fullscreen {
+  width: 100vw;
+  height: calc(100vh - 44px);
+  margin-top: 44px;
+}
+.zen-diagram-modal-control {
+  width: 30px;
+}
+.zen-diagram-modal-control svg {
+  width: 16px;
+  height: 16px;
+}
+.zen-diagram-modal-zoom {
+  min-width: 56px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+.zen-diagram-modal-control:hover,
+.zen-diagram-modal-zoom:hover {
+  border-color: rgb(var(--z-accent) / 0.45);
+  background: rgb(var(--z-accent) / 0.14);
+  color: rgb(var(--z-fg));
+}
+.zen-diagram-modal-control:focus-visible,
+.zen-diagram-modal-zoom:focus-visible,
+.zen-diagram-pan-viewport:focus-visible {
+  outline: 2px solid rgb(var(--z-accent) / 0.45);
+  outline-offset: 2px;
+}
+.zen-diagram-pan-viewport {
+  position: relative;
+  height: min(76vh, 900px);
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgb(var(--z-bg-3) / 0.55);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgb(var(--z-bg-softer) / 0.88), rgb(var(--z-bg-softer) / 0.88)),
+    radial-gradient(circle at top left, rgb(var(--z-accent) / 0.08), transparent 32rem);
+  cursor: grab;
+  touch-action: none;
+}
+.zen-diagram-pan-viewport:active {
+  cursor: grabbing;
+}
+.zen-diagram-pan-viewport-fill {
+  height: 100%;
+  min-height: 0;
+}
+.zen-diagram-pan-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  max-width: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.zen-diagram-pan-content .zen-diagram-modal-host {
+  width: 100%;
+}
+.zen-diagram-pan-content .zen-tikz,
+.zen-diagram-pan-content .zen-jsxgraph,
+.zen-diagram-pan-content .zen-function-plot,
+.zen-diagram-pan-content .mermaid {
+  max-width: none;
+  overflow: visible;
+}
+.zen-diagram-pan-content .zen-diagram-surface-expanded > svg,
+.zen-diagram-pan-content .mermaid svg {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 auto;
+}
+
+/* Fade between list items + general transitions */
+.list-row {
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+/* --- Themed range slider (used in SettingsModal) ----------------------- */
+.zen-slider {
+  background: rgb(var(--z-bg-3));
+}
+.zen-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(var(--z-bg-3));
+}
+.zen-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 9999px;
+  background: rgb(var(--z-accent));
+  border: 2px solid rgb(var(--z-bg));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  cursor: pointer;
+}
+.zen-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: rgb(var(--z-accent));
+  border: 2px solid rgb(var(--z-bg));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  cursor: pointer;
+}
+.zen-slider:focus {
+  outline: none;
+}
+
+[data-settings-search-id] {
+  scroll-margin-block: 24px;
+  transition: background-color 180ms ease;
+}
+
+[data-settings-search-highlight="true"] {
+  background: rgb(var(--z-accent) / 0.055);
+  animation: settings-search-target-tint 2000ms ease-out;
+}
+
+@keyframes settings-search-target-tint {
+  0% {
+    background: rgb(var(--z-accent) / 0);
+  }
+  12%,
+  72% {
+    background: rgb(var(--z-accent) / 0.07);
+  }
+  100% {
+    background: rgb(var(--z-accent) / 0.025);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-settings-search-highlight="true"] {
+    animation: none;
+  }
+}
+
+/* ===========================================================================
+ * Vim navigation
+ * =========================================================================*/
+
+.panel-focused {
+  box-shadow: inset 0 0 0 2px rgb(var(--z-accent) / 0.3);
+}
+.vim-cursor {
+  background: rgb(var(--z-accent) / 0.15);
+  color: rgb(var(--z-ink-900));
+}
+.vim-cursor-on-active {
+  box-shadow: inset 0 0 0 2px rgb(var(--z-accent) / 0.65);
+}
+.vim-cursor-on-selected {
+  box-shadow: inset 0 0 0 2px rgb(var(--z-accent) / 0.65);
+}
+
+/* Hint mode badges */
+.vim-hint {
+  z-index: 10000;
+  background: rgb(var(--z-accent));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--z-mono-font, "SF Mono", ui-monospace, monospace);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.3;
+  pointer-events: none;
+  text-transform: lowercase;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+.vim-hint-dim {
+  opacity: 0.2;
+}
+.vim-hint-matched {
+  opacity: 0.55;
+}
+
+/* ==========================================================================
+ * Slash commands autocomplete
+ * =========================================================================*/
+
+.cm-tooltip-autocomplete {
+  background: rgb(var(--z-bg)) !important;
+  border: 1px solid var(--glass-stroke) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.25) !important;
+  overflow: hidden !important;
+  padding: 4px !important;
+  min-width: 240px;
+  /* Float above modals (e.g. the z-[80] template editor) when the tooltip is
+   * rendered on <body>. Autocomplete only shows while a CodeMirror editor is
+   * focused, so it should always sit on top of whatever surface hosts it. */
+  z-index: 200 !important;
+}
+
+.cm-tooltip-autocomplete > ul {
+  font-family: var(
+    --z-interface-font,
+    -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    sans-serif
+  ) !important;
+  max-height: 320px !important;
+}
+
+.cm-tooltip-autocomplete:has(.wikilink-cmd-option)::after {
+  content: "Type | to change display text  ·  Use /path/to/note for exact links";
+  display: block;
+  padding: 10px 12px 8px;
+  border-top: 1px solid rgb(var(--z-bg-3) / 0.7);
+  font-size: 12px;
+  color: rgb(var(--z-fg-2));
+  text-align: center;
+}
+
+.cm-tooltip-autocomplete > ul > li {
+  padding: 0 !important;
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: rgb(var(--z-accent) / 0.15) !important;
+  color: inherit !important;
+}
+
+/* Hide default completion label/detail (we use a custom renderer) */
+.cm-tooltip-autocomplete .cm-completionLabel,
+.cm-tooltip-autocomplete .cm-completionDetail,
+.cm-tooltip-autocomplete .cm-completionIcon {
+  display: none !important;
+}
+
+.cm-completionMatchedText {
+  text-decoration: none !important;
+  font-weight: 600;
+}
+
+/* Custom slash-command item layout */
+.slash-cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.slash-cmd-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgb(var(--z-paper-200));
+  color: rgb(var(--z-ink-700));
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--z-mono-font, "SF Mono", ui-monospace, monospace);
+  flex-shrink: 0;
+}
+
+.slash-cmd-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--z-ink-900));
+}
+
+.slash-cmd-detail {
+  font-size: 12px;
+  color: rgb(var(--z-ink-400));
+  font-family: var(--z-mono-font, "SF Mono", ui-monospace, monospace);
+}
+
+.wikilink-cmd-item {
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.wikilink-cmd-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wikilink-cmd-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(var(--z-ink-900));
+}
+
+.wikilink-cmd-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: rgb(var(--z-ink-400));
+  font-family: var(--z-mono-font, "SF Mono", ui-monospace, monospace);
+}
+
+/* --- Heading fold placeholder (CodeMirror) ------------------------- */
+/* Shown in place of folded content. Used by the heading-fold ex
+ * commands and vim z-fold keys; the gutter itself is intentionally
+ * disabled in cm-heading-fold.ts. */
+.cm-editor .cm-foldPlaceholder {
+  background: rgb(var(--z-bg-2));
+  color: rgb(var(--z-ink-500));
+  border: 1px solid rgb(var(--z-bg-3));
+  border-radius: 4px;
+  padding: 0 6px;
+  margin: 0 4px;
+  font-size: 0.85em;
+}
+
+/* --- Obsidian-style heading fold arrow ----------------------------- */
+/* Absolute-positioned widget that floats in the left margin of the
+ * heading line so it doesn't shift the heading text. The widget's
+ * parent `.cm-heading-line` is forced to `position: relative` so the
+ * absolute offset is line-scoped. Hidden by default; revealed on
+ * line hover, when the caret is on the line (CM6's `cm-activeLine`),
+ * or when the heading is folded (so the user can always unfold). */
+.cm-editor .cm-heading-line {
+  position: relative;
+  --z-heading-font-size: var(--z-editor-font-size, 16px);
+  --z-heading-fold-first-line: calc(
+    var(--z-heading-font-size) * var(--z-heading-line-height)
+  );
+  --z-heading-fold-arrow-size: clamp(
+    16px,
+    calc(var(--z-heading-fold-first-line) * 0.6),
+    28px
+  );
+  --z-heading-fold-arrow-glyph-size: calc(
+    var(--z-heading-fold-arrow-size) * 0.72
+  );
+  --z-heading-fold-arrow-gap: clamp(
+    6px,
+    calc(var(--z-heading-fold-arrow-size) * 0.35),
+    10px
+  );
+  padding-bottom: var(--z-heading-bottom-gap);
+}
+.cm-editor .cm-heading-line-h1 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 2);
+  font-size: calc(var(--z-editor-font-size, 16px) * 2);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 1.45);
+}
+.cm-editor .cm-heading-line-h2 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 1.6);
+  font-size: calc(var(--z-editor-font-size, 16px) * 1.6);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 1.2);
+}
+.cm-editor .cm-heading-line-h3 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 1.3);
+  font-size: calc(var(--z-editor-font-size, 16px) * 1.3);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 1.05);
+}
+.cm-editor .cm-heading-line-h4 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 1.15);
+  font-size: calc(var(--z-editor-font-size, 16px) * 1.15);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 0.95);
+}
+.cm-editor .cm-heading-line-h5 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 1);
+  font-size: calc(var(--z-editor-font-size, 16px) * 1);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 0.9);
+}
+.cm-editor .cm-heading-line-h6 {
+  --z-heading-font-size: calc(var(--z-editor-font-size, 16px) * 0.92);
+  font-size: calc(var(--z-editor-font-size, 16px) * 0.92);
+  line-height: var(--z-heading-line-height);
+  padding-bottom: calc(var(--z-heading-bottom-gap) * 0.85);
+}
+.cm-editor .cm-heading-line .tok-processingInstruction,
+.cm-editor .cm-heading-line .tok-heading,
+.cm-editor .cm-heading-line .tok-heading1,
+.cm-editor .cm-heading-line .tok-heading2,
+.cm-editor .cm-heading-line .tok-heading3,
+.cm-editor .cm-heading-line .tok-heading4,
+.cm-editor .cm-heading-line .tok-heading5,
+.cm-editor .cm-heading-line .tok-heading6 {
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+  font-style: normal;
+}
+.cm-editor .cm-heading-line .tok-processingInstruction {
+  font-style: normal;
+}
+.cm-editor .cm-heading-line .tok-emphasis {
+  font-style: normal;
+}
+.cm-heading-fold-arrow {
+  position: absolute;
+  left: calc(
+    -1 * (var(--z-heading-fold-arrow-size) + var(--z-heading-fold-arrow-gap))
+  );
+  top: calc(
+    (var(--z-heading-fold-first-line) - var(--z-heading-fold-arrow-size)) / 2
+  );
+  transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--z-heading-fold-arrow-size);
+  height: var(--z-heading-fold-arrow-size);
+  font-size: var(--z-heading-fold-arrow-glyph-size);
+  line-height: 1;
+  color: rgb(var(--z-ink-400));
+  opacity: 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+.cm-editor .cm-heading-line:hover .cm-heading-fold-arrow,
+.cm-editor .cm-activeLine.cm-heading-line .cm-heading-fold-arrow,
+.cm-heading-fold-arrow:hover,
+.cm-heading-fold-arrow.is-folded {
+  opacity: 1;
+}
+.cm-heading-fold-arrow:hover {
+  color: rgb(var(--z-ink-900));
+  background: rgb(var(--z-bg-2));
+}
+.cm-heading-fold-arrow.is-folded {
+  color: rgb(var(--z-accent));
+}
+
+/* --- Preview heading fold arrow ------------------------------------ */
+/* Counterpart to the CM live-preview fold arrow: sits in the left
+ * margin of every rendered h1–h6 in the preview/prose surface and
+ * collapses the section beneath on click. Hidden unless the heading
+ * is hovered, or the arrow itself is hovered, or the section is
+ * currently folded (so the user can always reopen it). */
+.prose-zen .prose-heading-foldable {
+  position: relative;
+}
+.prose-zen .prose-heading-fold-arrow {
+  --z-heading-fold-arrow-size: 24px;
+  position: absolute;
+  left: -30px;
+  top: calc(
+    (var(--z-heading-line-height) * 1em - var(--z-heading-fold-arrow-size)) / 2
+  );
+  transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--z-heading-fold-arrow-size);
+  height: var(--z-heading-fold-arrow-size);
+  font-size: 16px;
+  line-height: 1;
+  color: rgb(var(--z-ink-400));
+  opacity: 0;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+.prose-zen .prose-heading-foldable:hover .prose-heading-fold-arrow,
+.prose-zen .prose-heading-fold-arrow:hover,
+.prose-zen .prose-heading-fold-arrow.is-folded {
+  opacity: 1;
+}
+.prose-zen .prose-heading-fold-arrow:hover {
+  color: rgb(var(--z-ink-900));
+  background: rgb(var(--z-bg-2));
+}
+.prose-zen .prose-heading-fold-arrow.is-folded {
+  color: rgb(var(--z-accent));
+}
+
+/* =====================================================================
+   WYSIWYG live-preview rendering — ported from PR #185 (author: songgnqing).
+   Rendered tables, blockquote bars, list bullets, horizontal rules,
+   fenced-code cards + language flair, hashtag chips, and wikilinks.
+   Block-card styling is gated by the .cm-wysiwyg wrapper, added to the
+   editor container when livePreview is on (see EditorPane).
+   ===================================================================== */
+/* The inline-code chip (background/padding/radius from `.tok-monospace`) is for
+   true inline code only. Inside fenced/indented blocks the Lezer markdown
+   grammar tags every token with the same `monospace` highlight tag, so each
+   token would otherwise get its own chip — peppering the block with ragged,
+   per-line gray boxes. Neutralize it here; the block card (WYSIWYG) or raw view
+   provides the background. Mirrors the preview's `.prose-zen pre code`. */
+.cm-editor .cm-code-block-line .tok-monospace {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* --- WYSIWYG code-block card + language flair (Edit mode only) -------- */
+/* Give fenced code blocks a continuous "card": a shared background with side
+   borders, the first/last line rounding the top/bottom. Mirrors Obsidian's
+   HyperMD-codeblock-bg, scoped to Edit (WYSIWYG) — Split stays raw. */
+.cm-wysiwyg .cm-code-block-line {
+  position: relative;
+  background: rgb(var(--z-bg-2) / 0.55);
+  border-left: 1px solid rgb(var(--z-bg-3) / 0.7);
+  border-right: 1px solid rgb(var(--z-bg-3) / 0.7);
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.cm-wysiwyg .cm-code-block-begin {
+  border-top: 1px solid rgb(var(--z-bg-3) / 0.7);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.cm-wysiwyg .cm-code-block-end {
+  border-bottom: 1px solid rgb(var(--z-bg-3) / 0.7);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+/* Language label pinned top-right of the block; clicking it copies the code,
+   so there is no separate copy or fold control. */
+.cm-wysiwyg .cm-code-flair {
+  position: absolute;
+  top: 3px;
+  right: 8px;
+  z-index: 2;
+  padding: 1px 7px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: var(--z-interface-font, system-ui, sans-serif);
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgb(var(--z-grey-1));
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cm-wysiwyg .cm-code-flair:hover {
+  background: rgb(var(--z-bg-3) / 0.85);
+  color: rgb(var(--z-fg));
+}
+.cm-wysiwyg .cm-code-flair.is-copied {
+  color: rgb(var(--z-accent));
+}
+
+/* --- WYSIWYG live table widget (Edit mode) --------------------------- */
+/* A GFM pipe table rendered as a real, editable <table>. Mirrors Obsidian's
+   cm-table-widget: rounded bordered grid, header tint, hover add-buttons, and
+   in-cell editing. Source stays authoritative; see cm-table.ts. */
+.cm-table-widget {
+  /* Use PADDING, not vertical margin, for the block gap: CodeMirror measures a
+     block widget's height via offsetHeight, which excludes margins — a vertical
+     margin here desyncs the height map and makes clicks below the table land a
+     line high. The padding also leaves room for the hover grips (top/left) and
+     add-buttons (right/bottom).
+     The negative LEFT margin cancels the left padding so the table content
+     still lines up with the body text (and matches Preview) instead of sitting
+     ~2 chars indented. Horizontal margin is safe — only vertical margin breaks
+     the height measurement. */
+  margin: 0 0 0 -16px;
+  padding: 16px;
+  overflow-x: auto;
+  white-space: normal;
+  font-family: var(
+    --z-text-font,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    Inter,
+    "PingFang SC",
+    "Microsoft YaHei",
+    system-ui,
+    sans-serif
+  );
+  font-size: 0.94em;
+}
+.cm-table-wrapper {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+}
+.cm-table-widget table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.cm-table-widget th,
+.cm-table-widget td {
+  border: 1px solid rgb(var(--z-bg-3) / 0.9);
+  padding: 0;
+  vertical-align: top;
+  min-width: 64px;
+  position: relative;
+}
+.cm-table-widget th {
+  background: rgb(var(--z-bg-2) / 0.7);
+  font-weight: 600;
+}
+.cm-table-widget .cm-table-cell {
+  padding: 5px 10px;
+  outline: none;
+  min-height: 1.5em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  /* No native text selection in view/normal mode — it renders as the OS color
+     and CodeMirror mirrors it across cells. Vim visual mode draws its own
+     themed overlay instead. Editing (contenteditable) re-enables selection. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cm-table-widget .cm-table-cell[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.cm-table-widget .cm-table-cell:focus {
+  background: rgb(var(--z-accent) / 0.1);
+  box-shadow: inset 0 0 0 2px rgb(var(--z-accent) / 0.45);
+}
+/* Vim NORMAL mode: the cell is selected for navigation, not being typed into.
+   `caret-shape: block` isn't supported in our Chromium yet, so hide the native
+   (insert-style) caret and draw a Vim-style block cursor ourselves via ::before.
+   Editing (i/a) removes this class, restoring the normal thin caret. */
+.cm-table-widget .cm-table-cell.is-vim-normal {
+  position: relative;
+  background: rgb(var(--z-accent) / 0.07);
+}
+/* Vim block cursor — a real cursor positioned over the current character by
+   cm-table.ts (renderCellCursor), so h/l move it glyph-by-glyph like Vim. */
+.cm-table-widget .cm-table-cell-cursor {
+  position: absolute;
+  background: rgb(var(--z-accent) / 0.5);
+  border-radius: 1px;
+  pointer-events: none;
+}
+/* Vim visual-mode selection inside a cell uses the native selection; match the
+   editor's own selection tint (theme accent at the same strength) so it reads
+   consistently instead of the washed-out OS default. */
+.cm-table-widget .cm-table-cell::selection,
+.cm-table-widget .cm-table-cell ::selection {
+  background: rgb(var(--z-accent) / 0.22);
+}
+/* Vim visual-mode selection overlay (cm-table.ts renderCellSelection) — themed
+   so it matches the editor selection across every theme. */
+.cm-table-widget .cm-table-cell-sel {
+  position: absolute;
+  background: rgb(var(--z-accent) / 0.28);
+  border-radius: 2px;
+  pointer-events: none;
+}
+/* While a table cell is focused, the "real" cursor lives in the cell, so hide
+   the editor's own cursor layer — otherwise its Vim block cursor lingers at the
+   last document position (e.g. above the table) as a second block cursor. */
+.cm-editor:has(.cm-table-cell:focus) .cm-cursorLayer,
+.cm-editor:has(.cm-table-cell:focus) .cm-selectionLayer {
+  display: none;
+}
+/* Rendered inline markdown inside idle cells (the source pipeline emits real
+   <code>/<strong>/<em>/<a> tags, so style them to match the editor chrome). */
+.cm-table-widget .cm-table-cell code {
+  font-family: var(--z-mono-font, "SF Mono", ui-monospace, monospace);
+  font-size: 0.92em;
+  background: rgb(var(--z-bg-2));
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.cm-table-widget .cm-table-cell strong {
+  font-weight: 700;
+}
+.cm-table-widget .cm-table-cell em {
+  font-style: italic;
+}
+.cm-table-widget .cm-table-cell a {
+  color: rgb(var(--z-accent));
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--z-accent) / 0.4);
+}
+.cm-table-widget td[align="center"] .cm-table-cell,
+.cm-table-widget th[align="center"] .cm-table-cell {
+  text-align: center;
+}
+.cm-table-widget td[align="right"] .cm-table-cell,
+.cm-table-widget th[align="right"] .cm-table-cell {
+  text-align: right;
+}
+/* Hover add-buttons: a thin "+" rail along the right edge (column) and the
+   bottom edge (row) of the grid. */
+.cm-table-widget .cm-table-add {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(var(--z-bg-3) / 0.9);
+  background: rgb(var(--z-bg-1) / 0.9);
+  color: rgb(var(--z-grey-1));
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s ease, background 0.1s ease, color 0.1s ease;
+  border-radius: 5px;
+}
+.cm-table-widget:hover .cm-table-add {
+  opacity: 1;
+}
+.cm-table-widget .cm-table-add:hover {
+  background: rgb(var(--z-accent) / 0.85);
+  color: #fff;
+  border-color: transparent;
+}
+.cm-table-widget .cm-table-add-col {
+  top: 0;
+  right: 0;
+  width: 13px;
+  height: 100%;
+}
+.cm-table-widget .cm-table-add-row {
+  left: 0;
+  bottom: 0;
+  height: 13px;
+  /* Span the grid, not the button rail on the right. */
+  width: calc(100% - 14px);
+}
+
+/* Drag-to-reorder grips: row grip left of each body row, column grip above
+   each header cell. Hidden until you hover the row/column. */
+.cm-table-widget .cm-table-row-handle,
+.cm-table-widget .cm-table-col-handle {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--z-bg-2));
+  border: 1px solid rgb(var(--z-bg-3) / 0.9);
+  color: rgb(var(--z-grey-1));
+  cursor: grab;
+  opacity: 0;
+  z-index: 3;
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1;
+  user-select: none;
+}
+.cm-table-widget .cm-table-row-handle::before {
+  content: "⠿";
+}
+.cm-table-widget .cm-table-col-handle::before {
+  content: "⠿";
+  transform: rotate(90deg);
+}
+.cm-table-widget .cm-table-row-handle {
+  right: 100%;
+  top: 0;
+  height: 100%;
+  width: 12px;
+  border-start-start-radius: 4px;
+  border-end-start-radius: 4px;
+}
+.cm-table-widget .cm-table-col-handle {
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  height: 12px;
+}
+.cm-table-widget tbody tr:hover .cm-table-row-handle,
+.cm-table-widget thead th:hover .cm-table-col-handle,
+.cm-table-widget .cm-table-row-handle:hover,
+.cm-table-widget .cm-table-col-handle:hover {
+  opacity: 1;
+}
+.cm-table-widget.is-dragging .cm-table-row-handle,
+.cm-table-widget.is-dragging .cm-table-col-handle {
+  opacity: 0;
+}
+.cm-table-widget .cm-table-row-handle:active,
+.cm-table-widget .cm-table-col-handle:active {
+  cursor: grabbing;
+  background: rgb(var(--z-accent) / 0.85);
+  color: #fff;
+  border-color: transparent;
+}
+/* Accent drop indicator shown while dragging. */
+.cm-table-widget .cm-table-drop-indicator {
+  position: absolute;
+  background: rgb(var(--z-accent));
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 2px;
+}
+.cm-table-widget .cm-table-drop-row {
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform: translateY(-1px);
+}
+.cm-table-widget .cm-table-drop-col {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+/* Table context menu (right-click) — self-contained, theme-aware. */
+.cm-table-menu {
+  position: fixed;
+  z-index: 80;
+  min-width: 190px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgb(var(--z-bg-softer));
+  border: 1px solid rgb(var(--z-bg-3) / 0.7);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  font-family: var(--z-interface-font, system-ui, sans-serif);
+  font-size: 13px;
+  color: rgb(var(--z-fg));
+}
+.cm-table-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.cm-table-menu-item:hover:not(:disabled) {
+  background: rgb(var(--z-accent) / 0.85);
+  color: #fff;
+}
+.cm-table-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cm-table-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: rgb(var(--z-bg-3) / 0.7);
+}
+
+.cm-wysiwyg .cm-editor .cm-wq-quote {
+  border-left: 3px solid rgb(var(--z-accent) / 0.45);
+  padding-left: 16px;
+  color: rgb(var(--z-fg-2));
+}
+.cm-wysiwyg .cm-editor .cm-wq-quote .tok-quote {
+  font-style: normal;
+  color: inherit;
+}
+
+/* Callout cards in Edit mode — mirrors the Preview `.callout` colors. Every
+   line of the callout carries `cm-callout` (+ `-head`/`-foot` to round the
+   ends); the per-group class sets `--callout-color`, used for the box border,
+   tint, and the bold typed title. */
+.cm-wysiwyg .cm-editor .cm-callout {
+  --callout-color: var(--z-grey-0);
+  background: rgb(var(--callout-color) / 0.08);
+  border-left: 1px solid rgb(var(--callout-color) / 0.35);
+  border-right: 1px solid rgb(var(--callout-color) / 0.35);
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.cm-wysiwyg .cm-editor .cm-callout-note {
+  --callout-color: var(--z-blue);
+}
+.cm-wysiwyg .cm-editor .cm-callout-tip {
+  --callout-color: var(--z-green);
+}
+.cm-wysiwyg .cm-editor .cm-callout-warning {
+  --callout-color: var(--z-yellow);
+}
+.cm-wysiwyg .cm-editor .cm-callout-danger {
+  --callout-color: var(--z-red);
+}
+.cm-wysiwyg .cm-editor .cm-callout-quote {
+  --callout-color: var(--z-grey-0);
+}
+.cm-wysiwyg .cm-editor .cm-callout-head {
+  border-top: 1px solid rgb(var(--callout-color) / 0.35);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 4px;
+  font-weight: 600;
+  color: rgb(var(--callout-color));
+}
+.cm-wysiwyg .cm-editor .cm-callout-foot {
+  border-bottom: 1px solid rgb(var(--callout-color) / 0.35);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  padding-bottom: 4px;
+}
+.cm-wysiwyg .cm-editor .cm-callout-title {
+  font-weight: 600;
+  color: rgb(var(--callout-color));
+}
+/* A list line inside a callout/blockquote keeps its hanging indent, but it has
+   to sit on TOP of the box's own left padding. Otherwise the list's negative
+   text-indent (see .cm-markdown-list-line) drags the bullet out past the box's
+   left edge. Re-add the box padding to the hanging indent. */
+.cm-wysiwyg .cm-editor .cm-callout .tok-quote {
+  font-style: normal;
+  color: inherit;
+}
+.cm-wysiwyg .cm-editor .cm-callout.cm-markdown-list-line {
+  padding-left: calc(14px + var(--z-list-hanging-indent, 0));
+}
+.cm-wysiwyg .cm-editor .cm-wq-quote.cm-markdown-list-line {
+  padding-left: calc(16px + var(--z-list-hanging-indent, 0));
+}
+
+/* Unordered-list bullet rendered in place of `-` / `*` / `+`. */
+.cm-wysiwyg .cm-editor .cm-wq-bullet {
+  color: rgb(var(--z-grey-1));
+  font-weight: 700;
+}
+
+/* Horizontal rule rendered in place of `---` / `***` / `___`. */
+.cm-wysiwyg .cm-editor .cm-wq-hr {
+  display: inline-block;
+  width: 100%;
+  height: 0;
+  vertical-align: middle;
+  border-top: 2px solid rgb(var(--z-bg-3));
+}
+
+/* Links — subtle underline like Obsidian (accent color is set above). */
+.cm-wysiwyg .cm-editor .tok-link,
+.cm-wysiwyg .cm-editor .tok-url {
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--z-accent) / 0.4);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.cm-wysiwyg .cm-editor .tok-link:hover,
+.cm-wysiwyg .cm-editor .tok-url:hover {
+  text-decoration-color: rgb(var(--z-accent));
+}
+
+/* Wikilinks — Obsidian internal-link style: accent underlined text, clickable
+   (brackets hidden via decorations in cm-wikilink-render.ts). */
+.cm-wysiwyg .cm-editor .cm-wikilink {
+  color: rgb(var(--z-accent));
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--z-accent) / 0.4);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.cm-wysiwyg .cm-editor .cm-wikilink:hover {
+  text-decoration-color: rgb(var(--z-accent));
+}
+/* Revealed `[[ ]]` / `|` markers when editing a wikilink — quiet grey, upright,
+   no underline (the inner brackets otherwise inherit the italic/underline link
+   highlight, which left one bracket slanted). */
+/* Target the bracket span AND any nested highlight span inside it — the inner
+   `[`/`]` is a LinkMark whose own highlight span sets italic + link color, and
+   an !important on the parent can't override a child's own declaration. The
+   `*` reaches that inner span so all four brackets render the same. */
+.cm-wysiwyg .cm-editor .cm-wikilink-bracket,
+.cm-wysiwyg .cm-editor .cm-wikilink-bracket * {
+  color: rgb(var(--z-grey-1)) !important;
+  font-style: normal !important;
+  text-decoration: none !important;
+  opacity: 0.7;
+}
+
+/* Inline hashtags rendered as clickable pills — Obsidian's `.tag` style:
+   accent text on a faint accent tint, pill radius. */
+.cm-wysiwyg .cm-editor .cm-hashtag {
+  color: rgb(var(--z-accent));
+  background-color: rgb(var(--z-accent) / 0.1);
+  padding: 0.25em 0.65em;
+  border-radius: 2em;
+  font-size: 0.8em;
+  font-weight: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.cm-wysiwyg .cm-editor .cm-hashtag:hover {
+  background-color: rgb(var(--z-accent) / 0.2);
+}

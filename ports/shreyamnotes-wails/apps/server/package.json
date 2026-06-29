@@ -1,0 +1,14 @@
+{
+  "name": "@zennotes/server",
+  "private": true,
+  "version": "2.8.0",
+  "scripts": {
+    "dev": "bun ../../tooling/scripts/run-go-server-dev.mjs",
+    "prepare-web": "bun ../../tooling/scripts/prepare-server-web-dist.mjs",
+    "typecheck": "bun ../../tooling/scripts/run-go-server-test.mjs",
+    "test": "bun ../../tooling/scripts/run-go-server-test.mjs",
+    "test:run": "bun ../../tooling/scripts/run-go-server-test.mjs",
+    "sync-web": "bun ../../tooling/scripts/sync-web-dist.mjs",
+    "build": "bun ../../tooling/scripts/build-go-server.mjs"
+  }
+}

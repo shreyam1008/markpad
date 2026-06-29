@@ -1,0 +1,1 @@
+import{n as e}from"./vendor-editor-Bs6uvAz2.js";var t=null;function n(n){let r=(n??``).trim();if(r!==(t??``)){if(t){try{e.unmap(t,`insert`)}catch{}t=null}if(r)try{e.map(r,`<Esc>`,`insert`),t=r}catch{}}}export{n as t};

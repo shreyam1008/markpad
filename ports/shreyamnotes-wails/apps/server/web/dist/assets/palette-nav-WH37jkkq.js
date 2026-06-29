@@ -1,0 +1,1 @@
+function e(e){let t=e.key.toLowerCase();return e.key===`ArrowDown`||e.ctrlKey&&!e.metaKey&&!e.altKey&&(t===`n`||t===`j`)}function t(e){let t=e.key.toLowerCase();return e.key===`ArrowUp`||e.ctrlKey&&!e.metaKey&&!e.altKey&&(t===`p`||t===`k`)}export{t as n,e as t};

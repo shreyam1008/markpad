@@ -1,0 +1,1 @@
+import{c as e,l as t}from"./invert-CfuJq-rQ.js";var n=(n,r)=>t.lang.round(e.parse(n)[r]);export{n as t};

@@ -1,0 +1,1 @@
+var e=``+new URL(`zennotes-app-icon-DPG7zm7k.png`,import.meta.url).href;export{e as t};

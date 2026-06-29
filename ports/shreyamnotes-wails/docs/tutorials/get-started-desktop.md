@@ -1,0 +1,266 @@
+# Get Started on Desktop
+
+This tutorial is for someone opening ZenNotes for the first time on desktop and wanting to understand the basic workflow without setting up a server.
+
+By the end, you will have:
+
+- opened or created a vault
+- created notes and folders
+- used the sidebar, tabs, and editor
+- understood the system folders
+- changed a few important settings
+
+## Before you start
+
+You need:
+
+- the desktop app installed from a release
+- or the repo checked out locally with dependencies installed
+
+If you are running from source:
+
+```bash
+bun install --frozen-lockfile
+make wails-run
+```
+
+## 1. Open a vault
+
+When ZenNotes starts on desktop, it expects a vault directory.
+
+A vault is just a normal folder on disk that contains your Markdown notes and the small amount of metadata ZenNotes needs for UI behavior.
+
+Choose a folder:
+
+- use an empty folder if you want to start fresh
+- use an existing Markdown notes folder if you want to bring your current notes into ZenNotes
+
+ZenNotes reads and writes normal `.md` files directly in that folder.
+
+## 2. Learn the default layout
+
+By default, ZenNotes starts with a lifecycle-oriented layout:
+
+- `inbox/` for your main notes
+- `quick/` for quick capture
+- `archive/` for archived notes
+- `trash/` for soft-deleted notes
+
+If you prefer an Obsidian-style flat vault, you can later switch the primary notes area from `Inbox` to `Vault root`.
+
+That setting changes how ZenNotes surfaces the vault in the sidebar. It does not turn your notes into a database or move them into a proprietary store.
+
+## 3. Create your first note
+
+Use any of these:
+
+- the `+` button in the sidebar
+- the command palette
+- the new-note shortcuts you have configured
+
+ZenNotes opens the new note in a tab immediately. Notes are normal Markdown files, so typing into the editor is writing plain text to disk.
+
+Important behavior:
+
+- there is no hidden note database
+- the note content on screen is the file content on disk
+- if the file changes outside ZenNotes, the watcher can update the UI
+
+## 4. Use the sidebar
+
+The sidebar is the main navigation surface.
+
+Top area:
+
+- `Search`
+- `Tasks`
+- `Quick Notes`
+- `Archive`
+- `Trash`
+
+Main tree area:
+
+- your primary note folders and notes
+- optional tag section
+- folder icons, custom labels, and collapse state
+
+Recent versions of ZenNotes also allow:
+
+- moving Archive and Trash to the top utility area
+- hiding sidebar arrows
+- customizing folder icons
+- naming Quick Notes with a prefix
+- selecting multiple notes or folders with Cmd/Ctrl-click and Shift-click
+- opening images, SVGs, PDFs, videos, audio, and other media inside ZenNotes tabs instead of leaving the app
+
+## 5. Understand tabs and panes
+
+ZenNotes is designed around keeping context.
+
+You can:
+
+- keep multiple note tabs open
+- split the current note into another pane
+- open pinned reference panes
+- switch between edit, split, and preview modes
+
+Desktop builds also support:
+
+- floating note windows
+- native menu integration
+- app updates through the desktop updater
+- direct PDF export of the current note
+
+## 6. Learn the note modes
+
+The editor stack has three main ways to work:
+
+- `Edit`: write directly in the CodeMirror editor
+- `Split`: see editor and rendered Markdown together
+- `Preview`: see rendered Markdown only
+
+ZenNotes is keyboard-first, so the app assumes that preview is part of the main writing workflow rather than a secondary export view.
+
+## 7. Try Quick Notes
+
+Quick Notes are fast-capture notes that live in the `quick/` area by default.
+
+They are useful for:
+
+- temporary notes
+- scratch ideas
+- things you want to rename or move later
+
+You can control how Quick Notes are named from Settings:
+
+- whether they use a full timestamp or only the date
+- an optional prefix
+
+If the prefix is blank, ZenNotes can create bare timestamp-style filenames instead of forcing `Quick Note ...`.
+
+## 8. Try search, tags, and tasks
+
+ZenNotes includes several built-in views:
+
+- `Search`
+- `Tasks`
+- `Archive`
+- `Trash`
+- `Quick Notes`
+- `Tags`
+
+Tasks are extracted from Markdown task list syntax:
+
+```md
+- [ ] Ship the onboarding checklist due:2026-04-30 !high #docs
+- [ ] Wait for design sign-off @waiting
+- [x] Publish the changelog
+```
+
+The Tasks tab has three modes:
+
+- `List` for a compact vault-wide task list
+- `Calendar` for tasks grouped by due date
+- `Kanban` for moving tasks between status or priority columns
+
+Clicking a task opens the source note at the exact task line and briefly highlights it.
+
+In Kanban mode, drag a card to another column to update the task line. Column titles are display labels: click a title or pencil icon to rename it, press `Enter` to save, and clear the title to reset it.
+
+For the exact task metadata and Kanban rules, read the [Tasks Reference](../reference/tasks-reference.md).
+
+Tags come from hashtags in note content and can appear in the sidebar and related views.
+
+Text search can use:
+
+- the built-in search backend
+- `ripgrep`
+- `fzf`
+
+depending on your settings and what is available on your machine.
+
+Picker navigation also supports keyboard-first movement:
+
+- `ArrowDown` / `ArrowUp`
+- `Ctrl+N` / `Ctrl+P`
+
+That applies to the command palette, note search, buffer picker, outline picker, and vault text search picker.
+
+## 9. Try exporting a note as PDF
+
+Open a note and run:
+
+- `Export note as PDF...` from the command palette
+- or the configured shortcut, which defaults to `Shift+Mod+E`
+
+On desktop, ZenNotes renders the note as Markdown and exports it on a white paper-style background instead of exporting the raw editor surface.
+
+## 10. Install the CLI if you want terminal or Raycast workflows
+
+Open `Settings -> CLI` and click `Install`.
+
+ZenNotes installs the bundled `zen` wrapper into a usable PATH location. It prefers a user-writable directory and only falls back to an admin prompt when no writable PATH location is available.
+
+After install, try:
+
+```bash
+zen list
+zen read "inbox/Project.md"
+zen read --path "hellointerview/system design.md"
+zen search "deadline" --json
+```
+
+Quote note paths that contain spaces, or pass them with `--path`.
+
+On macOS, the Raycast extension uses this CLI to search notes and uses ZenNotes deep links to open notes in the main app or a floating window. Install it from the `Raycast Extension` section on the same `Settings -> CLI` page. See [Use ZenNotes with Raycast on macOS](../how-to/use-raycast.md).
+
+## 11. Adjust the vault model if needed
+
+Open `Settings -> Vault`.
+
+The most important vault setting is:
+
+- `Primary notes location`
+
+Options:
+
+- `Inbox`
+- `Vault root`
+
+Choose `Inbox` if you want ZenNotes' original lifecycle-first structure.
+
+Choose `Vault root` if you want the app to surface top-level vault files and folders directly, which is often better for existing Obsidian-style vaults.
+
+You can also configure:
+
+- system folder labels
+- daily notes behavior
+- daily notes directory
+- folder icons
+
+## 12. Understand what ZenNotes stores
+
+ZenNotes stores notes in your vault as plain Markdown files.
+
+It also stores a small amount of app/vault metadata under `.zennotes/`.
+
+That metadata is for things like:
+
+- vault behavior
+- layout preferences that belong to the vault
+- server-side indexes or runtime state where applicable
+
+The important boundary is:
+
+- note content is yours, on disk, as files
+- ZenNotes behavior is layered on top of those files
+
+## 13. Where to go next
+
+Now that you know the desktop basics, read one of these:
+
+- [Settings Reference](../reference/settings-reference.md)
+- [Use ZenNotes with Raycast on macOS](../how-to/use-raycast.md)
+- [Vault and Folder Model](../reference/vault-and-folder-model.md)
+- [Connect Desktop to a Remote ZenNotes Server](../how-to/connect-desktop-to-remote-server.md)
+- [Self-Host with Docker](../how-to/self-host-with-docker.md)

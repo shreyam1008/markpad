@@ -1,0 +1,1 @@
+var e=`zen:set-pane-mode`;function t(e,t){return t?e[t]??`edit`:`edit`}function n(e,t,n){return!t||e[t]===n?e:{...e,[t]:n}}function r(t){window.dispatchEvent(new CustomEvent(e,{detail:{mode:t}}))}export{r as i,t as n,n as r,e as t};
