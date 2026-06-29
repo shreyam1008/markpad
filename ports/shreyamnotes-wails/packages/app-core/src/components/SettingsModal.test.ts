@@ -196,4 +196,39 @@ describe('SettingsModal date note directories', () => {
       folderIcons: {}
     })
   })
+
+  it('keeps MCP settings mounted when the runtime payload omits args', async () => {
+    Object.assign(window.zen, {
+      mcpGetStatuses: vi.fn().mockResolvedValue([]),
+      mcpGetRuntime: vi.fn().mockResolvedValue({
+        command: '',
+        env: {},
+        entryPath: null
+      }),
+      mcpGetInstructions: vi.fn().mockResolvedValue({
+        custom: null,
+        effective: '',
+        defaults: ''
+      })
+    })
+
+    await act(async () => {
+      root.render(createElement(SettingsModal))
+    })
+
+    const mcpButton = [...host.querySelectorAll<HTMLButtonElement>('button')].find(
+      (button) => button.textContent?.trim() === 'MCP'
+    )
+    expect(mcpButton).toBeTruthy()
+
+    await act(async () => {
+      mcpButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(host.textContent).toContain('MCP')
+    expect(host.textContent).toContain('Server')
+  })
 })

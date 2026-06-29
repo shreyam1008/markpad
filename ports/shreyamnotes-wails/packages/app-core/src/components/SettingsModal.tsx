@@ -4713,8 +4713,12 @@ function McpSettings(): JSX.Element {
     window.zen.clipboardWriteText(text)
   }
 
-  const commandPreview = runtime
-    ? `${runtime.command} ${runtime.args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`
+  const runtimeArgs = Array.isArray(runtime?.args)
+    ? runtime.args.filter((arg): arg is string => typeof arg === 'string')
+    : []
+  const commandParts = runtime?.command ? [runtime.command, ...runtimeArgs] : []
+  const commandPreview = commandParts.length > 0
+    ? commandParts.map((part) => (part.includes(' ') ? `"${part}"` : part)).join(' ')
     : '—'
   const entryMissing = runtime !== null && runtime.entryPath == null
 
@@ -4821,6 +4825,34 @@ function McpSettings(): JSX.Element {
   )
 }
 
+function normalizeMcpInstructionsPayload(
+  value: McpInstructionsPayload
+): McpInstructionsPayload {
+  const raw = value as McpInstructionsPayload & {
+    custom?: unknown
+    defaults?: unknown
+    effective?: unknown
+  }
+  const defaultValue =
+    typeof raw.defaultValue === 'string'
+      ? raw.defaultValue
+      : typeof raw.defaults === 'string'
+        ? raw.defaults
+        : ''
+  const current =
+    typeof raw.current === 'string'
+      ? raw.current
+      : typeof raw.effective === 'string'
+        ? raw.effective
+        : defaultValue
+  return {
+    defaultValue,
+    current,
+    isCustom: typeof raw.isCustom === 'boolean' ? raw.isCustom : raw.custom != null,
+    filePath: typeof raw.filePath === 'string' ? raw.filePath : ''
+  }
+}
+
 function McpInstructionsEditor(): JSX.Element {
   const [payload, setPayload] = useState<McpInstructionsPayload | null>(null)
   const [draft, setDraft] = useState('')
@@ -4829,7 +4861,7 @@ function McpInstructionsEditor(): JSX.Element {
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      const next = await window.zen.mcpGetInstructions()
+      const next = normalizeMcpInstructionsPayload(await window.zen.mcpGetInstructions())
       setPayload(next)
       setDraft(next.current)
       setError(null)
@@ -4852,7 +4884,7 @@ function McpInstructionsEditor(): JSX.Element {
       // Writing the default string clears the override (null) — users
       // who hit "Reset" and then Save get the cleanest possible state.
       const next = matchesDefault ? null : draft
-      const res = await window.zen.mcpSetInstructions(next)
+      const res = normalizeMcpInstructionsPayload(await window.zen.mcpSetInstructions(next))
       setPayload(res)
       setDraft(res.current)
       setError(null)

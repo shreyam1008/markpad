@@ -1338,11 +1338,11 @@ async function renderTikz(_source: string): Promise<TikzRenderResponse> {
 
 async function mcpGetRuntime(): Promise<McpServerRuntime> {
   return {
-    nodePath: null,
-    scriptPath: null,
-    available: false,
-    reason: 'MCP client installation is only available in the desktop build.'
-  } as unknown as McpServerRuntime
+    command: '',
+    args: [],
+    env: {},
+    entryPath: null
+  }
 }
 
 async function mcpGetStatuses(): Promise<McpClientStatus[]> {
@@ -1358,7 +1358,12 @@ async function mcpUninstall(_id: McpClientId): Promise<McpClientStatus> {
 }
 
 async function mcpGetInstructions(): Promise<McpInstructionsPayload> {
-  return { custom: null, effective: '', defaults: '' } as unknown as McpInstructionsPayload
+  return {
+    defaultValue: '',
+    current: '',
+    isCustom: false,
+    filePath: 'Not available in the web build'
+  }
 }
 
 async function mcpSetInstructions(

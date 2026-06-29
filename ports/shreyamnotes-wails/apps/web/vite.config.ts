@@ -43,15 +43,6 @@ function rendererManualChunk(id: string): string | undefined {
     return 'vendor-editor'
   }
 
-  if (
-    normalizedId.includes('/remark-') ||
-    normalizedId.includes('/rehype-') ||
-    normalizedId.includes('/unified/') ||
-    normalizedId.includes('/unist-util-visit/') ||
-    normalizedId.includes('/katex/')
-  ) {
-    return 'vendor-markdown'
-  }
 
   if (normalizedId.includes('/highlight.js/')) {
     return 'vendor-highlight'
