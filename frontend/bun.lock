@@ -7,7 +7,7 @@
       "dependencies": {
         "dompurify": "latest",
         "highlight.js": "^11.11.1",
-        "marked": "latest",
+        "marked": "18.0.9",
         "react": "latest",
         "react-dom": "latest",
       },

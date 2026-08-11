@@ -120,6 +120,7 @@ type NoteInfo struct {
 	Dirty     bool   `json:"dirty"`
 	Star      bool   `json:"star"`
 	Kind      string `json:"kind"`
+	ViewMode  string `json:"viewMode"`
 	Size      int64  `json:"size"`
 	ScrollTop int    `json:"scrollTop"`
 	ViewTop   int    `json:"viewTop"`
@@ -146,6 +147,9 @@ func (a *App) GetSession() SessionState {
 	state := SessionState{ActiveID: a.sess.ActiveID}
 	for _, doc := range a.sess.Documents {
 		kind, size := fileKindAndSize(doc.Path)
+		if doc.Path == "" {
+			kind = draftKind(doc.Format)
+		}
 		state.Notes = append(state.Notes, NoteInfo{
 			ID:        doc.ID,
 			Title:     doc.Title,
@@ -153,6 +157,7 @@ func (a *App) GetSession() SessionState {
 			Dirty:     doc.Dirty,
 			Star:      a.sess.IsBookmarked(doc.Path),
 			Kind:      kind,
+			ViewMode:  doc.ViewMode,
 			Size:      size,
 			ScrollTop: doc.ScrollTop,
 			ViewTop:   doc.ViewTop,
@@ -209,6 +214,18 @@ func (a *App) SetActive(id string) {
 	}
 }
 
+func (a *App) SetViewMode(id string, mode string) {
+	if mode != "markdown" && mode != "split" && mode != "viewer" {
+		return
+	}
+	doc := a.sess.Find(id)
+	if doc == nil || doc.ViewMode == mode {
+		return
+	}
+	a.sess.RememberViewMode(doc, mode)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+}
+
 func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor int) {
 	doc := a.sess.Find(id)
 	if doc == nil {
@@ -221,12 +238,22 @@ func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor i
 }
 
 func (a *App) NewNote() SessionState {
+	return a.NewNoteOfType("md")
+}
+
+func (a *App) NewNoteOfType(format string) SessionState {
+	format = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(format)), ".")
+	allowed := map[string]bool{"md": true, "txt": true, "json": true, "yaml": true}
+	if !allowed[format] {
+		format = "md"
+	}
 	doc := session.NewDocument("", "")
-	doc.Title = "Untitled"
+	doc.Format = format
+	doc.Title = "Untitled." + format
 	a.sess.Add(doc)
 	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-	runtime.WindowSetTitle(a.ctx, "Markpad - Untitled")
+	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession()
 }
 
@@ -283,6 +310,9 @@ func (a *App) SaveActive(content string) (SessionState, error) {
 		return a.GetSession(), err
 	}
 	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save"))
+	if err := a.store.Save(a.sess); err != nil {
+		return a.GetSession(), err
+	}
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -292,7 +322,7 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 	if doc == nil {
 		return a.GetSession(), fmt.Errorf("no active note")
 	}
-	defaultName := "Untitled.md"
+	defaultName := "Untitled." + draftExtension(doc.Format)
 	if doc.Path != "" {
 		defaultName = filepath.Base(doc.Path)
 	}
@@ -314,7 +344,52 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 	if err := a.store.SaveAs(doc, path, content); err != nil {
 		return a.GetSession(), err
 	}
+	a.sess.RememberViewMode(doc, doc.ViewMode)
 	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save-as"))
+	if err := a.store.Save(a.sess); err != nil {
+		return a.GetSession(), err
+	}
+	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	return a.GetSession(), nil
+}
+
+func (a *App) RenameNote(id string, name string) (SessionState, error) {
+	doc := a.sess.Find(id)
+	if doc == nil || doc.Path == "" {
+		return a.GetSession(), fmt.Errorf("save the draft before renaming it")
+	}
+	name = strings.TrimSpace(name)
+	if name == "" || name == "." || name == ".." || name != filepath.Base(name) || strings.ContainsAny(name, `/\`) {
+		return a.GetSession(), fmt.Errorf("enter a file name, not a path")
+	}
+	oldPath := doc.Path
+	newPath := filepath.Join(filepath.Dir(oldPath), name)
+	if filepath.Clean(newPath) == filepath.Clean(oldPath) {
+		return a.GetSession(), nil
+	}
+	if existing := a.sess.FindFile(newPath); existing != nil && existing.ID != doc.ID {
+		return a.GetSession(), fmt.Errorf("that file is already open")
+	}
+	if _, err := os.Stat(newPath); err == nil {
+		return a.GetSession(), fmt.Errorf("a file named %q already exists", name)
+	} else if !os.IsNotExist(err) {
+		return a.GetSession(), err
+	}
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return a.GetSession(), err
+	}
+
+	oldTitle, oldFormat := doc.Title, doc.Format
+	doc.Path = newPath
+	doc.Title = filepath.Base(newPath)
+	doc.Format = strings.TrimPrefix(strings.ToLower(filepath.Ext(newPath)), ".")
+	replaceSessionPath(a.sess, oldPath, newPath, doc.Title)
+	if err := a.store.Save(a.sess); err != nil {
+		_ = os.Rename(newPath, oldPath)
+		replaceSessionPath(a.sess, newPath, oldPath, oldTitle)
+		doc.Path, doc.Title, doc.Format = oldPath, oldTitle, oldFormat
+		return a.GetSession(), err
+	}
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -360,6 +435,15 @@ func (a *App) openPath(path string) (SessionState, error) {
 	}
 	if info.IsDir() {
 		return a.GetSession(), fmt.Errorf("folders are not supported")
+	}
+	if doc := a.sess.FindFile(path); doc != nil {
+		a.sess.ActiveID = doc.ID
+		a.sess.AddRecent(path)
+		if err := a.store.Save(a.sess); err != nil {
+			return a.GetSession(), err
+		}
+		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		return a.GetSession(), nil
 	}
 	if isReadOnlyPath(path) {
 		doc := a.sess.AddFile(path, "")
@@ -702,6 +786,48 @@ func fileKind(path string) string {
 		return "code"
 	default:
 		return "text"
+	}
+}
+
+func draftKind(format string) string {
+	switch strings.TrimPrefix(strings.ToLower(format), ".") {
+	case "md", "markdown", "mdx", "":
+		return "markdown"
+	case "txt", "log", "csv", "tsv":
+		return "text"
+	default:
+		return "code"
+	}
+}
+
+func draftExtension(format string) string {
+	format = strings.TrimPrefix(strings.ToLower(format), ".")
+	switch format {
+	case "txt", "json", "yaml":
+		return format
+	default:
+		return "md"
+	}
+}
+
+func replaceSessionPath(sess *session.Session, oldPath string, newPath string, title string) {
+	for _, bookmark := range sess.Bookmarks {
+		if filepath.Clean(bookmark.Path) == filepath.Clean(oldPath) {
+			bookmark.Path = newPath
+			bookmark.Title = title
+		}
+	}
+	for _, recent := range sess.RecentFiles {
+		if filepath.Clean(recent.Path) == filepath.Clean(oldPath) {
+			recent.Path = newPath
+			recent.Title = title
+		}
+	}
+	for path, mode := range sess.ViewModes {
+		if filepath.Clean(path) == filepath.Clean(oldPath) {
+			delete(sess.ViewModes, path)
+			sess.ViewModes[filepath.Clean(newPath)] = mode
+		}
 	}
 }
 

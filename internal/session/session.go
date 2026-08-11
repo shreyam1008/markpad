@@ -21,6 +21,8 @@ type Document struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	Path      string    `json:"path,omitempty"`
+	Format    string    `json:"format,omitempty"`
+	ViewMode  string    `json:"view_mode,omitempty"`
 	DraftFile string    `json:"draft_file"`
 	Dirty     bool      `json:"dirty"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -55,6 +57,7 @@ type Session struct {
 	Documents   []*Document   `json:"documents"`
 	Bookmarks   []*Bookmark   `json:"bookmarks,omitempty"`
 	RecentFiles []*RecentFile `json:"recent_files,omitempty"`
+	ViewModes   map[string]string `json:"view_modes,omitempty"`
 	Preferences Preferences   `json:"preferences"`
 }
 
@@ -194,12 +197,22 @@ func (s *Store) SaveAs(doc *Document, path string, content string) error {
 		path = abs
 	}
 	doc.Path = path
+	doc.Format = formatFromPath(path)
 	return s.SaveToDisk(doc, content)
 }
 
 func (sess *Session) Find(id string) *Document {
 	for _, doc := range sess.Documents {
 		if doc.ID == id {
+			return doc
+		}
+	}
+	return nil
+}
+
+func (sess *Session) FindFile(path string) *Document {
+	for _, doc := range sess.Documents {
+		if samePath(doc.Path, path) {
 			return doc
 		}
 	}
@@ -238,11 +251,35 @@ func (sess *Session) AddFile(path string, content string) *Document {
 		}
 	}
 	doc := NewDocument(path, content)
+	doc.ViewMode = sess.ViewModeForPath(path)
 	doc.Dirty = false
 	doc.SavedAt = time.Now()
 	sess.Add(doc)
 	sess.TouchBookmark(path)
 	return doc
+}
+
+func (sess *Session) ViewModeForPath(path string) string {
+	for storedPath, mode := range sess.ViewModes {
+		if samePath(storedPath, path) {
+			return mode
+		}
+	}
+	return ""
+}
+
+func (sess *Session) RememberViewMode(doc *Document, mode string) {
+	if doc == nil {
+		return
+	}
+	doc.ViewMode = mode
+	if doc.Path == "" {
+		return
+	}
+	if sess.ViewModes == nil {
+		sess.ViewModes = make(map[string]string)
+	}
+	sess.ViewModes[filepath.Clean(doc.Path)] = mode
 }
 
 func (sess *Session) BookmarkFile(path string, content string) *Bookmark {
@@ -342,6 +379,7 @@ func NewDocument(path string, content string) *Document {
 		ID:        id,
 		Title:     TitleFromContent(content, path),
 		Path:      path,
+		Format:    formatFromPath(path),
 		DraftFile: id + ".md",
 		Dirty:     path == "" && strings.TrimSpace(content) != "",
 		UpdatedAt: now,
@@ -388,11 +426,27 @@ func normalizeDocument(doc *Document) {
 	if doc.Title == "" {
 		doc.Title = "Untitled"
 	}
+	if doc.Format == "" {
+		doc.Format = formatFromPath(doc.Path)
+	}
+	switch doc.ViewMode {
+	case "", "markdown", "split", "viewer":
+	default:
+		doc.ViewMode = ""
+	}
 	if doc.Path != "" {
 		if abs, err := filepath.Abs(doc.Path); err == nil {
 			doc.Path = abs
 		}
 	}
+}
+
+func formatFromPath(path string) string {
+	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
+	if ext == "" {
+		return "md"
+	}
+	return ext
 }
 
 func normalizeBookmark(bookmark *Bookmark) {

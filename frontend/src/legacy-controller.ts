@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
 import { marked } from "marked";
+import { CommandRegistry, fuzzyMatch } from "./commands";
 window.DOMPurify = DOMPurify;
 window.hljs = hljs;
 window.marked = marked;
@@ -135,12 +136,26 @@ const undoBtn      = $('btn-undo');
 const redoBtn      = $('btn-redo');
 const closeOverlay = $('close-overlay');
 const closeMessage = $('close-message');
+const commandOverlay = $('command-overlay');
+
+// Viewport overlays must live outside the transformed application shell.
+// Otherwise interface zoom scales their fixed-position containing block.
+if (commandOverlay.parentElement !== document.body) {
+  document.body.appendChild(commandOverlay);
+}
 
 // ── File type icons ──────────────────────────────────────
 function fileIcon(path) {
   if (!path) return 'MD';
   const ext = path.split('.').pop().toLowerCase();
-  return (ext || 'TXT').slice(0, 3);
+  const labels = {
+    md: 'MD', markdown: 'MD', mdx: 'MDX',
+    txt: 'TXT', log: 'LOG', csv: 'CSV', tsv: 'TSV',
+    json: 'JSON', yaml: 'YML', yml: 'YML', toml: 'TOML', xml: 'XML',
+    pdf: 'PDF', png: 'IMG', jpg: 'IMG', jpeg: 'IMG', gif: 'GIF', webp: 'IMG',
+    zip: 'ZIP', tar: 'TAR', gz: 'GZ',
+  };
+  return labels[ext] || (ext || 'TXT').slice(0, 3).toUpperCase();
 }
 
 function closeIcon() {
@@ -185,7 +200,8 @@ function isReadOnlyType(type) { return ['pdf', 'ebook', 'office', 'image', 'arch
 function typeLabel(type) { return ({ md: 'Markdown', code: 'Code', text: 'Text', pdf: 'PDF', ebook: 'Ebook', office: 'Office document', image: 'Image', archive: 'Archive' })[type] || 'File'; }
 function escapeHtml(value) { return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-const CODE_LINE_CAP = 5000;
+const CODE_LINE_CAP = 2000;
+const HIGHLIGHT_CHAR_CAP = 200000;
 function renderCode(content, path) {
   const ext = path ? path.split('.').pop().toLowerCase() : '';
   const langMap = { py: 'python', js: 'javascript', ts: 'typescript', jsx: 'javascript', tsx: 'typescript', rs: 'rust', rb: 'ruby', sh: 'bash', bash: 'bash', zsh: 'bash', fish: 'bash', yml: 'yaml', htm: 'html', cfg: 'ini', conf: 'ini', h: 'c', hpp: 'cpp', cs: 'csharp', kt: 'kotlin', ex: 'elixir', exs: 'elixir', pl: 'perl', ps1: 'powershell', bat: 'dos', cmd: 'dos', tf: 'hcl', gradle: 'groovy', svelte: 'xml', vue: 'xml' };
@@ -195,8 +211,8 @@ function renderCode(content, path) {
   const toHighlight = capped ? lines.slice(0, CODE_LINE_CAP).join('\n') : content;
   let highlighted = escapeHtml(toHighlight);
   try {
-    if (window.hljs && lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
-    else if (window.hljs) highlighted = hljs.highlightAuto(toHighlight).value;
+    if (toHighlight.length <= HIGHLIGHT_CHAR_CAP && window.hljs && lang && hljs.getLanguage(lang)) highlighted = hljs.highlight(toHighlight, { language: lang }).value;
+    else if (toHighlight.length <= HIGHLIGHT_CHAR_CAP && window.hljs) highlighted = hljs.highlightAuto(toHighlight).value;
   } catch {}
   const capNote = capped ? `<div style="padding:8px 20px;color:#6b6e68;font-size:12px;border-top:1px solid #e8e6df;">Showing first ${CODE_LINE_CAP} of ${lines.length} lines</div>` : '';
   return `<pre class="hljs" style="margin:0;padding:20px;border-radius:8px;background:#fffffc;font-size:13px;line-height:1.7;overflow:auto;white-space:pre;tab-size:4;"><code class="language-${escapeHtml(lang)}">${highlighted}</code></pre>${capNote}`;
@@ -219,6 +235,10 @@ function renderDocumentCard(note) {
       <p class="doc-note">This format is kept read-only in Markpad to stay tiny, fast, and safe. Open it in your system viewer for full rendering.</p>
       <button class="doc-open" data-open-external="${path.replace(/"/g,'&quot;')}">Open Externally</button>
     </div>`;
+}
+
+function renderPlainText(content) {
+  return '<pre class="plain-text-view">' + escapeHtml(content) + '</pre>';
 }
 
 // ── PDF external handoff ─────────────────────────────
@@ -251,34 +271,49 @@ async function renderImagePreview(note) {
 
 // ── Viewer dispatch ──────────────────────────────────────
 function renderViewer(content, active) {
-  const ft = getFileType(active?.path, active?.kind);
-  const stableKey = `${ft}:${active?.id || ''}:${active?.path || ''}`;
-  if ((ft === 'pdf' || ft === 'image') && viewerRenderKey === stableKey) return;
-  viewerRenderKey = stableKey;
-  if (ft === 'pdf') { renderPdf(active); return; }
-  if (ft === 'image') { renderImagePreview(active); return; }
-  if (ft === 'md') { viewer.innerHTML = renderMd(content); return; }
-  if (isReadOnlyType(ft)) { viewer.innerHTML = renderDocumentCard(active); return; }
-  viewer.innerHTML = renderCode(content, active?.path);
+  try {
+    const ft = getFileType(active?.path, active?.kind);
+    const stableKey = `${ft}:${active?.id || ''}:${active?.path || ''}`;
+    if ((ft === 'pdf' || ft === 'image') && viewerRenderKey === stableKey) return;
+    viewerRenderKey = stableKey;
+    if (ft === 'pdf') { renderPdf(active); return; }
+    if (ft === 'image') { renderImagePreview(active); return; }
+    if (ft === 'md') { viewer.innerHTML = renderMd(content); return; }
+    if (ft === 'text') { viewer.innerHTML = renderPlainText(content); return; }
+    if (isReadOnlyType(ft)) { viewer.innerHTML = renderDocumentCard(active); return; }
+    viewer.innerHTML = renderCode(content, active?.path);
+  } catch (error) {
+    viewerRenderKey = '';
+    const message = error instanceof Error ? error.message : String(error);
+    viewer.innerHTML = '<div class="preview-error"><strong>Preview unavailable</strong><span>' + escapeHtml(message) + '</span><span>Your file is still available in Editor.</span></div>';
+    statusText.textContent = 'Preview failed; file remains editable';
+    console.error('Markpad preview failed', error);
+  }
 }
 
 // ── Markdown ─────────────────────────────────────────────
 const markedRenderer = new marked.Renderer();
-markedRenderer.heading = function(text, level) {
-  const slug = text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
-  return `<h${level} id="${slug}">${text}</h${level}>`;
+markedRenderer.heading = function(token) {
+  const text = this.parser.parseInline(token.tokens);
+  const slug = token.text.toLowerCase().replace(/[^\w]+/g, '-').replace(/(^-|-$)/g, '');
+  return `<h${token.depth} id="${slug}">${text}</h${token.depth}>`;
+};
+markedRenderer.code = function(token) {
+  const language = (token.lang || '').trim().split(/\s+/)[0];
+  let highlighted = escapeHtml(token.text);
+  if (token.text.length <= HIGHLIGHT_CHAR_CAP && token.text.split('\n').length <= CODE_LINE_CAP) {
+    try {
+      if (language && hljs.getLanguage(language)) highlighted = hljs.highlight(token.text, { language }).value;
+      else highlighted = hljs.highlightAuto(token.text).value;
+    } catch {}
+  }
+  const className = language ? ' class="language-' + escapeHtml(language) + '"' : '';
+  return '<pre><code' + className + '>' + highlighted + '</code></pre>\n';
 };
 marked.setOptions({
   renderer: markedRenderer,
   gfm: true,
   breaks: true,
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try { return hljs.highlight(code, { language: lang }).value; } catch {}
-    }
-    try { return hljs.highlightAuto(code).value; } catch {}
-    return code;
-  }
 });
 
 function renderMd(md) {
@@ -415,6 +450,7 @@ function makeFavRow(fav) {
   row.addEventListener('click', async () => {
     if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     try {
+      await flushPendingDraft();
       renderSession(await window.go.main.App.OpenPathFromBookmark(fav.path));
       loadContent(await window.go.main.App.GetActiveContent());
       restoreNoteView();
@@ -425,7 +461,7 @@ function makeFavRow(fav) {
 
 function makeRecentRow(recent) {
   const row = el('div', `group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-hover ${recent.missing ? 'opacity-55' : 'text-muted'}`);
-  const ico = el('span', 'file-badge opacity-70');
+  const ico = el('span', 'file-badge file-badge-' + getFileType(recent.path, recent.kind) + ' opacity-70');
   ico.textContent = fileIcon(recent.path);
   const body = el('div', 'flex-1 min-w-0');
   const t = el('div', 'text-[12px] truncate'); t.textContent = recent.title;
@@ -444,6 +480,7 @@ function makeRecentRow(recent) {
     if (recent.missing) { statusText.textContent = 'Recent file is missing'; return; }
     if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
     try {
+      await flushPendingDraft();
       renderSession(await window.go.main.App.OpenPathFromBookmark(recent.path));
       loadContent(await window.go.main.App.GetActiveContent());
       restoreNoteView();
@@ -469,7 +506,7 @@ function makeNoteRow(note) {
     row.appendChild(star);
   }
 
-  const ico = el('span', 'file-badge');
+  const ico = el('span', 'file-badge file-badge-' + getFileType(note.path, note.kind));
   ico.textContent = fileIcon(note.path);
   row.appendChild(ico);
 
@@ -492,12 +529,7 @@ function makeNoteRow(note) {
   row.appendChild(close);
 
   row.addEventListener('click', async () => {
-    if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
-    await window.go.main.App.SetActive(note.id);
-    activeId = note.id;
-    loadContent(await window.go.main.App.GetNoteContent(note.id));
-    renderSession(await window.go.main.App.GetSession());
-    restoreNoteView();
+    await activateNote(note.id);
   });
 
   row.addEventListener('contextmenu', (e) => {
@@ -510,6 +542,7 @@ function makeNoteRow(note) {
     ctxMenu.querySelector('[data-ctx="info"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="folder"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="copypath"]').style.display = hasPath ? '' : 'none';
+    ctxMenu.querySelector('[data-ctx="rename"]').style.display = hasPath ? '' : 'none';
     ctxMenu.querySelector('[data-ctx="close"]').style.display = '';
     ctxMenu.querySelector('[data-ctx="delete"]').style.display = canDelete && !note.dirty ? '' : 'none';
     ctxMenu.style.left = e.clientX + 'px';
@@ -602,24 +635,43 @@ function loadContent(content) {
 }
 
 function defaultViewForFileType(path, kind) {
-  const ft = getFileType(path, kind);
-  if (isReadOnlyType(ft)) return 'viewer';
-  if (ft === 'md') return 'viewer';
-  if (ft === 'code') return 'viewer';
-  return 'markdown';
+  return 'viewer';
+}
+
+function availableViews(ft) {
+  if (isReadOnlyType(ft)) return ['viewer'];
+  if (ft === 'md') return ['markdown', 'split', 'viewer'];
+  return ['markdown', 'viewer'];
 }
 
 function restoreNoteView() {
   const active = cachedNotes.find(n => n.id === activeId);
   const ft = getFileType(active?.path, active?.kind);
-  const saved = noteViewModes[activeId];
-  if (isReadOnlyType(ft)) {
-    setView('viewer');
-  } else if (ft !== 'md') {
-    setView(saved === 'markdown' ? 'markdown' : 'viewer');
-  } else {
-    setView(saved || 'viewer');
-  }
+  const saved = active?.viewMode || noteViewModes[activeId];
+  const modes = availableViews(ft);
+  setView(modes.includes(saved) ? saved : defaultViewForFileType(active?.path, active?.kind));
+}
+
+async function flushPendingDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = null;
+  if (!activeId) return;
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (!active || isReadOnlyType(getFileType(active.path, active.kind))) return;
+  const dirty = committedDirty || currentContent !== committedContent;
+  await window.go.main.App.UpdateContent(activeId, currentContent, dirty);
+}
+
+async function activateNote(id) {
+  if (!id || id === activeId) return;
+  noteViewModes[activeId] = viewMode;
+  saveScrollPos();
+  await flushPendingDraft();
+  await window.go.main.App.SetActive(id);
+  activeId = id;
+  loadContent(await window.go.main.App.GetNoteContent(id));
+  renderSession(await window.go.main.App.GetSession());
+  restoreNoteView();
 }
 
 function askCloseChoice(note) {
@@ -674,7 +726,13 @@ async function requestCloseNote(note) {
 }
 
 // ── Context menu ─────────────────────────────────────────
-document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
+document.addEventListener('click', (e) => {
+  ctxMenu.classList.add('hidden');
+  if (!e.target.closest('#new-control')) {
+    $('new-menu').classList.add('hidden');
+    $('btn-new-menu-toggle').setAttribute('aria-expanded', 'false');
+  }
+});
 ctxMenu.querySelector('[data-ctx="star"]').addEventListener('click', async () => {
   if (ctxNoteId) renderSession(await window.go.main.App.ToggleStar(ctxNoteId));
 });
@@ -703,6 +761,7 @@ ctxMenu.querySelector('[data-ctx="copypath"]').addEventListener('click', () => {
     navigator.clipboard.writeText(note.path).then(() => { statusText.textContent = 'Path copied'; });
   } else statusText.textContent = 'No file path to copy';
 });
+ctxMenu.querySelector('[data-ctx="rename"]').addEventListener('click', showRename);
 ctxMenu.querySelector('[data-ctx="close"]').addEventListener('click', async () => {
   if (!ctxNoteId) return;
   const note = cachedNotes.find(n => n.id === ctxNoteId);
@@ -722,15 +781,18 @@ function setView(mode) {
   const active = cachedNotes.find(n => n.id === activeId);
   const ft = getFileType(active?.path, active?.kind);
 
-  if (isReadOnlyType(ft)) mode = 'viewer';
-  if (ft !== 'md' && mode === 'split') mode = 'viewer';
+  const modes = availableViews(ft);
+  if (!modes.includes(mode)) mode = modes[0];
 
   viewMode = mode;
   if (activeId) noteViewModes[activeId] = mode;
+  if (active && active.viewMode !== mode) {
+    active.viewMode = mode;
+    window.go.main.App.SetViewMode(active.id, mode).catch(() => {});
+  }
   document.querySelectorAll('.view-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.mode === mode);
-    if (b.dataset.mode === 'split') b.classList.toggle('hidden', ft !== 'md');
-    if (b.dataset.mode === 'markdown') b.classList.toggle('hidden', isReadOnlyType(ft));
+    b.classList.toggle('hidden', !modes.includes(b.dataset.mode));
   });
   const showEditor = mode === 'markdown' || mode === 'split';
   const showViewer = mode === 'viewer' || mode === 'split';
@@ -744,7 +806,7 @@ function setView(mode) {
   saveBtn.classList.toggle('opacity-50', isReadOnlyType(ft));
   $('btn-cancel').classList.toggle('hidden', isReadOnlyType(ft));
   const viewerLabel = document.querySelector('[data-mode="viewer"] span');
-  if (viewerLabel) viewerLabel.textContent = isReadOnlyType(ft) ? 'Document' : ft === 'code' ? 'Code View' : 'Preview';
+  if (viewerLabel) viewerLabel.textContent = ft === 'md' ? 'Preview' : ft === 'code' ? 'Code View' : 'Viewer';
   if (showViewer) {
     renderViewer(currentContent, active);
   }
@@ -762,7 +824,7 @@ document.querySelectorAll('.view-btn').forEach(btn => {
 function cycleView() {
   const active = cachedNotes.find(n => n.id === activeId);
   const ft = getFileType(active?.path, active?.kind);
-  const modes = isReadOnlyType(ft) ? ['viewer'] : ft === 'md' ? ['markdown', 'split', 'viewer'] : ['markdown', 'viewer'];
+  const modes = availableViews(ft);
   setView(modes[(modes.indexOf(viewMode) + 1) % modes.length]);
 }
 
@@ -1278,15 +1340,166 @@ function applyFormat(action) {
   editor.dispatchEvent(new Event('input'));
 }
 
+const commandRegistry = new CommandRegistry();
+let commandPaletteOpen = false;
+let commandSelection = 0;
+let commandMatches = [];
+
+commandRegistry.register(
+  { id: 'file.new-markdown', title: 'New Markdown file', category: 'File', shortcut: 'Ctrl+N', keywords: ['md', 'note'], run: () => doNew('md') },
+  { id: 'file.new-text', title: 'New text file', category: 'File', keywords: ['txt', 'plain'], run: () => doNew('txt') },
+  { id: 'file.new-json', title: 'New JSON file', category: 'File', keywords: ['json', 'data'], run: () => doNew('json') },
+  { id: 'file.new-yaml', title: 'New YAML file', category: 'File', keywords: ['yaml', 'config'], run: () => doNew('yaml') },
+  { id: 'file.open', title: 'Open file', category: 'File', shortcut: 'Ctrl+O', run: doOpen },
+  { id: 'file.save', title: 'Save', category: 'File', shortcut: 'Ctrl+S', run: doSave },
+  { id: 'file.save-as', title: 'Save as', category: 'File', shortcut: 'Ctrl+Shift+S', run: doSaveAs },
+  { id: 'file.rename', title: 'Rename file', category: 'File', shortcut: 'F2', enabled: () => !!cachedNotes.find(n => n.id === activeId)?.path, run: showRename },
+  { id: 'file.close', title: 'Close current file', category: 'File', shortcut: 'Ctrl+W', run: () => requestCloseNote(cachedNotes.find(n => n.id === activeId)) },
+  { id: 'view.editor', title: 'Show editor', category: 'View', shortcut: 'Ctrl+1', enabled: () => availableViews(activeType()).includes('markdown'), run: () => setView('markdown') },
+  { id: 'view.split', title: 'Show split view', category: 'View', shortcut: 'Ctrl+2', enabled: () => availableViews(activeType()).includes('split'), run: () => setView('split') },
+  { id: 'view.preview', title: 'Show preview', category: 'View', shortcut: 'Ctrl+3', enabled: () => availableViews(activeType()).includes('viewer'), run: () => setView('viewer') },
+  { id: 'view.sidebar', title: 'Toggle sidebar', category: 'View', shortcut: 'Ctrl+Shift+B', run: toggleSidebar },
+  { id: 'view.history', title: 'Toggle version history', category: 'View', shortcut: 'Ctrl+H', run: toggleHistory },
+  { id: 'edit.find', title: 'Find in file', category: 'Edit', shortcut: 'Ctrl+F', enabled: () => !isReadOnlyType(activeType()), run: toggleFind },
+  { id: 'edit.undo', title: 'Undo', category: 'Edit', shortcut: 'Ctrl+Z', run: () => stepEditHistory(-1) },
+  { id: 'edit.redo', title: 'Redo', category: 'Edit', shortcut: 'Ctrl+Shift+Z', run: () => stepEditHistory(1) },
+  { id: 'view.zoom-in', title: 'Zoom interface in', category: 'View', shortcut: 'Ctrl++', run: zoomIn },
+  { id: 'view.zoom-out', title: 'Zoom interface out', category: 'View', shortcut: 'Ctrl+-', run: zoomOut },
+  { id: 'view.zoom-reset', title: 'Reset interface zoom', category: 'View', shortcut: 'Ctrl+0', run: zoomReset },
+);
+
+function appendFuzzyText(target, value, indices) {
+  const matched = new Set(indices || []);
+  for (let index = 0; index < value.length; index++) {
+    if (!matched.has(index)) {
+      target.appendChild(document.createTextNode(value[index]));
+      continue;
+    }
+    const mark = el('mark', 'command-match');
+    mark.textContent = value[index];
+    target.appendChild(mark);
+  }
+}
+
+function renderCommandResults() {
+  const results = $('command-results');
+  const rawQuery = $('command-input').value.toLowerCase().trim();
+  const actionsOnly = rawQuery.startsWith('>');
+  const query = actionsOnly ? rawQuery.slice(1).trim() : rawQuery;
+  const documentMatches = (actionsOnly ? [] : cachedNotes)
+    .map(note => {
+      const title = note.title || 'Untitled';
+      const category = note.id === activeId ? 'Current file' : (note.path || 'Unsaved draft');
+      const titleMatch = fuzzyMatch(query, title);
+      const fullMatch = titleMatch || fuzzyMatch(query, title + ' ' + category);
+      if (!fullMatch) return null;
+      return {
+        id: 'document.' + note.id,
+        title,
+        category,
+        shortcut: '',
+        kind: 'file',
+        score: fullMatch.score + (titleMatch ? 20 : 0),
+        matchIndices: titleMatch?.indices || [],
+        run: () => activateNote(note.id),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score);
+  const actionMatches = commandRegistry.available(query).map(command => ({
+    ...command,
+    kind: 'action',
+    matchIndices: fuzzyMatch(query, command.title)?.indices || [],
+  }));
+  commandMatches = [...documentMatches, ...actionMatches];
+  commandSelection = Math.max(0, Math.min(commandSelection, commandMatches.length - 1));
+  results.replaceChildren();
+  if (commandMatches.length === 0) {
+    const empty = el('div', 'command-empty');
+    empty.textContent = 'No matching commands';
+    results.appendChild(empty);
+    return;
+  }
+  let previousKind = '';
+  commandMatches.forEach((command, index) => {
+    if (command.kind !== previousKind) {
+      const section = el('div', 'command-section');
+      section.textContent = command.kind === 'file' ? 'Files' : 'Actions';
+      results.appendChild(section);
+      previousKind = command.kind;
+    }
+    const button = el('button', 'command-item' + (index === commandSelection ? ' active' : ''));
+    button.type = 'button';
+    button.dataset.commandIndex = String(index);
+    const badge = el('span', 'command-kind ' + command.kind);
+    badge.textContent = command.kind === 'file' ? 'FILE' : 'ACTION';
+    const text = el('span');
+    const title = el('span', 'command-item-title'); appendFuzzyText(title, command.title, command.matchIndices);
+    const category = el('span', 'command-item-category'); category.textContent = command.category;
+    text.append(title, category);
+    const shortcut = el('kbd'); shortcut.textContent = command.shortcut || '';
+    button.append(badge, text, shortcut);
+    button.addEventListener('click', () => runPaletteCommand(command));
+    results.appendChild(button);
+  });
+  results.querySelector('[data-command-index="' + commandSelection + '"]')?.scrollIntoView({ block: 'nearest' });
+}
+
+function openCommandPalette() {
+  commandPaletteOpen = true;
+  commandSelection = 0;
+  $('command-input').value = '';
+  $('command-overlay').classList.remove('hidden');
+  renderCommandResults();
+  requestAnimationFrame(() => $('command-input').focus());
+}
+
+function closeCommandPalette() {
+  commandPaletteOpen = false;
+  $('command-overlay').classList.add('hidden');
+}
+
+async function runPaletteCommand(id) {
+  closeCommandPalette();
+  await id.run();
+}
+
+$('command-input').addEventListener('input', () => { commandSelection = 0; renderCommandResults(); });
+$('command-input').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); commandSelection = Math.min(commandSelection + 1, commandMatches.length - 1); renderCommandResults(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); commandSelection = Math.max(commandSelection - 1, 0); renderCommandResults(); }
+  else if (e.key === 'Enter' && commandMatches[commandSelection]) { e.preventDefault(); runPaletteCommand(commandMatches[commandSelection]); }
+  else if (e.key === 'Escape') { e.preventDefault(); closeCommandPalette(); }
+  e.stopPropagation();
+});
+commandOverlay.addEventListener('click', (e) => { if (e.target === commandOverlay) closeCommandPalette(); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Control' || e.key === 'Meta') document.body.classList.add('shortcuts-visible');
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Control' || e.key === 'Meta') document.body.classList.remove('shortcuts-visible');
+});
+window.addEventListener('blur', () => document.body.classList.remove('shortcuts-visible'));
+
 // ── Shortcuts ────────────────────────────────────────────
-document.addEventListener('keydown', async (e) => {
+window.addEventListener('keydown', async (e) => {
   const ctrl = e.ctrlKey || e.metaKey, shift = e.shiftKey, key = e.key;
-  if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
+  const viewKey = ({ Digit1: '1', Numpad1: '1', Digit2: '2', Numpad2: '2', Digit3: '3', Numpad3: '3' })[e.code] || key;
+  if (commandPaletteOpen) return;
+  if (ctrl && key.toLowerCase() === 'p') { e.preventDefault(); openCommandPalette(); }
+  else if (key === 'F2') { e.preventDefault(); await showRename(); }
+  else if (ctrl && !shift && key.toLowerCase() === 'z' && document.activeElement === editor) { e.preventDefault(); stepEditHistory(-1); }
   else if (ctrl && (key.toLowerCase() === 'y' || (shift && key.toLowerCase() === 'z')) && document.activeElement === editor) { e.preventDefault(); stepEditHistory(1); }
   else if (ctrl && !shift && key === 's') { e.preventDefault(); await doSave(); }
   else if (ctrl && shift && key === 'S') { e.preventDefault(); await doSaveAs(); }
   else if (ctrl && !shift && key === 'n') { e.preventDefault(); await doNew(); }
   else if (ctrl && !shift && key === 'o') { e.preventDefault(); await doOpen(); }
+  else if (ctrl && (key === 'Tab' || e.code === 'Tab')) { e.preventDefault(); await cycleDocument(shift ? -1 : 1); }
+  else if (ctrl && !shift && ['1', '2', '3'].includes(viewKey)) {
+    e.preventDefault();
+    setView(({ '1': 'markdown', '2': 'split', '3': 'viewer' })[viewKey]);
+  }
   else if (ctrl && !shift && key.toLowerCase() === 'w') { e.preventDefault(); await requestCloseNote(cachedNotes.find(n => n.id === activeId)); }
   else if (ctrl && !shift && key.toLowerCase() === 'q') { e.preventDefault(); if (window.runtime && window.runtime.Quit) window.runtime.Quit(); }
   else if (ctrl && shift && key === 'E') { e.preventDefault(); cycleView(); }
@@ -1313,7 +1526,7 @@ document.addEventListener('keydown', async (e) => {
       loadContent(await window.go.main.App.GetActiveContent());
     }
   }
-});
+}, true);
 
 // Ctrl+scroll zoom
 let textZoomWheelDelta = 0;
@@ -1367,31 +1580,92 @@ async function doSaveAs() {
   } catch (err) { statusText.textContent = 'Save As failed: ' + err; }
 }
 
-async function doNew() {
+async function doNew(format = 'md') {
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
-    renderSession(await window.go.main.App.NewNote());
+    await flushPendingDraft();
+    renderSession(await window.go.main.App.NewNoteOfType(format));
     loadContent('');
     setView('markdown');
     editor.focus();
-    statusText.textContent = 'New note';
+    statusText.textContent = 'New ' + format.toUpperCase() + ' file';
   } catch (err) { statusText.textContent = 'Error: ' + err; }
 }
 
 async function doOpen() {
   if (activeId) { noteViewModes[activeId] = viewMode; saveScrollPos(); }
   try {
+    await flushPendingDraft();
     renderSession(await window.go.main.App.OpenFileDialog());
     loadContent(await window.go.main.App.GetActiveContent());
     const active = cachedNotes.find(n => n.id === activeId);
-    setView(defaultViewForFileType(active?.path, active?.kind));
+    restoreNoteView();
     statusText.textContent = `Opened ${typeLabel(getFileType(active?.path, active?.kind))}`;
   } catch (err) { statusText.textContent = 'Open failed: ' + err; }
 }
 
+async function cycleDocument(direction) {
+  if (cachedNotes.length < 2 || cycleDocument.busy) return;
+  cycleDocument.busy = true;
+  try {
+    const current = cachedNotes.findIndex(note => note.id === activeId);
+    const next = (current + direction + cachedNotes.length) % cachedNotes.length;
+    await activateNote(cachedNotes[next].id);
+  } finally {
+    setTimeout(() => { cycleDocument.busy = false; }, 80);
+  }
+}
+cycleDocument.busy = false;
+
+async function showRename() {
+  const active = cachedNotes.find(n => n.id === activeId);
+  if (!active?.path) { statusText.textContent = 'Save the draft before renaming it'; return; }
+  showModal('Rename file',
+    '<form id="rename-form">' +
+      '<label for="rename-input" style="display:block;margin-bottom:6px;font-size:11px;font-weight:700;color:#6b6e68;">File name</label>' +
+      '<input id="rename-input" style="width:100%;border:1px solid #d8d6ce;border-radius:9px;background:#fffffc;padding:9px 11px;outline:none;font-size:13px;" autocomplete="off" />' +
+      '<p style="margin:7px 0 13px;color:#6b6e68;font-size:11px;">The file stays in the same folder. Changing the extension changes how Markpad opens it.</p>' +
+      '<div style="display:flex;justify-content:flex-end;gap:7px;">' +
+        '<button type="button" id="rename-cancel" class="confirm-btn">Cancel</button>' +
+        '<button type="submit" class="confirm-btn primary">Rename</button>' +
+      '</div>' +
+    '</form>');
+  const input = $('rename-input');
+  input.value = active.title;
+  input.select();
+  $('rename-cancel').addEventListener('click', () => modalOverlay.classList.add('hidden'));
+  $('rename-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+      await flushPendingDraft();
+      const state = await window.go.main.App.RenameNote(active.id, name);
+      renderSession(state);
+      restoreNoteView();
+      modalOverlay.classList.add('hidden');
+      statusText.textContent = 'Renamed to ' + name;
+    } catch (err) { statusText.textContent = 'Rename failed: ' + err; }
+  });
+}
+
 // ── Buttons ──────────────────────────────────────────────
-$('btn-new').addEventListener('click', doNew);
-$('btn-new-mini').addEventListener('click', doNew);
+$('btn-new').addEventListener('click', () => doNew('md'));
+$('btn-new-mini').addEventListener('click', () => doNew('md'));
+$('btn-new-menu-toggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const menu = $('new-menu');
+  const opening = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !opening);
+  $('btn-new-menu-toggle').setAttribute('aria-expanded', String(opening));
+});
+$('new-menu').querySelectorAll('[data-new-format]').forEach(button => {
+  button.addEventListener('click', () => {
+    $('new-menu').classList.add('hidden');
+    $('btn-new-menu-toggle').setAttribute('aria-expanded', 'false');
+    doNew(button.dataset.newFormat);
+  });
+});
 $('btn-fileinfo').addEventListener('click', showFileInfo);
 saveBtn.addEventListener('click', doSave);
 undoBtn.addEventListener('click', () => stepEditHistory(-1));
@@ -1439,6 +1713,17 @@ async function showFileInfo() {
     </table>
     ${info.path ? '<div style="margin-top:12px;text-align:center;"><button data-open-folder="' + info.path.replace(/"/g, '&quot;') + '" style="border:none;background:#2f6f61;color:#fffffb;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Open Folder</button></div>' : ''}
   `);
+  if (info.path) {
+    const renameButton = el('button', 'confirm-btn');
+    renameButton.type = 'button';
+    renameButton.textContent = 'Rename';
+    renameButton.style.marginLeft = '7px';
+    renameButton.addEventListener('click', () => {
+      modalOverlay.classList.add('hidden');
+      showRename();
+    });
+    modalBodyEl.querySelector('[data-open-folder]')?.parentElement?.appendChild(renameButton);
+  }
 }
 
 async function showPreferences() {
@@ -1534,7 +1819,7 @@ function showChangelog() {
 // ── Wails events ─────────────────────────────────────────
 function registerEvents() {
   if (!window.runtime) return;
-  window.runtime.EventsOn('menu:new', doNew);
+  window.runtime.EventsOn('menu:new', () => doNew('md'));
   window.runtime.EventsOn('menu:open', doOpen);
   window.runtime.EventsOn('menu:save', doSave);
   window.runtime.EventsOn('menu:saveas', doSaveAs);
@@ -1542,6 +1827,11 @@ function registerEvents() {
   window.runtime.EventsOn('menu:undo', () => stepEditHistory(-1));
   window.runtime.EventsOn('menu:redo', () => stepEditHistory(1));
   window.runtime.EventsOn('menu:toggleview', cycleView);
+  window.runtime.EventsOn('menu:nextfile', () => cycleDocument(1));
+  window.runtime.EventsOn('menu:previousfile', () => cycleDocument(-1));
+  window.runtime.EventsOn('menu:vieweditor', () => setView('markdown'));
+  window.runtime.EventsOn('menu:viewsplit', () => setView('split'));
+  window.runtime.EventsOn('menu:viewpreview', () => setView('viewer'));
   window.runtime.EventsOn('menu:togglesidebar', toggleSidebar);
   window.runtime.EventsOn('menu:find', toggleFind);
   window.runtime.EventsOn('menu:history', toggleHistory);
@@ -1552,6 +1842,7 @@ function registerEvents() {
   window.runtime.EventsOn('menu:fileinfo', showFileInfo);
   window.runtime.EventsOn('menu:changelog', showChangelog);
   window.runtime.EventsOn('secondInstance', async () => {
+    await flushPendingDraft();
     renderSession(await window.go.main.App.GetSession());
     loadContent(await window.go.main.App.GetActiveContent());
     restoreNoteView();

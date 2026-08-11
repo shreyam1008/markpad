@@ -5,8 +5,17 @@
       <!-- Sidebar expanded content -->
       <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
         <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
-          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div id="new-control" class="relative flex">
+            <button id="btn-new" data-shortcut="Ctrl N" class="px-3 py-1.5 rounded-l-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New Markdown note (Ctrl+N)">+ New</button>
+            <button id="btn-new-menu-toggle" class="px-2 rounded-r-lg border-l border-white/20 bg-accent text-accent-text text-[10px] hover:bg-accent-hover" title="Choose file type" aria-label="Choose new file type" aria-expanded="false">▾</button>
+            <div id="new-menu" class="hidden absolute left-0 top-[calc(100%+6px)] z-50 w-44 rounded-xl border border-border bg-surface p-1 shadow-lg">
+              <button data-new-format="md" class="new-type-item"><span>Markdown</span><kbd>.md</kbd></button>
+              <button data-new-format="txt" class="new-type-item"><span>Plain text</span><kbd>.txt</kbd></button>
+              <button data-new-format="json" class="new-type-item"><span>JSON</span><kbd>.json</kbd></button>
+              <button data-new-format="yaml" class="new-type-item"><span>YAML</span><kbd>.yaml</kbd></button>
+            </div>
+          </div>
+          <button id="btn-collapse" data-shortcut="Ctrl Shift B" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-2 pb-2">
@@ -38,7 +47,7 @@
       <!-- Sidebar collapsed content -->
       <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
         <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note">+</button>
+        <button id="btn-new-mini" data-shortcut="Ctrl N" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New Markdown note">+</button>
       </div>
     </aside>
 
@@ -52,7 +61,7 @@
           <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info">i</button>
           <span id="dirty-indicator" class="hidden text-[13px] font-bold text-unsaved whitespace-nowrap animate-pulse">NOT SAVED</span>
         </div>
-        <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
+        <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group" data-shortcut="Ctrl Shift E">
           <button data-mode="markdown" class="view-btn" title="Editor only">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
             <span>Editor</span>
@@ -67,11 +76,11 @@
           </button>
         </div>
         <div class="flex gap-1.5">
-          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
-          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
+          <button id="btn-undo" data-shortcut="Ctrl Z" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
+          <button id="btn-redo" data-shortcut="Ctrl Shift Z" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
           <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
-          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
-          <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
+          <button id="btn-save" data-shortcut="Ctrl S" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
+          <button id="btn-history" data-shortcut="Ctrl H" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           </button>
         </div>
@@ -124,7 +133,7 @@
 
         <div id="resize-divider" class="hidden w-1 cursor-col-resize bg-border hover:bg-accent transition-colors flex-shrink-0" title="Drag to resize"></div>
 
-        <div id="viewer-container" class="hidden flex-1 overflow-y-auto p-3">
+        <div id="viewer-container" class="hidden flex-1 overflow-auto overscroll-contain p-3">
           <div id="viewer" class="markdown-body bg-editor rounded-lg p-6 min-h-full text-[1.07rem] leading-7 select-text"></div>
         </div>
       </div>
@@ -162,6 +171,7 @@
     <button data-ctx="info" class="ctx-item">File Info</button>
     <button data-ctx="folder" class="ctx-item">Open Folder</button>
     <button data-ctx="copypath" class="ctx-item">Copy Path</button>
+    <button data-ctx="rename" class="ctx-item">Rename</button>
     <div class="mx-2 my-0.5 border-t border-border-soft"></div>
     <button data-ctx="close" class="ctx-item">Close</button>
     <button data-ctx="delete" class="ctx-item text-danger">Delete</button>
@@ -175,6 +185,21 @@
         <button id="modal-close" class="text-muted hover:text-[#1a1c1b] text-xl leading-none px-1">&times;</button>
       </div>
       <div id="modal-body" class="px-5 py-4 text-[13px] leading-6 text-[#3d403e] max-h-[50vh] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <div id="command-overlay" class="hidden fixed inset-0 z-[70] bg-black/20 px-4 pt-[10vh]" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div id="command-panel" class="mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-surface shadow-xl">
+      <div class="command-search-row">
+        <span class="command-prompt">›</span>
+        <input id="command-input" class="h-12 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted" placeholder="Search files and actions" autocomplete="off" spellcheck="false" />
+        <kbd class="command-escape">Esc</kbd>
+      </div>
+      <div id="command-results" class="max-h-[52vh] overflow-y-auto p-1.5"></div>
+      <div class="command-footer">
+        <span><kbd>↑</kbd><kbd>↓</kbd> move <span class="command-footer-sep">·</span> <kbd>Enter</kbd> open</span>
+        <span>Files + Actions</span>
+      </div>
     </div>
   </div>
 
@@ -192,4 +217,3 @@
       </div>
     </div>
   </div>
-

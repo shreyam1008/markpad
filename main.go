@@ -67,6 +67,21 @@ func main() {
 	viewMenu.AddText("Cycle View Mode", keys.Combo("e", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:toggleview")
 	})
+	viewMenu.AddText("Next Open File", keys.CmdOrCtrl("tab"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:nextfile")
+	})
+	viewMenu.AddText("Previous Open File", keys.Combo("tab", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:previousfile")
+	})
+	viewMenu.AddText("Editor View", keys.CmdOrCtrl("1"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:vieweditor")
+	})
+	viewMenu.AddText("Split View", keys.CmdOrCtrl("2"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:viewsplit")
+	})
+	viewMenu.AddText("Preview View", keys.CmdOrCtrl("3"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:viewpreview")
+	})
 	viewMenu.AddText("Toggle Sidebar", keys.Combo("b", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:togglesidebar")
 	})
