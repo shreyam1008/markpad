@@ -7,6 +7,17 @@
 
   <link rel="stylesheet" href="src/tailwind.css" />
 
+  <link rel="stylesheet" href="vendor/github-markdown-light.min.css" />
+  <link rel="stylesheet" href="vendor/github.min.css" />
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script src="vendor/lua.min.js" defer></script>
+  <script src="vendor/dart.min.js" defer></script>
+  <script src="vendor/dockerfile.min.js" defer></script>
+  <script src="vendor/cmake.min.js" defer></script>
+  <script src="vendor/elixir.min.js" defer></script>
+  <script src="vendor/nim.min.js" defer></script>
+  <script src="vendor/purify.min.js"></script>
   <link rel="stylesheet" href="src/styles.css" />
 </head>
 <body class="h-screen w-screen overflow-hidden bg-[#f4f2ed] text-[#1a1c1b] font-sans text-sm antialiased select-none">
@@ -17,8 +28,8 @@
       <!-- Sidebar expanded content -->
       <div id="sidebar-expanded-content" class="flex flex-col h-full w-full transition-opacity duration-150 opacity-100">
         <div class="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="Create note (.md), canvas, tasks, or text file (Ctrl+N)" aria-label="Create note (.md), canvas, tasks, or text file" aria-haspopup="menu" aria-expanded="false">+ New ▾</button>
-          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button id="btn-new" class="px-3 py-1.5 rounded-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover transition-colors" title="New note (Ctrl+N)">+ New</button>
+          <button id="btn-collapse" class="icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-2 pb-2">
@@ -45,133 +56,12 @@
             <div id="recent-list" data-section-body="recent" class="space-y-0.5"></div>
           </div>
         </div>
-
-        <div id="sidebar-workflow" class="sidebar-workflow flex-shrink-0" aria-label="Workflow shortcuts">
-          <button id="side-files" class="sidebar-workflow-primary" type="button" title="Local workspace and files">
-            <span>Workspace</span>
-            <strong>Files first</strong>
-            <small>Local folder, recent files, notes</small>
-          </button>
-          <div class="sidebar-workflow-grid" aria-label="Files, tasks, and canvas">
-            <button id="side-tasks" class="sidebar-workflow-action" type="button" title="Task workflows" aria-haspopup="menu" aria-expanded="false">
-              <b>T</b>
-              <span>Tasks</span>
-            </button>
-            <button id="side-canvas" class="sidebar-workflow-action" type="button" title="Canvas workflows" aria-haspopup="menu" aria-expanded="false">
-              <b>C</b>
-              <span>Canvas</span>
-            </button>
-          </div>
-          <div class="sidebar-workflow-utils" aria-label="Search, commands, help, and settings">
-            <button id="side-search" type="button" title="Search loaded files">Search</button>
-            <button id="side-command" type="button" title="Command palette">Commands</button>
-            <button id="side-help" type="button" title="Help">Help</button>
-            <button id="side-settings" type="button" title="Preferences">Settings</button>
-          </div>
-        </div>
       </div>
 
       <!-- Sidebar collapsed content -->
       <div id="sidebar-collapsed-content" class="absolute inset-0 flex flex-col items-center py-3 gap-2 transition-opacity duration-150 opacity-0 pointer-events-none">
-        <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
-        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="Create note (.md), canvas, tasks, or text file" aria-label="Create note (.md), canvas, tasks, or text file" aria-haspopup="menu" aria-expanded="false">+</button>
-        <button id="side-files-mini" class="icon-btn sidebar-rail-btn" title="Local workspace" aria-label="Local workspace"><span>F</span></button>
-        <button id="side-tasks-mini" class="icon-btn sidebar-rail-btn" title="Task workflows" aria-label="Task workflows" aria-haspopup="menu" aria-expanded="false"><span>T</span></button>
-        <button id="side-canvas-mini" class="icon-btn sidebar-rail-btn" title="Canvas workflows" aria-label="Canvas workflows" aria-haspopup="menu" aria-expanded="false"><span>C</span></button>
-        <button id="side-search-mini" class="icon-btn sidebar-rail-btn" title="Search" aria-label="Search"><span>/</span></button>
-        <button id="side-command-mini" class="icon-btn sidebar-rail-btn" title="Commands" aria-label="Commands"><span>⌘</span></button>
-      </div>
-      <div id="create-menu" class="create-menu hidden" role="menu" aria-label="Create local file">
-        <div class="create-menu-kicker">Local-first</div>
-        <div class="create-menu-section-label">Primary files</div>
-        <button type="button" role="menuitem" data-create-kind="note" data-menu-chip=".MD">
-          <strong>Note</strong>
-          <span>Default Markdown note. Uses the local folder when ready, otherwise an unsaved draft</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="canvas" data-menu-chip="CANVAS">
-          <strong>Canvas file</strong>
-          <span>Create a local <code>.markcanvas.json</code>; use Canvas workflows for scratch boards</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="task" data-menu-chip="TASKS">
-          <strong>Tasks</strong>
-          <span>Open or create local <code>Tasks.md</code>, then show list/calendar/kanban views</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="other" data-menu-chip="TXT">
-          <strong>Other text file</strong>
-          <span>Create <code>.txt</code>, JSON, CSV, code, or config text files in the local folder</span>
-        </button>
-        <div class="create-menu-section-label">Markdown templates</div>
-        <button type="button" role="menuitem" data-create-kind="daily" data-menu-chip="TODAY">
-          <strong>Daily note</strong>
-          <span>Today in the local folder</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="weekly" data-menu-chip="WEEK">
-          <strong>Weekly note</strong>
-          <span>This week in the local folder</span>
-        </button>
-        <div class="create-menu-section-label">Workspace</div>
-        <button type="button" role="menuitem" data-create-kind="open-folder" data-menu-chip="DIR">
-          <strong>Open folder</strong>
-          <span>Reveal the configured local workspace</span>
-        </button>
-        <button type="button" role="menuitem" data-create-kind="search-folder" data-menu-chip="FIND">
-          <strong>Search folder</strong>
-          <span>Find text in the configured local workspace</span>
-        </button>
-      </div>
-      <div id="task-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Task workflows">
-        <div class="create-menu-kicker">Tasks.md views</div>
-        <button type="button" role="menuitem" data-task-workflow="list">
-          <strong>List</strong>
-          <span>Open tasks as sortable Markdown rows</span>
-        </button>
-        <button type="button" role="menuitem" data-task-workflow="calendar">
-          <strong>Calendar</strong>
-          <span>Group task lines by due: date</span>
-        </button>
-        <button type="button" role="menuitem" data-task-workflow="kanban">
-          <strong>Kanban</strong>
-          <span>Board view over the same checkbox lines</span>
-        </button>
-        <button type="button" role="menuitem" data-task-workflow="quick">
-          <strong>Quick task</strong>
-          <span>Append to Tasks.md or a local draft</span>
-        </button>
-        <button type="button" role="menuitem" data-task-workflow="setup">
-          <strong>Task setup</strong>
-          <span>Starters, source profile, and exports</span>
-        </button>
-      </div>
-      <div id="canvas-workflow-menu" class="workflow-menu hidden" role="menu" aria-label="Canvas workflows">
-        <div class="create-menu-kicker">Canvas files</div>
-        <button type="button" role="menuitem" data-canvas-workflow="new" data-menu-chip="NEW">
-          <strong>New canvas file</strong>
-          <span>Create .markcanvas.json in local folder</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="draft" data-menu-chip="OPEN">
-          <strong>Open canvas</strong>
-          <span>Load active .markcanvas.json, otherwise scratch</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="save-file" data-menu-chip="FILE">
-          <strong>Save canvas file</strong>
-          <span>Save current canvas to local .markcanvas.json</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="export-native" data-menu-chip="NATIVE">
-          <strong>Export .markcanvas</strong>
-          <span>Download the native canvas file from scratch or active board</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="write" data-menu-chip="SAVE">
-          <strong>Write active</strong>
-          <span>Write canvas JSON to active .markcanvas.json/JSON/draft</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="draft-file" data-menu-chip="DRAFT">
-          <strong>Save draft JSON</strong>
-          <span>Create an editable canvas JSON draft</span>
-        </button>
-        <button type="button" role="menuitem" data-canvas-workflow="workspace-map" data-menu-chip="MAP">
-          <strong>Loaded files map</strong>
-          <span>Send open files to canvas cards</span>
-        </button>
+        <button id="btn-expand" class="icon-btn" title="Expand sidebar" aria-label="Expand sidebar"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button id="btn-new-mini" class="p-1.5 rounded-lg bg-accent text-accent-text text-xs font-bold hover:bg-accent-hover transition-colors w-7 h-7 flex items-center justify-center" title="New note">+</button>
       </div>
     </aside>
 
@@ -182,81 +72,66 @@
       <div class="flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
         <div class="flex items-center gap-2 min-w-0">
           <span id="note-title" class="font-semibold text-sm truncate max-w-[220px]">Untitled</span>
-          <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info" aria-label="File info">i</button>
+          <button id="btn-fileinfo" class="w-5 h-5 rounded-full border border-border text-[10px] font-bold text-muted hover:text-accent hover:border-accent transition-colors flex-shrink-0 flex items-center justify-center" title="File info">i</button>
           <span id="dirty-indicator" class="hidden text-[13px] font-bold text-unsaved whitespace-nowrap animate-pulse">NOT SAVED</span>
         </div>
         <div class="flex gap-0.5 bg-hover rounded-lg p-0.5" id="view-mode-group">
-          <button data-mode="markdown" class="view-btn" title="Editor only" aria-pressed="false">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
+          <button data-mode="markdown" class="view-btn" title="Editor only">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M4 6h8M4 9h5"/></svg>
             <span>Editor</span>
           </button>
-          <button data-mode="split" class="view-btn" title="Split view" aria-pressed="false">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
+          <button data-mode="split" class="view-btn" title="Split view">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><line x1="8" y1="2" x2="8" y2="14"/></svg>
             <span>Split</span>
           </button>
-          <button data-mode="viewer" class="view-btn active" title="Preview only" aria-pressed="true">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+          <button data-mode="viewer" class="view-btn active" title="Preview only">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
             <span>Preview</span>
           </button>
         </div>
-        <div id="split-preset-group" class="split-preset-group hidden" aria-label="Split view width presets">
-          <button id="split-live-chip" class="split-live-chip" type="button" data-split-ratio="50" aria-live="polite" aria-label="Reset split view to 50/50" title="Reset split view to 50/50">50/50</button>
-          <button data-split-ratio="38" title="Editor narrow, preview wide" aria-pressed="false">38</button>
-          <button data-split-ratio="50" title="Balanced split" aria-pressed="true">50</button>
-          <button data-split-ratio="62" title="Editor wide, preview narrow" aria-pressed="false">62</button>
-          <button data-split-swap title="Swap editor and preview widths" aria-pressed="false">Swap</button>
-        </div>
         <div class="flex gap-1.5">
-          <button id="btn-search-all" class="icon-btn" title="Search loaded files (Ctrl+Shift+F)" aria-label="Search loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/><path d="M8 11h6"/></svg></button>
-          <button id="btn-command" class="icon-btn" title="Command palette (Ctrl+P)" aria-label="Command palette"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/><path d="m16 10 3 2-3 2"/></svg></button>
-          <button id="btn-tasks" class="icon-btn" title="Tasks from loaded files" aria-label="Tasks from loaded files"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/><path d="M8 17h8"/></svg></button>
-          <button id="btn-canvas" class="icon-btn" title="Open canvas" aria-label="Open canvas" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16v12H4z"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m8 13 3-3 2 2 3-5"/></svg></button>
-          <button id="btn-focus" class="icon-btn" title="Focus mode (Ctrl+Shift+L)" aria-label="Focus mode"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M9 12h6"/></svg></button>
-          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
-          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
-          <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes" aria-label="Revert changes">Cancel</button>
-          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)" aria-label="Save current file">Save</button>
+          <button id="btn-undo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg></button>
+          <button id="btn-redo" class="icon-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0-6 6v1"/></svg></button>
+          <button id="btn-cancel" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Revert changes">Cancel</button>
+          <button id="btn-save" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover transition-colors" title="Save (Ctrl+S)">Save</button>
           <button id="btn-history" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border transition-colors" title="Version history (Ctrl+H)">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           </button>
-          <button id="btn-theme" class="theme-chip" data-theme-mode="light" title="Paper (light) - Default low-glare writing surface" aria-label="Theme: Paper, light. Default low-glare writing surface">Paper</button>
         </div>
       </div>
 
 
       <!-- Formatting toolbar -->
-      <div id="toolbar" class="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto" role="toolbar" aria-label="Markdown formatting toolbar">
-        <button data-action="bold" title="Bold (Ctrl+B)" aria-label="Bold" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M4 2h4.5a3 3 0 011.93 5.3A3.5 3.5 0 019 14H4V2zm2 5h2.5a1 1 0 000-2H6v2zm0 2v3h3a1.5 1.5 0 000-3H6z"/></svg></button>
-        <button data-action="italic" title="Italic (Ctrl+I)" aria-label="Italic" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M6 2h6v2h-2.2l-2.6 8H9v2H3v-2h2.2l2.6-8H6V2z"/></svg></button>
-        <button data-action="strikethrough" title="Strikethrough" aria-label="Strikethrough" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M1 8h14v1.5H1V8zm4.3-4.8A3.2 3.2 0 018 2c1.6 0 3 .9 3.3 2.3l-1.5.3C9.5 3.6 8.8 3.2 8 3.2c-.7 0-1.4.3-1.5 1 0 .3.1.5.3.7H5a2.5 2.5 0 01.3-1.7zM8 12.8c.8 0 1.5-.4 1.7-1.1l1.5.3C10.8 13.3 9.5 14 8 14a3.5 3.5 0 01-2.8-1.3h1.6c.3.1.7.1 1.2.1z"/></svg></button>
+      <div id="toolbar" class="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
+        <button data-action="bold" title="Bold (Ctrl+B)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h4.5a3 3 0 011.93 5.3A3.5 3.5 0 019 14H4V2zm2 5h2.5a1 1 0 000-2H6v2zm0 2v3h3a1.5 1.5 0 000-3H6z"/></svg></button>
+        <button data-action="italic" title="Italic (Ctrl+I)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 2h6v2h-2.2l-2.6 8H9v2H3v-2h2.2l2.6-8H6V2z"/></svg></button>
+        <button data-action="strikethrough" title="Strikethrough" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 8h14v1.5H1V8zm4.3-4.8A3.2 3.2 0 018 2c1.6 0 3 .9 3.3 2.3l-1.5.3C9.5 3.6 8.8 3.2 8 3.2c-.7 0-1.4.3-1.5 1 0 .3.1.5.3.7H5a2.5 2.5 0 01.3-1.7zM8 12.8c.8 0 1.5-.4 1.7-1.1l1.5.3C10.8 13.3 9.5 14 8 14a3.5 3.5 0 01-2.8-1.3h1.6c.3.1.7.1 1.2.1z"/></svg></button>
         <span class="tb-sep"></span>
         <button data-action="h1" title="Heading 1" class="tb txt">H1</button>
         <button data-action="h2" title="Heading 2" class="tb txt">H2</button>
         <button data-action="h3" title="Heading 3" class="tb txt">H3</button>
         <span class="tb-sep"></span>
-        <button data-action="code" title="Inline code" aria-label="Inline code" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M5.9 3.4L1.3 8l4.6 4.6 1.1-1.1L3.5 8 7 4.5 5.9 3.4zm4.2 0L9 4.5 12.5 8 9 11.5l1.1 1.1L14.7 8l-4.6-4.6z"/></svg></button>
+        <button data-action="code" title="Inline code" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.9 3.4L1.3 8l4.6 4.6 1.1-1.1L3.5 8 7 4.5 5.9 3.4zm4.2 0L9 4.5 12.5 8 9 11.5l1.1 1.1L14.7 8l-4.6-4.6z"/></svg></button>
         <button data-action="codeblock" title="Code block" class="tb txt">```</button>
         <span class="tb-sep"></span>
-        <button data-action="link" title="Link (Ctrl+K)" aria-label="Link" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M6.9 11.1a3.1 3.1 0 010-4.4l.7.7a2 2 0 000 3l1.5 1.5a2 2 0 003 0l1.5-1.5a2 2 0 000-3l-.7-.7.7-.7.7.7a3.1 3.1 0 010 4.4l-1.5 1.5a3.1 3.1 0 01-4.4 0L6.9 11.1zM9.1 4.9a3.1 3.1 0 010 4.4l-.7-.7a2 2 0 000-3L6.9 4.1a2 2 0 00-3 0L2.4 5.6a2 2 0 000 3l.7.7-.7.7-.7-.7a3.1 3.1 0 010-4.4l1.5-1.5a3.1 3.1 0 014.4 0l1.5 1.5z"/></svg></button>
-        <button data-action="image" title="Image" aria-label="Image" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M2 3a1 1 0 00-1 1v8a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H2zm0 1h12v5.6L11.3 7 8 10.3 5.7 8 2 11.7V4zm3 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg></button>
+        <button data-action="link" title="Link (Ctrl+K)" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.9 11.1a3.1 3.1 0 010-4.4l.7.7a2 2 0 000 3l1.5 1.5a2 2 0 003 0l1.5-1.5a2 2 0 000-3l-.7-.7.7-.7.7.7a3.1 3.1 0 010 4.4l-1.5 1.5a3.1 3.1 0 01-4.4 0L6.9 11.1zM9.1 4.9a3.1 3.1 0 010 4.4l-.7-.7a2 2 0 000-3L6.9 4.1a2 2 0 00-3 0L2.4 5.6a2 2 0 000 3l.7.7-.7.7-.7-.7a3.1 3.1 0 010-4.4l1.5-1.5a3.1 3.1 0 014.4 0l1.5 1.5z"/></svg></button>
+        <button data-action="image" title="Image" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 00-1 1v8a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H2zm0 1h12v5.6L11.3 7 8 10.3 5.7 8 2 11.7V4zm3 1.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/></svg></button>
         <span class="tb-sep"></span>
-        <button data-action="ul" title="Bullet list" aria-label="Bullet list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="2.5" cy="4" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="3" width="10" height="2" rx=".5"/><rect x="5" y="7" width="10" height="2" rx=".5"/><rect x="5" y="11" width="10" height="2" rx=".5"/></svg></button>
+        <button data-action="ul" title="Bullet list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="2.5" cy="4" r="1.2"/><circle cx="2.5" cy="8" r="1.2"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="3" width="10" height="2" rx=".5"/><rect x="5" y="7" width="10" height="2" rx=".5"/><rect x="5" y="11" width="10" height="2" rx=".5"/></svg></button>
         <button data-action="ol" title="Numbered list" class="tb txt">1.</button>
-        <button data-action="task" title="Task list" aria-label="Task list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button data-action="task" title="Task list" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 8l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <span class="tb-sep"></span>
-        <button data-action="table" title="Table" aria-label="Table" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2" x2="6" y2="14" stroke="currentColor" stroke-width="1.3"/></svg></button>
-        <button data-action="hr" title="Horizontal rule" aria-label="Horizontal rule" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="1" y="7" width="14" height="2" rx="1"/></svg></button>
-        <button data-action="quote" title="Blockquote" aria-label="Blockquote" class="tb"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3 3h3v4H4v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1zm7 0h3v4h-2v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1z"/></svg></button>
-        <span class="tb-sep"></span>
-        <button id="btn-wrap" title="Toggle soft wrap" aria-label="Toggle soft wrap" aria-pressed="false" class="tb txt">Wrap</button>
+        <button data-action="table" title="Table" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2" x2="6" y2="14" stroke="currentColor" stroke-width="1.3"/></svg></button>
+        <button data-action="hr" title="Horizontal rule" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="7" width="14" height="2" rx="1"/></svg></button>
+        <button data-action="quote" title="Blockquote" class="tb"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h3v4H4v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1zm7 0h3v4h-2v2a2 2 0 002 2v2a4 4 0 01-4-4V3h1z"/></svg></button>
       </div>
 
       <!-- Find bar -->
-      <div id="find-bar" class="hidden flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover" role="search" aria-label="Find in current editor">
-        <svg class="w-3.5 h-3.5 text-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
-        <input id="find-input" type="text" placeholder="Find in editor..." aria-label="Find in current editor" aria-describedby="find-info" class="flex-1 bg-transparent border-none outline-none text-[13px] text-[#1a1c1b] placeholder:text-muted" />
-        <span id="find-info" class="text-[11px] text-muted" role="status" aria-live="polite"></span>
-        <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1" title="Close find" aria-label="Close find">&times;</button>
+      <div id="find-bar" class="hidden flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover">
+        <svg class="w-3.5 h-3.5 text-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4 4"/></svg>
+        <input id="find-input" type="text" placeholder="Find in editor..." class="flex-1 bg-transparent border-none outline-none text-[13px] text-[#1a1c1b] placeholder:text-muted" />
+        <span id="find-info" class="text-[11px] text-muted"></span>
+        <button id="find-close" class="text-muted hover:text-[#1a1c1b] text-sm px-1">&times;</button>
       </div>
 
       <div id="content-wrapper" class="flex-1 flex overflow-hidden">
@@ -270,7 +145,7 @@
             style="tab-size:4;"></textarea>
         </div>
 
-        <div id="resize-divider" class="hidden w-1 cursor-col-resize bg-border hover:bg-accent transition-colors flex-shrink-0" role="separator" aria-orientation="vertical" aria-valuemin="28" aria-valuemax="72" aria-valuenow="50" aria-valuetext="50/50" tabindex="-1" title="Drag to resize"></div>
+        <div id="resize-divider" class="hidden w-1 cursor-col-resize bg-border hover:bg-accent transition-colors flex-shrink-0" title="Drag to resize"></div>
 
         <div id="viewer-container" class="hidden flex-1 overflow-y-auto p-3">
           <div id="viewer" class="markdown-body bg-editor rounded-lg p-6 min-h-full text-[1.07rem] leading-7 select-text"></div>
@@ -290,7 +165,7 @@
     <aside id="history-panel" class="hidden w-72 min-w-[288px] bg-sidebar border-l border-border flex-col">
       <div class="flex items-center justify-between p-3 border-b border-border">
         <div class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
+          <svg class="w-4 h-4 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 2"/></svg>
           <span class="text-xs font-bold uppercase tracking-widest text-muted">History</span>
         </div>
         <button id="history-close" class="text-muted hover:text-[#1a1c1b] text-lg leading-none px-1">&times;</button>
@@ -305,20 +180,14 @@
   </div>
 
   <!-- Context menu -->
-  <div id="ctx-menu" class="hidden fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[180px] text-[13px]" role="menu" tabindex="-1" aria-label="File actions">
-    <button type="button" role="menuitem" data-ctx="star" class="ctx-item"><span>Star</span><span class="ctx-hint">fav</span></button>
-    <button type="button" role="menuitem" data-ctx="open" class="ctx-item"><span>Open File</span><span class="ctx-hint">Enter</span></button>
-    <button type="button" role="menuitem" data-ctx="search" class="ctx-item"><span>Search Related</span><span class="ctx-hint">find</span></button>
-    <button type="button" role="menuitem" data-ctx="info" class="ctx-item"><span>File Info</span><span class="ctx-hint">info</span></button>
-    <button type="button" role="menuitem" data-ctx="canvas" class="ctx-item"><span>Open Canvas</span><span class="ctx-hint">canvas</span></button>
-    <button type="button" role="menuitem" data-ctx="saveas" class="ctx-item"><span>Save As...</span><span class="ctx-hint">Ctrl+Shift+S</span></button>
-    <button type="button" role="menuitem" data-ctx="folder" class="ctx-item"><span>Open Folder</span><span class="ctx-hint">folder</span></button>
-    <button type="button" role="menuitem" data-ctx="copypath" class="ctx-item"><span>Copy Path</span><span class="ctx-hint">path</span></button>
-    <button type="button" role="menuitem" data-ctx="copywikilink" class="ctx-item"><span>Copy Wikilink</span><span class="ctx-hint">[[md]]</span></button>
-    <button type="button" role="menuitem" data-ctx="copyembed" class="ctx-item"><span>Copy Embed</span><span class="ctx-hint">![[file]]</span></button>
-    <div class="ctx-separator" role="separator" aria-hidden="true"></div>
-    <button type="button" role="menuitem" data-ctx="close" class="ctx-item"><span>Close</span><span class="ctx-hint">Ctrl+W</span></button>
-    <button type="button" role="menuitem" data-ctx="delete" class="ctx-item danger"><span>Delete</span><span class="ctx-hint">30d</span></button>
+  <div id="ctx-menu" class="hidden fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[180px] text-[13px]">
+    <button data-ctx="star" class="ctx-item">Star</button>
+    <button data-ctx="info" class="ctx-item">File Info</button>
+    <button data-ctx="folder" class="ctx-item">Open Folder</button>
+    <button data-ctx="copypath" class="ctx-item">Copy Path</button>
+    <div class="mx-2 my-0.5 border-t border-border-soft"></div>
+    <button data-ctx="close" class="ctx-item">Close</button>
+    <button data-ctx="delete" class="ctx-item text-danger">Delete</button>
   </div>
 
   <!-- Modal -->
@@ -343,135 +212,6 @@
         <button data-close-choice="cancel" class="confirm-btn">Cancel</button>
         <button data-close-choice="discard" class="confirm-btn danger">Don't Save</button>
         <button data-close-choice="save" class="confirm-btn primary">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="search-overlay" class="hidden fixed inset-0 z-[70] search-backdrop">
-    <div class="search-palette" role="dialog" aria-modal="true" aria-labelledby="search-title">
-      <div class="search-head">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-        <input id="search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Search loaded files, titles, paths..." aria-labelledby="search-title" aria-describedby="search-meta" aria-controls="search-results" />
-        <button id="search-close" title="Close search" aria-label="Close search">&times;</button>
-      </div>
-      <div class="search-sub">
-        <span id="search-title">Search</span>
-        <span class="search-scope" aria-label="Search scope">
-          <button data-search-scope="loaded" class="active" aria-pressed="true">Loaded</button>
-          <button data-search-scope="local" aria-pressed="false">Local folder</button>
-          <button data-search-scope="all" aria-pressed="false">All</button>
-        </span>
-        <span id="search-meta" role="status" aria-live="polite">Ctrl+F still searches inside the current file.</span>
-      </div>
-      <div id="search-filter-hints" class="search-filter-hints" aria-label="Local search syntax examples">
-        <span class="search-filter-group-label">Filters</span>
-        <button data-search-example="type:md">type:md</button>
-        <button data-search-example="ext:md">ext:md</button>
-        <button data-search-example="path:notes">path:notes</button>
-        <button data-search-example="title:">title:</button>
-        <button data-search-example="tag:idea">tag:idea</button>
-        <button data-search-example="task:open">task:open</button>
-        <button data-search-example="task:done">task:done</button>
-        <span class="search-filter-group-label">Patterns</span>
-        <button data-search-example="&quot;exact phrase&quot;">"exact phrase"</button>
-        <button data-search-example="~fuzzy">~fuzzy</button>
-        <button data-search-example="-path:archive">-path:archive</button>
-        <button data-search-example="-task:done">-task:done</button>
-      </div>
-      <div id="search-recents" class="search-recents hidden"></div>
-      <div id="search-results" class="search-results" role="region" aria-label="Search results" aria-live="polite"></div>
-    </div>
-  </div>
-
-  <div id="command-overlay" class="hidden fixed inset-0 z-[72] command-backdrop">
-    <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-title">
-      <div class="command-head">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h10"/><path d="M4 17h16"/></svg>
-        <input id="command-input" type="text" autocomplete="off" spellcheck="false" placeholder="Run a command..." aria-labelledby="command-title" aria-controls="command-results" />
-        <button id="command-close" title="Close command palette" aria-label="Close command palette">&times;</button>
-      </div>
-      <div class="command-sub">
-        <span id="command-title">Command palette</span>
-        <span>Enter to run · Esc to close · Ctrl+P</span>
-      </div>
-      <div id="command-results" class="command-results" role="region" aria-label="Command results" aria-live="polite"></div>
-    </div>
-  </div>
-
-  <div id="canvas-overlay" class="hidden fixed inset-0 z-[75] canvas-backdrop">
-    <div class="canvas-shell" role="dialog" aria-modal="true" aria-label="Canvas draft">
-      <div class="canvas-topbar">
-        <div class="canvas-title">
-          <strong>Canvas draft</strong>
-          <span>Portable local JSON. Camera, grid, and tool state stay on this device.</span>
-        </div>
-        <div class="canvas-actions">
-          <span class="canvas-action-label" aria-hidden="true">Tools</span>
-          <button data-canvas-tool="select" class="canvas-tool" aria-pressed="false" title="Select and move canvas elements" aria-label="Select canvas tool">Select</button>
-          <button data-canvas-tool="pan" class="canvas-tool active" aria-pressed="true" title="Pan the canvas" aria-label="Pan canvas tool">Pan</button>
-          <button data-canvas-tool="pen" class="canvas-tool" aria-pressed="false" title="Draw freehand paths" aria-label="Pen canvas tool">Pen</button>
-          <button data-canvas-tool="rect" class="canvas-tool" aria-pressed="false" title="Draw rectangles" aria-label="Rectangle canvas tool">Rect</button>
-          <button data-canvas-tool="ellipse" class="canvas-tool" aria-pressed="false" title="Draw ovals" aria-label="Oval canvas tool">Oval</button>
-          <button data-canvas-tool="line" class="canvas-tool" aria-pressed="false" title="Draw straight lines" aria-label="Line canvas tool">Line</button>
-          <button data-canvas-tool="arrow" class="canvas-tool" aria-pressed="false" title="Draw arrows" aria-label="Arrow canvas tool">Arrow</button>
-          <button data-canvas-tool="text" class="canvas-tool" aria-pressed="false" title="Add text" aria-label="Text canvas tool">Text</button>
-          <button data-canvas-tool="sticky" class="canvas-tool" aria-pressed="false" title="Add sticky note" aria-label="Sticky note canvas tool">Sticky</button>
-          <button data-canvas-tool="erase" class="canvas-tool" aria-pressed="false" title="Erase canvas elements" aria-label="Erase canvas tool">Erase</button>
-          <span class="canvas-action-label" aria-hidden="true">Style</span>
-          <input id="canvas-color" type="color" value="#2f6f61" title="Stroke color" aria-label="Canvas stroke color" />
-          <input id="canvas-width" type="range" min="1" max="14" value="3" title="Stroke width" aria-label="Canvas stroke width" />
-          <span class="canvas-action-label" aria-hidden="true">Edit</span>
-          <button id="canvas-undo" class="canvas-tool" title="Canvas undo" aria-label="Canvas undo">Undo</button>
-          <button id="canvas-redo" class="canvas-tool" title="Canvas redo" aria-label="Canvas redo">Redo</button>
-          <button id="canvas-copy" class="canvas-tool" title="Copy selected element" aria-label="Copy selected canvas element">Copy</button>
-          <button id="canvas-paste" class="canvas-tool" title="Paste copied element" aria-label="Paste copied canvas element">Paste</button>
-          <button id="canvas-duplicate" class="canvas-tool" title="Duplicate selected element" aria-label="Duplicate selected canvas element">Duplicate</button>
-          <button id="canvas-delete" class="canvas-tool danger" title="Delete selected element" aria-label="Delete selected canvas element">Delete</button>
-          <span class="canvas-action-label" aria-hidden="true">View</span>
-          <button id="canvas-reset-view" class="canvas-tool" title="Reset canvas view" aria-label="Reset canvas view">Reset view</button>
-          <button id="canvas-fit" class="canvas-tool" title="Fit canvas content" aria-label="Fit canvas content">Fit</button>
-          <button id="canvas-zoom-out" class="canvas-tool" title="Zoom canvas out" aria-label="Zoom canvas out">-</button>
-          <button id="canvas-zoom-reset" class="canvas-tool" title="Reset canvas zoom" aria-label="Reset canvas zoom">100%</button>
-          <button id="canvas-zoom-in" class="canvas-tool" title="Zoom canvas in" aria-label="Zoom canvas in">+</button>
-          <button id="canvas-grid" class="canvas-tool active" aria-pressed="true" title="Toggle canvas grid" aria-label="Toggle canvas grid">Grid</button>
-          <button id="canvas-snap" class="canvas-tool" aria-pressed="false" title="Toggle canvas snap" aria-label="Toggle canvas snap">Snap</button>
-          <button id="canvas-snap-selected" class="canvas-tool" title="Snap selected element to grid" aria-label="Snap selected canvas element to grid">Snap selected</button>
-          <button id="canvas-minimap-toggle" class="canvas-tool active" aria-pressed="true" title="Toggle canvas minimap" aria-label="Toggle canvas minimap">Mini</button>
-          <span class="canvas-action-label" aria-hidden="true">Arrange</span>
-          <button id="canvas-layer-back" class="canvas-tool" title="Send selected canvas element backward" aria-label="Send selected canvas element backward">Back</button>
-          <button id="canvas-layer-front" class="canvas-tool" title="Bring selected canvas element forward" aria-label="Bring selected canvas element forward">Front</button>
-          <span class="canvas-action-label" aria-hidden="true">Export</span>
-          <button id="canvas-import" class="canvas-tool" title="Import canvas JSON" aria-label="Import canvas JSON">Import</button>
-          <button id="canvas-export" class="canvas-tool" title="Export Markpad canvas JSON" aria-label="Export Markpad canvas JSON">JSON</button>
-          <button id="canvas-export-markcanvas" class="canvas-tool" title="Export native .markcanvas.json" aria-label="Export native .markcanvas.json">Native</button>
-          <button id="canvas-export-svg" class="canvas-tool" title="Export canvas as SVG" aria-label="Export canvas as SVG">SVG</button>
-          <button id="canvas-export-obsidian" class="canvas-tool" title="Export Obsidian JSON Canvas" aria-label="Export Obsidian JSON Canvas">Obsidian</button>
-          <span class="canvas-action-label" aria-hidden="true">Save</span>
-          <button id="canvas-save-active" class="canvas-tool" title="Write canvas to active local canvas document" aria-label="Write canvas to active local canvas document">Write</button>
-          <button id="canvas-save-draft" class="canvas-tool" title="Save canvas as local draft JSON" aria-label="Save canvas as local draft JSON">Draft</button>
-          <button id="canvas-clear" class="canvas-tool danger" title="Clear local canvas draft" aria-label="Clear local canvas draft">Clear</button>
-          <button id="canvas-close" class="canvas-close" title="Close canvas" aria-label="Close canvas">&times;</button>
-          <input id="canvas-import-file" class="hidden" type="file" accept=".json,.canvas,application/json" aria-label="Import canvas file" />
-          <span id="canvas-status" class="canvas-status" role="status" aria-live="polite">0 elements · 100%</span>
-        </div>
-      </div>
-      <div class="canvas-stage-wrap">
-        <canvas id="canvas-stage"></canvas>
-        <canvas id="canvas-minimap" class="canvas-minimap"></canvas>
-        <textarea id="canvas-text-editor" class="hidden" spellcheck="false"></textarea>
-        <div id="canvas-hint" class="canvas-hint" role="status" aria-live="polite">Empty local canvas: choose Pen, Rect, Arrow, or Text. JSON stays on this machine.</div>
-        <div id="canvas-context-menu" class="canvas-context-menu hidden" role="menu" aria-label="Canvas selection actions">
-          <button type="button" role="menuitem" data-canvas-context-action="duplicate">Duplicate selected</button>
-          <button type="button" role="menuitem" data-canvas-context-action="copy-json">Copy selected JSON</button>
-          <button type="button" role="menuitem" data-canvas-context-action="copy-svg">Copy selected SVG</button>
-          <button type="button" role="menuitem" data-canvas-context-action="fit">Fit selected</button>
-          <div class="canvas-context-sep" aria-hidden="true"></div>
-          <button type="button" role="menuitem" data-canvas-context-action="front">Bring to front</button>
-          <button type="button" role="menuitem" data-canvas-context-action="back">Send to back</button>
-          <div class="canvas-context-sep" aria-hidden="true"></div>
-          <button type="button" role="menuitem" data-canvas-context-action="insert-md">Insert as Markdown</button>
-          <button type="button" role="menuitem" data-canvas-context-action="delete" class="danger">Delete selected</button>
-        </div>
       </div>
     </div>
   </div>

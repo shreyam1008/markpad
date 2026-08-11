@@ -72,7 +72,7 @@ func (a *App) onSecondInstanceLaunch(data options.SecondInstanceData) {
 
 func (a *App) shutdown(ctx context.Context) {
 	if a.store != nil && a.sess != nil {
-		_ = a.store.Save(a.sess)
+		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	}
 }
 
@@ -205,7 +205,7 @@ func (a *App) GetNoteContent(id string) string {
 func (a *App) SetActive(id string) {
 	if a.sess.Find(id) != nil {
 		a.sess.ActiveID = id
-		_ = a.store.Save(a.sess)
+		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	}
 }
 
@@ -217,15 +217,15 @@ func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor i
 	doc.ScrollTop = scrollTop
 	doc.ViewTop = viewTop
 	doc.Cursor = cursor
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 }
 
 func (a *App) NewNote() SessionState {
 	doc := session.NewDocument("", "")
 	doc.Title = "Untitled"
 	a.sess.Add(doc)
-	_ = a.store.WriteDraft(doc, "")
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	runtime.WindowSetTitle(a.ctx, "Markpad - Untitled")
 	return a.GetSession()
 }
@@ -243,8 +243,8 @@ func (a *App) UpdateContent(id string, content string, dirty bool) {
 	if doc.Path == "" {
 		doc.Title = session.TitleFromContent(content, "")
 	}
-	_ = a.store.WriteDraft(doc, content)
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, content))
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 }
 
 func (a *App) MarkDirty(id string) {
@@ -263,8 +263,8 @@ func (a *App) RevertContent(id string, content string, dirty bool) SessionState 
 	if doc.Path == "" {
 		doc.Title = session.TitleFromContent(content, "")
 	}
-	_ = a.store.WriteDraft(doc, content)
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, content))
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	return a.GetSession()
 }
 
@@ -282,7 +282,7 @@ func (a *App) SaveActive(content string) (SessionState, error) {
 	if err := a.store.SaveToDisk(doc, content); err != nil {
 		return a.GetSession(), err
 	}
-	_ = a.store.SaveSnapshot(doc.ID, content, "save")
+	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save"))
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -314,17 +314,17 @@ func (a *App) SaveAsDialog(content string) (SessionState, error) {
 	if err := a.store.SaveAs(doc, path, content); err != nil {
 		return a.GetSession(), err
 	}
-	_ = a.store.SaveSnapshot(doc.ID, content, "save-as")
+	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save-as"))
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
 
 func (a *App) OpenFileDialog() (SessionState, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Open",
+		Title: "Open File",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
 			{DisplayName: "All Files", Pattern: "*"},
+			{DisplayName: "Markdown", Pattern: "*.md;*.markdown;*.mdx"},
 			{DisplayName: "Text & Logs", Pattern: "*.txt;*.log;*.csv;*.tsv;*.env;*.gitignore;*.editorconfig"},
 			{DisplayName: "Data & Config", Pattern: "*.json;*.yaml;*.yml;*.xml;*.toml;*.ini;*.cfg;*.conf;*.properties"},
 			{DisplayName: "Code", Pattern: "*.py;*.js;*.ts;*.jsx;*.tsx;*.go;*.rs;*.rb;*.lua;*.java;*.c;*.cpp;*.h;*.cs;*.php;*.swift;*.kt;*.dart;*.r;*.sql"},
@@ -349,6 +349,7 @@ func (a *App) OpenDroppedFile(path string) (SessionState, error) {
 }
 
 func (a *App) openPath(path string) (SessionState, error) {
+	path = canonicalPath(path)
 	abs, err := filepath.Abs(path)
 	if err == nil {
 		path = abs
@@ -363,28 +364,28 @@ func (a *App) openPath(path string) (SessionState, error) {
 	if isReadOnlyPath(path) {
 		doc := a.sess.AddFile(path, "")
 		a.sess.AddRecent(path)
-		_ = a.store.WriteDraft(doc, "")
-		_ = a.store.Save(a.sess)
+		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
+		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 		return a.GetSession(), nil
 	}
-	data, err := os.ReadFile(path)
+	data, err := readOpenFile(path)
 	if err != nil {
 		return a.GetSession(), err
 	}
 	if looksBinary(data) {
 		doc := a.sess.AddFile(path, "")
 		a.sess.AddRecent(path)
-		_ = a.store.WriteDraft(doc, "")
-		_ = a.store.Save(a.sess)
+		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
+		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 		return a.GetSession(), nil
 	}
 	doc := a.sess.AddFile(path, string(data))
 	a.sess.AddRecent(path)
-	_ = a.store.WriteDraft(doc, string(data))
-	_ = a.store.SaveSnapshot(doc.ID, string(data), "open")
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, string(data)))
+	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, string(data), "open"))
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
 }
@@ -424,9 +425,9 @@ func (a *App) RestoreVersion(id string, timestamp string) (SessionState, error) 
 	}
 	doc.Dirty = true
 	doc.UpdatedAt = time.Now()
-	_ = a.store.WriteDraft(doc, content)
-	_ = a.store.SaveSnapshot(doc.ID, content, "restore")
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, content))
+	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "restore"))
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	return a.GetSession(), nil
 }
 
@@ -437,7 +438,7 @@ func (a *App) ToggleStar(id string) SessionState {
 	}
 	content, _ := a.store.ReadDraft(doc)
 	a.sess.ToggleBookmark(doc.Path, content)
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	return a.GetSession()
 }
 
@@ -468,11 +469,11 @@ func (a *App) CloseNote(id string) SessionState {
 		doc := session.NewDocument("", "")
 		doc.Title = "Untitled"
 		a.sess.Add(doc)
-		_ = a.store.WriteDraft(doc, "")
+		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 	} else if a.sess.ActiveID == id {
 		a.sess.ActiveID = next
 	}
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	goruntime.GC()
 	debug.FreeOSMemory()
 	return a.GetSession()
@@ -486,7 +487,7 @@ func (a *App) RemoveRecent(path string) SessionState {
 		}
 	}
 	a.sess.RecentFiles = filtered
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	return a.GetSession()
 }
 
@@ -509,7 +510,7 @@ func (a *App) DeleteNote(id string) SessionState {
 			a.sess.ActiveID = ""
 		}
 	}
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	goruntime.GC()
 	debug.FreeOSMemory()
 	return a.GetSession()
@@ -591,7 +592,7 @@ func (a *App) ReadFileBase64(path string) (string, error) {
 	if info.Size() > 50*1024*1024 {
 		return "", fmt.Errorf("file too large (%s)", formatSize(info.Size()))
 	}
-	data, err := os.ReadFile(path)
+	data, err := readOpenFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -609,6 +610,9 @@ func formatSize(b int64) string {
 }
 
 func (a *App) OpenURL(url string) {
+	if !isAllowedExternalURL(url) {
+		return
+	}
 	if strings.TrimSpace(url) == "" {
 		return
 	}
@@ -661,7 +665,7 @@ func (a *App) ReorderNotes(ids []string) SessionState {
 		}
 	}
 	a.sess.Documents = reordered
-	_ = a.store.Save(a.sess)
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	return a.GetSession()
 }
 

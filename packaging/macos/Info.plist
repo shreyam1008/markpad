@@ -10,8 +10,6 @@
   <string>Markpad</string>
   <key>CFBundleDisplayName</key>
   <string>Markpad</string>
-  <key>CFBundleIconFile</key>
-  <string>markpad</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

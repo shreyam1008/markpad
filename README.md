@@ -44,21 +44,21 @@ wails build   # → build/bin/markpad (~8 MB)
 wails dev     # development mode with hot reload
 ```
 
-Production builds embed the frontend assets and do not require runtime CDN fetches. Markpad still uses the OS webview through Wails.
+No other dependencies. The binary is fully self-contained.
 
 ## What It Does
 
 - **Single instance** — Only one window. Opening another file adds it to the existing window
 - **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
-- **PDF handling** — Local read-only PDF cards with Open Externally. No runtime pdf.js/CDN renderer or bundled PDF engine
+- **PDF rendering** — Pages rendered via pdf.js (first 5 immediately, rest on demand). Lightweight, no bundled PDF engine
 - **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
-- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs show read-only cards, images show inline, others get info cards
+- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs render in-app, images show inline, others get info cards
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
 - **Sidebar** — Favorites / Open / Recent sections. Star on left, close on right. Collapse sections, drag-and-drop reorder
 - **Sidebar Outline** — Real-time markdown Table of Contents outline that scroll-syncs the editor and viewer panes
-- **Rich right-click** — Star, File Info, Save As for drafts, Open Folder, Copy Path, Close, Delete
+- **Rich right-click** — Star, File Info, Open Folder, Copy Path, Close, Delete
 - **File info** — Click (i) in the title bar for name, path, size, type, modified date, and Open Folder
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
 - **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
@@ -74,30 +74,30 @@ Markpad stays lightweight by treating file families differently:
 | Family | Behavior |
 |--------|----------|
 | Markdown | Editor, Split, Preview, formatting toolbar |
-| Code/config | Fast plain editor plus capped Code View |
+| Code/config | Fast plain editor plus syntax-highlighted Code View |
 | Text/logs | Direct editor, simple stats |
-| PDF | Local read-only card with Open Externally |
+| PDF | Page-by-page rendering via pdf.js CDN (first 5 pages, then load rest) |
 | Image | Inline preview with Open Externally button |
 | Ebook/office/archive | Read-only info card with Open Externally |
 
-PDF files do not load a runtime renderer or CDN script. Markpad shows a local read-only card with Open Externally instead of bundling a PDF engine. Images are read via Go and displayed as base64 data URLs.
+PDF pages render via a ~500 KB CDN library (pdf.js) loaded on demand. No PDF engine is bundled in the binary. Images are read via Go and displayed as base64 data URLs.
 
 ## Versions
 
 | Version | Name | Highlights |
 |---------|------|------------|
 | 0.8 | Falguni | Real-time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, welcome draft close bypass |
-| 0.7 | Eklavya | Scroll position memory, expanded code language detection, performance, Open Folder fix, BUNDLE_BUDGET.md |
-| 0.6 | Dhruva | Single instance, PDF handling, image preview, file info, rich context menu, changelog |
+| 0.7 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix, BUNDLE_BUDGET.md |
+| 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
 | 0.5 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |
 | 0.4 | Balram | Drag-and-drop file open, per-type view modes, expanded file icons |
-| 0.3 | Aaradhya | Split view, formatting toolbar, drag reorder, Code View |
+| 0.3 | Aaradhya | Split view, formatting toolbar, drag reorder, syntax highlighting |
 | 0.2 | | Version history, find, zoom, menus |
 | 0.1 | | Initial release |
 
 ## Philosophy
 
-Markpad exists because every "lightweight" editor ships 200 MB of Chromium. This one uses your OS's built-in webview. The binary is under 10 MB. Memory footprint stays low. There's no telemetry, no accounts, no sync, and no runtime internet dependency. Just a notepad.
+Markpad exists because every "lightweight" editor ships 200 MB of Chromium. This one uses your OS's built-in webview. The binary is under 10 MB. Memory footprint stays low. There's no telemetry, no accounts, no sync, no internet access. Just a notepad.
 
 ## Keyboard Shortcuts
 
@@ -140,7 +140,7 @@ wails dev       # starts dev server with hot reload
 ```
 
 - Go backend in `app.go` and `internal/session/`
-- Frontend in `frontend/` — vanilla JS, precompiled Tailwind CSS, no JS bundler
+- Frontend in `frontend/` — vanilla JS, Tailwind CSS, no build step
 - Tests: `go test ./...`
 - Format: `gofmt -w .`
 
@@ -148,7 +148,7 @@ PRs welcome. Keep it simple, keep it fast.
 
 ## Tech Stack
 
-Go · Wails v2 · Vanilla JS · precompiled Tailwind CSS · marked.js · DOMPurify
+Go · Wails v2 · Vanilla JS · Tailwind CSS · marked.js · highlight.js · DOMPurify
 
 ## License
 

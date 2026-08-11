@@ -50,7 +50,7 @@ parts:
     build-environment:
       - CGO_ENABLED: "1"
     override-build: |
-      go build -tags "desktop,production,webkit2_41" -trimpath -ldflags="-s -w" -o $CRAFT_PART_INSTALL/bin/markpad .
+      go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o $CRAFT_PART_INSTALL/bin/markpad .
 
   desktop-entry:
     plugin: dump

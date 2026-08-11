@@ -5,11 +5,13 @@ build/
 *.dmg
 *.exe
 *.zip
-rsrc_windows_*.syso
 *.test
 coverage.out
 .DS_Store
 .codex
 temp_mem_test_files/*
-temp/
-frontend/wailsjs/
+# Local experiments and personal test documents
+/ports/
+/temp/
+/examples/demo-vault/
+/*.markcanvas.json

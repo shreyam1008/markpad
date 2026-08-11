@@ -9,14 +9,11 @@ Version: 0.8.0
 
 | Path | Purpose |
 | --- | --- |
-| `icons/generate_icons.py` | Generates platform icons from the Markpad app icon design |
 | `linux/markpad.desktop` | Linux desktop entry |
 | `linux/markpad.svg` | Scalable app icon |
 | `linux/io.github.markpad.metainfo.xml` | AppStream metadata |
 | `linux/io.github.markpad.flatpak.yml` | Flatpak manifest for Flathub |
-| `windows/markpad.ico` | Windows app, installer, and shortcut icon |
 | `windows/installer.nsi` | NSIS Windows installer script |
-| `macos/markpad.icns` | macOS app bundle icon |
 | `winget/manifests/…` | WinGet manifests |
 | `scoop/markpad.json` | Scoop bucket manifest |
 | `../snap/snapcraft.yaml` | Snap Store packaging |

@@ -10,7 +10,7 @@
 - [x] Find bar with wrap-around (Ctrl+F)
 - [x] Zoom (Ctrl+=/-/0, Ctrl+scroll)
 - [x] Drag-and-drop reorder notes, drag-and-drop file open from OS
-- [x] Right-click context menu: Star, File Info, draft Save As, Open Folder, Copy Path, Close, Delete
+- [x] Right-click context menu: Star, File Info, Open Folder, Copy Path, Close, Delete
 - [x] File verticals: Markdown, Code, Text, PDF, Image, Ebook/Office/Archive
 - [x] Syntax highlighting for code files (highlight.js, capped at 5000 lines)
 - [x] PDF rendering via pdf.js (page-by-page canvas, lazy load)

@@ -158,6 +158,17 @@ func (s *Store) WriteDraft(doc *Document, content string) error {
 	return atomicWrite(s.DraftPath(doc), []byte(content), 0o644)
 }
 
+func (s *Store) RemoveDraft(doc *Document) error {
+	if doc == nil {
+		return nil
+	}
+	err := os.Remove(s.DraftPath(doc))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
 func (s *Store) SaveToDisk(doc *Document, content string) error {
 	if doc.Path == "" {
 		return errors.New("document has no save path")

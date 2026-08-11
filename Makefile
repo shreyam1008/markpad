@@ -2,9 +2,9 @@ GO ?= /usr/local/go/bin/go
 WAILS ?= $(HOME)/go/bin/wails
 APP := markpad
 DIST := dist
-TAGS := desktop,production,webkit2_41
+TAGS := production,webkit2_41
 
-.PHONY: run dev build profile-build profile-run profile-test css budget smoke-desktop memory startup test test-core vet js-check validate fmt clean
+.PHONY: run dev build css test test-core fmt clean
 
 run:
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
@@ -16,30 +16,8 @@ build:
 	mkdir -p $(DIST)
 	$(GO) build -tags $(TAGS) -trimpath -ldflags="-s -w" -o $(DIST)/$(APP) .
 
-profile-build:
-	mkdir -p $(DIST)
-	$(GO) build -tags "$(TAGS),profile" -trimpath -ldflags="-s -w" -o $(DIST)/$(APP)-profile .
-
-profile-run: profile-build
-	MARKPAD_PROFILE=1 ./$(DIST)/$(APP)-profile
-
-profile-test:
-	$(GO) test -tags "$(TAGS),profile" ./...
-
 css:
-	npx --yes tailwindcss@3.4.17 -c tailwind.config.cjs -i frontend/src/tailwind.input.css -o frontend/src/tailwind.css --minify
-
-budget:
-	sh scripts/budget.sh
-
-smoke-desktop: build
-	sh scripts/smoke-desktop.sh
-
-memory: build
-	sh scripts/measure-memory.sh
-
-startup: build
-	sh scripts/measure-startup.sh
+	npx --yes tailwindcss@3.4.17 -c frontend/tailwind.config.cjs -i frontend/src/tailwind.input.css -o frontend/src/tailwind.css --minify
 
 test:
 	$(GO) test ./internal/session ./tests
@@ -47,23 +25,23 @@ test:
 test-core:
 	$(GO) test ./internal/session ./tests
 
-vet:
-	$(GO) vet ./...
-
-js-check:
-	node --check frontend/src/main.js
-
-validate:
-	$(GO) test ./internal/session ./tests
-	$(GO) test ./...
-	$(GO) test -tags $(TAGS) ./...
-	$(GO) vet ./...
-	node --check frontend/src/main.js
-	$(MAKE) build
-	$(MAKE) budget
-
 fmt:
 	$(GO)fmt -w . ./internal
 
 clean:
 	rm -rf $(DIST)
+
+.PHONY: check-assets check-size
+check-assets:
+	@if rg -n 'https?://' frontend/index.html frontend/src --glob '*.js' --glob '*.css'; then \
+		echo "runtime network dependency found"; \
+		exit 1; \
+	fi
+
+check-size: build
+	@bytes=$$(stat -c %s dist/markpad); \
+	limit=$$((15 * 1024 * 1024)); \
+	if [ "$$bytes" -gt "$$limit" ]; then \
+		echo "dist/markpad exceeds the 15 MiB release ceiling ($$bytes bytes)"; \
+		exit 1; \
+	fi

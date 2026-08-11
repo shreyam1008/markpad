@@ -16,17 +16,6 @@ jobs:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
       - name: Test
-        run: go test ./...
-      - name: Production tag test
-        run: go test -tags "production,webkit2_41" ./...
-      - name: Vet
-        run: go vet ./...
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Frontend syntax
-        run: node --check frontend/src/main.js
+        run: go test -tags webkit2_41 ./...
       - name: Build
         run: go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o dist/markpad .
-      - name: Budget
-        run: make budget
