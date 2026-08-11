@@ -1,23 +1,30 @@
 GO ?= /usr/local/go/bin/go
 WAILS ?= $(HOME)/go/bin/wails
+BUN ?= bun
 APP := markpad
 DIST := dist
 TAGS := production,webkit2_41
+FRONTEND := frontend
 
-.PHONY: run dev build css test test-core fmt clean
+.PHONY: setup frontend-build run dev build test test-core lint fmt fmt-check check clean check-assets check-size
 
-run:
+setup:
+	cd $(FRONTEND) && $(BUN) install --frozen-lockfile
+
+frontend-build:
+	@test -d $(FRONTEND)/node_modules || (echo "frontend dependencies missing; run 'make setup'" && exit 1)
+	cd $(FRONTEND) && $(BUN) run build
+
+run: frontend-build
+	mkdir -p $(DIST)
 	$(GO) build -tags $(TAGS) -o $(DIST)/$(APP) . && ./$(DIST)/$(APP)
 
 dev:
 	$(WAILS) dev
 
-build:
+build: frontend-build
 	mkdir -p $(DIST)
 	$(GO) build -tags $(TAGS) -trimpath -ldflags="-s -w" -o $(DIST)/$(APP) .
-
-css:
-	npx --yes tailwindcss@3.4.17 -c frontend/tailwind.config.cjs -i frontend/src/tailwind.input.css -o frontend/src/tailwind.css --minify
 
 test:
 	$(GO) test ./internal/session ./tests
@@ -25,23 +32,31 @@ test:
 test-core:
 	$(GO) test ./internal/session ./tests
 
+lint:
+	cd $(FRONTEND) && $(BUN) run lint
+
 fmt:
 	$(GO)fmt -w . ./internal
+	cd $(FRONTEND) && $(BUN) run fmt
 
-clean:
-	rm -rf $(DIST)
+fmt-check:
+	cd $(FRONTEND) && $(BUN) run fmt:check
 
-.PHONY: check-assets check-size
+check: test lint fmt-check frontend-build
+
 check-assets:
-	@if rg -n 'https?://' frontend/index.html frontend/src --glob '*.js' --glob '*.css'; then \
+	@if rg -n '(src|href)=["''']https?://|from ["''']https?://' $(FRONTEND)/index.html $(FRONTEND)/src; then \
 		echo "runtime network dependency found"; \
 		exit 1; \
 	fi
 
 check-size: build
-	@bytes=$$(stat -c %s dist/markpad); \
+	@bytes=$$(stat -c %s $(DIST)/$(APP)); \
 	limit=$$((15 * 1024 * 1024)); \
 	if [ "$$bytes" -gt "$$limit" ]; then \
-		echo "dist/markpad exceeds the 15 MiB release ceiling ($$bytes bytes)"; \
+		echo "$(DIST)/$(APP) exceeds the 15 MiB release ceiling ($$bytes bytes)"; \
 		exit 1; \
 	fi
+
+clean:
+	rm -rf $(DIST) $(FRONTEND)/dist

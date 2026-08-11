@@ -1,4 +1,7 @@
 dist/
+frontend/node_modules/
+frontend/dist/
+frontend/wailsjs/
 build/
 *.AppImage
 *.deb

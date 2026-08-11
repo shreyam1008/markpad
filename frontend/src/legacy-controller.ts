@@ -1,3 +1,11 @@
+// @ts-nocheck
+import DOMPurify from "dompurify";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
+import { marked } from "marked";
+window.DOMPurify = DOMPurify;
+window.hljs = hljs;
+window.marked = marked;
 // Markpad — vanilla JS + Tailwind + Wails
 // All file I/O via window.go.main.App.*
 
@@ -31,17 +39,65 @@ const EDIT_HISTORY_CHARS = 1024 * 1024;
 let applyingEditHistory = false;
 
 // Zoom
-const ZOOM_MIN = 10, ZOOM_MAX = 24, ZOOM_STEP = 1, ZOOM_DEFAULT = 14;
-let fontSize = parseInt(localStorage.getItem('markpad-zoom') || ZOOM_DEFAULT, 10);
-function applyZoom(silent) {
-  editor.style.fontSize = fontSize + 'px';
-  viewer.style.fontSize = fontSize + 'px';
-  localStorage.setItem('markpad-zoom', fontSize);
-  if (!silent && typeof statusText !== 'undefined' && statusText) statusText.textContent = `Editor zoom: ${Math.round(fontSize / ZOOM_DEFAULT * 100)}%`;
+// Keyboard shortcuts scale the complete application. Ctrl+wheel over document
+// content adjusts only the editor and preview text.
+const UI_ZOOM_MIN = 0.8, UI_ZOOM_MAX = 1.5, UI_ZOOM_STEP = 0.1, UI_ZOOM_DEFAULT = 1;
+const storedUiZoom = Number.parseFloat(localStorage.getItem('markpad-ui-zoom') || String(UI_ZOOM_DEFAULT));
+let uiZoom = Number.isFinite(storedUiZoom)
+  ? Math.min(Math.max(storedUiZoom, UI_ZOOM_MIN), UI_ZOOM_MAX)
+  : UI_ZOOM_DEFAULT;
+
+function applyUiZoom(silent) {
+  const app = $('app');
+  app.style.zoom = '';
+  app.style.transform = `scale(${uiZoom})`;
+  app.style.width = `${100 / uiZoom}%`;
+  app.style.height = `${100 / uiZoom}%`;
+  localStorage.setItem('markpad-ui-zoom', String(uiZoom));
+  if (!silent && statusText) statusText.textContent = `Interface zoom: ${Math.round(uiZoom * 100)}%`;
 }
-function zoomIn()  { fontSize = Math.min(fontSize + ZOOM_STEP, ZOOM_MAX); applyZoom(); }
-function zoomOut() { fontSize = Math.max(fontSize - ZOOM_STEP, ZOOM_MIN); applyZoom(); }
-function zoomReset() { fontSize = ZOOM_DEFAULT; applyZoom(); }
+
+function zoomIn() {
+  uiZoom = Math.min(Number((uiZoom + UI_ZOOM_STEP).toFixed(1)), UI_ZOOM_MAX);
+  applyUiZoom(false);
+}
+
+function zoomOut() {
+  uiZoom = Math.max(Number((uiZoom - UI_ZOOM_STEP).toFixed(1)), UI_ZOOM_MIN);
+  applyUiZoom(false);
+}
+
+function zoomReset() {
+  uiZoom = UI_ZOOM_DEFAULT;
+  applyUiZoom(false);
+}
+
+const TEXT_ZOOM_MIN = 10, TEXT_ZOOM_MAX = 28, TEXT_ZOOM_STEP = 1, TEXT_ZOOM_DEFAULT = 14;
+const storedTextZoom = Number.parseInt(
+  localStorage.getItem('markpad-text-zoom') || localStorage.getItem('markpad-zoom') || String(TEXT_ZOOM_DEFAULT),
+  10,
+);
+let textSize = Number.isFinite(storedTextZoom)
+  ? Math.min(Math.max(storedTextZoom, TEXT_ZOOM_MIN), TEXT_ZOOM_MAX)
+  : TEXT_ZOOM_DEFAULT;
+
+function applyTextZoom(silent) {
+  editor.style.fontSize = `${textSize}px`;
+  viewer.style.setProperty('--markpad-text-size', `${textSize}px`);
+  localStorage.setItem('markpad-text-zoom', String(textSize));
+  localStorage.removeItem('markpad-zoom');
+  if (!silent && statusText) statusText.textContent = `Text zoom: ${Math.round(textSize / TEXT_ZOOM_DEFAULT * 100)}%`;
+}
+
+function textZoomIn() {
+  textSize = Math.min(textSize + TEXT_ZOOM_STEP, TEXT_ZOOM_MAX);
+  applyTextZoom(false);
+}
+
+function textZoomOut() {
+  textSize = Math.max(textSize - TEXT_ZOOM_STEP, TEXT_ZOOM_MIN);
+  applyTextZoom(false);
+}
 
 const $ = (id) => document.getElementById(id);
 const sidebar      = $('sidebar');
@@ -165,96 +221,12 @@ function renderDocumentCard(note) {
     </div>`;
 }
 
-// ── PDF rendering (pdf.js) ───────────────────────────────
-function ensurePdfLib() {
-  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-  if (pdfLibPromise) return pdfLibPromise;
-  pdfLibPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'vendor/pdf.min.js';
-    script.onload = () => {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
-      resolve(pdfjsLib);
-    };
-    script.onerror = () => reject(new Error('PDF renderer could not be loaded'));
-    document.head.appendChild(script);
-  });
-  return pdfLibPromise;
-}
-
+// ── PDF external handoff ─────────────────────────────
 async function renderPdf(note) {
-  const path = note?.path;
-  if (!path) return renderDocumentCard(note);
-  const token = ++pdfRenderToken;
-  viewer.innerHTML = '<div style="text-align:center;padding:40px;color:#6b6e68;">Loading PDF...</div>';
-  try {
-    await ensurePdfLib();
-    let b64 = await window.go.main.App.ReadFileBase64(path);
-    let raw = atob(b64);
-    b64 = '';
-    const arr = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-    raw = '';
-    const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
-    if (token !== pdfRenderToken) return;
-    const container = document.createElement('div');
-    container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px;';
-    const header = document.createElement('div');
-    header.style.cssText = 'text-align:center;color:#6b6e68;font-size:12px;font-weight:600;margin-bottom:8px;';
-    header.textContent = `${note.title || 'PDF'} — ${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
-    container.appendChild(header);
-    const MAX_INITIAL = 2;
-    const LOAD_STEP = 3;
-    const renderPage = async (num) => {
-      const page = await pdf.getPage(num);
-      const scale = 1.15;
-      const vp = page.getViewport({ scale });
-      const canvas = document.createElement('canvas');
-      canvas.width = vp.width;
-      canvas.height = vp.height;
-      canvas.style.cssText = 'max-width:100%;border:1px solid #e8e6df;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);';
-      await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
-      return canvas;
-    };
-    for (let i = 1; i <= Math.min(MAX_INITIAL, pdf.numPages); i++) {
-      container.appendChild(await renderPage(i));
-    }
-    if (pdf.numPages > MAX_INITIAL) {
-      let rendered = MAX_INITIAL;
-      const more = document.createElement('button');
-      more.style.cssText = 'border:none;background:#2f6f61;color:#fffffb;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;margin:8px 0;';
-      more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
-      more.addEventListener('click', async () => {
-        more.textContent = 'Loading...';
-        more.disabled = true;
-        const end = Math.min(rendered + LOAD_STEP, pdf.numPages);
-        for (let i = rendered + 1; i <= end; i++) {
-          container.insertBefore(await renderPage(i), more);
-        }
-        rendered = end;
-        if (rendered >= pdf.numPages) more.remove();
-        else {
-          more.textContent = `Load next ${Math.min(LOAD_STEP, pdf.numPages - rendered)} pages`;
-          more.disabled = false;
-        }
-        restoreScrollPos();
-      });
-      container.appendChild(more);
-    }
-    const openBtn = document.createElement('button');
-    openBtn.className = 'doc-open';
-    openBtn.textContent = 'Open Externally';
-    openBtn.dataset.openExternal = path;
-    container.appendChild(openBtn);
-    viewer.innerHTML = '';
-    viewer.appendChild(container);
-    restoreScrollPos();
-  } catch (err) {
-    viewer.innerHTML = renderDocumentCard(note) + '<div style="text-align:center;color:#c54b33;font-size:12px;margin-top:8px;">PDF render error: ' + (err.message || err) + '</div>';
-  }
+  viewer.innerHTML = renderDocumentCard(note);
 }
 
-// ── Image preview ────────────────────────────────────────
+// ── Image preview ───────────────────────────────────────────────────────────────────────────────
 async function renderImagePreview(note) {
   const path = note?.path;
   if (!path) return renderDocumentCard(note);
@@ -1330,9 +1302,9 @@ document.addEventListener('keydown', async (e) => {
     modalOverlay.classList.add('hidden');
     ctxMenu.classList.add('hidden');
   }
-  else if (ctrl && (key === '=' || key === '+')) { e.preventDefault(); zoomIn(); }
-  else if (ctrl && key === '-') { e.preventDefault(); zoomOut(); }
-  else if (ctrl && key === '0') { e.preventDefault(); zoomReset(); }
+  else if (ctrl && (key === '=' || key === '+' || e.code === 'NumpadAdd')) { e.preventDefault(); zoomIn(); }
+  else if (ctrl && (key === '-' || e.code === 'NumpadSubtract')) { e.preventDefault(); zoomOut(); }
+  else if (ctrl && (key === '0' || e.code === 'Numpad0')) { e.preventDefault(); zoomReset(); }
   else if (key === 'Delete' && ctrl) {
     e.preventDefault();
     const note = cachedNotes.find(n => n.id === activeId);
@@ -1344,10 +1316,14 @@ document.addEventListener('keydown', async (e) => {
 });
 
 // Ctrl+scroll zoom
+let textZoomWheelDelta = 0;
 document.addEventListener('wheel', (e) => {
   if (e.ctrlKey && (e.target.closest('#editor-container') || e.target.closest('#viewer-container'))) {
     e.preventDefault();
-    if (e.deltaY < 0) zoomIn(); else zoomOut();
+    textZoomWheelDelta += e.deltaY;
+    if (Math.abs(textZoomWheelDelta) < 30) return;
+    if (textZoomWheelDelta < 0) textZoomIn(); else textZoomOut();
+    textZoomWheelDelta = 0;
   }
 }, { passive: false });
 
@@ -1473,7 +1449,7 @@ async function showPreferences() {
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Markdown</td><td style="padding:4px 6px;">Editor, Split, Preview, formatting toolbar</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Code</td><td style="padding:4px 6px;">Editor + syntax-highlighted Code View</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Text</td><td style="padding:4px 6px;">Direct editor with line/word stats</td></tr>
-      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Rendered pages via pdf.js (read-only)</td></tr>
+      <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">PDF</td><td style="padding:4px 6px;">Open in the system PDF viewer (read-only)</td></tr>
       <tr style="border-bottom:1px solid #e8e6df;"><td style="padding:4px 6px;font-weight:600;">Image</td><td style="padding:4px 6px;">Inline preview (read-only)</td></tr>
       <tr><td style="padding:4px 6px;font-weight:600;">Ebook/Office/Archive</td><td style="padding:4px 6px;">Info card + Open Externally</td></tr>
     </table>
@@ -1485,7 +1461,7 @@ async function showPreferences() {
     <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${storagePath}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Performance</h3>
-    <p>PDFs render page-by-page via pdf.js (~500 KB CDN). No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. This keeps the binary under 10 MB and memory low.</p>
+    <p>PDFs open in the system viewer; no PDF engine is bundled. No full PDF engine bundled. Syntax highlighting caps at 5000 lines. Diffs cap at 5000 lines. This keeps the binary under 10 MB and memory low.</p>
   `);
 }
 
@@ -1505,8 +1481,8 @@ function showChangelog() {
         <li>Scroll position memory: remembers where you left off in each note</li>
         <li>Extended syntax highlighting: lua, dart, toml, dockerfile, cmake, elixir, nim, zig + 20 more language mappings</li>
         <li>Fixed Open Folder: uses xdg-open/open/explorer (was broken on Linux)</li>
-        <li>Fixed PDF dirty indicator: read-only files no longer show "NOT SAVED"</li>
-        <li>Performance: pdf.js deferred, highlight.js extras deferred, faster cold start</li>
+        <li>Fixed read-only document dirty indicator: read-only files no longer show "NOT SAVED"</li>
+        <li>Performance: highlight.js extras deferred, faster cold start</li>
         <li>BUNDLE_BUDGET.md: tracks size/memory cost of every feature</li>
         <li>Comprehensive agents.md: strict guardrails for AI-assisted development</li>
       </ul>
@@ -1598,7 +1574,7 @@ function registerEvents() {
   window.runtime.EventsOn('menu:about', () => showModal('About Markpad', `
     <p><b>Markpad</b> v0.7 <span style="opacity:0.6;font-style:italic;">Eklavya</span></p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
-    <p>Single instance, PDF rendering, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
+    <p>Single instance, external PDF handoff, image preview, scroll position memory, extended syntax highlighting, markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom. Under 10 MB.</p>
     <p style="margin-top:8px;">
       <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
       <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
@@ -1620,7 +1596,8 @@ async function loadApp() {
 
 function boot() {
   if (window.go && window.go.main && window.go.main.App) {
-    applyZoom(true);
+  applyUiZoom(true);
+  applyTextZoom(true);
     registerEvents();
     interceptLinks(viewer);
 

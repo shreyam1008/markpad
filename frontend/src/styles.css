@@ -1,3 +1,70 @@
+@import "tailwindcss";
+@import "../vendor/github-markdown-light.min.css";
+@source "./legacy-shell.txt";
+@source "./legacy-controller.ts";
+
+@theme {
+  --color-sidebar: #f4f2ed;
+  --color-surface: #fafaf7;
+  --color-editor: #fffffc;
+  --color-border: #d8d6ce;
+  --color-border-soft: #e8e6df;
+  --color-hover: #e7ece5;
+  --color-accent: #2f6f61;
+  --color-accent-hover: #267058;
+  --color-accent-text: #fffffb;
+  --color-muted: #6b6e68;
+  --color-unsaved: #c57933;
+  --color-danger: #c54b33;
+  --font-sans: Cantarell, "Noto Sans", "Segoe UI", sans-serif;
+  --font-mono: Iosevka, "JetBrains Mono", "Noto Sans Mono", monospace;
+}
+
+#legacy-react-host {
+  display: contents;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+#app {
+  transform-origin: top left;
+}
+
+#view-mode-group .view-btn:disabled,
+#view-mode-group .view-btn[aria-disabled='true'] {
+  display: none;
+}
+
+#editor-container,
+#viewer-container {
+  min-width: 0;
+  transition:
+    opacity 140ms ease,
+    padding 180ms ease;
+}
+
+#resize-divider {
+  transition:
+    background-color 140ms ease,
+    opacity 140ms ease;
+}
+
+#viewer {
+  --markpad-text-size: 14px;
+  font-size: var(--markpad-text-size) !important;
+}
+
+#viewer pre,
+#viewer .hljs {
+  font-size: calc(var(--markpad-text-size) * 0.93) !important;
+}
 /* Minimal custom CSS — Tailwind handles most styling */
 
 /* Toolbar icon buttons */

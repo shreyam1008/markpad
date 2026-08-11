@@ -4,7 +4,7 @@ This document defines the behavior Markpad should preserve while it is cleaned u
 
 ## Documents
 
-Markpad opens local Markdown, plain-text, source-code, image, and PDF files. Text content can be edited and saved. Images and PDFs are read-only and should not expose editor, split, formatting, undo, revert, or save actions.
+Markpad opens local Markdown, plain-text, source-code, image, and PDF files. Text content can be edited and saved. Images are displayed locally. PDFs are represented by a read-only handoff card and open in the operating system's default PDF application. Images and PDFs do not expose editor, split, formatting, undo, revert, or save actions.
 
 New unsaved notes are stored as drafts. Normal application exit preserves dirty drafts. Choosing **Don't Save** while closing explicitly discards the dirty content.
 

@@ -16,9 +16,9 @@ Session and draft writes are atomic. Dirty drafts survive ordinary application e
 
 ## Frontend
 
-`frontend/index.html` provides the application shell. `frontend/src/main.js` owns the current browser-side controller and `frontend/src/styles.css` owns product-specific presentation. Generated Tailwind utilities are kept separate from handwritten styles.
+`frontend/index.html` is the Bun HTML entry point. React and TypeScript components under `frontend/src` own the browser-side controller. Tailwind provides layout and component styling; handwritten CSS is limited to the editor, rendered Markdown, code blocks, split geometry, and accessibility behavior.
 
-All production rendering dependencies live in `frontend/vendor`. Markpad must not fetch executable code, stylesheets, fonts, or PDF resources at runtime.
+Bun bundles all production dependencies into `frontend/dist`, and Go embeds only that generated directory. Markpad must not fetch executable code, stylesheets, fonts, or document-rendering resources at runtime.
 
 ## Data flow
 
@@ -33,6 +33,6 @@ All production rendering dependencies live in `frontend/vendor`. Markpad must no
 
 - Local-first and usable without network access.
 - Linux is the primary platform while desktop-boundary code remains portable.
-- No account, telemetry, cloud synchronization, production frontend framework, or runtime CDN.
+- No account, telemetry, cloud synchronization, component suite, icon package, or runtime CDN.
 - Prefer explicit functions and narrow interfaces over service or repository layers.
 - Preserve compatibility with existing v0.9 sessions and drafts.

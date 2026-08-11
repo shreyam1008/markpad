@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -16,9 +15,6 @@ import (
 )
 
 const Version = "0.9"
-
-//go:embed all:frontend
-var assets embed.FS
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -126,7 +122,7 @@ func main() {
 		MinHeight: 480,
 		Menu:      appMenu,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets: frontendAssets(),
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
