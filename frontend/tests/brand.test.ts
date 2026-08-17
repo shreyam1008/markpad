@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   LEGACY_PRODUCT_NAME,
+  PREVIEW_PRODUCT_NAME,
   PRODUCT_NAME,
   SOURCE_URL,
   STORAGE_KEYS,
@@ -9,8 +10,9 @@ import {
 } from "../src/brand";
 
 describe("brand migration contract", () => {
-  test("uses the new public display name", () => {
-    expect(PRODUCT_NAME).toBe("Quillpane");
+  test("keeps the current display name until a successor is approved", () => {
+    expect(PRODUCT_NAME).toBe("Markpad");
+    expect(PREVIEW_PRODUCT_NAME).toBe("Quillpane");
     expect(LEGACY_PRODUCT_NAME).toBe("Markpad");
   });
 

@@ -25,7 +25,7 @@ func TestWindowTitleUsesPublicProductName(t *testing.T) {
 	if got := WindowTitle(""); got != ProductName {
 		t.Fatalf("empty title = %q, want %q", got, ProductName)
 	}
-	if got := WindowTitle("notes.md"); got != "Quillpane - notes.md" {
+	if got := WindowTitle("notes.md"); got != "Markpad - notes.md" {
 		t.Fatalf("document title = %q", got)
 	}
 }

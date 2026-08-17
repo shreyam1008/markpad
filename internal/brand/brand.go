@@ -5,14 +5,14 @@ package brand
 import "strings"
 
 const (
-	// ProductName is the public display name used during the rebrand preview.
-	ProductName = "Quillpane"
+	// ProductName remains the current public display name until a successor is
+	// explicitly approved and reserved.
+	ProductName = "Markpad"
 	// PreviewProductName remains fixed if ProductName is rolled back, so drafts
 	// created while the preview was active are still recognized safely.
 	PreviewProductName = "Quillpane"
 
-	// LegacyProductName remains useful in migration copy and must not be reused
-	// as a new package identity.
+	// LegacyProductName remains the compatibility name used by existing builds.
 	LegacyProductName = "Markpad"
 
 	// The values below are compatibility identifiers, not display copy. Changing

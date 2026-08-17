@@ -96,7 +96,7 @@ hljs.registerLanguage("swift", swift);
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("xml", xml);
 hljs.registerLanguage("yaml", yaml);
-// Quillpane — direct DOM TypeScript + Tailwind + Wails
+// Markpad — direct DOM TypeScript + Tailwind + Wails
 // All file I/O via window.go.main.App.*
 
 let viewMode = "viewer"; // 'markdown' | 'split' | 'viewer'
@@ -2758,7 +2758,7 @@ function registerEvents() {
       `About ${PRODUCT_NAME}`,
       `
     <p><b>${PRODUCT_NAME}</b> v${VERSION}</p>
-    <p style="margin-top:6px;color:#6b6e68;">Previously ${LEGACY_PRODUCT_NAME}. Your existing notes, drafts, history, settings, and command continue to use the same local storage.</p>
+    <p style="margin-top:6px;color:#6b6e68;">A successor name is still being evaluated. Your notes, drafts, history, settings, and command continue to use the same ${LEGACY_PRODUCT_NAME} local storage.</p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
     <p>Single instance, external PDF handoff, image preview, scroll position memory, syntax highlighting, Markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom.</p>
     <p style="margin-top:8px;">

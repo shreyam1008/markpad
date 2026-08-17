@@ -1,14 +1,14 @@
-# Markpad to Quillpane migration record
+# Markpad rebrand exploration: Quillpane preview
 
-Status: reversible display-name preview  
-Audit date: 2026-08-17  
+Status: preview rolled back; successor name unapproved
+Audit date: 2026-08-17
 Legal status: naming discovery only; this is not trademark or legal clearance
 
 ## Decision
 
-Use **Quillpane** as the working successor name for the next migration slice. The name describes the product's writing surface and split-pane workflow, is pronounceable, and keeps distance from the crowded `mark*` Markdown-editor category.
+Do **not** approve Quillpane yet. The reversible preview proved that public display copy can be separated from durable Markpad identities, but fresh screening found substantial same-category adjacency with the active QUILL writing environment, the dominant Quill.js editor ecosystem, and Quill-named VS Code extensions. The current application therefore displays **Markpad** while the successor decision remains open.
 
-The name is not yet treated as an owned namespace. Do not publish packages, rename the repository, buy or redirect domains, or replace durable application identifiers until the maintainer has reserved the required accounts and completed an appropriate legal review.
+**Draftpane** is the current balanced lead and **Bractnote** is the distinctiveness hedge. Neither is approved or legally cleared. Do not publish packages, rename the repository, buy or redirect domains, or replace durable application identifiers until the maintainer has approved a name, reserved the required accounts, and completed an appropriate legal review.
 
 ## Why Markpad must move
 
@@ -28,10 +28,10 @@ The initial screen checked exact-name general search, GitHub repository names, n
 
 | Rank | Candidate | Result on 2026-08-17 | Reasoning |
 |---|---|---|---|
-| 1 | Quillpane | No exact GitHub-name, npm, PyPI, crates.io, Homebrew, WinGet, Open VSX, or VS Code Marketplace hit. `.com`, `.dev`, and `.app` returned RDAP 404 at check time. | Best product fit: writing plus a split/local pane, clear spelling, no `mark*` collision. |
-| 2 | Draftpane | Same registry screen was clear. | Strong product fit, but "draft" can imply unfinished work and is less ownable in prose. |
-| 3 | Barequill | Same registry screen was clear. | Communicates minimal writing, but "quill" can sound literary rather than technical. |
-| 4 | Bractnote | Same registry screen was clear. | Distinctive, but pronunciation and meaning require explanation. |
+| 1 | Draftpane | Exact registry and checked domain screens were clear. | Best balance of product fit, spelling, searchability, and future companion naming; test whether “draft” wrongly implies temporary-only work. |
+| 2 | Bractnote | Exact registry and checked domain screens were clear. | Most ownable construction; advance only if blinded users can pronounce and spell it reliably. |
+| 3 | Quillpane | Exact compound screen was clear, but the `quill` root has strong same-category product/editor/extension adjacency. | Aesthetically strong and technically proven as a reversible preview, but held for confusion and search risk. |
+| 4 | Barequill | Exact compound screen was clear, with the same `quill` adjacency. | Drop; it sounds even more like a QUILL edition and adds no compensating advantage. |
 | 5 | Mardlet | Registry screen was mostly clear. | Distinctive but does not explain the product and has weaker recall. |
 
 An RDAP 404 or empty search result is evidence that no record was returned at that moment, not a promise that a domain, package name, or trademark is available. Recheck immediately before every reservation.
@@ -59,7 +59,7 @@ The CSS custom-property prefix is internal and may remain `--markpad-*` indefini
 ### Phase 0 — reversible seam (this branch)
 
 - Centralize public display copy and legacy compatibility constants in Go and TypeScript.
-- Show Quillpane in the application/window title, startup fallback, help, About, and new default-draft copy.
+- Keep Markpad as the active display name while retaining the centralized display-name seam.
 - Recognize both Markpad and Quillpane untouched welcome drafts so quitting never invents a dirty-content prompt.
 - Lock legacy filesystem, browser-storage, CLI, URL, and single-instance values with tests.
 - Keep packaging, repository, install commands, release files, and public redirects unchanged.
@@ -70,13 +70,13 @@ Rollback is one display constant change; no user data needs to move.
 
 1. Re-run exact-name searches and obtain legal/trademark advice appropriate to the intended markets.
 2. Reserve the GitHub repository name, package-manager namespaces, and relevant domains before announcing the name.
-3. Create `quillpane.shreyam1008.com.np` as the canonical product page; keep the old GitHub Pages URL live.
-4. Update the existing vector icon from `M` to `Q` only after the name is reserved. Do not generate a bitmap-only master.
+3. Create the approved successor subdomain as the canonical product page; keep the old GitHub Pages URL live.
+4. Update the existing vector icon only after the name is reserved. Do not generate a bitmap-only master.
 5. Test a real v0.9.2 upgrade fixture on Linux, Windows, and macOS before modifying installers.
 
 ### Phase 2 — co-branded compatibility release
 
-- Ship **Quillpane (formerly Markpad)** as display copy under the existing package identities.
+- Ship **Approved successor (formerly Markpad)** as display copy under the existing package identities.
 - Continue producing the `markpad` executable and accepting all old data paths.
 - Add the new website and source URLs only after redirects are verified from a clean browser.
 - Publish a migration notice that explicitly says no notes, drafts, or history move.
@@ -85,7 +85,7 @@ Rollback is one display constant change; no user data needs to move.
 ### Phase 3 — namespace transition
 
 - Rename the GitHub repository only after confirming GitHub redirects for clone, release, raw-file, and issue URLs.
-- If a new `quillpane` executable is added, ship `markpad` as a compatibility launcher or alias for at least two stable releases.
+- If a successor executable is added, ship `markpad` as a compatibility launcher or alias for at least two stable releases.
 - Treat new store/package IDs as separate migration projects. Verify upgrade behavior and uninstall ownership; never let a new installer remove the old data root.
 - Keep reading the `markpad` config root. A future data-root migration must be copy-first, atomic, idempotent, recoverable, and covered by real fixture tests.
 

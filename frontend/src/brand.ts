@@ -1,4 +1,5 @@
-export const PRODUCT_NAME = "Quillpane";
+export const PRODUCT_NAME = "Markpad";
+export const PREVIEW_PRODUCT_NAME = "Quillpane";
 export const LEGACY_PRODUCT_NAME = "Markpad";
 export const VERSION = "0.9.2";
 

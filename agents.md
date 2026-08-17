@@ -1,14 +1,14 @@
-# Quillpane Agent Guide
+# Markpad Agent Guide
 
 This file is the working contract for automated contributors. Read it before editing the project, then keep changes small enough to review and recover.
 
 ## Product boundary
 
-Quillpane (formerly Markpad) is a small, private Markdown notepad and local-file viewer. Go and Wails provide the desktop boundary; the operating system supplies the webview. Notes, drafts, sessions, and history stay on the user's machine.
+Markpad is a small, private Markdown notepad and local-file viewer. Its successor name is still under review. Go and Wails provide the desktop boundary; the operating system supplies the webview. Notes, drafts, sessions, and history stay on the user's machine.
 
 The public display name is separate from legacy compatibility identifiers. Until the staged rebrand in `docs/rebrand-quillpane.md` says otherwise, preserve the `markpad` config root, browser-storage keys, CLI name, package IDs, single-instance UUID, repository URL, and old redirect targets exactly.
 
-The root application is the product that CI builds and releases. Experimental applications under `ports/` are not part of the Quillpane build, test, packaging, or release scope.
+The root application is the product that CI builds and releases. Experimental applications under `ports/` are not part of the Markpad build, test, packaging, or release scope.
 
 ## Non-negotiable rules
 
