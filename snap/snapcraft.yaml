@@ -1,10 +1,12 @@
 name: markpad
+# DRAFT: store publication still needs a locked Bun frontend build before the
+# production Go compilation. GitHub release artifacts are the supported path.
 base: core24
 version: '0.9.0'
 summary: Small native Markdown notepad
 description: |
-  Markpad is a tiny native Markdown notepad built with Go and the system webview.
-  No Electron, under 10 MB, fast startup.
+  Markpad is a small private Markdown notepad built with Go and the system webview.
+  No Electron, account, sync service, telemetry, or runtime cloud backend.
 
   Features: split view, version history, session restore, formatting toolbar,
   find in editor, auto-list continuation, favorites, drag-and-drop, file type

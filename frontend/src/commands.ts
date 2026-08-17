@@ -57,13 +57,15 @@ export class CommandRegistry {
     if (!query.trim()) {
       return [...this.commands.values()].filter((command) => !command.enabled || command.enabled());
     }
-    return [...this.commands.values()].flatMap((command) => {
-      if (command.enabled && !command.enabled()) return [];
-      const haystack = [command.title, command.category, ...(command.keywords ?? [])]
-        .join(" ")
-      const match = fuzzyMatch(query, haystack);
-      return match ? [{ command, score: match.score }] : [];
-    }).sort((a, b) => b.score - a.score).map(({ command }) => command);
+    return [...this.commands.values()]
+      .flatMap((command) => {
+        if (command.enabled && !command.enabled()) return [];
+        const haystack = [command.title, command.category, ...(command.keywords ?? [])].join(" ");
+        const match = fuzzyMatch(query, haystack);
+        return match ? [{ command, score: match.score }] : [];
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(({ command }) => command);
   }
 
   async execute(id: string) {

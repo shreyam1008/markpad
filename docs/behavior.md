@@ -30,7 +30,7 @@ Saved files can be renamed from the command palette, with `F2`, or from the file
 
 The session file, drafts, and history are stored below the user configuration directory. Writes use replacement through a temporary file so interrupted writes do not partially overwrite the previous state.
 
-If the main session file cannot be decoded, Markpad should preserve the unreadable file, start a recoverable clean session, and tell the user what happened.
+If the main session file cannot be decoded or contains an unsafe/invalid structure, Markpad preserves the unreadable file, starts a recoverable clean session, and tells the user what happened.
 
 ## History
 

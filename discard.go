@@ -4,11 +4,13 @@ package main
 // confirmation flow. It removes recoverable draft content before closing the
 // note so an explicit "Don't Save" decision is honored completely.
 func (a *App) DiscardNote(noteID string) SessionState {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	if a.sess == nil || a.store == nil {
-		return a.GetSession()
+		return SessionState{}
 	}
 	if doc := a.sess.Find(noteID); doc != nil {
 		a.recordBackgroundError("delete discarded draft", a.store.RemoveDraft(doc))
 	}
-	return a.CloseNote(noteID)
+	return a.closeNoteLocked(noteID)
 }

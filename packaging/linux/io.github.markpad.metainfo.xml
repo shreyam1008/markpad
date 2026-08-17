@@ -9,7 +9,7 @@
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>
-    <p>Markpad is a tiny native Markdown notepad built with Go and the system webview. No Electron, under 10 MB, fast startup.</p>
+    <p>Markpad is a small private Markdown notepad built with Go and the system webview. It has no Electron runtime, account, sync, or telemetry.</p>
     <p>Features include:</p>
     <ul>
       <li>Split view: Editor, side-by-side split, and preview modes with resizable divider</li>
@@ -41,6 +41,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.9.2" date="2026-08-17">
+      <description>
+        <p>Reliability, recovery, build, security, documentation, and frontend performance improvements.</p>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-06-11">
       <description>
         <p>Terminal installer, visual layout refinements, and distribution packaging manifests.</p>

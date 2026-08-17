@@ -1,38 +1,55 @@
 # Architecture
 
-Markpad is a local Wails desktop application with three deliberately small layers.
+Markpad is a local Wails desktop application with three intentionally narrow layers.
 
 ## Desktop boundary
 
-`main.go` starts Wails, embeds the frontend, creates the native menu, and binds the Go application object. `app.go` is the desktop boundary for file dialogs, filesystem operations, external launching, note lifecycle, and conversion between persisted session data and frontend state.
+`main.go` configures the Wails window, native menus, lifecycle hooks, CLI file arguments, and single-instance behavior. `app.go` is the bound desktop API for file dialogs, filesystem operations, external launching, note lifecycle, and conversion from persisted session data to frontend state.
 
-Platform-specific operations belong at this boundary. Session persistence must not depend on Wails or browser state.
+`backend_safety.go` and `url_policy.go` centralize path, file-size, binary-file, and external-URL guards. Platform-specific operations stay at this boundary; session persistence does not depend on Wails.
+
+Production builds use the `production` tag. `frontend_assets.go` then embeds the generated `frontend/dist` directory. Non-production builds use `frontend_assets_dev.go`, allowing backend tests to compile from a clean checkout while Wails provides the live development server.
 
 ## Session domain
 
-`internal/session` owns open-document metadata, drafts, favorites, recent files, preferences, scroll state, and bounded saved-version history.
+`internal/session` owns open-document metadata, drafts, favorites, recents, preferences, view and scroll state, and bounded saved-version history. It is pure Go and is tested against temporary stores.
 
-Session and draft writes are atomic. Dirty drafts survive ordinary application exit. Explicitly discarding an unsaved document may remove its draft. Saved-version history is local and is not a version-control or synchronization system.
+Session, draft, snapshot, and saved-file writes use a synced temporary file and same-directory replacement. This provides rename atomicity where the operating system supports it, but does not claim full power-loss durability on every platform. The domain preserves three explicit recovery rules:
+
+- Invalid session JSON is copied to a unique recovery file before a clean session is initialized.
+- Save As does not mutate the live document until the destination and recovery-draft writes succeed.
+- History restore snapshots the current recovery draft before replacing it.
+
+History is local recovery data, not synchronization or version control.
 
 ## Frontend
 
-`frontend/index.html` is the Bun HTML entry point. React and TypeScript components under `frontend/src` own the browser-side controller. Tailwind provides layout and component styling; handwritten CSS is limited to the editor, rendered Markdown, code blocks, split geometry, and accessibility behavior.
+`frontend/index.html` loads `frontend/src/main.ts`. The entry inserts the trusted static shell from `legacy-shell.txt`, loads styles, and starts `legacy-controller.ts`. The controller owns editor state, views, preview rendering, commands, shortcuts, close flows, and synchronization with Go. `async-queue.ts` orders draft mutations so autosave cannot overtake save or restore; `commands.ts` contains the typed, dependency-free command registry and fuzzy matching.
 
-Bun bundles all production dependencies into `frontend/dist`, and Go embeds only that generated directory. Markpad must not fetch executable code, stylesheets, fonts, or document-rendering resources at runtime.
+The controller remains imperative and uses `@ts-nocheck` while it is incrementally cleaned up. New pure behavior should move into small strict TypeScript modules with Bun tests. A component framework is not needed for the current product.
+
+Bun type-checks and bundles all production packages into `frontend/dist`. Tailwind is compiled at build time. Marked parsing, DOMPurify sanitization, and highlight.js core plus selected languages are all local; the desktop application has no runtime CDN.
 
 ## Data flow
 
-1. Wails starts the Go application and loads or creates the session.
-2. The frontend requests session state through the bound application API.
-3. Editing updates browser state immediately and writes a debounced draft through Go.
-4. Explicit save writes the selected file and records a bounded history snapshot.
-5. Go returns authoritative note, path, dirty, history, and persistence state to the frontend.
-6. Native menus emit the same commands used by visible application controls.
+1. Wails starts the Go application and loads or recovers the session.
+2. The frontend requests authoritative session metadata and the active recovery draft through bound methods.
+3. Editing updates the textarea immediately. Preview rendering and metadata work are debounced; draft content is persisted through Go.
+4. Explicit save writes the source file and records bounded history. Save As commits the new path only after the write succeeds.
+5. A restore flushes the current editor buffer, snapshots that pre-restore content, then replaces the recovery draft.
+6. Go returns authoritative note, path, dirty, history, and persistence state for the frontend to render.
+7. Native menus emit the same commands used by visible controls.
 
 ## Design constraints
 
-- Local-first and usable without network access.
-- Linux is the primary platform while desktop-boundary code remains portable.
-- No account, telemetry, cloud synchronization, component suite, icon package, or runtime CDN.
-- Prefer explicit functions and narrow interfaces over service or repository layers.
+- Local-first and functional without network access.
+- System webview; no Electron or bundled Chromium.
+- No account, telemetry, cloud synchronization, component suite, or icon package.
+- Editable files are capped at 10 MiB; read-only assets at 50 MiB.
+- Expensive frontend work and history growth are explicitly bounded.
+- Prefer narrow functions and typed pure modules over new service layers or a wholesale rewrite.
 - Preserve compatibility with existing v0.9 sessions and drafts.
+
+## Repository scope
+
+Only the root application is covered by this architecture and by release CI. `ports/shreyamnotes-wails` is a separate experimental product and should be extracted to its own repository if maintained further.

@@ -2,45 +2,49 @@
 
 Markpad targets small native artifacts without Electron or a bundled browser runtime.
 
-## Local Linux build
+## Prerequisites
+
+- Go 1.24 or newer.
+- Bun 1.3 or newer.
+- Wails 2.12 for development builds.
+- ripgrep for quality and asset-policy checks.
+- GTK 3 and WebKitGTK 4.1 development packages on Linux.
+
+## Local build
 
 ```sh
-make build-linux-local
+make setup
+make check
+make build
 ./dist/markpad README.md
 ```
 
-The local build script downloads required development packages into `/tmp/markpad-apt`, extracts headers and pkg-config files into `/tmp/markpad-sysroot`, and builds a stripped binary at `dist/markpad`.
+`make setup` installs exactly the versions in `frontend/bun.lock`. `make build` type-checks and bundles `frontend/dist` before compiling the production Go binary that embeds those assets.
 
-## Standard build
-
-If Gio Linux dependencies are installed system-wide:
-
-```sh
-make build
-```
+For live development, run `wails dev`. The commands used by Wails are defined in `wails.json`.
 
 ## Release CI
 
-`.github/workflows/release.yml` builds these artifacts when a tag like `v0.1.0` is pushed:
+`.github/workflows/release.yml` verifies the frontend and Go code, then builds these artifacts when a `vX.Y.Z` tag is pushed:
 
-- Linux binary
+- Linux x86-64 binary (requires GTK 3 and WebKitGTK 4.1 at runtime)
 - Linux `.deb`
-- Linux AppImage
-- Windows `.exe` zip
-- macOS `.dmg`
+- Windows `.exe` and NSIS installer
+- macOS arm64 and x86-64 `.dmg` files with zipped `.app` fallbacks
 
 ## Release checklist
 
-- Update version in `internal/desktop/app.go`.
-- Run `go test ./internal/markdown ./internal/preview ./internal/session ./tests`.
-- Run the local Linux build and smoke test opening a `.md` and `.txt` file.
+- Update `Version` in `main.go` and the versioned packaging metadata.
+- Run `make setup && make check`.
+- Run `make check-size` and confirm the release-size ceiling.
+- Smoke test opening, editing, saving, restoring, and closing a Markdown file and a plain-text file.
+- Confirm PDF external handoff and image preview still work offline.
 - Confirm `packaging/linux/markpad.svg` and desktop metadata are present.
 - Tag the release with `vX.Y.Z`.
-- Upload screenshots to the website and README placeholders.
 
 ## Future packaging work
 
 - Add signed/notarized macOS releases.
-- Add Windows installer/MSI.
-- Add AppImage smoke tests in CI.
+- Build a dependency-bundled AppImage with an executable `AppRun`, then add an install/launch smoke test.
+- Complete reproducible offline frontend builds for the Flatpak and Snap drafts.
 - Add a generated PNG/icon pipeline if target stores require raster icons.

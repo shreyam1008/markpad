@@ -1,5 +1,5 @@
-import tailwind from "bun-plugin-tailwind";
 import { $ } from "bun";
+import tailwind from "bun-plugin-tailwind";
 
 await $`rm -rf ./dist`.quiet();
 

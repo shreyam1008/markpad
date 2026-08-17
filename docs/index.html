@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta name="description" content="Markpad is a small, fast, native Markdown notepad built with Go and Wails. Split view, version history, session restore, autosaved drafts, favorites, find, and beautiful rendering. No Electron. Under 10 MB." />
-    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, version history, find, appimage, session restore, open source, shreyam1008" />
+    <meta name="description" content="Markpad is a small, private Markdown notepad built with Go and Wails. Split view, local version history, session restore, autosaved drafts, favorites, and no Electron." />
+    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, version history, find, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -16,13 +16,13 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Markpad" />
     <meta property="og:title" content="Markpad — Native Markdown Notepad" />
-    <meta property="og:description" content="A tiny native Markdown notepad with split view, version history, session restore, find, and beautiful rendering. Under 10 MB, no Electron." />
+    <meta property="og:description" content="A small native Markdown notepad with split view, local version history, session restore, and no Electron or cloud account." />
     <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
     <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Markpad — Native Markdown Notepad" />
-    <meta name="twitter:description" content="Small, fast, native Markdown notepad by shreyam1008. Split view, version history, favorites, session restore. No Electron." />
+    <meta name="twitter:description" content="Small native Markdown notepad by shreyam1008. Split view, version history, favorites, session restore. No Electron." />
     <meta name="twitter:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <script type="application/ld+json">
@@ -32,7 +32,7 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.9",
+        "softwareVersion": "0.9.2",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
@@ -103,7 +103,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny notepad<br/>that gets out of the way.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Open any text file. Edit Markdown with live preview. View code with syntax highlighting. Version history with diffs. No Electron, no cloud, no telemetry. Under 10 MB.
+          Open text files. Edit Markdown with live preview. View code with syntax highlighting. Keep local version history. No Electron, no cloud, no telemetry.
         </p>
         <div class="flex justify-center gap-3 mb-6 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -118,9 +118,9 @@
         </div>
         <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Size-gated Builds</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">PDF Rendering</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">PDF Handoff</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
@@ -163,7 +163,7 @@
       <section id="features" class="max-w-5xl mx-auto px-6 pb-24">
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Why Markpad</p>
-          <h2 class="text-3xl font-bold">Notepad speed. Modern features.</h2>
+          <h2 class="text-3xl font-bold">Notepad simplicity. Modern features.</h2>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -180,11 +180,11 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">No Electron</h3>
-            <p class="text-sm text-muted">Go + Wails + system webview. A single binary under 10 MB. Low memory. Starts instantly.</p>
+            <p class="text-sm text-muted">Go + Wails + the operating system webview. No bundled Chromium runtime, account, or background service.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Drag, Star, Delete</h3>
-            <p class="text-sm text-muted">Drag-and-drop to reorder. Star notes for favorites. Right-click to delete. Full keyboard shortcuts.</p>
+            <p class="text-sm text-muted">Drag-and-drop to reorder. Star notes for favorites. Close saved files or explicitly discard unsaved drafts. Full keyboard shortcuts.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Formatting Toolbar</h3>
@@ -196,11 +196,11 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Version History + Diffs</h3>
-            <p class="text-sm text-muted">Every save creates a snapshot. Click any version for a unified diff. Green for added, red for removed. Restore instantly.</p>
+            <p class="text-sm text-muted">Every save creates a snapshot. Click any version for a unified diff. Green for added, red for removed. Restore with one action.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
-            <h3 class="font-bold mb-2">PDF & Image Preview</h3>
-            <p class="text-sm text-muted">PDFs render page-by-page via pdf.js. Images display inline. No heavy engine bundled — stays lightweight.</p>
+            <h3 class="font-bold mb-2">PDF & Image Handling</h3>
+            <p class="text-sm text-muted">PDFs open in the system viewer. Images display inline. Both remain read-only, with no PDF engine bundled.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Single Instance</h3>
@@ -227,8 +227,8 @@
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128039;</div>
-            <strong class="block group-hover:text-accent transition-colors">Linux AppImage</strong>
-            <span class="text-xs text-muted">Portable, no install</span>
+            <strong class="block group-hover:text-accent transition-colors">Linux x86-64 binary</strong>
+            <span class="text-xs text-muted">Requires GTK 3 + WebKitGTK 4.1</span>
           </a>
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128230;</div>
@@ -238,12 +238,12 @@
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127466;</div>
             <strong class="block group-hover:text-accent transition-colors">Windows .exe</strong>
-            <span class="text-xs text-muted">Portable zip</span>
+            <span class="text-xs text-muted">NSIS installer</span>
           </a>
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127822;</div>
             <strong class="block group-hover:text-accent transition-colors">macOS .dmg</strong>
-            <span class="text-xs text-muted">Apple Silicon + Intel</span>
+            <span class="text-xs text-muted">DMG or app bundle</span>
           </a>
           <a href="https://github.com/shreyam1008/markpad" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center sm:col-span-2 lg:col-span-1">
             <div class="text-2xl mb-2">&#128187;</div>
@@ -257,7 +257,7 @@
       <section class="max-w-4xl mx-auto px-6 pb-24">
         <div class="text-center mb-10">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Under the Hood</p>
-          <h2 class="text-3xl font-bold">Lean, native, no runtime.</h2>
+          <h2 class="text-3xl font-bold">Lean, native, no bundled browser.</h2>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Go</strong><span class="text-xs text-muted">Single binary</span></div>

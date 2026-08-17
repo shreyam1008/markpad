@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
@@ -14,20 +13,13 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.9"
+const Version = "0.9.2"
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Println(Version)
 		os.Exit(0)
 	}
-
-	// Optimize WebKit memory consumption on Linux/Unix systems by disabling JIT compiler
-	os.Setenv("JSC_useJIT", "0")
-	os.Setenv("JavaScriptCoreUseJIT", "0")
-
-	// Tune Go garbage collection to be more aggressive for memory savings
-	debug.SetGCPercent(20)
 
 	app := NewApp()
 
@@ -52,7 +44,7 @@ func main() {
 	})
 	fileMenu.AddSeparator()
 	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(cd *menu.CallbackData) {
-		runtime.Quit(app.ctx)
+		runtime.EventsEmit(app.ctx, "menu:quit")
 	})
 
 	editMenu := appMenu.AddSubmenu("Edit")

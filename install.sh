@@ -24,6 +24,20 @@ case "$ARCH" in
   *) error "Unsupported architecture: $ARCH" ;;
 esac
 
+# The release binary uses the system GTK/WebKit libraries. Fail before the
+# download when the dynamic linker cache proves they are unavailable.
+if command -v ldconfig >/dev/null 2>&1; then
+  RUNTIME_LIBS=$(ldconfig -p 2>/dev/null || true)
+  MISSING_LIBS=""
+  case "$RUNTIME_LIBS" in *libgtk-3.so*) ;; *) MISSING_LIBS="$MISSING_LIBS libgtk-3" ;; esac
+  case "$RUNTIME_LIBS" in *libwebkit2gtk-4.1.so*) ;; *) MISSING_LIBS="$MISSING_LIBS libwebkit2gtk-4.1" ;; esac
+  if [ -n "$MISSING_LIBS" ]; then
+    error "Missing runtime libraries:$MISSING_LIBS. Install GTK 3 and WebKitGTK 4.1, or use the release .deb on Debian/Ubuntu."
+  fi
+else
+  warn "Could not preflight GTK/WebKit runtime libraries (ldconfig is unavailable)."
+fi
+
 # Get latest release tag via GitHub API
 info "Checking latest version..."
 TAG=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"//;s/".*//')

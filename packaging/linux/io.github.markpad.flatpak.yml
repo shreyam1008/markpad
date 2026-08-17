@@ -33,7 +33,9 @@ modules:
         GOCACHE: /run/build/markpad/gocache
         CGO_ENABLED: "1"
     build-commands:
-      # Wails v2 embeds the frontend at build time. The gnome runtime provides WebKitGTK.
+      # DRAFT: a Flathub submission must provide Bun and locked frontend packages
+      # offline, then run `bun install --frozen-lockfile && bun run build` here.
+      # This direct Go build is intentionally not considered release-ready yet.
       - go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o markpad .
       - install -Dm755 markpad /app/bin/markpad
       # Desktop file
@@ -56,8 +58,8 @@ modules:
 # 1. Markpad uses Wails v2 with CGO + WebKitGTK.
 #    The GNOME runtime (org.gnome.Platform) includes WebKitGTK, so no extra module needed.
 #
-# 2. The frontend is embedded at build time by Wails — no separate frontend build step.
-#    The go build command above is sufficient.
+# 2. Production Go builds embed frontend/dist. The manifest still needs an
+#    offline Bun/tooling source and an explicit frontend install/build step.
 #
 # 3. Replace placeholder commit SHA with actual tag SHA.
 #

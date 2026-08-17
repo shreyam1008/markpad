@@ -1,6 +1,6 @@
 {
   "version": "0.9.0",
-  "description": "Tiny native Markdown notepad and local file viewer. No Electron, under 10 MB, fast startup.",
+  "description": "Small native Markdown notepad and local file viewer. No Electron and no cloud account.",
   "homepage": "https://shreyam1008.github.io/markpad/",
   "license": "MIT",
   "architecture": {

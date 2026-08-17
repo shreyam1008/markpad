@@ -1,162 +1,34 @@
-# Markpad — Packaging Guide
+# Markpad packaging notes
 
-Publisher: Shreyam Adhikari (shreyam1008@gmail.com)
-Version: 0.8.0
+The supported packaging path is `.github/workflows/release.yml`. A `v*` tag first runs the complete verification job, then produces the Linux x86-64 binary and `.deb`, Windows executable/NSIS installer, and arm64/x86-64 macOS DMG/zipped apps.
 
----
+## Files
 
-## Files in this directory
+| Path | Purpose | Status |
+|---|---|---|
+| `linux/markpad.desktop` | Linux desktop entry | Used by release CI |
+| `linux/markpad.svg` | Application icon | Used by release CI |
+| `linux/io.github.markpad.metainfo.xml` | AppStream metadata | Used by release CI |
+| `windows/installer.nsi` | Windows installer | Used by release CI |
+| `macos/Info.plist` | macOS bundle metadata | Used by release CI |
+| `winget/manifests/` | Versioned WinGet submissions | Manual publishing |
+| `scoop/markpad.json` | Versioned Scoop manifest | Manual publishing |
+| `linux/io.github.markpad.flatpak.yml` | Flathub draft | Not release-ready |
+| `../snap/snapcraft.yaml` | Snap Store draft | Not release-ready |
 
-| Path | Purpose |
-| --- | --- |
-| `linux/markpad.desktop` | Linux desktop entry |
-| `linux/markpad.svg` | Scalable app icon |
-| `linux/io.github.markpad.metainfo.xml` | AppStream metadata |
-| `linux/io.github.markpad.flatpak.yml` | Flatpak manifest for Flathub |
-| `windows/installer.nsi` | NSIS Windows installer script |
-| `winget/manifests/…` | WinGet manifests |
-| `scoop/markpad.json` | Scoop bucket manifest |
-| `../snap/snapcraft.yaml` | Snap Store packaging |
+AppImage is not a supported artifact yet. A future AppImage must bundle its GTK/WebKit dependencies, provide an executable root `AppRun`, and pass an install/launch smoke test before it is advertised.
 
----
+## Release preparation
 
-## Step 0: Prepare release artifacts
+1. Update versions in `main.go`, the package metadata, and versioned store manifests.
+2. Run `make setup && make check`.
+3. Run `make check-size` on a Linux machine with GTK/WebKitGTK development packages.
+4. Smoke test open/edit/save/reopen, Save As failure, history restore, image preview, and PDF handoff.
+5. Push a `vX.Y.Z` tag and confirm the verify job succeeds before platform builds begin.
+6. Download and smoke test each artifact before publishing store manifests.
 
-Before submitting to any store, create a GitHub Release with:
+## Store manifests
 
-```
-markpad-setup.exe        (Windows NSIS installer — built by CI)
-markpad-linux-amd64      (or AppImage — built by CI)
-```
+WinGet and Scoop entries contain release URLs and hashes, so each version must be updated from the actual published installer. Do not reuse a previous version's checksum or edit an already-published version to describe a different binary.
 
----
-
-## 1. Snap Store (Linux — faster path than Flathub)
-
-### Build
-
-```bash
-sudo snap install snapcraft --classic
-cd /home/shre/Desktop/me/markpad
-snapcraft
-
-# Produces: markpad_0.8.0_amd64.snap
-```
-
-### Register and upload
-
-```bash
-snapcraft login
-snapcraft register markpad
-snapcraft upload markpad_0.8.0_amd64.snap --release=stable
-```
-
-### Snap Store dashboard
-
-https://snapcraft.io/account
-
----
-
-## 2. Flathub
-
-### Generate Go vendor sources for offline build
-
-```bash
-# Tool: https://github.com/flatpak/flatpak-builder-tools/tree/master/go-vendor
-python3 flatpak-go-vendor.py go.sum > packaging/linux/go-vendor-sources.json
-```
-
-### Replace placeholder commit SHA
-
-```bash
-git ls-remote https://github.com/shreyam1008/markpad refs/tags/v0.8.0
-# Paste the SHA into packaging/linux/io.github.markpad.flatpak.yml
-```
-
-### Test locally
-
-```bash
-flatpak install org.gnome.Platform//48 org.gnome.Sdk//48
-flatpak install org.freedesktop.Sdk.Extension.golang
-flatpak-builder --force-clean build-dir packaging/linux/io.github.markpad.flatpak.yml
-flatpak-builder --run build-dir packaging/linux/io.github.markpad.flatpak.yml markpad
-```
-
-### Submit to Flathub
-
-1. Fork https://github.com/flathub/flathub
-2. Create directory `io.github.markpad/`
-3. Add `io.github.markpad.yml`, `go-vendor-sources.json`, icon, metainfo, desktop file
-4. Desktop Icon ID must be `io.github.markpad` (update `markpad.desktop` Icon field)
-5. Submit PR — follow https://docs.flathub.org/docs/for-app-authors/submission
-
----
-
-## 3. WinGet
-
-### Get installer sha256
-
-```powershell
-certutil -hashfile markpad-setup.exe SHA256
-```
-
-### Steps
-
-1. Fork https://github.com/microsoft/winget-pkgs
-2. Copy `packaging/winget/manifests/s/ShreyamAdhikari/Markpad/0.8.0/` into your fork at the same path
-3. Replace placeholder `InstallerSha256` with real value
-4. Validate:
-
-```powershell
-winget validate manifests/s/ShreyamAdhikari/Markpad/0.8.0/
-```
-
-5. Submit PR
-
-### After approval
-
-```powershell
-winget install ShreyamAdhikari.Markpad
-```
-
----
-
-## 4. Scoop
-
-### Get installer sha256
-
-```powershell
-certutil -hashfile markpad-setup.exe SHA256
-```
-
-### Create the bucket repo
-
-```bash
-# On GitHub: create repo named "scoop-bucket" (or reuse from dbterm)
-# Add: bucket/markpad.json
-```
-
-### Edit markpad.json
-
-Replace `TODO_replace_with_sha256_of_markpad-setup.exe` in `packaging/scoop/markpad.json` with the real value.
-
-### Users install with
-
-```powershell
-scoop bucket add shreyam1008 https://github.com/shreyam1008/scoop-bucket
-scoop install markpad
-```
-
----
-
-## Release checklist
-
-- [ ] `go test ./...` passes
-- [ ] `gofmt -w .` clean
-- [ ] CI builds Linux binary + Windows installer
-- [ ] GitHub Release tag created with artifacts attached
-- [ ] `io.github.markpad.metainfo.xml` release entry added
-- [ ] Snap version bumped in `snap/snapcraft.yaml`
-- [ ] Flatpak manifest commit SHA updated
-- [ ] WinGet sha256 updated
-- [ ] Scoop json sha256 updated
+The Flatpak and Snap drafts are not currently supported release paths. Production Go builds require `frontend/dist`; a store build must therefore provide Bun and all locked frontend packages offline, run the frozen frontend install/build, and only then compile Go. Do not submit either draft until that reproducible offline pipeline and a smoke test exist.

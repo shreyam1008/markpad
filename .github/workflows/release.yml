@@ -9,17 +9,55 @@ permissions:
   contents: write
 
 jobs:
-  linux:
+  verify:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.x"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev wget file desktop-file-utils
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev ripgrep
+      - name: Verify
+        run: make GO=go check-ci check-size
+      - name: Verify tagged version
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(./dist/markpad --version)"
+          if [ "$actual" != "$expected" ]; then
+            echo "tag version $expected does not match application version $actual"
+            exit 1
+          fi
+
+  linux:
+    runs-on: ubuntu-24.04
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+      - name: Build frontend
+        working-directory: frontend
+        run: bun run build
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
       - name: Build binary
-        run: go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o dist/markpad .
+        run: |
+          mkdir -p dist
+          go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o dist/markpad .
       - name: Build deb
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -39,37 +77,36 @@ jobs:
           Description: Small native Markdown notepad with split view and session restore
           EOF
           sed -i 's/^[[:space:]]*//' build/deb/DEBIAN/control
-          dpkg-deb --build build/deb "dist/markpad_${VERSION}_amd64.deb"
-      - name: Build AppImage
-        run: |
-          mkdir -p build/Markpad.AppDir/usr/bin build/Markpad.AppDir/usr/share/applications build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps build/Markpad.AppDir/usr/share/metainfo
-          cp dist/markpad build/Markpad.AppDir/usr/bin/markpad
-          cp packaging/linux/markpad.desktop build/Markpad.AppDir/usr/share/applications/markpad.desktop
-          cp packaging/linux/markpad.svg build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps/markpad.svg
-          cp packaging/linux/markpad.svg build/Markpad.AppDir/markpad.svg
-          cp packaging/linux/io.github.markpad.metainfo.xml build/Markpad.AppDir/usr/share/metainfo/io.github.markpad.metainfo.xml
-          ln -s usr/share/applications/markpad.desktop build/Markpad.AppDir/markpad.desktop
-          wget -q -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod +x appimagetool
-          ./appimagetool --appimage-extract
-          ARCH=x86_64 ./squashfs-root/AppRun build/Markpad.AppDir dist/Markpad.AppImage
+          dpkg-deb --root-owner-group --build build/deb "dist/markpad_${VERSION}_amd64.deb"
       - uses: actions/upload-artifact@v4
         with:
           name: linux
           path: |
             dist/markpad
             dist/*.deb
-            dist/*.AppImage
 
   windows:
     runs-on: windows-latest
+    needs: verify
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.x"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+      - name: Build frontend
+        working-directory: frontend
+        run: bun run build
       - name: Build exe
-        run: go build -tags production -trimpath -ldflags="-s -w -H windowsgui" -o dist/markpad.exe .
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          go build -tags production -trimpath -ldflags="-s -w -H windowsgui" -o dist/markpad.exe .
       - name: Install NSIS
         shell: pwsh
         run: choco install -y nsis
@@ -85,36 +122,61 @@ jobs:
           path: dist/*
 
   macos:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-26
+            arch: arm64
+          - runner: macos-26-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    needs: verify
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24.x"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+      - name: Build frontend
+        working-directory: frontend
+        run: bun run build
       - name: Build app bundle
         env:
           CGO_LDFLAGS: "-framework UniformTypeIdentifiers"
         run: |
           mkdir -p "dist/Markpad.app/Contents/MacOS" "dist/Markpad.app/Contents/Resources"
           cp packaging/macos/Info.plist "dist/Markpad.app/Contents/Info.plist"
+          VERSION="${GITHUB_REF_NAME#v}"
+          plutil -replace CFBundleShortVersionString -string "$VERSION" "dist/Markpad.app/Contents/Info.plist"
+          plutil -replace CFBundleVersion -string "$VERSION" "dist/Markpad.app/Contents/Info.plist"
           go build -tags production -trimpath -ldflags="-s -w" -o "dist/Markpad.app/Contents/MacOS/markpad" .
       - name: Build dmg
+        env:
+          ARTIFACT_ARCH: ${{ matrix.arch }}
         continue-on-error: true
         run: |
           for i in 1 2 3; do
-            hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg" && break
+            hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad-macOS-${ARTIFACT_ARCH}.dmg" && break
             echo "hdiutil attempt $i failed, retrying in 5s..."
             sleep 5
           done
       - name: Zip app bundle as fallback
-        run: cd dist && zip -r Markpad-macOS.zip Markpad.app
+        env:
+          ARTIFACT_ARCH: ${{ matrix.arch }}
+        run: cd dist && zip -r "Markpad-macOS-${ARTIFACT_ARCH}.zip" Markpad.app
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: macos
+          name: macos-${{ matrix.arch }}
           path: |
-            dist/Markpad.dmg
-            dist/Markpad-macOS.zip
+            dist/Markpad-macOS-${{ matrix.arch }}.dmg
+            dist/Markpad-macOS-${{ matrix.arch }}.zip
 
   publish:
     runs-on: ubuntu-24.04
@@ -130,16 +192,15 @@ jobs:
           body: |
             ## Install
 
-            **Linux (one command):**
+            **Linux x86-64 (installer script):**
             ```sh
             curl -sL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh
             ```
 
             Or download below:
-            - `markpad` — standalone Linux binary
+            - `markpad` — Linux binary; requires GTK 3 and WebKitGTK 4.1
             - `markpad_*_amd64.deb` — Debian/Ubuntu package
-            - `Markpad.AppImage` — portable AppImage
 
             **Windows:** `markpad-setup.exe` — installer with Start Menu + Desktop shortcuts
 
-            **macOS:** `Markpad.dmg` — drag to Applications
+            **macOS:** choose the `arm64` artifact for Apple silicon or `x86_64` for Intel. Each architecture includes a DMG when creation succeeds and a zipped app fallback.

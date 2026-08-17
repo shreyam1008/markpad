@@ -1,83 +1,75 @@
-# Bundle Budget
+# Bundle and performance budget
 
-Markpad aims for a production binary under **10 MB** and keeps webview memory growth bounded.
-This file tracks what each layer costs so new features stay within budget.
+Markpad uses explicit release gates and records measurements without turning estimates into product claims.
 
-## Binary composition (production build, embedded frontend)
+## Enforced ceilings
 
-| Component | Estimated size | Notes |
-|-----------|---------------|-------|
-| Go runtime + stdlib | ~4.5 MB | net/http, encoding, os, json, path |
-| Wails v2 framework | ~2.5 MB | Webview bindings, IPC, menus, dialogs |
-| Embedded frontend (`frontend/`) | ~120 KB | HTML + JS + precompiled CSS (see below) |
-| Session/history logic (`internal/`) | ~15 KB | Pure Go, no heavy deps |
-| **Total binary** | **~8 MB** | Confirmed via `wails build` |
+| Artifact | Ceiling | Enforcement |
+|---|---:|---|
+| Complete raw `frontend/dist` | 512 KiB (524,288 bytes) | `make check-frontend-size` |
+| Stripped Linux release binary | 15 MiB (15,728,640 bytes) | `make check-size` and Linux CI |
 
-## Frontend assets (embedded in binary)
+The 15 MiB value is a hard release ceiling, not a claim that every platform artifact has the same size. Startup time, idle memory, and typing latency are not currently release claims because the project does not yet have a repeatable benchmark harness.
 
-| File | Raw size | Lines | Role |
-|------|---------|-------|------|
-| `frontend/src/main.js` | ~70 KB | ~1500 | All frontend logic |
-| `frontend/index.html` | ~16 KB | ~230 | App shell |
-| `frontend/src/tailwind.css` | ~21 KB | generated | Precompiled utility CSS |
-| `frontend/src/styles.css` | ~8 KB | ~170 | Custom CSS overrides |
-| **Total frontend** | **~115 KB** | | Embedded in binary |
+## Frontend measurement
 
-## CDN dependencies (loaded at runtime, NOT in binary)
+Measured on Linux/amd64 with Bun 1.3.14 on 2026-08-17 after `bun run build`:
 
-| Library | CDN size (gzip) | Load | Purpose |
-|---------|----------------|------|---------|
-| marked.js | ~36 KB | sync | Markdown parser |
-| highlight.js core | ~45 KB | sync | Syntax highlighting (40 languages) |
-| highlight.js extras (8 packs) | ~12 KB total | defer | lua, dart, toml, dockerfile, cmake, elixir, nim, zig |
-| DOMPurify | ~12 KB | sync | XSS sanitization |
-| pdf.js | ~200 KB | defer | PDF rendering (loaded only when needed) |
-| pdf.js worker | ~290 KB | on-demand | PDF page rendering (loaded by pdf.js) |
-| github-markdown-css | ~10 KB | async | Markdown preview styling |
-| highlight.js github theme | ~3 KB | async | Code theme |
-**Total CDN at first load:** ~105 KB gzipped (no PDF)
-**Total CDN with PDF open:** ~730 KB gzipped
+| Output | Before stabilization | Current | Change |
+|---|---:|---:|---:|
+| JavaScript | 1,323,159 bytes | 324,046 bytes | -75.5% |
+| CSS | 56,171 bytes | 54,909 bytes | -2.2% |
+| Generated HTML | 424 bytes | 424 bytes | 0% |
+| **Total raw frontend** | **1,379,754 bytes** | **379,379 bytes** | **-72.5%** |
 
-## Go backend code
+The reduction comes primarily from removing the redundant React/ReactDOM wrapper and replacing the full highlight.js bundle with core plus the language grammars available for Markpad's supported source types. Marked, DOMPurify, styles, and language grammars remain bundled locally; there is no runtime CDN.
 
-| File | Lines | Bytes | Responsibility |
-|------|-------|-------|----------------|
-| `app.go` | ~646 | ~16 KB | All Wails-bound methods, file ops, session bridge |
-| `main.go` | ~129 | ~4 KB | App entry, menus, single-instance, CLI args |
-| `internal/session/session.go` | ~447 | ~10 KB | Session, documents, bookmarks, recent, drafts, atomic write |
-| `internal/session/history.go` | ~238 | ~5 KB | Version snapshots, listing, pruning, timeAgo |
-| **Total Go** | **~1460** | **~35 KB** | |
+Hashed output filenames may change between builds. Measure the sum of files rather than depending on a particular chunk name:
 
-## Runtime memory profile
+```sh
+make check-frontend-size
+```
 
-Linux WebKitGTK uses separate main, network, and web processes. Measure total PSS, not summed RSS,
-because shared pages make RSS misleading.
+## Runtime work limits
 
-| Build | Total idle PSS | Notes |
-|-------|---------------:|-------|
-| v0.7 with Tailwind browser compiler | ~349 MB | Measured June 7, 2026 |
-| Current precompiled-CSS/lazy-PDF build | ~191 MB | Measured June 7, 2026 after 15s idle; about 45% lower |
+| Work or data | Limit |
+|---|---:|
+| Editable local file | 10 MiB |
+| Read-only local asset | 50 MiB |
+| Draft save debounce | 300 ms |
+| Markdown preview debounce | 120 ms |
+| Outline/statistics debounce | 180 ms |
+| Highlighted code | 2,000 lines and 200,000 characters |
+| Browser edit history | 80 states and 1 MiB of stored text |
+| Quadratic diff matrix | 2,000,000 cells; larger changes use a linear fallback |
+| Saved history | 50 snapshots per document |
+| Recent files | 10 entries |
 
-The webview baseline dominates memory. Document data, undo, diffs, PDF canvases, and image reads are
-explicitly bounded below so usage does not grow without control.
+These bounds prevent obvious unbounded growth. They are not substitutes for measurements with realistic documents.
 
-## Budget rules
+## Binary measurement status
 
-- **Binary must stay under 10 MB.** Do not add heavy Go dependencies.
-- **Frontend JS must stay under 80 KB raw** (excluding CDN). Currently ~70 KB.
-- **Tailwind is precompiled.** Never restore the browser CDN compiler; regenerate with `make css`.
-- **No new sync CDN scripts.** Any new library must load with `defer` or on-demand.
-- **Syntax highlighting capped at 5000 lines.** Prevents webview OOM on huge files.
-- **LCS diff is capped at 2 million comparison cells.** Common prefixes/suffixes are removed first; larger rewrites use a linear-memory fallback.
-- **Undo history is capped at 80 states and 1 MB of text per edited document.**
-- **PDF: first 2 pages rendered, next pages in batches of 3.** Prevents canvas memory bloat.
-- **Images limited to 50 MB via ReadFileBase64.** Go-side guard.
-- **History: max 50 snapshots per note.** Auto-pruned on save.
+The current Linux binary was not remeasured in this workspace because the GTK/WebKitGTK development packages required for the production link are unavailable. CI installs those packages and rejects a binary above the release ceiling. Record the exact CI artifact size here before making a smaller binary-size claim in public documentation.
 
-## Adding a new feature — checklist
+## Benchmark backlog
 
-1. Will it add a Go dependency? Check `go.sum` impact.
-2. Will it add a CDN library? Must use `defer` and document size here.
-3. Will it increase `main.js` significantly? Keep under 80 KB.
-4. Will it hold data in memory? Document expected RSS impact.
-5. Update this file with the new row in the appropriate table.
+The first repeatable benchmark set should record:
+
+- cold start to interactive and total process-tree PSS on a named OS/webview version;
+- typing latency with 100 KiB, 1 MiB, and 10 MiB documents;
+- Markdown parse, highlight, sanitize, and DOM update time separately;
+- document switching and history restore latency;
+- the command, fixture hash, build flags, machine, and date for every result.
+
+Do not reintroduce forced Go garbage collection, `FreeOSMemory`, or JavaScriptCore JIT changes unless this benchmark set demonstrates a net user-visible benefit.
+
+## Change checklist
+
+When frontend code or dependencies change:
+
+1. Build from the committed lockfile.
+2. Run `make check` and record the raw output delta.
+3. Confirm the asset-policy scan finds no runtime network dependency.
+4. Run `make check-size` on a supported Linux build machine or verify the CI result.
+5. Explain any material size increase in the change that caused it.
+6. Update this file only with reproduced measurements.

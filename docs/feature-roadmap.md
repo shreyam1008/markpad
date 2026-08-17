@@ -2,19 +2,17 @@
 
 ## Purpose
 
-Markpad became difficult to reason about after many small additions landed without cohesive feature boundaries. This document preserves that work as product knowledge while the application returns to the installed, proven v0.9 baseline.
+Markpad became difficult to reason about after many small additions landed without cohesive feature boundaries. This document keeps future work aligned with the deliberately small v0.9 product.
 
 This is not a promise to restore every experiment. It is a controlled backlog for reintroducing only the features that make Markpad simpler or more useful.
 
 ## Stable baseline
 
-The source-of-truth baseline is:
+The source-of-truth baseline is the root Markpad application:
 
-- Release: v0.9.0
-- Git revision: 8f3db1e98648d60cb5c98cc6ac88e40372e61684
-- Installed binary build date: 2026-06-11
-- Installed Linux binary size: 8,828,032 bytes
-- Runtime: Go, Wails v2, operating-system webview, vanilla JavaScript
+- Release: v0.9.2
+- Runtime: Go, Wails v2, and the operating-system webview
+- Frontend: typed DOM modules bundled with Bun; no component framework
 - Product identity: a small local Markdown notepad, not a full workspace platform
 
 The baseline already includes the product essentials:
@@ -42,7 +40,7 @@ Every future feature must satisfy these rules:
 5. Do not add export formats before the core workflow is reliable.
 6. Do not add command-palette actions before the underlying action is stable.
 7. Do not add diagnostics unless they help solve a real user problem.
-8. Keep the frontend understandable without a framework or build pipeline.
+8. Keep the typed frontend understandable without a component framework or runtime network dependencies.
 9. Keep the production binary small and startup behavior predictable.
 10. Ship one cohesive slice at a time.
 
@@ -78,12 +76,11 @@ Only one feature should be ACTIVE at a time.
 5. Markdown task list.
 6. Recoverable Trash.
 7. Templates.
-8. Command palette.
-9. Canvas, only after all earlier features are cohesive.
+8. Canvas, only after all earlier features are cohesive.
 
 ## Feature 1: Stabilization guardrails
 
-Status: PLANNED
+Status: ACTIVE
 
 ### User value
 
@@ -348,33 +345,28 @@ Create a consistent note without repeatedly typing the same structure.
 
 ## Feature 8: Command palette
 
-Status: PARKED
+Status: SHIPPED
 
 ### User value
 
 Keyboard access to stable actions that already exist elsewhere.
 
-### Entry condition
+### Shipped scope
 
-Do not begin until at least three stable actions benefit from keyboard discovery.
-
-### Minimal cohesive version
-
-- One shortcut opens the palette.
-- Search a small static action list.
+- `Ctrl+P` opens the palette.
+- Search covers stable actions and open files; `>` limits results to actions.
 - Arrow keys, Enter, and Escape work predictably.
 - Each action calls the same implementation as its visible UI control.
 
-### Acceptance criteria
+### Maintenance rules
 
 - The palette never owns separate business logic.
-- Disabled actions explain why they are unavailable.
-- Focus returns to the prior editor location on close.
 - No command exists only to expose a report or preference variant.
 
 ### Defer
 
 - Recents and categories.
+- Disabled-action explanations and explicit focus restoration.
 - Restore/import/export of command history.
 - Hundreds of generated commands.
 - Command-specific guides inside the palette.
@@ -535,10 +527,6 @@ Before declaring a feature shipped:
 6. Update this roadmap and release notes.
 7. Record binary-size impact when frontend or dependencies changed.
 
-## Recovery references
+## Repository scope
 
-The previous implementations remain in Git history after revision 8f3db1e. They may be studied for algorithms or UI ideas, but should not be copied back wholesale.
-
-A filesystem backup of the pre-restoration working tree is retained under `/tmp/markpad-overgrown-source-backup-2026-08-10/`.
-
-The experimental ports under `ports/` and `temp/` are not part of the Markpad product baseline.
+Previous implementations remain in Git history and may be studied for algorithms or UI ideas, but should not be copied back wholesale. Experimental applications under `ports/` are not built, tested, packaged, or released as Markpad; they should move to their own repository if development continues.

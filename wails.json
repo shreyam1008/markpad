@@ -2,6 +2,7 @@
   "version": "2",
   "name": "markpad",
   "outputfilename": "markpad",
+  "build:tags": "webkit2_41",
   "frontend:dir": "frontend",
   "frontend:install": "bun install --frozen-lockfile",
   "frontend:build": "bun run build",

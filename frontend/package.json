@@ -1,31 +1,28 @@
 {
   "name": "markpad-frontend",
+  "version": "0.9.2",
   "private": true,
-  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "dev": "bun --hot index.html",
     "build": "tsc --noEmit && bun run build.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint --react-plugin --jsx-a11y-plugin --import-plugin src",
-    "fmt": "oxfmt src build.mjs index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
-    "fmt:check": "oxfmt --check src build.mjs index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
-    "check": "bun run typecheck && bun run lint && bun run fmt:check"
+    "test": "bun test",
+    "lint": "oxlint --import-plugin src tests",
+    "fmt": "oxfmt src tests build.mjs index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
+    "fmt:check": "oxfmt --check src tests build.mjs index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
+    "check": "bun run typecheck && bun run test && bun run lint && bun run fmt:check"
   },
   "dependencies": {
-    "dompurify": "latest",
-    "highlight.js": "^11.11.1",
-    "marked": "18.0.9",
-    "react": "latest",
-    "react-dom": "latest"
+    "dompurify": "3.4.13",
+    "highlight.js": "11.11.1",
+    "marked": "18.0.9"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "bun-plugin-tailwind": "latest",
-    "oxfmt": "latest",
-    "oxlint": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest"
+    "bun-plugin-tailwind": "0.1.2",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.78.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2"
   }
 }
