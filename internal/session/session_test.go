@@ -41,6 +41,24 @@ func TestStorePersistsDraftsAndSession(t *testing.T) {
 	}
 }
 
+func TestDefaultDraftRecognitionPreservesLegacyContent(t *testing.T) {
+	t.Parallel()
+
+	for _, content := range []string{
+		"",
+		defaultDraftContent,
+		previewDefaultDraftContent,
+		legacyDefaultDraftContent,
+	} {
+		if !IsDefaultDraftContent(content) {
+			t.Fatalf("default draft was not recognized: %q", content)
+		}
+	}
+	if IsDefaultDraftContent("# Untitled\n\nUser content") {
+		t.Fatal("user content was mistaken for the default draft")
+	}
+}
+
 func TestSaveToDiskMarksClean(t *testing.T) {
 	store, err := NewStoreAt(t.TempDir())
 	if err != nil {

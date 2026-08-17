@@ -45,6 +45,14 @@ import "highlight.js/styles/github.css";
 import { marked } from "marked";
 
 import { createAsyncQueue } from "./async-queue";
+import {
+  LEGACY_PRODUCT_NAME,
+  PRODUCT_NAME,
+  SOURCE_URL,
+  STORAGE_KEYS,
+  VERSION,
+  WEBSITE_URL,
+} from "./brand";
 import { CommandRegistry, fuzzyMatch } from "./commands";
 import { errorMessage, escapeHtml } from "./safe-html";
 import { classifySaveResult } from "./save-result";
@@ -88,7 +96,7 @@ hljs.registerLanguage("swift", swift);
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("xml", xml);
 hljs.registerLanguage("yaml", yaml);
-// Markpad — direct DOM TypeScript + Tailwind + Wails
+// Quillpane — direct DOM TypeScript + Tailwind + Wails
 // All file I/O via window.go.main.App.*
 
 let viewMode = "viewer"; // 'markdown' | 'split' | 'viewer'
@@ -115,7 +123,7 @@ const enqueueDraftMutation = createAsyncQueue();
 const noteViewModes = {};
 const noteScrollPos = {};
 const editHistories = new Map();
-const collapsedSections = JSON.parse(localStorage.getItem("markpad-sections") || "{}");
+const collapsedSections = JSON.parse(localStorage.getItem(STORAGE_KEYS.sections) || "{}");
 const DRAFT_MS = 300;
 const RENDER_MS = 120;
 const METADATA_MS = 180;
@@ -131,7 +139,7 @@ const UI_ZOOM_MIN = 0.8,
   UI_ZOOM_STEP = 0.1,
   UI_ZOOM_DEFAULT = 1;
 const storedUiZoom = Number.parseFloat(
-  localStorage.getItem("markpad-ui-zoom") || String(UI_ZOOM_DEFAULT),
+  localStorage.getItem(STORAGE_KEYS.interfaceZoom) || String(UI_ZOOM_DEFAULT),
 );
 let uiZoom = Number.isFinite(storedUiZoom)
   ? Math.min(Math.max(storedUiZoom, UI_ZOOM_MIN), UI_ZOOM_MAX)
@@ -143,7 +151,7 @@ function applyUiZoom(silent) {
   app.style.transform = `scale(${uiZoom})`;
   app.style.width = `${100 / uiZoom}%`;
   app.style.height = `${100 / uiZoom}%`;
-  localStorage.setItem("markpad-ui-zoom", String(uiZoom));
+  localStorage.setItem(STORAGE_KEYS.interfaceZoom, String(uiZoom));
   if (!silent && statusText)
     statusText.textContent = `Interface zoom: ${Math.round(uiZoom * 100)}%`;
 }
@@ -168,8 +176,8 @@ const TEXT_ZOOM_MIN = 10,
   TEXT_ZOOM_STEP = 1,
   TEXT_ZOOM_DEFAULT = 14;
 const storedTextZoom = Number.parseInt(
-  localStorage.getItem("markpad-text-zoom") ||
-    localStorage.getItem("markpad-zoom") ||
+  localStorage.getItem(STORAGE_KEYS.textZoom) ||
+    localStorage.getItem(STORAGE_KEYS.legacyTextZoom) ||
     String(TEXT_ZOOM_DEFAULT),
   10,
 );
@@ -180,8 +188,8 @@ let textSize = Number.isFinite(storedTextZoom)
 function applyTextZoom(silent) {
   editor.style.fontSize = `${textSize}px`;
   viewer.style.setProperty("--markpad-text-size", `${textSize}px`);
-  localStorage.setItem("markpad-text-zoom", String(textSize));
-  localStorage.removeItem("markpad-zoom");
+  localStorage.setItem(STORAGE_KEYS.textZoom, String(textSize));
+  localStorage.removeItem(STORAGE_KEYS.legacyTextZoom);
   if (!silent && statusText)
     statusText.textContent = `Text zoom: ${Math.round((textSize / TEXT_ZOOM_DEFAULT) * 100)}%`;
 }
@@ -445,7 +453,7 @@ function renderDocumentCard(note) {
       <div class="doc-title">${escapeHtml(title)}</div>
       <div class="doc-meta">${escapeHtml(label)} · ${escapeHtml(size)}</div>
       <div class="doc-path">${escapeHtml(path)}</div>
-      <p class="doc-note">This format stays read-only in Markpad. Open it in your system viewer for full rendering.</p>
+      <p class="doc-note">This format stays read-only in ${PRODUCT_NAME}. Open it in your system viewer for full rendering.</p>
       <button class="doc-open" data-open-external="${escapeHtml(path)}">Open Externally</button>
     </div>`;
 }
@@ -533,7 +541,7 @@ function renderViewer(content, active) {
       escapeHtml(message) +
       "</span><span>Your file is still available in Editor.</span></div>";
     statusText.textContent = "Preview failed; file remains editable";
-    console.error("Markpad preview failed", error);
+    console.error(`${PRODUCT_NAME} preview failed`, error);
   }
 }
 
@@ -1284,7 +1292,7 @@ document.querySelectorAll("[data-section-toggle]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.sectionToggle;
     collapsedSections[key] = !collapsedSections[key];
-    localStorage.setItem("markpad-sections", JSON.stringify(collapsedSections));
+    localStorage.setItem(STORAGE_KEYS.sections, JSON.stringify(collapsedSections));
     applySectionState();
   });
 });
@@ -2452,7 +2460,7 @@ async function showRename() {
     '<form id="rename-form">' +
       '<label for="rename-input" style="display:block;margin-bottom:6px;font-size:11px;font-weight:700;color:#6b6e68;">File name</label>' +
       '<input id="rename-input" style="width:100%;border:1px solid #d8d6ce;border-radius:9px;background:#fffffc;padding:9px 11px;outline:none;font-size:13px;" autocomplete="off" />' +
-      '<p style="margin:7px 0 13px;color:#6b6e68;font-size:11px;">The file stays in the same folder. Changing the extension changes how Markpad opens it.</p>' +
+      `<p style="margin:7px 0 13px;color:#6b6e68;font-size:11px;">The file stays in the same folder. Changing the extension changes how ${PRODUCT_NAME} opens it.</p>` +
       '<div style="display:flex;justify-content:flex-end;gap:7px;">' +
       '<button type="button" id="rename-cancel" class="confirm-btn">Cancel</button>' +
       '<button type="submit" class="confirm-btn primary">Rename</button>' +
@@ -2601,7 +2609,7 @@ async function showPreferences() {
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Sidebar</h3>
     <p>Favorites, Open, and Recent are collapsible sections. Open files are reorderable tabs with close buttons. Right-click for context actions.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Single Instance</h3>
-    <p>Only one Markpad window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
+    <p>Only one ${PRODUCT_NAME} window runs at a time. Opening a file while ${PRODUCT_NAME} is running adds it to the existing window.</p>
     <h3 style="margin-top:14px;margin-bottom:6px;font-size:13px;font-weight:700;">Storage</h3>
     <p style="font-size:11px;word-break:break-all;color:#6b6e68;">${escapeHtml(storagePath)}</p>
     <p>Session, drafts, and version history are stored locally. No cloud, no telemetry.</p>
@@ -2730,7 +2738,7 @@ function registerEvents() {
     showModal(
       "Help",
       `
-    <p><b>Markpad</b> is a native Markdown notepad.</p>
+    <p><b>${PRODUCT_NAME}</b> is a native Markdown notepad.</p>
     <p>Open Markdown, text, code, config, logs, PDFs, ebooks, and office documents.</p>
     <p>Star notes to pin them. Drag to reorder. Only unsaved drafts can be deleted.</p>
     <p>Lists auto-continue on Enter. Press Enter on an empty list item to end the list.</p>
@@ -2747,14 +2755,15 @@ function registerEvents() {
   );
   window.runtime.EventsOn("menu:about", () =>
     showModal(
-      "About Markpad",
+      `About ${PRODUCT_NAME}`,
       `
-    <p><b>Markpad</b> v0.9.2</p>
+    <p><b>${PRODUCT_NAME}</b> v${VERSION}</p>
+    <p style="margin-top:6px;color:#6b6e68;">Previously ${LEGACY_PRODUCT_NAME}. Your existing notes, drafts, history, settings, and command continue to use the same local storage.</p>
     <p style="margin-top:6px;">A tiny native notepad built with Go + Wails. No Electron, no cloud.</p>
     <p>Single instance, external PDF handoff, image preview, scroll position memory, syntax highlighting, Markdown split view, code view, version history with diffs, session restore, favorites, recent files, file info, and zoom.</p>
     <p style="margin-top:8px;">
-      <a href="https://shreyam1008.github.io/markpad/" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
-      <a href="https://github.com/shreyam1008/markpad" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
+      <a href="${WEBSITE_URL}" style="color:#2f6f61;text-decoration:underline;">Website</a> &middot;
+      <a href="${SOURCE_URL}" style="color:#2f6f61;text-decoration:underline;">GitHub</a> &middot;
       MIT License &middot; by Shreyam Adhikari
     </p>
   `,

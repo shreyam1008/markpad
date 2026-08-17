@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "./brand";
 import shell from "./legacy-shell.txt";
 
 import "./styles.css";
@@ -8,7 +9,7 @@ document.body.className =
 const root = document.getElementById("root");
 
 if (!root) {
-  throw new Error("Markpad root element is missing");
+  throw new Error(`${PRODUCT_NAME} root element is missing`);
 }
 
 root.innerHTML = shell;
@@ -22,7 +23,7 @@ void import("./legacy-controller").catch((error: unknown) => {
 
   const heading = document.createElement("h1");
   heading.className = "text-base font-bold";
-  heading.textContent = "Markpad could not finish starting";
+  heading.textContent = `${PRODUCT_NAME} could not finish starting`;
 
   const message = document.createElement("p");
   message.className = "mt-3 text-sm leading-6 text-[#6b6e68]";

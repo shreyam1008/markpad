@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"markpad/internal/brand"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
@@ -122,7 +124,7 @@ func main() {
 	app.pendingFiles = cliFiles
 
 	err := wails.Run(&options.App{
-		Title:     "Markpad",
+		Title:     brand.ProductName,
 		Width:     1180,
 		Height:    760,
 		MinWidth:  720,
@@ -136,7 +138,7 @@ func main() {
 			DisableWebViewDrop: true,
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId:               "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single",
+			UniqueId:               brand.SingleInstanceID,
 			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
 		OnStartup:     app.startup,

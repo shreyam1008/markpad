@@ -1,12 +1,14 @@
-# Markpad
+# Quillpane
 
-A small native Markdown notepad and local-file viewer. Markpad uses Go, Wails, and your operating system's webview—no Electron, account, sync service, telemetry, or runtime cloud backend.
+A small native Markdown notepad and local-file viewer. Quillpane uses Go, Wails, and your operating system's webview—no Electron, account, sync service, telemetry, or runtime cloud backend.
 
-![Markpad screenshot](photo/image.png)
+> **Rebrand preview:** Quillpane is the proposed successor name for Markpad. This branch changes display copy only. The `markpad` command, repository URL, package identifiers, config directory, browser-storage keys, and single-instance identity intentionally remain unchanged so existing users keep every note, draft, setting, and history entry. See [the migration record](docs/rebrand-quillpane.md).
+
+![Current Markpad release, compatible with the proposed Quillpane display-name transition](photo/image.png)
 
 ## Install
 
-Download the current packages from [GitHub Releases](https://github.com/shreyam1008/markpad/releases).
+Download the current Markpad-named packages from [GitHub Releases](https://github.com/shreyam1008/markpad/releases). The package and command names do not change in this preview.
 
 ### Linux
 

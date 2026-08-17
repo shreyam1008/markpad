@@ -10,14 +10,25 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"markpad/internal/brand"
 )
 
 const (
-	sessionFile         = "session.json"
-	corruptSessionStem  = "session.corrupt-"
-	defaultDraftContent = "# Untitled\n\nStart writing. Markpad will keep this draft even if you close the app.\n"
-	draftsDir           = "drafts"
+	sessionFile                = "session.json"
+	corruptSessionStem         = "session.corrupt-"
+	defaultDraftContent        = "# Untitled\n\nStart writing. " + brand.ProductName + " will keep this draft even if you close the app.\n"
+	previewDefaultDraftContent = "# Untitled\n\nStart writing. " + brand.PreviewProductName + " will keep this draft even if you close the app.\n"
+	legacyDefaultDraftContent  = "# Untitled\n\nStart writing. " + brand.LegacyProductName + " will keep this draft even if you close the app.\n"
+	draftsDir                  = "drafts"
 )
+
+// IsDefaultDraftContent recognizes both names during the rebrand so an
+// untouched legacy draft does not suddenly trigger a dirty-content prompt.
+func IsDefaultDraftContent(content string) bool {
+	trimmed := strings.TrimSpace(content)
+	return trimmed == "" || trimmed == strings.TrimSpace(defaultDraftContent) || trimmed == strings.TrimSpace(previewDefaultDraftContent) || trimmed == strings.TrimSpace(legacyDefaultDraftContent)
+}
 
 type Document struct {
 	ID        string    `json:"id"`
