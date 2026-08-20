@@ -28,6 +28,7 @@ func TestSearchWorkspaceUsesDirtyDraft(t *testing.T) {
 		t.Fatal(err)
 	}
 	app.workspaceState = state
+	path = state.Files[0].Path
 
 	results, err := app.SearchWorkspace("dirty draft")
 	if err != nil {
@@ -181,7 +182,7 @@ func TestFileDraftInWorkspacePromotesTheActiveDraftWithoutOpeningADuplicate(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(root, "plans", "launch-plan.md")
+	path := filepath.Join(workspaceState.Root, "plans", "launch-plan.md")
 	data, err := os.ReadFile(path)
 	if err != nil || string(data) != "# Launch plan\n\nShip it." {
 		t.Fatalf("filed workspace note = %q, %v", data, err)
@@ -251,6 +252,7 @@ func TestDeleteFileCleansOpenDocumentState(t *testing.T) {
 	if err := os.WriteFile(path, []byte("saved content"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	path = canonicalPath(path)
 	app := newWorkspaceTestApp(t)
 	doc := app.sess.AddFile(path, "saved content")
 	doc.Dirty = true
@@ -315,6 +317,8 @@ func TestDeleteFileAuthorizationAndPathSafety(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	inside = canonicalPath(inside)
+	outside = canonicalPath(outside)
 	app := newWorkspaceTestApp(t)
 	state, err := workspacepkg.Scan(workspaceRoot)
 	if err != nil {

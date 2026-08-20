@@ -97,7 +97,7 @@ func TestScanFileCountCap(t *testing.T) {
 func TestSearchUnicodeCoordinatesAndOverrides(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
-	path := writeTestFile(t, root, "notes/unicode.md", "first line\n😀 café Needle here\nlast")
+	writeTestFile(t, root, "notes/unicode.md", "first line\n😀 café Needle here\nlast")
 	state, err := Scan(root)
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +118,7 @@ func TestSearchUnicodeCoordinatesAndOverrides(t *testing.T) {
 		t.Fatalf("Search() highlight = %q [%d:%d]", result.Text, result.MatchStart, result.MatchEnd)
 	}
 
-	overrides := map[string][]byte{path: []byte("😀 changed only in DRAFT")}
+	overrides := map[string][]byte{state.Files[0].Path: []byte("😀 changed only in DRAFT")}
 	results, err = Search(context.Background(), state, "draft", overrides)
 	if err != nil {
 		t.Fatal(err)
@@ -193,7 +193,11 @@ func TestCreateFileSafetyAndCollision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if path != filepath.Join(root, "notes", "quick.md") {
+	canonicalRoot, err := NormalizeRoot(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != filepath.Join(canonicalRoot, "notes", "quick.md") {
 		t.Fatalf("CreateFile() = %q", path)
 	}
 	if _, err := os.Stat(path); err != nil {

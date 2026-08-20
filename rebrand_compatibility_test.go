@@ -58,8 +58,9 @@ func TestRebrandPreservesDurableIdentities(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			normalized := strings.ReplaceAll(string(content), "\r\n", "\n")
 			for _, want := range check.want {
-				if !strings.Contains(string(content), want) {
+				if !strings.Contains(normalized, want) {
 					t.Fatalf("%s no longer contains protected identity %q", check.path, want)
 				}
 			}

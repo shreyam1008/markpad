@@ -44,8 +44,9 @@ func TestCanonicalPathResolvesEquivalentPaths(t *testing.T) {
 	}
 
 	indirect := filepath.Join(dir, ".", "folder", "..", "note.md")
-	if got := canonicalPath(indirect); got != path {
-		t.Fatalf("canonicalPath() = %q, want %q", got, path)
+	want := canonicalPath(path)
+	if got := canonicalPath(indirect); got != want {
+		t.Fatalf("canonicalPath() = %q, want %q", got, want)
 	}
 }
 
