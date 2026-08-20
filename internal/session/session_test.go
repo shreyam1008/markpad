@@ -140,6 +140,48 @@ func TestSaveToDiskDetectsDeletedSource(t *testing.T) {
 	}
 }
 
+func TestLoadPreservesInvalidSessionAndStartsClean(t *testing.T) {
+	for name, payload := range map[string]string{
+		"invalid json":      `{not-json`,
+		"unsafe draft path": `{"active_id":"doc","documents":[{"id":"doc","draft_file":"../escape.md"}]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			store, err := NewStoreAt(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, sessionFile), []byte(payload), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := store.Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(loaded.Documents) != 1 || loaded.Active() == nil || !IsDefaultDraftContent(mustReadDraft(t, store, loaded.Active())) {
+				t.Fatalf("clean recovery session = %#v", loaded)
+			}
+			backup := store.RecoveredSessionPath()
+			if backup == "" {
+				t.Fatal("invalid session was not preserved")
+			}
+			data, err := os.ReadFile(backup)
+			if err != nil || string(data) != payload {
+				t.Fatalf("recovery backup = %q, %v", data, err)
+			}
+		})
+	}
+}
+
+func mustReadDraft(t *testing.T, store *Store, doc *Document) string {
+	t.Helper()
+	content, err := store.ReadDraft(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return content
+}
+
 func TestSaveToDiskDistinguishesAtomicReplacement(t *testing.T) {
 	store, err := NewStoreAt(t.TempDir())
 	if err != nil {

@@ -19,6 +19,8 @@
       <li>Find in editor with wrap-around search</li>
       <li>Open one local folder and switch files quickly with the command palette</li>
       <li>Bounded workspace search with file, line, and matching snippet</li>
+      <li>External-change protection before overwriting files edited by another application</li>
+      <li>One-step filing of recovery drafts into the selected workspace folder</li>
       <li>Auto-list continuation for bullets, numbered lists, and task lists</li>
       <li>Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML, CSS, and more</li>
       <li>Favorites, drag-and-drop reorder, file type icons, word count, reading time</li>
@@ -43,9 +45,9 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="0.10.0" date="2026-08-13">
+    <release version="0.10.0" date="2026-08-20">
       <description>
-        <p>Workspace Lite folder browsing, fast file switching, bounded full-workspace search, confirmed file deletion, and a typed React frontend.</p>
+        <p>Workspace Lite folder browsing, fast file switching, bounded full-workspace search, confirmed file deletion, external-change save protection, direct draft filing, and a typed React frontend.</p>
       </description>
     </release>
     <release version="0.9.0" date="2026-06-11">

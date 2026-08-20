@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"markpad/internal/brand"
 	"markpad/internal/session"
 	"markpad/internal/workspace"
 
@@ -26,6 +27,7 @@ type App struct {
 	store        *session.Store
 	sess         *session.Session
 	pendingFiles []string
+	contentMu    sync.Mutex
 
 	workspaceMu           sync.Mutex
 	workspaceState        workspace.State
@@ -39,7 +41,7 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	store, err := session.NewStore("markpad")
+	store, err := session.NewStore(brand.StorageName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "session store: %v\n", err)
 		return
@@ -51,6 +53,16 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.sess = sess
+	if recoveryPath := store.RecoveredSessionPath(); recoveryPath != "" {
+		message := fmt.Sprintf("%s could not read the previous session and started a clean one. The unreadable session was preserved at:\n\n%s", brand.ProductName, recoveryPath)
+		fmt.Fprintln(os.Stderr, message)
+		go func() {
+			_, dialogErr := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
+				Type: runtime.WarningDialog, Title: "Session recovery", Message: message, Buttons: []string{"OK"},
+			})
+			a.recordBackgroundError("show session recovery notice", dialogErr)
+		}()
+	}
 	if sess.WorkspaceRoot != "" {
 		state, scanErr := workspace.Scan(sess.WorkspaceRoot)
 		if scanErr != nil {
@@ -87,6 +99,8 @@ func (a *App) onSecondInstanceLaunch(data options.SecondInstanceData) {
 }
 
 func (a *App) shutdown(ctx context.Context) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	a.workspaceMu.Lock()
 	if a.workspaceSearchCancel != nil {
 		a.workspaceSearchCancel()
@@ -108,7 +122,7 @@ func (a *App) beforeClose(ctx context.Context) bool {
 			// Skip prompting for empty drafts or unmodified default drafts
 			if doc.Path == "" {
 				content, err := a.store.ReadDraft(doc)
-				if err == nil && (strings.TrimSpace(content) == "" || strings.Contains(content, "Start writing. Markpad will keep this draft")) {
+				if err == nil && session.IsDefaultDraftContent(content) {
 					continue
 				}
 			}
@@ -243,6 +257,8 @@ func (a *App) GetSession() SessionState {
 }
 
 func (a *App) GetActiveContent() string {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Active()
 	if doc == nil {
 		return ""
@@ -255,6 +271,8 @@ func (a *App) GetActiveContent() string {
 }
 
 func (a *App) GetNoteContent(id string) string {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return ""
@@ -286,6 +304,8 @@ func (a *App) SetViewMode(id string, mode string) {
 }
 
 func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor int) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return
@@ -317,6 +337,8 @@ func (a *App) NewNoteOfType(format string) SessionState {
 }
 
 func (a *App) UpdateContent(id string, content string, dirty bool) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return
@@ -340,6 +362,8 @@ func (a *App) MarkDirty(id string) {
 }
 
 func (a *App) RevertContent(id string, content string, dirty bool) SessionState {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil || isReadOnlyPath(doc.Path) {
 		return a.GetSession()
@@ -355,12 +379,14 @@ func (a *App) RevertContent(id string, content string, dirty bool) SessionState 
 }
 
 func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Active()
 	if doc == nil {
 		return SaveResult{Session: a.GetSession()}, fmt.Errorf("no active note")
 	}
 	if doc.Path == "" {
-		state, err := a.SaveAsDialog(content)
+		state, err := a.saveAsDialogLocked(content)
 		return SaveResult{Session: state}, err
 	}
 	if isReadOnlyPath(doc.Path) {
@@ -412,6 +438,8 @@ func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
 // ReloadActiveFromDisk is an explicit conflict resolution. The Markpad draft
 // is saved in history before the disk version becomes the clean recovery copy.
 func (a *App) ReloadActiveFromDisk(markpadContent string) (SessionState, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Active()
 	if doc == nil || doc.Path == "" {
 		return a.GetSession(), fmt.Errorf("active note has no source file")
@@ -489,6 +517,12 @@ func (a *App) refreshWorkspaceInventory(operation string) {
 }
 
 func (a *App) SaveAsDialog(content string) (SessionState, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
+	return a.saveAsDialogLocked(content)
+}
+
+func (a *App) saveAsDialogLocked(content string) (SessionState, error) {
 	doc := a.sess.Active()
 	if doc == nil {
 		return a.GetSession(), fmt.Errorf("no active note")
@@ -798,6 +832,8 @@ func (a *App) CreateWorkspaceFile(relativePath string) (SessionState, error) {
 // folder without opening a second document or using a broad Save As dialog.
 // CreateFile reserves the path first, so an existing note is never replaced.
 func (a *App) FileDraftInWorkspace(relativePath string, content string) (SessionState, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	a.workspaceMu.Lock()
 	root := a.workspaceState.Root
 	a.workspaceMu.Unlock()
@@ -850,6 +886,8 @@ func (a *App) FileDraftInWorkspace(relativePath string, content string) (Session
 }
 
 func (a *App) DeleteFile(path string) (SessionState, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return a.GetSession(), fmt.Errorf("file path is required")
@@ -979,6 +1017,8 @@ func (a *App) GetHistoryContent(id string, timestamp string) string {
 }
 
 func (a *App) RestoreVersion(id string, timestamp string) (SessionState, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return a.GetSession(), fmt.Errorf("note not found")
@@ -987,11 +1027,30 @@ func (a *App) RestoreVersion(id string, timestamp string) (SessionState, error) 
 	if err != nil {
 		return a.GetSession(), err
 	}
+	currentContent, err := a.store.ReadDraft(doc)
+	if err != nil {
+		return a.GetSession(), fmt.Errorf("read current content before restore: %w", err)
+	}
+	if err := a.store.SaveSnapshot(doc.ID, currentContent, "restore"); err != nil {
+		return a.GetSession(), fmt.Errorf("protect current content before restore: %w", err)
+	}
+	before := *doc
+	if doc.SourceState != nil {
+		state := *doc.SourceState
+		before.SourceState = &state
+	}
+	if err := a.store.WriteDraft(doc, content); err != nil {
+		return a.GetSession(), fmt.Errorf("write restored content: %w", err)
+	}
 	doc.Dirty = true
 	doc.UpdatedAt = time.Now()
-	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, content))
-	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "restore"))
-	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	if err := a.store.Save(a.sess); err != nil {
+		*doc = before
+		if rollbackErr := a.store.WriteDraft(doc, currentContent); rollbackErr != nil {
+			return a.GetSession(), fmt.Errorf("save restored session: %w; roll back draft: %v", err, rollbackErr)
+		}
+		return a.GetSession(), fmt.Errorf("save restored session: %w", err)
+	}
 	return a.GetSession(), nil
 }
 
@@ -1014,6 +1073,8 @@ func (a *App) OpenPathFromBookmark(path string) (SessionState, error) {
 }
 
 func (a *App) CloseNote(id string) SessionState {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	if strings.TrimSpace(id) == "" || a.sess == nil {
 		return a.GetSession()
 	}
@@ -1043,6 +1104,8 @@ func (a *App) RemoveRecent(path string) SessionState {
 }
 
 func (a *App) DeleteNote(id string) SessionState {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	target := a.sess.Find(id)
 	if target == nil || target.Path != "" {
 		return a.GetSession()
@@ -1060,6 +1123,8 @@ func (a *App) DeleteNote(id string) SessionState {
 // be lost. Saved files are preserved; drafts are removed, as is app-owned
 // history for an unsaved note that has no disk copy.
 func (a *App) DiscardNote(id string) SessionState {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
 		return a.GetSession()
@@ -1139,9 +1204,9 @@ func (a *App) refreshWindowTitle() {
 	if a.ctx == nil || a.sess == nil {
 		return
 	}
-	title := "Markpad"
-	if doc := a.sess.Active(); doc != nil && doc.Title != "" {
-		title += " - " + doc.Title
+	title := brand.ProductName
+	if doc := a.sess.Active(); doc != nil {
+		title = brand.WindowTitle(doc.Title)
 	}
 	runtime.WindowSetTitle(a.ctx, title)
 }

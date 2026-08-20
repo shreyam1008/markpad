@@ -181,6 +181,8 @@ jobs:
             - Jump across open and workspace files with fuzzy `Ctrl+P` search.
             - Search folder content with `Ctrl+Shift+F`, highlighted context, and exact match selection.
             - Create workspace notes and permanently delete files behind an explicit warning.
+            - Prevent silent overwrites when another editor changes, replaces, moves, or deletes an open file.
+            - File an unsaved draft directly into the workspace with `Ctrl+Shift+Enter` and a suggested local filename.
 
             ## Install
 

@@ -10,12 +10,25 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"markpad/internal/brand"
 )
 
 const (
-	sessionFile = "session.json"
-	draftsDir   = "drafts"
+	sessionFile                = "session.json"
+	corruptSessionStem         = "session.corrupt-"
+	defaultDraftContent        = "# Untitled\n\nStart writing. " + brand.ProductName + " will keep this draft even if you close the app.\n"
+	previewDefaultDraftContent = "# Untitled\n\nStart writing. " + brand.PreviewProductName + " will keep this draft even if you close the app.\n"
+	legacyDefaultDraftContent  = "# Untitled\n\nStart writing. " + brand.LegacyProductName + " will keep this draft even if you close the app.\n"
+	draftsDir                  = "drafts"
 )
+
+func IsDefaultDraftContent(content string) bool {
+	trimmed := strings.TrimSpace(content)
+	return trimmed == "" || trimmed == strings.TrimSpace(defaultDraftContent) ||
+		trimmed == strings.TrimSpace(previewDefaultDraftContent) ||
+		trimmed == strings.TrimSpace(legacyDefaultDraftContent)
+}
 
 type Document struct {
 	ID          string       `json:"id"`
@@ -64,8 +77,9 @@ type Session struct {
 }
 
 type Store struct {
-	root  string
-	draft string
+	root                 string
+	draft                string
+	recoveredSessionPath string
 }
 
 func NewStore(appName string) (*Store, error) {
@@ -91,12 +105,16 @@ func (s *Store) Root() string {
 	return s.root
 }
 
+func (s *Store) RecoveredSessionPath() string {
+	return s.recoveredSessionPath
+}
+
 func (s *Store) Load() (*Session, error) {
+	s.recoveredSessionPath = ""
 	path := filepath.Join(s.root, sessionFile)
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		doc := NewDocument("", "# Untitled\n\nStart writing. Markpad will keep this draft even if you close the app.\n")
-		return &Session{ActiveID: doc.ID, Documents: []*Document{doc}}, nil
+		return newDefaultSession(), nil
 	}
 	if err != nil {
 		return nil, err
@@ -104,19 +122,18 @@ func (s *Store) Load() (*Session, error) {
 
 	var sess Session
 	if err := json.Unmarshal(data, &sess); err != nil {
-		return nil, err
+		return s.recoverCorruptSession(data, err)
 	}
 	if len(sess.Documents) == 0 {
 		doc := NewDocument("", "# Untitled\n\n")
 		sess.Documents = []*Document{doc}
 		sess.ActiveID = doc.ID
 	}
-	for _, doc := range sess.Documents {
-		normalizeDocument(doc)
-		s.migrateSourceState(doc)
+	if err := normalizeAndValidateSession(&sess); err != nil {
+		return s.recoverCorruptSession(data, err)
 	}
-	for _, bookmark := range sess.Bookmarks {
-		normalizeBookmark(bookmark)
+	for _, doc := range sess.Documents {
+		s.migrateSourceState(doc)
 	}
 	if sess.WorkspaceRoot != "" {
 		if abs, err := filepath.Abs(sess.WorkspaceRoot); err == nil {
@@ -127,6 +144,56 @@ func (s *Store) Load() (*Session, error) {
 		sess.ActiveID = sess.Documents[0].ID
 	}
 	return &sess, nil
+}
+
+func newDefaultSession() *Session {
+	doc := NewDocument("", defaultDraftContent)
+	return &Session{ActiveID: doc.ID, Documents: []*Document{doc}}
+}
+
+func (s *Store) recoverCorruptSession(data []byte, loadErr error) (*Session, error) {
+	backupPath, err := s.preserveCorruptSession(data)
+	if err != nil {
+		return nil, fmt.Errorf("load session: %w; preserve unreadable session: %v", loadErr, err)
+	}
+	sess := newDefaultSession()
+	if err := s.WriteDraft(sess.Active(), defaultDraftContent); err != nil {
+		return nil, fmt.Errorf("unreadable session preserved at %q, but clean draft initialization failed: %w", backupPath, err)
+	}
+	if err := s.Save(sess); err != nil {
+		return nil, fmt.Errorf("unreadable session preserved at %q, but clean session initialization failed: %w", backupPath, err)
+	}
+	s.recoveredSessionPath = backupPath
+	return sess, nil
+}
+
+func (s *Store) preserveCorruptSession(data []byte) (string, error) {
+	for attempts := 0; attempts < 10; attempts++ {
+		backupPath := filepath.Join(s.root, corruptSessionStem+NewID()+".json")
+		file, err := os.OpenFile(backupPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if errors.Is(err, os.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		if _, err := file.Write(data); err != nil {
+			_ = file.Close()
+			_ = os.Remove(backupPath)
+			return "", err
+		}
+		if err := file.Sync(); err != nil {
+			_ = file.Close()
+			_ = os.Remove(backupPath)
+			return "", err
+		}
+		if err := file.Close(); err != nil {
+			_ = os.Remove(backupPath)
+			return "", err
+		}
+		return backupPath, nil
+	}
+	return "", errors.New("could not allocate a unique recovery file")
 }
 
 func (s *Store) Save(sess *Session) error {
@@ -204,6 +271,12 @@ func (s *Store) saveToDisk(doc *Document, content string, overwrite bool) error 
 	} else if current != nil && current.Mode != 0 {
 		mode = os.FileMode(current.Mode)
 	}
+	// The recovery copy must be durable before replacing the user-selected
+	// file. If this fails, leave the destination untouched and the document
+	// dirty so the edit remains recoverable.
+	if err := s.WriteDraft(doc, content); err != nil {
+		return err
+	}
 	if err := atomicWrite(doc.Path, []byte(content), mode); err != nil {
 		return err
 	}
@@ -213,7 +286,7 @@ func (s *Store) saveToDisk(doc *Document, content string, overwrite bool) error 
 	doc.SavedAt = now
 	doc.UpdatedAt = now
 	doc.Title = TitleFromContent(content, doc.Path)
-	return s.WriteDraft(doc, content)
+	return nil
 }
 
 func (s *Store) SaveAs(doc *Document, path string, content string) error {
@@ -477,6 +550,77 @@ func normalizeDocument(doc *Document) {
 			doc.Path = abs
 		}
 	}
+}
+
+func normalizeAndValidateSession(sess *Session) error {
+	seenIDs := make(map[string]struct{}, len(sess.Documents))
+	seenDrafts := make(map[string]struct{}, len(sess.Documents))
+	for index, doc := range sess.Documents {
+		if doc == nil {
+			return fmt.Errorf("document %d is null", index)
+		}
+		if doc.ID != "" && !safeStorageName(doc.ID, 200) {
+			return fmt.Errorf("document %d has an unsafe id", index)
+		}
+		if doc.DraftFile != "" && !safeStorageName(doc.DraftFile, 240) {
+			return fmt.Errorf("document %d has an unsafe draft filename", index)
+		}
+		normalizeDocument(doc)
+		foldedID := strings.ToLower(doc.ID)
+		if _, exists := seenIDs[foldedID]; exists {
+			return fmt.Errorf("document %d duplicates id %q", index, doc.ID)
+		}
+		seenIDs[foldedID] = struct{}{}
+		foldedDraft := strings.ToLower(doc.DraftFile)
+		if _, exists := seenDrafts[foldedDraft]; exists {
+			return fmt.Errorf("document %d duplicates draft filename %q", index, doc.DraftFile)
+		}
+		seenDrafts[foldedDraft] = struct{}{}
+	}
+
+	seenBookmarkIDs := make(map[string]struct{}, len(sess.Bookmarks))
+	for index, bookmark := range sess.Bookmarks {
+		if bookmark == nil {
+			return fmt.Errorf("bookmark %d is null", index)
+		}
+		if bookmark.ID != "" && !safeStorageName(bookmark.ID, 200) {
+			return fmt.Errorf("bookmark %d has an unsafe id", index)
+		}
+		normalizeBookmark(bookmark)
+		foldedID := strings.ToLower(bookmark.ID)
+		if _, exists := seenBookmarkIDs[foldedID]; exists {
+			return fmt.Errorf("bookmark %d duplicates id %q", index, bookmark.ID)
+		}
+		seenBookmarkIDs[foldedID] = struct{}{}
+	}
+	for index, recent := range sess.RecentFiles {
+		if recent == nil {
+			return fmt.Errorf("recent file %d is null", index)
+		}
+	}
+	return nil
+}
+
+func safeStorageName(value string, maxLength int) bool {
+	if value == "" || len(value) > maxLength || value == "." || value == ".." || strings.HasSuffix(value, ".") {
+		return false
+	}
+	for _, char := range value {
+		switch {
+		case char >= 'a' && char <= 'z':
+		case char >= 'A' && char <= 'Z':
+		case char >= '0' && char <= '9':
+		case char == '.', char == '-', char == '_':
+		default:
+			return false
+		}
+	}
+	stem := strings.ToUpper(strings.SplitN(value, ".", 2)[0])
+	if stem == "CON" || stem == "PRN" || stem == "AUX" || stem == "NUL" ||
+		(len(stem) == 4 && (strings.HasPrefix(stem, "COM") || strings.HasPrefix(stem, "LPT")) && stem[3] >= '1' && stem[3] <= '9') {
+		return false
+	}
+	return true
 }
 
 func formatFromPath(path string) string {

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"markpad/internal/brand"
 )
 
 const (
@@ -47,7 +49,7 @@ func readOpenFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	if info.Size() > limit {
-		return nil, fmt.Errorf("file is too large to open in Markpad (%d MiB limit)", limit>>20)
+		return nil, fmt.Errorf("file is too large to open in %s (%d MiB limit)", brand.ProductName, limit>>20)
 	}
 
 	data, err := io.ReadAll(io.LimitReader(file, limit+1))
@@ -55,7 +57,7 @@ func readOpenFile(path string) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(data)) > limit {
-		return nil, fmt.Errorf("file is too large to open in Markpad (%d MiB limit)", limit>>20)
+		return nil, fmt.Errorf("file is too large to open in %s (%d MiB limit)", brand.ProductName, limit>>20)
 	}
 	return data, nil
 }
@@ -71,6 +73,6 @@ func isReadOnlyAsset(path string) bool {
 
 func (a *App) recordBackgroundError(operation string, err error) {
 	if err != nil {
-		log.Printf("markpad: %s: %v", operation, err)
+		log.Printf("%s: %s: %v", brand.BinaryName, operation, err)
 	}
 }
