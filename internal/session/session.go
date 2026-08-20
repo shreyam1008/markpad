@@ -18,18 +18,19 @@ const (
 )
 
 type Document struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Path      string    `json:"path,omitempty"`
-	Format    string    `json:"format,omitempty"`
-	ViewMode  string    `json:"view_mode,omitempty"`
-	DraftFile string    `json:"draft_file"`
-	Dirty     bool      `json:"dirty"`
-	UpdatedAt time.Time `json:"updated_at"`
-	SavedAt   time.Time `json:"saved_at,omitempty"`
-	ScrollTop int       `json:"scroll_top,omitempty"`
-	ViewTop   int       `json:"view_top,omitempty"`
-	Cursor    int       `json:"cursor,omitempty"`
+	ID          string       `json:"id"`
+	Title       string       `json:"title"`
+	Path        string       `json:"path,omitempty"`
+	Format      string       `json:"format,omitempty"`
+	ViewMode    string       `json:"view_mode,omitempty"`
+	DraftFile   string       `json:"draft_file"`
+	Dirty       bool         `json:"dirty"`
+	UpdatedAt   time.Time    `json:"updated_at"`
+	SavedAt     time.Time    `json:"saved_at,omitempty"`
+	ScrollTop   int          `json:"scroll_top,omitempty"`
+	ViewTop     int          `json:"view_top,omitempty"`
+	Cursor      int          `json:"cursor,omitempty"`
+	SourceState *SourceState `json:"source_state,omitempty"`
 }
 
 type Bookmark struct {
@@ -53,12 +54,13 @@ type RecentFile struct {
 }
 
 type Session struct {
-	ActiveID    string        `json:"active_id"`
-	Documents   []*Document   `json:"documents"`
-	Bookmarks   []*Bookmark   `json:"bookmarks,omitempty"`
-	RecentFiles []*RecentFile `json:"recent_files,omitempty"`
-	ViewModes   map[string]string `json:"view_modes,omitempty"`
-	Preferences Preferences   `json:"preferences"`
+	ActiveID      string            `json:"active_id"`
+	Documents     []*Document       `json:"documents"`
+	Bookmarks     []*Bookmark       `json:"bookmarks,omitempty"`
+	RecentFiles   []*RecentFile     `json:"recent_files,omitempty"`
+	ViewModes     map[string]string `json:"view_modes,omitempty"`
+	WorkspaceRoot string            `json:"workspace_root,omitempty"`
+	Preferences   Preferences       `json:"preferences"`
 }
 
 type Store struct {
@@ -111,9 +113,15 @@ func (s *Store) Load() (*Session, error) {
 	}
 	for _, doc := range sess.Documents {
 		normalizeDocument(doc)
+		s.migrateSourceState(doc)
 	}
 	for _, bookmark := range sess.Bookmarks {
 		normalizeBookmark(bookmark)
+	}
+	if sess.WorkspaceRoot != "" {
+		if abs, err := filepath.Abs(sess.WorkspaceRoot); err == nil {
+			sess.WorkspaceRoot = filepath.Clean(abs)
+		}
 	}
 	if sess.ActiveID == "" || sess.Find(sess.ActiveID) == nil {
 		sess.ActiveID = sess.Documents[0].ID
@@ -173,13 +181,34 @@ func (s *Store) RemoveDraft(doc *Document) error {
 }
 
 func (s *Store) SaveToDisk(doc *Document, content string) error {
+	return s.saveToDisk(doc, content, false)
+}
+
+// OverwriteToDisk is the explicit conflict-resolution path. Normal saves must
+// always use SaveToDisk so an external edit cannot be replaced silently.
+func (s *Store) OverwriteToDisk(doc *Document, content string) error {
+	return s.saveToDisk(doc, content, true)
+}
+
+func (s *Store) saveToDisk(doc *Document, content string, overwrite bool) error {
 	if doc.Path == "" {
 		return errors.New("document has no save path")
 	}
-	if err := atomicWrite(doc.Path, []byte(content), 0o644); err != nil {
+	mode := os.FileMode(0o644)
+	if overwrite {
+		if info := sourceInfo(doc.Path); info != nil {
+			mode = info.Mode().Perm()
+		}
+	} else if current, err := checkExternalChange(doc); err != nil {
+		return err
+	} else if current != nil && current.Mode != 0 {
+		mode = os.FileMode(current.Mode)
+	}
+	if err := atomicWrite(doc.Path, []byte(content), mode); err != nil {
 		return err
 	}
 	now := time.Now()
+	doc.SourceState = sourceStateForPath(doc.Path, []byte(content))
 	doc.Dirty = false
 	doc.SavedAt = now
 	doc.UpdatedAt = now
@@ -196,9 +225,15 @@ func (s *Store) SaveAs(doc *Document, path string, content string) error {
 	if err == nil {
 		path = abs
 	}
+	oldPath, oldFormat, oldState := doc.Path, doc.Format, doc.SourceState
 	doc.Path = path
 	doc.Format = formatFromPath(path)
-	return s.SaveToDisk(doc, content)
+	doc.SourceState = nil
+	if err := s.OverwriteToDisk(doc, content); err != nil {
+		doc.Path, doc.Format, doc.SourceState = oldPath, oldFormat, oldState
+		return err
+	}
+	return nil
 }
 
 func (sess *Session) Find(id string) *Document {
@@ -383,6 +418,9 @@ func NewDocument(path string, content string) *Document {
 		DraftFile: id + ".md",
 		Dirty:     path == "" && strings.TrimSpace(content) != "",
 		UpdatedAt: now,
+	}
+	if info := sourceInfo(path); info != nil {
+		doc.SourceState = sourceStateForPath(path, []byte(content))
 	}
 	return doc
 }

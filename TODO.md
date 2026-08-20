@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1 – v0.7)
+## Completed (v0.1–v0.10)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider
@@ -13,7 +13,7 @@
 - [x] Right-click context menu: Star, File Info, Open Folder, Copy Path, Close, Delete
 - [x] File verticals: Markdown, Code, Text, PDF, Image, Ebook/Office/Archive
 - [x] Syntax highlighting for code files (highlight.js, capped at 5000 lines)
-- [x] PDF rendering via pdf.js (page-by-page canvas, lazy load)
+- [x] Lightweight PDF handoff to the operating system viewer
 - [x] Image inline preview (base64 data URL)
 - [x] Read-only document cards for ebook/office/archive
 - [x] Single instance lock (second launch opens files in existing window)
@@ -33,24 +33,37 @@
 - [x] Extended syntax highlighting (lua, dart, toml, dockerfile, cmake, elixir, nim, zig + full lang map)
 - [x] Open Folder fix (xdg-open/open/explorer instead of file:// URL)
 - [x] PDF dirty indicator fix (read-only files never show "NOT SAVED")
-- [x] Performance: deferred pdf.js + highlight.js extras for faster cold start
+- [x] Performance: bounded local syntax highlighting and external PDF handoff
 - [x] BUNDLE_BUDGET.md: size/memory cost tracking for every feature
 - [x] Comprehensive agents.md with guardrails for AI-assisted development
+- [x] React 19 + strict TypeScript component architecture with Bun build and tests
+- [x] Fully bundled offline frontend with pinned direct dependencies
+- [x] Command palette with fuzzy open-file/action switching (`Ctrl+P`)
+- [x] Tab-style switching (`Ctrl+Tab` / `Ctrl+Shift+Tab`)
+- [x] Workspace Lite: persist one local folder and browse supported relative paths
+- [x] Workspace file navigation through `Ctrl+P`
+- [x] Bounded exact workspace content search with file/line/snippet and match selection (`Ctrl+Shift+F`)
+- [x] Manual workspace refresh, change, clear, and collision-safe note creation
+- [x] Confirmed permanent saved-file deletion with dirty-edit warning and path-safety guards
+- [x] Clean-checkout CI/release builds compile the embedded frontend before Go
+- [x] Windows and macOS release icon resources restored
+- [x] External-change protection before saving, with reload/overwrite/save-a-copy resolution
+- [x] Title-derived, collision-safe filing of recovery drafts into Workspace Lite
 
-## Next (v0.8+)
+## Next
 
 - [ ] Dark mode with OS theme detection and manual toggle
 - [ ] Browser-compatible build (same app runs in browser via WASM or static)
 - [ ] File watcher: detect external changes and prompt reload
 - [ ] Source/preview scroll sync for Markdown
-- [ ] Command palette (Ctrl+P)
-- [ ] Tab-style switching (Ctrl+Tab / Ctrl+Shift+Tab)
 - [ ] Export to HTML/PDF from Markdown
-- [ ] Plain folder mode (open a directory as workspace)
 - [ ] Signed/notarized macOS builds
-- [ ] Windows NSIS installer
+- [x] Windows NSIS installer
 - [ ] Snap store / Flatpak packaging
 - [ ] Real screenshots on website and README
+- [x] External-change detection before overwriting an open saved file
+- [ ] Optional refresh-on-focus after manual refresh behavior is proven
+- [ ] Measure Workspace Lite scan/search latency on representative folder corpora
 
 ## Performance (Ongoing)
 

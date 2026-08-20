@@ -9,7 +9,7 @@
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>
-    <p>Markpad is a tiny native Markdown notepad built with Go and the system webview. No Electron, under 10 MB, fast startup.</p>
+    <p>Markpad is a small native Markdown notepad built with Go and the system webview. It keeps ordinary files local, without Electron, accounts, or telemetry.</p>
     <p>Features include:</p>
     <ul>
       <li>Split view: Editor, side-by-side split, and preview modes with resizable divider</li>
@@ -17,6 +17,8 @@
       <li>Session restore: all notes, drafts, and favorites survive app close</li>
       <li>Formatting toolbar with bold, italic, headings, code, tables, lists, links, and more</li>
       <li>Find in editor with wrap-around search</li>
+      <li>Open one local folder and switch files quickly with the command palette</li>
+      <li>Bounded workspace search with file, line, and matching snippet</li>
       <li>Auto-list continuation for bullets, numbered lists, and task lists</li>
       <li>Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML, CSS, and more</li>
       <li>Favorites, drag-and-drop reorder, file type icons, word count, reading time</li>
@@ -41,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.10.0" date="2026-08-13">
+      <description>
+        <p>Workspace Lite folder browsing, fast file switching, bounded full-workspace search, confirmed file deletion, and a typed React frontend.</p>
+      </description>
+    </release>
     <release version="0.9.0" date="2026-06-11">
       <description>
         <p>Terminal installer, visual layout refinements, and distribution packaging manifests.</p>

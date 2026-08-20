@@ -2,7 +2,7 @@
 
 A tiny native Markdown notepad and local file viewer. Opens fast, saves your work, gets out of the way.
 
-No Electron. No cloud. Single binary under 10 MB. Pure local, pure offline.
+No Electron. No cloud. One small binary, pure local and offline.
 
 ![Markpad Screenshot](photo/image.png)
 
@@ -34,25 +34,31 @@ Download `Markpad.dmg` from [Releases](https://github.com/shreyam1008/markpad/re
 ### Build from source
 
 ```sh
-# Prerequisites: Go 1.24+, Wails CLI
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
+# Prerequisites: Go 1.24+ and Bun
 
 # Linux: also install WebKit2GTK
 sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
 
-wails build   # → build/bin/markpad (~8 MB)
-wails dev     # development mode with hot reload
+make setup
+make build
+./dist/markpad
 ```
 
-No other dependencies. The binary is fully self-contained.
+The release binary embeds the compiled frontend. Node and node_modules are not required at runtime.
 
 ## What It Does
 
 - **Single instance** — Only one window. Opening another file adds it to the existing window
+- **Workspace Lite** — Open one local folder, browse ordinary text/Markdown/code files, and refresh on demand
+- **Fast file switching** — `Ctrl+P` fuzzy-searches open files, workspace paths, and actions
+- **Workspace search** — `Ctrl+Shift+F` searches bounded local file content and opens the exact matching line
+- **Explicit file actions** — Create notes inside the workspace; permanent saved-file deletion warns before removing the file and any unsaved edits
+- **Safe shared-file editing** — Saving pauses if another app changed, replaced, or deleted the source; reload preserves the Markpad draft in history
+- **File a draft** — Turn an instant recovery draft into a title-named workspace file with `Ctrl+Shift+Enter`; existing files are never overwritten
 - **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
-- **PDF rendering** — Pages rendered via pdf.js (first 5 immediately, rest on demand). Lightweight, no bundled PDF engine
+- **PDF handoff** — PDFs open in the operating system's default viewer without bundling a PDF engine
 - **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
-- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs render in-app, images show inline, others get info cards
+- **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs use the OS viewer, images show inline, others get info cards
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
@@ -76,28 +82,30 @@ Markpad stays lightweight by treating file families differently:
 | Markdown | Editor, Split, Preview, formatting toolbar |
 | Code/config | Fast plain editor plus syntax-highlighted Code View |
 | Text/logs | Direct editor, simple stats |
-| PDF | Page-by-page rendering via pdf.js CDN (first 5 pages, then load rest) |
+| PDF | Read-only handoff to the operating system PDF viewer |
 | Image | Inline preview with Open Externally button |
 | Ebook/office/archive | Read-only info card with Open Externally |
 
-PDF pages render via a ~500 KB CDN library (pdf.js) loaded on demand. No PDF engine is bundled in the binary. Images are read via Go and displayed as base64 data URLs.
+Markpad does not bundle or download a PDF engine. Images are read locally through Go and displayed as base64 data URLs.
 
 ## Versions
 
 | Version | Name | Highlights |
 |---------|------|------------|
-| 0.8 | Falguni | Real-time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, welcome draft close bypass |
-| 0.7 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix, BUNDLE_BUDGET.md |
-| 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
-| 0.5 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |
-| 0.4 | Balram | Drag-and-drop file open, per-type view modes, expanded file icons |
-| 0.3 | Aaradhya | Split view, formatting toolbar, drag reorder, syntax highlighting |
-| 0.2 | | Version history, find, zoom, menus |
-| 0.1 | | Initial release |
+| 0.10.0 | | React + strict TypeScript frontend, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
+| 0.9.0 | | Packaging and distribution groundwork |
+| 0.8.0 | Falguni | Real-time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, welcome draft close bypass |
+| 0.7.0 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix, BUNDLE_BUDGET.md |
+| 0.6.0 | Dhruva | Single instance, PDF rendering, image preview, file info, rich context menu, changelog |
+| 0.5.0 | Chitrakala | File verticals, read-only cards, collapsible sidebar, preferences |
+| 0.4.0 | Balram | Drag-and-drop file open, per-type view modes, expanded file icons |
+| 0.3.0 | Aaradhya | Split view, formatting toolbar, drag reorder, syntax highlighting |
+| 0.2.0 | | Version history, find, zoom, menus |
+| 0.1.0 | | Initial release |
 
 ## Philosophy
 
-Markpad exists because every "lightweight" editor ships 200 MB of Chromium. This one uses your OS's built-in webview. The binary is under 10 MB. Memory footprint stays low. There's no telemetry, no accounts, no sync, no internet access. Just a notepad.
+Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps the release binary below a 15 MiB ceiling. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
 
 ## Keyboard Shortcuts
 
@@ -105,14 +113,19 @@ Markpad exists because every "lightweight" editor ships 200 MB of Chromium. This
 |----------|--------|
 | `Ctrl+N` | New note |
 | `Ctrl+O` | Open file |
+| `Ctrl+Shift+O` | Open or change workspace folder |
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Save As |
 | `Ctrl+Shift+E` | Cycle view |
 | `Ctrl+Shift+B` | Toggle sidebar |
 | `Ctrl+H` | Version history |
 | `Ctrl+F` | Find |
+| `Ctrl+P` | Find files and actions |
+| `Ctrl+Shift+F` | Search workspace content |
+| `Ctrl+Shift+Enter` | File the active draft in the workspace |
+| `F5` | Refresh workspace folder |
 | `Ctrl+B/I/K` | Bold / Italic / Link |
-| `Ctrl+Del` | Delete draft |
+| `Ctrl+Del` | Delete current file or draft (with confirmation) |
 | `Esc` | Close panel |
 
 ## Storage
@@ -136,19 +149,21 @@ history/        # version snapshots (max 50 per note)
 ```sh
 git clone https://github.com/shreyam1008/markpad.git
 cd markpad
-wails dev       # starts dev server with hot reload
+make setup
+make run
 ```
 
 - Go backend in `app.go` and `internal/session/`
-- Frontend in `frontend/` — vanilla JS, Tailwind CSS, no build step
-- Tests: `go test ./...`
+- Frontend in `frontend/` - React, strict TypeScript, Tailwind CSS, and Bun
+- Full checks: `make check`
+- Canonical Go tests: `go test -tags production,webkit2_41 . ./internal/... ./tests`
 - Format: `gofmt -w .`
 
 PRs welcome. Keep it simple, keep it fast.
 
 ## Tech Stack
 
-Go · Wails v2 · Vanilla JS · Tailwind CSS · marked.js · highlight.js · DOMPurify
+Go · Wails v2 · React · TypeScript · Tailwind CSS · Bun · Marked · highlight.js · DOMPurify · Lucide
 
 ## License
 

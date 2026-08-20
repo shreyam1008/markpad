@@ -1,341 +1,184 @@
 # Markpad Agent Guide
 
-> **This file is the single source of truth for AI agents working on Markpad.**
-> Read this ENTIRE file before making ANY changes. Violations break the product.
+> This is the source of truth for agents working on Markpad. Read it completely before changing the repository.
 
----
+## Product identity
 
-## What is Markpad?
+Markpad is a small, native, local-first Markdown notepad and folder workspace built with Go, Wails v2, and the operating-system webview. It should feel immediate like a traditional notepad while providing live Markdown preview, recovery drafts, saved-version history, fast file navigation, and bounded folder search.
 
-Markpad is a **tiny native Markdown notepad/viewer** built with Go + Wails v2 (OS webview, NOT Electron). It must feel as immediate as Mousepad or Notepad while providing split-view editing, version history, PDF/image preview, session restore, and a modern quiet interface.
+Plain files remain the source of truth. Markpad has no account, cloud service, telemetry, sync engine, or runtime network dependency.
 
-**Core identity:** Lightweight, fast, native, private. Every design decision serves this.
+## Hard constraints
 
----
+| Rule | Reason |
+|---|---|
+| No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
+| Production binary must remain below 15 MiB | `make check-size` is a release gate. |
+| No cloud client, telemetry, account, or external API | User content stays local and private. |
+| No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
+| No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
+| Avoid new Go dependencies | Prefer the standard library; Wails is the only direct Go dependency. |
+| Pin direct frontend dependencies and commit `bun.lock` | Clean builds must be reproducible. |
+| Never silently discard or overwrite unsaved content | Dirty-state warnings and explicit confirmation are safety boundaries. |
+| Never weaken or delete tests to make a change pass | Add or improve coverage instead. |
+| Do not create files without a clear owner or purpose | Use the existing structure and documentation. |
 
-## Hard constraints — NEVER violate these
+Read `BUNDLE_BUDGET.md` before adding a dependency or allocation-heavy feature.
 
-| Rule | Why |
-|------|-----|
-| **No Electron, Tauri, or CEF** | Native webview only. Binary must stay under 10 MB. |
-| **No React, Vue, Svelte, or any JS framework** | Frontend is vanilla JS. Bundle must stay under 80 KB raw. |
-| **No Redux, Zustand, or state management libraries** | State is managed by Go backend + simple JS variables. |
-| **No new synchronous CDN scripts** | New libraries MUST use `defer` or on-demand loading. |
-| **No heavy Go dependencies** | Only `wails/v2` as direct dependency. Prefer stdlib. |
-| **No cloud, no telemetry, no external API calls** | All data is local. Privacy is non-negotiable. |
-| **No inline `onclick` or `onXxx` handlers in HTML** | Use `addEventListener` or event delegation. |
-| **No emojis in code** unless the user explicitly asks | Emojis in UI strings (file icons) are fine. |
-| **No new files without purpose** | Don't create random docs, configs, or helpers. |
-| **Never weaken or delete existing tests** | Only add or improve. |
-| **Never edit existing migration files** | Create new ones if schema changes. |
+## Technology
 
----
+| Layer | Technology |
+|---|---|
+| Desktop | Go 1.24+, Wails v2, native menus/dialogs, OS webview |
+| Frontend | React 19, strict TypeScript, HTML entry point |
+| Build and tests | Bun 1.3.14, Bun bundler/test runner, TypeScript |
+| Styling | Tailwind CSS 4 plus focused CSS in `frontend/src/styles.css` |
+| Markdown | Marked, DOMPurify, highlight.js |
+| Icons | Statically imported Lucide icon nodes |
+| Persistence | Go JSON session, drafts, and bounded history in the app config directory |
 
-## Tech stack (do NOT change without explicit approval)
+Bun bundles browser dependencies into `frontend/dist`. Go embeds only that generated directory. Bun, TypeScript, tests, source maps, and `node_modules` are not part of the release runtime.
 
-| Layer | Technology | Size impact |
-|-------|-----------|-------------|
-| Backend | Go 1.24 + Wails v2 | ~7 MB binary |
-| Frontend | Vanilla HTML/CSS/JS | ~85 KB embedded |
-| Styling | Tailwind CSS (CDN) | ~110 KB gzip runtime |
-| Markdown | marked.js + highlight.js + DOMPurify | ~93 KB gzip runtime |
-| PDF | pdf.js (CDN, deferred) | ~490 KB gzip on-demand |
-| Icons | Inline SVG in toolbar buttons | 0 KB extra |
-| Session | Go JSON persistence in app config dir | 0 KB extra |
+## Repository map
 
-See `BUNDLE_BUDGET.md` for detailed size tracking.
-
----
-
-## Architecture
-
+```text
+main.go                         Wails startup, menus, window, single-instance behavior
+app.go                          Main desktop API and document lifecycle
+backend_safety.go               Filesystem/URL safety helpers
+frontend_assets.go              Embeds frontend/dist
+internal/session/               Session, draft, history, and atomic file persistence
+internal/workspace/             Bounded folder scan, search, creation, and path safety
+frontend/
+  index.html                    Bun HTML entry point
+  build.ts                      Typed, minified production bundle
+  src/App.tsx                   Application orchestration and desktop commands
+  src/commands.ts               Reusable fuzzy matcher/command registry
+  src/components/               Sidebar, palette, editor workspace, history, icons
+  src/preview/                  Sanitized Markdown and bounded code rendering
+  src/workspace/                Typed desktop client, document rules, reducer, API types
+  tests/                        Bun unit tests
+docs/                           Product, architecture, behavior, packaging, and website
+packaging/ and snap/            Platform packaging metadata and icons
 ```
-markpad/
-  main.go                  # Wails app entry, window config, native menus, single-instance lock
-  app.go                   # Go backend: all Wails-bound methods (session, file ops, history)
-  internal/
-    session/
-      session.go           # Document, Bookmark, RecentFile, Session, Store, draft I/O, atomic writes
-      history.go           # Snapshot storage, listing, restore, pruning (max 50 per note)
-  frontend/
-    index.html             # App shell: Tailwind config, CDN scripts, HTML structure
-    src/
-      main.js              # ALL frontend logic (~1300 lines): editor, preview, split, toolbar, sidebar, history, find, shortcuts, modals, PDF, image, scroll position
-      styles.css            # Minimal custom CSS (~116 lines): toolbar, views, context menu, diff, markdown overrides
-  BUNDLE_BUDGET.md         # Size/memory budget per feature (update when adding features)
-  agents.md                # THIS FILE — agent contract
-  TODO.md                  # Forward-looking roadmap
-  docs/                    # GitHub Pages website (Tailwind CSS, SEO)
-  packaging/               # Linux .desktop, metainfo, SVG icon; macOS Info.plist
-  snap/                    # Snap packaging (snapcraft.yaml)
-  tests/                   # Integration tests (Go)
-  .github/workflows/       # CI: cross-platform builds (Linux, Windows, macOS)
-```
-
----
-
-## Go backend methods (exposed to frontend via Wails)
-
-Frontend calls these as `window.go.main.App.MethodName()`.
-
-| Method | Returns | Purpose |
-|--------|---------|---------|
-| `GetSession()` | `SessionState` | All notes, favorites, recents, active ID |
-| `GetActiveContent()` | `string` | Draft content of active note |
-| `GetNoteContent(id)` | `string` | Draft content of specific note |
-| `SetActive(id)` | — | Switch active note |
-| `UpdateReadPosition(id, scrollTop, viewTop, cursor)` | — | Persist editor/viewer scroll + cursor |
-| `NewNote()` | `SessionState` | Create empty untitled note |
-| `UpdateContent(id, content)` | — | Save draft, update title (guards read-only) |
-| `SaveActive(content)` | `SessionState, error` | Save to disk (or triggers Save As if no path) |
-| `SaveAsDialog(content)` | `SessionState, error` | Native save dialog |
-| `OpenFileDialog()` | `SessionState, error` | Native open dialog |
-| `ToggleStar(id)` | `SessionState` | Toggle bookmark/favorite |
-| `DeleteNote(id)` | `SessionState` | Remove unsaved draft (saved files cannot be deleted) |
-| `CloseNote(id)` | `SessionState` | Close a non-dirty note |
-| `ReorderNotes(ids)` | `SessionState` | Reorder notes by ID array (drag-drop) |
-| `OpenPathFromBookmark(path)` | `SessionState, error` | Open a favorited/recent file |
-| `GetHistory(id)` | `[]HistoryEntry` | List version snapshots (newest first) |
-| `GetHistoryContent(id, ts)` | `string` | Full content of a specific snapshot |
-| `RestoreVersion(id, ts)` | `SessionState, error` | Restore a note to a previous version |
-| `GetFileInfo(id)` | `FileInfoResult` | File metadata for info modal |
-| `OpenContainingFolder(path)` | — | Open parent folder in OS file manager (xdg-open/open/explorer) |
-| `OpenExternalPath(path)` | — | Open file in OS default app |
-| `OpenURL(url)` | — | Open URL in system browser |
-| `ReadFileBase64(path)` | `string, error` | Read file as base64 (max 50 MB, for PDF/image) |
-| `GetStoragePath()` | `string` | App config directory path |
-| `RemoveRecent(path)` | `SessionState` | Remove from recent list |
-| `OpenDroppedFile(path)` | `SessionState, error` | Open a drag-dropped file |
-
----
-
-## File type handling
-
-| Type | Extensions | View modes | Editor | Toolbar | Editable |
-|------|-----------|------------|--------|---------|----------|
-| Markdown | md, markdown, mdx | Editor, Split, Preview | Yes | Yes | Yes |
-| Code | py, js, ts, go, rs, etc. | Editor, Code View | Yes | No | Yes |
-| Text | txt, log, csv, tsv | Editor, Code View | Yes | No | Yes |
-| PDF | pdf | Document (pdf.js pages) | No | No | No |
-| Image | png, jpg, gif, webp, etc. | Inline preview | No | No | No |
-| Ebook | epub, mobi, azw, etc. | Info card + Open Externally | No | No | No |
-| Office | doc, docx, odt, rtf | Info card + Open Externally | No | No | No |
-| Archive | zip, tar, gz, 7z, rar | Info card + Open Externally | No | No | No |
-
----
 
 ## Frontend conventions
 
-### State management
-- **No framework state.** All state lives in module-level `let`/`const` variables at the top of `main.js`.
-- Key state: `activeId`, `cachedNotes`, `currentContent`, `committedContent`, `viewMode`, `noteViewModes`, `noteScrollPos`.
-- Session truth comes from Go backend. Frontend calls `GetSession()` and re-renders.
+- Keep TypeScript strict; do not add `any` to bypass API modeling.
+- `App.tsx` coordinates desktop commands and application-level state. Put cohesive UI in `components/` and pure document logic in `workspace/` or `preview/`.
+- `workspace/state.ts` is the reducer-owned browser state. Go session state remains authoritative for persisted document and workspace metadata.
+- Use hooks at component scope with complete, stable dependency lists. Clean up timers and runtime subscriptions.
+- Keep keyboard actions and native-menu events routed through the same callbacks as visible UI controls.
+- Use semantic controls, labels, focus restoration, and keyboard navigation. Do not add clickable non-interactive elements.
+- Do not use unsanitized HTML. Markdown output goes through Marked and DOMPurify; syntax highlighting is bounded.
+- Preserve selection and editor/viewer scroll before switching documents. Workspace search results must select and reveal the exact match.
+- Add styling to `frontend/src/styles.css`; avoid ad hoc inline styles except dynamic values that CSS cannot know.
+- Statically import only required Lucide icon nodes so unused icons are removed from the bundle.
+- Browser code must not fetch production dependencies or user content over the network.
 
-### DOM access
-- `$(id)` is a shorthand for `document.getElementById(id)`.
-- All DOM refs are cached at the top of `main.js`. Do NOT query the DOM in loops.
-- Use `el(tag, cls)` to create elements. Do NOT use `innerHTML` for interactive content — use DOM APIs.
+## Desktop and Go conventions
 
-### Event handling
-- **No inline event handlers.** Use `addEventListener` or event delegation via `data-*` attributes.
-- Global click listener hides context menu. Keyboard shortcuts in a single `keydown` listener.
-- Toolbar actions use event delegation on the toolbar container.
+- Keep platform dialogs, Wails events, external launching, and session conversion at the desktop boundary.
+- Keep session and workspace algorithms independent from Wails so they can be tested directly.
+- Normalize and validate filesystem paths before reads, writes, renames, creation, or deletion.
+- Use atomic replacement for persisted session, draft, history, and user-file writes.
+- Return descriptive errors; never panic for user input or ordinary filesystem failure.
+- Read-only families (PDF, image, ebook, office, archive) never expose edit/save actions. PDFs use the OS viewer rather than a bundled renderer.
+- Never follow a workspace symlink or allow a create/delete path to escape the selected root.
+- Saved-file deletion is permanent and requires frontend confirmation. That warning must state when unsaved edits will also be lost. The backend refuses directories, unsafe paths, symlinks, and files that are neither supported workspace members nor already-open saved files.
 
-### Rendering pipeline
-- `renderViewer(content, active)` is the single dispatch point for all viewer rendering.
-- It routes to: `renderPdf`, `renderImagePreview`, `renderMd`, `renderCode`, `renderDocumentCard`.
-- **Never call these directly** from loadContent/setView/etc. — always go through `renderViewer`.
-- Markdown rendering is debounced at 120ms. Code highlighting caps at 5000 lines.
+## Workspace Lite contract
 
-### Scroll position
-- `saveScrollPos()` saves editor + viewer scroll + cursor for the active note.
-- `restoreScrollPos()` restores on note switch. Called at end of `loadContent`.
-- **Every code path that switches notes** must call `saveScrollPos()` before switching.
+Markpad may persist one selected folder. It does not import files or create a database/index.
 
-### CSS rules
-- Tailwind handles layout and spacing. Custom CSS in `styles.css` is ONLY for:
-  - Toolbar buttons (`.tb`)
-  - View buttons (`.view-btn`)
-  - Context menu (`.ctx-item`)
-  - Drag states, scrollbar, save animation
-  - History panel, diff view
-  - Markdown body overrides
-  - Document cards (`.doc-card`)
-- **No inline styles** except in generated HTML (modals, document cards).
-- **No new CSS files.** Everything goes in `styles.css`.
+- The inventory contains supported regular text files plus visible extensionless text files such as `README` and `Makefile`, ordered deterministically by relative path.
+- `Ctrl+P` searches open documents, workspace filenames/paths, and actions with the existing lightweight fuzzy matcher.
+- `Ctrl+Shift+F` runs case-insensitive exact content search and returns relative path, line, snippet, and match offsets. Opening a result selects and reveals the exact occurrence.
+- Refresh, change, and clear are explicit. External changes become visible after refresh; there is no watcher.
+- New workspace files may use `.md`, `.markdown`, `.mdx`, or `.txt`; a missing extension becomes `.md`; existing files are never overwritten.
+- Unsaved Markdown/text drafts may be filed into the selected folder through the same document lifecycle; the suggested relative path is title-derived and collision-aware, while the backend remains the no-overwrite authority.
+- Hidden paths and the directories `build`, `coverage`, `dist`, `node_modules`, `obj`, `out`, `target`, and `vendor` are excluded.
+- Scan caps: 10,000 included files, 100,000 visited entries, 2 MiB per file, and depth 32.
+- Search caps: 64 MiB per query, 200 results, 256 query runes, and 400 preview runes.
+- Do not add persistent indexing, filesystem watchers, multiple workspaces, backlinks, a graph, Git integration, or a Markpad metadata folder unless separately approved.
 
----
+## File behavior
 
-## Go backend conventions
+| Family | Behavior |
+|---|---|
+| Markdown (`md`, `markdown`, `mdx`) | Editor, Split, Preview; formatting toolbar |
+| Code/config | Editor and bounded syntax-highlighted Code View |
+| Text/log/CSV | Editor and plain Viewer |
+| Image | Local inline preview; read-only |
+| PDF | Read-only handoff to the operating-system viewer |
+| Ebook/office/archive | Read-only information card and external handoff |
 
-### Code organization
-- `main.go`: App entry, menus, CLI args, single-instance lock. Nothing else.
-- `app.go`: All Wails-bound methods + helper functions. Types at the top.
-- `internal/session/`: Pure Go, no Wails dependency, fully testable.
-  - `session.go`: Document, Bookmark, RecentFile, Session, Store, drafts.
-  - `history.go`: Snapshots, listing, pruning, timeAgo.
+Saved files default to Viewer; new drafts default to Editor. View, cursor, editor scroll, and viewer scroll survive document switches where supported.
 
-### Adding a new backend method
-1. Add the method to `App` in `app.go`.
-2. Add the method signature to the table in this file.
-3. If it changes session state, call `a.store.Save(a.sess)` and return `SessionState`.
-4. If it's a new concept (not just a method), add a struct/type near existing types.
-5. Guard read-only paths with `isReadOnlyPath()`.
+## Persistence and safety
 
-### Error handling
-- Return `(SessionState, error)` for fallible operations. Frontend handles the error.
-- Use `fmt.Errorf` with descriptive messages. Never panic.
-- Log to stderr with `fmt.Fprintf(os.Stderr, ...)` for startup errors only.
-
-### File I/O
-- All disk writes use `atomicWrite` (write to temp, rename).
-- All paths are normalized to absolute via `filepath.Abs`.
-- Read-only check via `isReadOnlyPath` → `fileKind` → extension lookup.
-- Binary detection via `looksBinary` (null byte scan of first 8 KB).
-- `ReadFileBase64` has a 50 MB cap.
-
-### Cross-platform
-- `OpenContainingFolder` and `OpenExternalPath` use `openDir` helper:
-  - Linux: `xdg-open`
-  - macOS: `open`
-  - Windows: `explorer`
-- `OpenURL` uses Wails `runtime.BrowserOpenURL` (works cross-platform for HTTP URLs).
-- Build tags: `production,webkit2_41` for Linux production builds.
-
-### Testing
-- Tests live in `tests/` (integration) and can be added as `_test.go` files in `internal/session/`.
-- Test session logic by creating a temp `Store` via `NewStoreAt`.
-- **Run `go test ./...` before committing.** All tests must pass.
-- **Run `gofmt -w .` before committing.**
-
----
-
-## Persistence rules
-
-- Unsaved drafts: `{config_dir}/markpad/drafts/{id}.md`
 - Session: `{config_dir}/markpad/session.json`
+- Drafts: `{config_dir}/markpad/drafts/{id}.md`
 - History: `{config_dir}/markpad/history/{doc-id}/{timestamp}.json`
-- Max 50 snapshots per note; oldest auto-pruned.
-- Snapshots on: save, save-as, open, restore.
-- **Never discard unsaved content** without explicit user action.
-- Bookmark/favorite paths are absolute and deduplicated.
+- Saved-version history: at most 50 snapshots per document
+- Browser edit history: at most 80 states and 1,000,000 characters
+- Images: at most 50 MiB through the desktop boundary
+- Highlighted source: at most 200,000 characters or 2,000 lines
 
----
+Normal exit preserves dirty drafts. An explicit discard or confirmed permanent file deletion may remove recovery content only after user choice. A corrupt session must be preserved for recovery rather than overwritten silently.
 
-## Performance budget
+Saved documents persist a content fingerprint for the source last opened or saved. A normal save must stop on an external modification, replacement, deletion, or unverifiable legacy baseline. Reload protects the Markpad draft in saved-version history before adopting disk content; overwrite/recreate remains an explicit user choice.
 
-| Metric | Target | Enforced by |
-|--------|--------|-------------|
-| Production binary | < 10 MB | `BUNDLE_BUDGET.md` |
-| Frontend JS raw | < 80 KB | `BUNDLE_BUDGET.md` |
-| Cold start to interactive | < 500 ms | No heavy sync scripts |
-| Idle RSS | < 60 MB | No framework overhead |
-| Markdown render debounce | 120 ms | `RENDER_MS` constant |
-| Draft save debounce | 300 ms | `DRAFT_MS` constant |
-| Syntax highlight cap | 5000 lines | `CODE_LINE_CAP` constant |
-| Diff cap | 5000 lines | `simpleDiff` fallback |
-| PDF initial pages | 2 | `MAX_INITIAL` in `renderPdf` |
-| ReadFileBase64 cap | 50 MB | Go-side check |
-| History snapshots/note | 50 | `maxSnapshots` constant |
+## Commands and verification
 
----
+From a clean checkout:
 
-## What agents MUST do
+```sh
+make setup          # bun install --frozen-lockfile
+make check          # frontend build/tests/lint/format, Go tests, assets, release size
+make build          # stripped production Linux binary
+```
 
-1. **Read this file first** before making changes.
-2. **Read `BUNDLE_BUDGET.md`** before adding any dependency or feature.
-3. **Preserve the rendering pipeline** — all viewer rendering goes through `renderViewer`.
-4. **Preserve scroll position** — call `saveScrollPos()` before any note switch.
-5. **Guard read-only types** — PDF, image, ebook, office, archive are never editable.
-6. **Test before committing** — `go test ./...` and `gofmt -w .`
-7. **Update this file** when adding backend methods or changing architecture.
-8. **Update `BUNDLE_BUDGET.md`** when adding dependencies or features.
-9. **Update `TODO.md`** when completing or adding roadmap items.
-10. **Update the changelog** in `showChangelog()` when shipping a version.
+The canonical Go suite is:
 
-## What agents MUST NOT do
+```sh
+go test -tags production,webkit2_41 . ./internal/... ./tests
+```
 
-1. **Do NOT install any JS framework** (React, Vue, Svelte, etc.).
-2. **Do NOT install any CSS framework** beyond Tailwind CDN.
-3. **Do NOT install any Go dependency** beyond wails/v2 without approval.
-4. **Do NOT add sync-loading CDN scripts** — use `defer` or on-demand.
-5. **Do NOT add inline `onclick` handlers** — use addEventListener.
-6. **Do NOT create new CSS files** — use `styles.css`.
-7. **Do NOT create new JS files** — all frontend logic lives in `main.js`.
-8. **Do NOT split `main.js` into modules** (Wails embeds as flat files, no bundler).
-9. **Do NOT add emojis** to code unless the user explicitly asks.
-10. **Do NOT weaken or delete tests.**
-11. **Do NOT hardcode file paths** or user-specific values.
-12. **Do NOT add features without updating docs** (agents.md, BUNDLE_BUDGET.md).
-13. **Do NOT use `innerHTML` for interactive elements** — use DOM APIs + event delegation.
-14. **Do NOT leave dead code, commented-out blocks, or TODO comments** in production code.
-15. **Do NOT create random documentation files** — use the existing structure.
+This intentionally excludes ignored local experiments such as `ports/` while covering the root backend, session/workspace packages, and integration tests.
 
----
+Before committing:
 
-## Code style
+1. Run focused tests while developing.
+2. Run `make check` and read the complete output.
+3. Run `git diff --check` and inspect `git diff` for unrelated changes.
+4. Smoke-test affected native behavior when feasible; tests do not prove file-dialog or packaging UX.
 
-### Go
-- `gofmt` enforced. No exceptions.
-- Imports grouped: stdlib → internal → external. Sorted alphabetically within groups.
-- Error handling: `if err != nil { return ..., err }`. Never ignore errors silently except in cleanup.
-- Function names: exported methods are verbs (`GetSession`, `SaveActive`, `OpenFileDialog`).
-- Helper functions: unexported, descriptive (`fileKind`, `isReadOnlyPath`, `looksBinary`, `openDir`).
-- Structs: types defined near their usage. JSON tags on all exported fields.
-- No goroutines unless absolutely necessary and documented.
+## Performance and dependency rules
 
-### JavaScript
-- Vanilla ES2020+. No TypeScript, no JSX, no build step.
-- Variables: `const` by default, `let` when mutation needed. Never `var`.
-- Functions: named functions for top-level, arrow functions for callbacks.
-- DOM: cache refs at top of file. Use `el(tag, cls)` for creation.
-- Async: `async/await` for all Go backend calls. Try/catch in user-facing paths.
-- Strings: template literals for multi-line HTML. Single quotes elsewhere.
-- No semicolons at end of lines (existing style; maintain consistency).
-- Comments: section headers with `// ── Section name ──────` pattern.
-
-### CSS
-- Tailwind utilities in HTML `class` attributes.
-- Custom CSS only when Tailwind cannot express it (animations, pseudo-elements, complex selectors).
-- Colors reference the Tailwind config theme (surface, sidebar, accent, muted, etc.).
-- No `!important` except in markdown body overrides (needed to override github-markdown-css).
-
----
-
-## UX principles
-
-- **Familiar:** File/View/Settings/Help menus. Standard shortcuts. No surprises.
-- **Quiet:** Minimal UI. No tooltips-on-tooltips. No modal overload.
-- **Fast:** Cold start feels instant. Typing never lags. Switching notes is seamless.
-- **Respectful:** No data leaves the machine. No telemetry. No nag screens.
-- **Forgiving:** Unsaved work survives crashes. Undo via version history.
-
----
+- Production binary hard ceiling: 15 MiB; target at or below 13 MiB.
+- Markdown render debounce: 120 ms; draft persistence debounce: 350 ms.
+- Keep scans/search cancellable or bounded so rapid input cannot display stale results or block typing.
+- Prefer standard-library directory walking and streaming/bounded reads over a database or search daemon.
+- Before adding a package, document its need, installed/runtime size, offline behavior, and simpler alternatives in `BUNDLE_BUDGET.md` and `docs/dependencies.md`.
 
 ## Release process
 
-1. Update `Version` in `main.go`.
-2. Update `snap/snapcraft.yaml` version.
-3. Update `docs/index.html` schema version.
-4. Update About modal in `main.js`.
-5. Update `showChangelog()` in `main.js`.
-6. Update `README.md` version history.
-7. Update `TODO.md` completed items.
-8. Update `BUNDLE_BUDGET.md` if sizes changed.
-9. Run `go test ./...` and `gofmt -w .`
-10. `git add -A && git commit && git push && git tag vX.Y.Z && git push --tags`
-11. CI builds cross-platform binaries automatically.
-
----
+1. Synchronize `X.Y.Z` in `main.go`, `frontend/package.json`, `snap/snapcraft.yaml`, `packaging/macos/Info.plist`, AppStream metadata, the website schema, About/Changelog UI, README, and TODO/roadmap.
+2. Ensure every CI/release job installs Bun 1.3.14, runs `bun install --frozen-lockfile`, and builds `frontend/dist` before any Go command that compiles `frontend_assets.go`.
+3. Run `make setup`, `make check`, `git diff --check`, and relevant native smoke tests from clean state.
+4. Confirm Windows `.ico` resources/installer icon and macOS `.icns` bundle icon are present.
+5. Commit and push `main`; wait for CI to pass.
+6. Create an annotated tag and push only that tag: `git push origin vX.Y.Z`. Never use `git push --tags`; historical local and remote tags may differ.
+7. Verify the GitHub release contains the Linux binary, `.deb`, AppImage, Windows installer, macOS DMG, and macOS ZIP.
+8. Generate Scoop/WinGet hashes and Flatpak commit references only after release artifacts exist. Do not commit placeholder store manifests as if they were publishable.
 
 ## Version history
 
-| Version | Codename | Key features |
-|---------|----------|-------------|
-| 0.1 | — | Editor, session restore, favorites, autosaved drafts |
-| 0.2 | — | Version history with diffs, find bar, zoom |
-| 0.3 | Aaradhya | Split view, formatting toolbar, drag-drop reorder, context menu |
-| 0.4 | Balram | Drag-drop file open, smart view modes, expanded file icons |
-| 0.5 | Chitrakala | Syntax highlighting, 3-section sidebar, read-only document cards |
-| 0.6 | Dhruva | Single instance, PDF rendering, image preview, file info modal |
-| 0.7 | Eklavya | Scroll position memory, extended syntax highlighting, performance, Open Folder fix |
+| Version | Highlights |
+|---|---|
+| 0.10.0 | Typed React workspace, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
+| 0.9.0 | Packaging and distribution groundwork |
+| 0.8.0 | Sidebar outline and memory tuning |
+| 0.7.0 | Scroll restoration, highlighting, history, performance |
+| 0.6.0 | Single instance, image preview, file information |
+| 0.1.0–0.5.0 | Core editor, split preview, recovery drafts, session, file verticals |

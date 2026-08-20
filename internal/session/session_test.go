@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,6 +59,190 @@ func TestSaveToDiskMarksClean(t *testing.T) {
 	}
 	if doc.Dirty {
 		t.Fatal("document stayed dirty after save")
+	}
+}
+
+func TestSaveToDiskProtectsExternalChangesUntilExplicitOverwrite(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "shared.md")
+	if err := os.WriteFile(path, []byte("disk when opened"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument(path, "disk when opened")
+	doc.Dirty = true
+
+	if err := os.WriteFile(path, []byte("changed in another editor"), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	err = store.SaveToDisk(doc, "markpad draft")
+	var conflict *ExternalChangeError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("SaveToDisk() error = %v, want ExternalChangeError", err)
+	}
+	if conflict.Kind != SourceModified {
+		t.Fatalf("conflict kind = %q, want %q", conflict.Kind, SourceModified)
+	}
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	if string(data) != "changed in another editor" {
+		t.Fatalf("protected file = %q", data)
+	}
+	if !doc.Dirty {
+		t.Fatal("conflicted document was marked clean")
+	}
+
+	if err := store.OverwriteToDisk(doc, "markpad draft"); err != nil {
+		t.Fatal(err)
+	}
+	data, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "markpad draft" {
+		t.Fatalf("overwritten file = %q", data)
+	}
+	if doc.Dirty {
+		t.Fatal("overwritten document stayed dirty")
+	}
+
+	doc.Dirty = true
+	if err := store.SaveToDisk(doc, "next save"); err != nil {
+		t.Fatalf("save after refreshed baseline: %v", err)
+	}
+}
+
+func TestSaveToDiskDetectsDeletedSource(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "deleted.md")
+	if err := os.WriteFile(path, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument(path, "original")
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+
+	err = store.SaveToDisk(doc, "recreated by accident")
+	var conflict *ExternalChangeError
+	if !errors.As(err, &conflict) || conflict.Kind != SourceDeleted {
+		t.Fatalf("SaveToDisk() error = %#v, want deleted conflict", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("deleted source was recreated: %v", err)
+	}
+}
+
+func TestSaveToDiskDistinguishesAtomicReplacement(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "replaced.md")
+	if err := os.WriteFile(path, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument(path, "original")
+	replacement := filepath.Join(dir, "replacement.tmp")
+	if err := os.WriteFile(replacement, []byte("external replacement"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, path); err != nil {
+		t.Skipf("atomic replacement unavailable: %v", err)
+	}
+
+	err = store.SaveToDisk(doc, "markpad draft")
+	var conflict *ExternalChangeError
+	if !errors.As(err, &conflict) || conflict.Kind != SourceReplaced {
+		t.Fatalf("SaveToDisk() error = %#v, want replaced conflict", err)
+	}
+}
+
+func TestPersistedSourceIdentityProtectsAfterReopen(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "reopened.md")
+	if err := os.WriteFile(path, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument(path, "original")
+	sess := &Session{ActiveID: doc.ID, Documents: []*Document{doc}}
+	if err := store.WriteDraft(doc, "original"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Save(sess); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	loadedDoc := loaded.Find(doc.ID)
+	if loadedDoc == nil || loadedDoc.SourceState == nil || loadedDoc.SourceState.Identity == "" {
+		t.Fatalf("persisted source state = %#v", loadedDoc)
+	}
+	replacement := filepath.Join(dir, "replacement.tmp")
+	if err := os.WriteFile(replacement, []byte("external"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(replacement, path); err != nil {
+		t.Skipf("atomic replacement unavailable: %v", err)
+	}
+
+	err = store.SaveToDisk(loadedDoc, "markpad draft")
+	var conflict *ExternalChangeError
+	if !errors.As(err, &conflict) || conflict.Kind != SourceReplaced {
+		t.Fatalf("SaveToDisk() after reopen = %#v, want replaced conflict", err)
+	}
+}
+
+func TestLoadMigratesSourceStateFromRecoveryDraft(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "reopen.md")
+	if err := os.WriteFile(path, []byte("source before shutdown"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument(path, "source before shutdown")
+	doc.SourceState = nil // Simulate a session written by Markpad v0.10 or earlier.
+	doc.Dirty = true
+	sess := &Session{ActiveID: doc.ID, Documents: []*Document{doc}}
+	if err := store.WriteDraft(doc, "source before shutdown\nmarkpad edit"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Save(sess); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("source changed while markpad was closed"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	loadedDoc := loaded.Find(doc.ID)
+	if loadedDoc == nil || loadedDoc.SourceState == nil {
+		t.Fatal("legacy saved document did not receive a source baseline")
+	}
+	err = store.SaveToDisk(loadedDoc, "source before shutdown\nmarkpad edit")
+	var conflict *ExternalChangeError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("SaveToDisk() error = %v, want conflict after reopen", err)
 	}
 }
 

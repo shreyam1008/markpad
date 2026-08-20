@@ -1,162 +1,63 @@
-# Markpad — Packaging Guide
+# Markpad packaging guide
 
-Publisher: Shreyam Adhikari (shreyam1008@gmail.com)
-Version: 0.8.0
+Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
----
+Release target: v0.10.0
 
-## Files in this directory
+## GitHub release first
 
-| Path | Purpose |
-| --- | --- |
-| `linux/markpad.desktop` | Linux desktop entry |
-| `linux/markpad.svg` | Scalable app icon |
-| `linux/io.github.markpad.metainfo.xml` | AppStream metadata |
-| `linux/io.github.markpad.flatpak.yml` | Flatpak manifest for Flathub |
-| `windows/installer.nsi` | NSIS Windows installer script |
-| `winget/manifests/…` | WinGet manifests |
-| `scoop/markpad.json` | Scoop bucket manifest |
-| `../snap/snapcraft.yaml` | Snap Store packaging |
+Push `main`, wait for CI, then push only the annotated release tag. `.github/workflows/release.yml` builds:
 
----
+- `markpad`, `markpad_0.10.0_amd64.deb`, and `Markpad.AppImage` for Linux.
+- `markpad-setup.exe` for Windows, with the Markpad ICO embedded into both application and installer.
+- `Markpad.dmg` and `Markpad-macOS.zip`, with the Markpad ICNS in the app bundle.
 
-## Step 0: Prepare release artifacts
+Verify all artifacts before submitting to a store. Do not publish a Scoop, WinGet, or Flatpak manifest with a placeholder hash or commit ID.
 
-Before submitting to any store, create a GitHub Release with:
+## Snap Store
 
-```
-markpad-setup.exe        (Windows NSIS installer — built by CI)
-markpad-linux-amd64      (or AppImage — built by CI)
-```
+`snap/snapcraft.yaml` builds the frozen Bun frontend before Go. Build and inspect locally:
 
----
-
-## 1. Snap Store (Linux — faster path than Flathub)
-
-### Build
-
-```bash
+```sh
 sudo snap install snapcraft --classic
-cd /home/shre/Desktop/me/markpad
 snapcraft
-
-# Produces: markpad_0.8.0_amd64.snap
+snap install --dangerous ./markpad_0.10.0_amd64.snap
 ```
 
-### Register and upload
+After smoke testing:
 
-```bash
+```sh
 snapcraft login
-snapcraft register markpad
-snapcraft upload markpad_0.8.0_amd64.snap --release=stable
+snapcraft upload markpad_0.10.0_amd64.snap --release=stable
 ```
 
-### Snap Store dashboard
+The Snap Store operation is external and is not performed by the GitHub release workflow.
 
-https://snapcraft.io/account
+## Flatpak
 
----
+The Flatpak manifest needs the immutable commit for the published `v0.10.0` tag and vendored Go sources. Generate those after the tag exists, validate with `flatpak-builder`, and submit the resulting manifest to Flathub. Do not guess the commit ID in advance.
 
-## 2. Flathub
+## WinGet
 
-### Generate Go vendor sources for offline build
+After `markpad-setup.exe` exists:
 
-```bash
-# Tool: https://github.com/flatpak/flatpak-builder-tools/tree/master/go-vendor
-python3 flatpak-go-vendor.py go.sum > packaging/linux/go-vendor-sources.json
-```
+1. Compute its SHA-256 (`Get-FileHash markpad-setup.exe -Algorithm SHA256`).
+2. Create a new `0.10.0` manifest directory from the previous version.
+3. Update download URL, package version, and installer hash.
+4. Run `winget validate` and submit to `microsoft/winget-pkgs`.
 
-### Replace placeholder commit SHA
+Never edit a historical version directory in place.
 
-```bash
-git ls-remote https://github.com/shreyam1008/markpad refs/tags/v0.8.0
-# Paste the SHA into packaging/linux/io.github.markpad.flatpak.yml
-```
+## Scoop
 
-### Test locally
+After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.10.0`, the exact release URL, and the real SHA-256. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
 
-```bash
-flatpak install org.gnome.Platform//48 org.gnome.Sdk//48
-flatpak install org.freedesktop.Sdk.Extension.golang
-flatpak-builder --force-clean build-dir packaging/linux/io.github.markpad.flatpak.yml
-flatpak-builder --run build-dir packaging/linux/io.github.markpad.flatpak.yml markpad
-```
+## Final checklist
 
-### Submit to Flathub
-
-1. Fork https://github.com/flathub/flathub
-2. Create directory `io.github.markpad/`
-3. Add `io.github.markpad.yml`, `go-vendor-sources.json`, icon, metainfo, desktop file
-4. Desktop Icon ID must be `io.github.markpad` (update `markpad.desktop` Icon field)
-5. Submit PR — follow https://docs.flathub.org/docs/for-app-authors/submission
-
----
-
-## 3. WinGet
-
-### Get installer sha256
-
-```powershell
-certutil -hashfile markpad-setup.exe SHA256
-```
-
-### Steps
-
-1. Fork https://github.com/microsoft/winget-pkgs
-2. Copy `packaging/winget/manifests/s/ShreyamAdhikari/Markpad/0.8.0/` into your fork at the same path
-3. Replace placeholder `InstallerSha256` with real value
-4. Validate:
-
-```powershell
-winget validate manifests/s/ShreyamAdhikari/Markpad/0.8.0/
-```
-
-5. Submit PR
-
-### After approval
-
-```powershell
-winget install ShreyamAdhikari.Markpad
-```
-
----
-
-## 4. Scoop
-
-### Get installer sha256
-
-```powershell
-certutil -hashfile markpad-setup.exe SHA256
-```
-
-### Create the bucket repo
-
-```bash
-# On GitHub: create repo named "scoop-bucket" (or reuse from dbterm)
-# Add: bucket/markpad.json
-```
-
-### Edit markpad.json
-
-Replace `TODO_replace_with_sha256_of_markpad-setup.exe` in `packaging/scoop/markpad.json` with the real value.
-
-### Users install with
-
-```powershell
-scoop bucket add shreyam1008 https://github.com/shreyam1008/scoop-bucket
-scoop install markpad
-```
-
----
-
-## Release checklist
-
-- [ ] `go test ./...` passes
-- [ ] `gofmt -w .` clean
-- [ ] CI builds Linux binary + Windows installer
-- [ ] GitHub Release tag created with artifacts attached
-- [ ] `io.github.markpad.metainfo.xml` release entry added
-- [ ] Snap version bumped in `snap/snapcraft.yaml`
-- [ ] Flatpak manifest commit SHA updated
-- [ ] WinGet sha256 updated
-- [ ] Scoop json sha256 updated
+- `make setup`, `make check`, and `git diff --check` passed before tagging.
+- Version and 2026-08-13 release date are synchronized in source and non-hash packaging metadata.
+- AppStream metadata validates.
+- Windows application and NSIS installer show the expected ICO.
+- macOS bundle contains `Contents/Resources/markpad.icns` and its plist references it.
+- GitHub artifacts launch and complete the folder/search/delete smoke flow.
+- Store manifests contain real hashes/commit IDs generated from the published release.

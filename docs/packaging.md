@@ -1,46 +1,37 @@
 # Packaging
 
-Markpad targets small native artifacts without Electron or a bundled browser runtime.
+Markpad targets small native artifacts without Electron or a bundled browser runtime. The generated frontend is required input to every Go build because `frontend_assets.go` embeds `frontend/dist`.
 
 ## Local Linux build
 
+Install Go 1.24+, Bun 1.3.14, GCC, pkg-config, GTK 3 development files, and WebKit2GTK 4.1 development files. Then run:
+
 ```sh
-make build-linux-local
+make setup
+make check
 ./dist/markpad README.md
 ```
 
-The local build script downloads required development packages into `/tmp/markpad-apt`, extracts headers and pkg-config files into `/tmp/markpad-sysroot`, and builds a stripped binary at `dist/markpad`.
-
-## Standard build
-
-If Gio Linux dependencies are installed system-wide:
-
-```sh
-make build
-```
+`make setup` uses the frozen Bun lockfile. `make check` builds the frontend, runs frontend and Go verification, checks runtime assets and formatting, creates the stripped Linux binary, and enforces the 15 MiB ceiling.
 
 ## Release CI
 
-`.github/workflows/release.yml` builds these artifacts when a tag like `v0.1.0` is pushed:
+Pushing one explicit annotated tag such as `v0.10.0` starts `.github/workflows/release.yml`. Each operating-system job installs pinned Bun dependencies and builds `frontend/dist` before compiling Go.
 
-- Linux binary
-- Linux `.deb`
-- Linux AppImage
-- Windows `.exe` zip
-- macOS `.dmg`
+The release contains:
+
+- Linux standalone binary, `.deb`, and AppImage.
+- Windows NSIS installer with embedded application/installer icon.
+- macOS app bundle in DMG and ZIP form with an ICNS icon.
 
 ## Release checklist
 
-- Update version in `internal/desktop/app.go`.
-- Run `go test ./internal/markdown ./internal/preview ./internal/session ./tests`.
-- Run the local Linux build and smoke test opening a `.md` and `.txt` file.
-- Confirm `packaging/linux/markpad.svg` and desktop metadata are present.
-- Tag the release with `vX.Y.Z`.
-- Upload screenshots to the website and README placeholders.
+1. Synchronize the version in `main.go`, frontend metadata, Snap, macOS plist, AppStream, website schema, UI About/Changelog, README, and roadmap.
+2. Update the AppStream release date and notes.
+3. Run `make setup`, `make check`, and `git diff --check`.
+4. Smoke-test open/edit/save/reopen, folder browse, `Ctrl+P`, `Ctrl+Shift+F`, result selection, create, refresh, and confirmed deletion.
+5. Push `main` and wait for CI.
+6. Push only the intended annotated version tag; do not use `git push --tags`.
+7. Verify every expected artifact and its application icon before announcing the release.
 
-## Future packaging work
-
-- Add signed/notarized macOS releases.
-- Add Windows installer/MSI.
-- Add AppImage smoke tests in CI.
-- Add a generated PNG/icon pipeline if target stores require raster icons.
+Store manifests that need release hashes or commit IDs are updated only after GitHub artifacts exist. Signing/notarization and store submissions remain separate distribution work.

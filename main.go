@@ -14,7 +14,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.9"
+const Version = "0.10.0"
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -40,12 +40,18 @@ func main() {
 	fileMenu.AddText("Open...", keys.CmdOrCtrl("o"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:open")
 	})
+	fileMenu.AddText("Open Folder...", keys.Combo("o", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:openfolder")
+	})
 	fileMenu.AddSeparator()
 	fileMenu.AddText("Save", keys.CmdOrCtrl("s"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:save")
 	})
 	fileMenu.AddText("Save As...", keys.Combo("s", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:saveas")
+	})
+	fileMenu.AddText("File Draft in Workspace...", keys.Combo("enter", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:filedraft")
 	})
 	fileMenu.AddText("Close File", keys.CmdOrCtrl("w"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:close")
@@ -61,6 +67,10 @@ func main() {
 	})
 	editMenu.AddText("Redo", keys.Combo("z", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:redo")
+	})
+	editMenu.AddSeparator()
+	editMenu.AddText("Search Workspace...", keys.Combo("f", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:searchworkspace")
 	})
 
 	viewMenu := appMenu.AddSubmenu("View")
@@ -84,6 +94,9 @@ func main() {
 	})
 	viewMenu.AddText("Toggle Sidebar", keys.Combo("b", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:togglesidebar")
+	})
+	viewMenu.AddText("Refresh Workspace", keys.Key("f5"), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:refreshworkspace")
 	})
 	viewMenu.AddSeparator()
 	viewMenu.AddText("Find", keys.CmdOrCtrl("f"), func(cd *menu.CallbackData) {

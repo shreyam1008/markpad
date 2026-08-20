@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta name="description" content="Markpad is a small, fast, native Markdown notepad built with Go and Wails. Split view, version history, session restore, autosaved drafts, favorites, find, and beautiful rendering. No Electron. Under 10 MB." />
-    <meta name="keywords" content="markpad, markdown editor, markdown notepad, native markdown, go markdown, wails, lightweight notepad, markdown viewer, linux notepad, split view, version history, find, appimage, session restore, open source, shreyam1008" />
+    <meta name="description" content="Markpad is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Split preview, recovery drafts, fast file switching, and bounded workspace search. No Electron or cloud." />
+    <meta name="keywords" content="markpad, markdown editor, markdown notepad, local folder workspace, workspace search, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -16,7 +16,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Markpad" />
     <meta property="og:title" content="Markpad — Native Markdown Notepad" />
-    <meta property="og:description" content="A tiny native Markdown notepad with split view, version history, session restore, find, and beautiful rendering. Under 10 MB, no Electron." />
+    <meta property="og:description" content="A tiny native Markdown notepad with folder browsing, fast file switching, bounded content search, split preview, and recovery drafts. No Electron or cloud." />
     <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
     <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
@@ -32,13 +32,13 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.9",
+        "softwareVersion": "0.10.0",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad"],
-        "description": "A tiny native Markdown notepad with split view, version history, session restore, favorites, find, and GitHub-style rendering.",
+        "description": "A tiny native Markdown notepad and local folder workspace with fast file switching, bounded content search, split preview, version history, and recovery drafts.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
@@ -103,7 +103,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny notepad<br/>that gets out of the way.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Open any text file. Edit Markdown with live preview. View code with syntax highlighting. Version history with diffs. No Electron, no cloud, no telemetry. Under 10 MB.
+          Open a file or a whole folder. Edit Markdown with live preview, jump to any note with Ctrl+P, and search local content with Ctrl+Shift+F. No Electron, cloud, or telemetry.
         </p>
         <div class="flex justify-center gap-3 mb-6 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -118,9 +118,9 @@
         </div>
         <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 10 MB</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Under 15 MiB</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">PDF Rendering</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Workspace Search</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
@@ -175,16 +175,20 @@
             <p class="text-sm text-muted">Markdown, text, JSON, YAML, Python, Go, shell scripts, HTML, CSS, and any text file. Native OS file dialogs.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Workspace Lite</h3>
+            <p class="text-sm text-muted">Open one ordinary local folder. Jump and search without an index, then file an instant draft into it with Ctrl+Shift+Enter.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Session Restore</h3>
             <p class="text-sm text-muted">Close and reopen. Every note, draft, favorite, and active document comes back exactly as you left it.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">No Electron</h3>
-            <p class="text-sm text-muted">Go + Wails + system webview. A single binary under 10 MB. Low memory. Starts instantly.</p>
+            <p class="text-sm text-muted">Go + Wails + system webview. One small binary below a 15 MiB release ceiling, without a bundled browser engine.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
-            <h3 class="font-bold mb-2">Drag, Star, Delete</h3>
-            <p class="text-sm text-muted">Drag-and-drop to reorder. Star notes for favorites. Right-click to delete. Full keyboard shortcuts.</p>
+            <h3 class="font-bold mb-2">Safe File Actions</h3>
+            <p class="text-sm text-muted">External edits pause Save for a visible choice. Permanent deletion warns before removing the file, recovery draft, and local history.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Formatting Toolbar</h3>
@@ -200,7 +204,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">PDF & Image Preview</h3>
-            <p class="text-sm text-muted">PDFs render page-by-page via pdf.js. Images display inline. No heavy engine bundled — stays lightweight.</p>
+            <p class="text-sm text-muted">PDFs open in your system viewer. Images display inline. No heavy PDF engine is bundled.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Single Instance</h3>
@@ -212,7 +216,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Find & Stats</h3>
-            <p class="text-sm text-muted">Ctrl+F to search with wrap-around. Word count, reading time, line stats in the status bar. File type icons per note.</p>
+            <p class="text-sm text-muted">Ctrl+F searches the current file; Ctrl+Shift+F searches the bounded workspace. Word count and line stats stay in the status bar.</p>
           </div>
         </div>
       </section>
@@ -238,12 +242,12 @@
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127466;</div>
             <strong class="block group-hover:text-accent transition-colors">Windows .exe</strong>
-            <span class="text-xs text-muted">Portable zip</span>
+            <span class="text-xs text-muted">NSIS installer</span>
           </a>
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127822;</div>
             <strong class="block group-hover:text-accent transition-colors">macOS .dmg</strong>
-            <span class="text-xs text-muted">Apple Silicon + Intel</span>
+            <span class="text-xs text-muted">App bundle</span>
           </a>
           <a href="https://github.com/shreyam1008/markpad" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center sm:col-span-2 lg:col-span-1">
             <div class="text-2xl mb-2">&#128187;</div>
@@ -257,12 +261,12 @@
       <section class="max-w-4xl mx-auto px-6 pb-24">
         <div class="text-center mb-10">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Under the Hood</p>
-          <h2 class="text-3xl font-bold">Lean, native, no runtime.</h2>
+          <h2 class="text-3xl font-bold">Lean, native, fully local.</h2>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Go</strong><span class="text-xs text-muted">Single binary</span></div>
           <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Wails</strong><span class="text-xs text-muted">System webview</span></div>
-          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">marked.js</strong><span class="text-xs text-muted">GFM Markdown</span></div>
+          <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">React + Bun</strong><span class="text-xs text-muted">Typed, bundled UI</span></div>
           <div class="p-4 bg-paper rounded-xl border border-line text-center"><strong class="block text-accent">Cloudless</strong><span class="text-xs text-muted">All data local</span></div>
         </div>
       </section>

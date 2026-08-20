@@ -1,14 +1,18 @@
 # Frontend dependencies
 
-Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun, and embedded into the application. `node_modules` and build tools are never embedded.
+Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun 1.3.14, and embedded into the application. `node_modules` and build tools are never embedded.
 
-The current dependency set provides:
+The current production dependency set is pinned:
 
-- Markdown parsing through Marked.
-- HTML sanitization through DOMPurify.
-- Interface rendering through React and ReactDOM.
+| Package | Version | Purpose |
+|---|---:|---|
+| React / ReactDOM | 19.2.8 | Interface rendering |
+| Marked | 18.0.9 | Markdown parsing |
+| DOMPurify | 3.4.13 | Rendered-HTML sanitization |
+| highlight.js | 11.11.1 | Bounded code highlighting |
+| Lucide | 1.31.0 | Tree-shaken interface icon nodes |
 
-Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-time dependencies only. Markpad intentionally has no bundled PDF renderer, syntax-highlighting engine, icon library, or secondary frontend bundler.
+Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-time dependencies only. Markpad intentionally has no bundled PDF renderer, component suite, or secondary frontend bundler.
 
 ## Update procedure
 
@@ -18,6 +22,7 @@ Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-t
 4. Confirm there are no HTTP production asset references.
 5. Build the stripped Linux executable and record its size.
 6. Exercise Markdown, fenced code, links, images, and PDF external handoff without network access.
+7. Exercise folder navigation and workspace search against a representative bounded fixture.
 
 Do not substitute an unpinned `latest` URL or add a package manager to the production runtime.
 
@@ -27,4 +32,4 @@ The target stripped Linux executable is at most 13 MiB. The hard release ceiling
 
 ## Licensing
 
-When dependency versions change, update their accompanying license notices from the upstream distributions. Markpad's documentation must name the embedded versions rather than claiming whichever version a CDN currently serves.
+When dependency versions change, review their licenses and release notes. Markpad documentation must name or lock embedded versions rather than claiming whichever version a remote registry currently serves.

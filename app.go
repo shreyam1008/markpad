@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,9 +11,11 @@ import (
 	goruntime "runtime"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"markpad/internal/session"
+	"markpad/internal/workspace"
 
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -23,6 +26,11 @@ type App struct {
 	store        *session.Store
 	sess         *session.Session
 	pendingFiles []string
+
+	workspaceMu           sync.Mutex
+	workspaceState        workspace.State
+	workspaceSearchCancel context.CancelFunc
+	workspaceSearchID     uint64
 }
 
 func NewApp() *App {
@@ -43,6 +51,14 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.sess = sess
+	if sess.WorkspaceRoot != "" {
+		state, scanErr := workspace.Scan(sess.WorkspaceRoot)
+		if scanErr != nil {
+			fmt.Fprintf(os.Stderr, "workspace load: %v\n", scanErr)
+		} else {
+			a.workspaceState = state
+		}
+	}
 
 	// Open any files passed on command line
 	if len(a.pendingFiles) > 0 {
@@ -71,6 +87,12 @@ func (a *App) onSecondInstanceLaunch(data options.SecondInstanceData) {
 }
 
 func (a *App) shutdown(ctx context.Context) {
+	a.workspaceMu.Lock()
+	if a.workspaceSearchCancel != nil {
+		a.workspaceSearchCancel()
+		a.workspaceSearchCancel = nil
+	}
+	a.workspaceMu.Unlock()
 	if a.store != nil && a.sess != nil {
 		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	}
@@ -139,6 +161,43 @@ type SessionState struct {
 	Notes     []NoteInfo   `json:"notes"`
 	Favorites []NoteInfo   `json:"favorites"`
 	Recents   []RecentInfo `json:"recents"`
+}
+
+type SaveConflictInfo struct {
+	Kind     string `json:"kind"`
+	Path     string `json:"path"`
+	Modified string `json:"modified"`
+}
+
+type SaveResult struct {
+	Session  SessionState      `json:"session"`
+	Conflict *SaveConflictInfo `json:"conflict,omitempty"`
+}
+
+type WorkspaceFile struct {
+	Path     string `json:"path"`
+	Relative string `json:"relative"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+	Size     int64  `json:"size"`
+	Modified string `json:"modified"`
+}
+
+type WorkspaceState struct {
+	Root      string          `json:"root"`
+	Name      string          `json:"name"`
+	Files     []WorkspaceFile `json:"files"`
+	Truncated bool            `json:"truncated"`
+}
+
+type WorkspaceSearchResult struct {
+	Path       string `json:"path"`
+	Relative   string `json:"relative"`
+	Line       int    `json:"line"`
+	Column     int    `json:"column"`
+	Text       string `json:"text"`
+	MatchStart int    `json:"matchStart"`
+	MatchEnd   int    `json:"matchEnd"`
 }
 
 // ---------- Session methods ----------
@@ -295,26 +354,138 @@ func (a *App) RevertContent(id string, content string, dirty bool) SessionState 
 	return a.GetSession()
 }
 
-func (a *App) SaveActive(content string) (SessionState, error) {
+func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
 	doc := a.sess.Active()
 	if doc == nil {
-		return a.GetSession(), fmt.Errorf("no active note")
+		return SaveResult{Session: a.GetSession()}, fmt.Errorf("no active note")
 	}
 	if doc.Path == "" {
-		return a.SaveAsDialog(content)
+		state, err := a.SaveAsDialog(content)
+		return SaveResult{Session: state}, err
 	}
 	if isReadOnlyPath(doc.Path) {
-		return a.GetSession(), fmt.Errorf("read-only document: open externally to edit")
+		return SaveResult{Session: a.GetSession()}, fmt.Errorf("read-only document: open externally to edit")
 	}
-	if err := a.store.SaveToDisk(doc, content); err != nil {
-		return a.GetSession(), err
+	var err error
+	if overwrite {
+		err = a.store.OverwriteToDisk(doc, content)
+	} else {
+		err = a.store.SaveToDisk(doc, content)
+	}
+	if err != nil {
+		var changed *session.ExternalChangeError
+		if !errors.As(err, &changed) {
+			return SaveResult{Session: a.GetSession()}, err
+		}
+		doc.Dirty = true
+		doc.UpdatedAt = time.Now()
+		if draftErr := a.store.WriteDraft(doc, content); draftErr != nil {
+			return SaveResult{Session: a.GetSession()}, fmt.Errorf("preserve conflicted draft: %w", draftErr)
+		}
+		if persistErr := a.store.Save(a.sess); persistErr != nil {
+			return SaveResult{Session: a.GetSession()}, fmt.Errorf("persist conflicted draft: %w", persistErr)
+		}
+		modified := ""
+		if changed.Current != nil && !changed.Current.ModifiedAt.IsZero() {
+			modified = changed.Current.ModifiedAt.Format(time.RFC3339Nano)
+		}
+		return SaveResult{
+			Session: a.GetSession(),
+			Conflict: &SaveConflictInfo{
+				Kind:     string(changed.Kind),
+				Path:     changed.Path,
+				Modified: modified,
+			},
+		}, nil
 	}
 	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save"))
 	if err := a.store.Save(a.sess); err != nil {
-		return a.GetSession(), err
+		return SaveResult{Session: a.GetSession()}, err
 	}
-	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	a.refreshWindowTitle()
+	if overwrite {
+		a.refreshWorkspaceAfterConflict()
+	}
+	return SaveResult{Session: a.GetSession()}, nil
+}
+
+// ReloadActiveFromDisk is an explicit conflict resolution. The Markpad draft
+// is saved in history before the disk version becomes the clean recovery copy.
+func (a *App) ReloadActiveFromDisk(markpadContent string) (SessionState, error) {
+	doc := a.sess.Active()
+	if doc == nil || doc.Path == "" {
+		return a.GetSession(), fmt.Errorf("active note has no source file")
+	}
+	if isReadOnlyPath(doc.Path) {
+		return a.GetSession(), fmt.Errorf("read-only document: open externally to reload")
+	}
+	diskContent, err := readOpenFile(doc.Path)
+	if err != nil {
+		return a.GetSession(), fmt.Errorf("reload source file: %w", err)
+	}
+	if looksBinary(diskContent) {
+		return a.GetSession(), fmt.Errorf("source file is no longer editable text")
+	}
+
+	oldDocument := *doc
+	if doc.SourceState != nil {
+		oldState := *doc.SourceState
+		oldDocument.SourceState = &oldState
+	}
+	if err := a.store.RefreshSourceState(doc, diskContent); err != nil {
+		*doc = oldDocument
+		return a.GetSession(), fmt.Errorf("source changed again during reload: %w", err)
+	}
+	if err := a.store.SaveSnapshot(doc.ID, markpadContent, "before-external-reload"); err != nil {
+		*doc = oldDocument
+		return a.GetSession(), fmt.Errorf("protect Markpad draft before reload: %w", err)
+	}
+	if err := a.store.SaveSnapshot(doc.ID, string(diskContent), "external-reload"); err != nil {
+		*doc = oldDocument
+		return a.GetSession(), fmt.Errorf("record reloaded source: %w", err)
+	}
+	if err := a.store.WriteDraft(doc, string(diskContent)); err != nil {
+		*doc = oldDocument
+		return a.GetSession(), fmt.Errorf("store reloaded source: %w", err)
+	}
+
+	doc.Dirty = false
+	doc.Title = session.TitleFromContent(string(diskContent), doc.Path)
+	doc.UpdatedAt = time.Now()
+	if doc.SourceState != nil && !doc.SourceState.ModifiedAt.IsZero() {
+		doc.SavedAt = doc.SourceState.ModifiedAt
+	}
+	if err := a.store.Save(a.sess); err != nil {
+		*doc = oldDocument
+		if draftErr := a.store.WriteDraft(doc, markpadContent); draftErr != nil {
+			return a.GetSession(), fmt.Errorf("persist reload: %v; restore Markpad draft: %w", err, draftErr)
+		}
+		return a.GetSession(), fmt.Errorf("persist reload: %w", err)
+	}
+	a.refreshWindowTitle()
+	a.refreshWorkspaceAfterConflict()
 	return a.GetSession(), nil
+}
+
+func (a *App) refreshWorkspaceAfterConflict() {
+	a.refreshWorkspaceInventory("refresh workspace after conflict")
+}
+
+func (a *App) refreshWorkspaceInventory(operation string) {
+	a.workspaceMu.Lock()
+	root := a.workspaceState.Root
+	a.workspaceMu.Unlock()
+	if root == "" {
+		return
+	}
+	state, err := workspace.Scan(root)
+	if err != nil {
+		a.recordBackgroundError(operation, err)
+		return
+	}
+	a.workspaceMu.Lock()
+	a.workspaceState = state
+	a.workspaceMu.Unlock()
 }
 
 func (a *App) SaveAsDialog(content string) (SessionState, error) {
@@ -424,18 +595,23 @@ func (a *App) OpenDroppedFile(path string) (SessionState, error) {
 }
 
 func (a *App) openPath(path string) (SessionState, error) {
-	path = canonicalPath(path)
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return a.GetSession(), fmt.Errorf("empty path")
+	}
 	abs, err := filepath.Abs(path)
 	if err == nil {
-		path = abs
+		path = filepath.Clean(abs)
 	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return a.GetSession(), err
 	}
 	if info.IsDir() {
-		return a.GetSession(), fmt.Errorf("folders are not supported")
+		_, err := a.selectWorkspace(path)
+		return a.GetSession(), err
 	}
+	path = canonicalPath(path)
 	if doc := a.sess.FindFile(path); doc != nil {
 		a.sess.ActiveID = doc.ID
 		a.sess.AddRecent(path)
@@ -472,6 +648,310 @@ func (a *App) openPath(path string) (SessionState, error) {
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
 	return a.GetSession(), nil
+}
+
+// ---------- Folder workspace ----------
+
+func (a *App) GetWorkspace() WorkspaceState {
+	a.workspaceMu.Lock()
+	defer a.workspaceMu.Unlock()
+	return workspaceStateForFrontend(a.workspaceState)
+}
+
+func (a *App) ChooseWorkspace() (WorkspaceState, error) {
+	defaultDirectory := ""
+	if current := a.GetWorkspace(); current.Root != "" {
+		defaultDirectory = current.Root
+	}
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:                "Open Folder",
+		DefaultDirectory:     defaultDirectory,
+		CanCreateDirectories: true,
+		ResolvesAliases:      true,
+	})
+	if err != nil {
+		return a.GetWorkspace(), err
+	}
+	if path == "" {
+		return a.GetWorkspace(), nil
+	}
+	return a.selectWorkspace(path)
+}
+
+func (a *App) RefreshWorkspace() (WorkspaceState, error) {
+	a.workspaceMu.Lock()
+	root := a.workspaceState.Root
+	a.workspaceMu.Unlock()
+	if root == "" {
+		return emptyWorkspaceState(), nil
+	}
+	return a.selectWorkspace(root)
+}
+
+func (a *App) ClearWorkspace() (WorkspaceState, error) {
+	a.workspaceMu.Lock()
+	if a.workspaceSearchCancel != nil {
+		a.workspaceSearchCancel()
+		a.workspaceSearchCancel = nil
+	}
+	a.workspaceSearchID++
+	a.workspaceState = workspace.State{}
+	a.workspaceMu.Unlock()
+
+	if a.sess != nil {
+		a.sess.WorkspaceRoot = ""
+		if a.store != nil {
+			if err := a.store.Save(a.sess); err != nil {
+				return emptyWorkspaceState(), err
+			}
+		}
+	}
+	return emptyWorkspaceState(), nil
+}
+
+func (a *App) SearchWorkspace(query string) ([]WorkspaceSearchResult, error) {
+	a.workspaceMu.Lock()
+	state := a.workspaceState
+	if a.workspaceSearchCancel != nil {
+		a.workspaceSearchCancel()
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	a.workspaceSearchCancel = cancel
+	a.workspaceSearchID++
+	requestID := a.workspaceSearchID
+	a.workspaceMu.Unlock()
+	defer cancel()
+
+	overrides := make(map[string][]byte)
+	if a.sess != nil && a.store != nil {
+		for _, doc := range a.sess.Documents {
+			if !doc.Dirty || doc.Path == "" {
+				continue
+			}
+			path := canonicalPath(doc.Path)
+			if path == "" {
+				continue
+			}
+			content, err := a.store.ReadDraft(doc)
+			if err != nil || len(content) > workspace.MaxFileSize {
+				continue
+			}
+			overrides[path] = []byte(content)
+		}
+	}
+
+	results, err := workspace.Search(ctx, state, query, overrides)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return []WorkspaceSearchResult{}, nil
+		}
+		return nil, err
+	}
+	a.workspaceMu.Lock()
+	stale := requestID != a.workspaceSearchID
+	if !stale && a.workspaceSearchCancel != nil {
+		a.workspaceSearchCancel = nil
+	}
+	a.workspaceMu.Unlock()
+	if stale {
+		return []WorkspaceSearchResult{}, nil
+	}
+
+	output := make([]WorkspaceSearchResult, 0, len(results))
+	for _, result := range results {
+		output = append(output, WorkspaceSearchResult{
+			Path:       result.Path,
+			Relative:   result.Relative,
+			Line:       result.Line,
+			Column:     result.Column,
+			Text:       result.Text,
+			MatchStart: result.MatchStart,
+			MatchEnd:   result.MatchEnd,
+		})
+	}
+	return output, nil
+}
+
+func (a *App) CreateWorkspaceFile(relativePath string) (SessionState, error) {
+	a.workspaceMu.Lock()
+	root := a.workspaceState.Root
+	a.workspaceMu.Unlock()
+	if root == "" {
+		return a.GetSession(), fmt.Errorf("open a folder before creating a workspace file")
+	}
+	path, err := workspace.CreateFile(root, relativePath)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	state, err := a.openPath(path)
+	if err != nil {
+		_ = os.Remove(path)
+		return a.GetSession(), err
+	}
+	if _, err := a.RefreshWorkspace(); err != nil {
+		return state, err
+	}
+	return state, nil
+}
+
+// FileDraftInWorkspace promotes the active recovery draft into the selected
+// folder without opening a second document or using a broad Save As dialog.
+// CreateFile reserves the path first, so an existing note is never replaced.
+func (a *App) FileDraftInWorkspace(relativePath string, content string) (SessionState, error) {
+	a.workspaceMu.Lock()
+	root := a.workspaceState.Root
+	a.workspaceMu.Unlock()
+	if root == "" {
+		return a.GetSession(), fmt.Errorf("open a folder before filing this draft")
+	}
+	doc := a.sess.Active()
+	if doc == nil || doc.Path != "" {
+		return a.GetSession(), fmt.Errorf("only an unsaved draft can be filed in the workspace")
+	}
+	if len(content) > workspace.MaxFileSize {
+		return a.GetSession(), fmt.Errorf("draft is too large for Workspace Lite; use Save As instead")
+	}
+
+	// Persist the recovery copy before attempting any filesystem mutation.
+	doc.Dirty = true
+	doc.UpdatedAt = time.Now()
+	if err := a.store.WriteDraft(doc, content); err != nil {
+		return a.GetSession(), fmt.Errorf("preserve draft before filing: %w", err)
+	}
+	if err := a.store.Save(a.sess); err != nil {
+		return a.GetSession(), fmt.Errorf("persist draft before filing: %w", err)
+	}
+
+	path, err := workspace.CreateFile(root, relativePath)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	oldDocument := *doc
+	if doc.SourceState != nil {
+		oldState := *doc.SourceState
+		oldDocument.SourceState = &oldState
+	}
+	if err := a.store.SaveAs(doc, path, content); err != nil {
+		*doc = oldDocument
+		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return a.GetSession(), fmt.Errorf("file draft: %v; remove incomplete file: %w", err, removeErr)
+		}
+		return a.GetSession(), fmt.Errorf("file draft: %w", err)
+	}
+	a.sess.RememberViewMode(doc, doc.ViewMode)
+	a.sess.AddRecent(path)
+	a.recordBackgroundError("workspace filing history", a.store.SaveSnapshot(doc.ID, content, "file-to-workspace"))
+	if err := a.store.Save(a.sess); err != nil {
+		return a.GetSession(), fmt.Errorf("workspace file was saved at %s, but session persistence failed: %w", path, err)
+	}
+	a.refreshWindowTitle()
+	a.refreshWorkspaceInventory("refresh workspace after filing draft")
+	return a.GetSession(), nil
+}
+
+func (a *App) DeleteFile(path string) (SessionState, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return a.GetSession(), fmt.Errorf("file path is required")
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return a.GetSession(), fmt.Errorf("resolve file path: %w", err)
+	}
+	abs = filepath.Clean(abs)
+
+	a.workspaceMu.Lock()
+	root := a.workspaceState.Root
+	a.workspaceMu.Unlock()
+	workspaceMember := false
+	if root != "" {
+		if validated, validateErr := workspace.ValidateMember(root, abs); validateErr == nil {
+			abs = validated
+			workspaceMember = true
+		}
+	}
+	doc := a.sess.FindFile(abs)
+	if !workspaceMember && doc == nil {
+		return a.GetSession(), fmt.Errorf("file is neither in the open workspace nor an open document")
+	}
+	validated, err := workspace.ValidateDeleteTarget(abs)
+	if err != nil {
+		return a.GetSession(), err
+	}
+	if doc != nil && doc.Path != validated {
+		canonicalDoc := canonicalPath(doc.Path)
+		if canonicalDoc != validated {
+			return a.GetSession(), fmt.Errorf("open document path no longer matches the requested file")
+		}
+	}
+	if err := os.Remove(validated); err != nil {
+		return a.GetSession(), fmt.Errorf("delete file: %w", err)
+	}
+
+	if doc != nil {
+		a.removeDocument(doc, true, true)
+	}
+	a.removePathReferences(validated)
+	a.ensureDocumentExists()
+	if err := a.store.Save(a.sess); err != nil {
+		return a.GetSession(), fmt.Errorf("persist session after deleting file: %w", err)
+	}
+	a.refreshWindowTitle()
+	if root != "" {
+		if _, refreshErr := a.RefreshWorkspace(); refreshErr != nil {
+			return a.GetSession(), refreshErr
+		}
+	}
+	return a.GetSession(), nil
+}
+
+func (a *App) selectWorkspace(root string) (WorkspaceState, error) {
+	state, err := workspace.Scan(root)
+	if err != nil {
+		return a.GetWorkspace(), err
+	}
+	a.workspaceMu.Lock()
+	if a.workspaceSearchCancel != nil {
+		a.workspaceSearchCancel()
+		a.workspaceSearchCancel = nil
+	}
+	a.workspaceSearchID++
+	a.workspaceState = state
+	a.workspaceMu.Unlock()
+
+	if a.sess != nil {
+		a.sess.WorkspaceRoot = state.Root
+		if a.store != nil {
+			if err := a.store.Save(a.sess); err != nil {
+				return workspaceStateForFrontend(state), err
+			}
+		}
+	}
+	return workspaceStateForFrontend(state), nil
+}
+
+func workspaceStateForFrontend(state workspace.State) WorkspaceState {
+	result := WorkspaceState{
+		Root:      state.Root,
+		Name:      state.Name,
+		Files:     make([]WorkspaceFile, 0, len(state.Files)),
+		Truncated: state.Truncated,
+	}
+	for _, file := range state.Files {
+		result.Files = append(result.Files, WorkspaceFile{
+			Path:     file.Path,
+			Relative: file.Relative,
+			Name:     file.Name,
+			Kind:     file.Kind,
+			Size:     file.Size,
+			Modified: file.Modified.Format(time.RFC3339Nano),
+		})
+	}
+	return result
+}
+
+func emptyWorkspaceState() WorkspaceState {
+	return WorkspaceState{Files: []WorkspaceFile{}}
 }
 
 func (a *App) GetHistory(id string) []session.HistoryEntry {
@@ -537,27 +1017,14 @@ func (a *App) CloseNote(id string) SessionState {
 	if strings.TrimSpace(id) == "" || a.sess == nil {
 		return a.GetSession()
 	}
-	next := ""
-	filtered := a.sess.Documents[:0]
-	for _, doc := range a.sess.Documents {
-		if doc.ID == id {
-			continue
-		}
-		if next == "" {
-			next = doc.ID
-		}
-		filtered = append(filtered, doc)
+	doc := a.sess.Find(id)
+	if doc == nil || doc.Dirty {
+		return a.GetSession()
 	}
-	a.sess.Documents = filtered
-	if len(a.sess.Documents) == 0 {
-		doc := session.NewDocument("", "")
-		doc.Title = "Untitled"
-		a.sess.Add(doc)
-		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
-	} else if a.sess.ActiveID == id {
-		a.sess.ActiveID = next
-	}
+	a.removeDocument(doc, false, false)
+	a.ensureDocumentExists()
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	a.refreshWindowTitle()
 	goruntime.GC()
 	debug.FreeOSMemory()
 	return a.GetSession()
@@ -580,24 +1047,103 @@ func (a *App) DeleteNote(id string) SessionState {
 	if target == nil || target.Path != "" {
 		return a.GetSession()
 	}
-	filtered := make([]*session.Document, 0, len(a.sess.Documents))
+	a.removeDocument(target, true, true)
+	a.ensureDocumentExists()
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	a.refreshWindowTitle()
+	goruntime.GC()
+	debug.FreeOSMemory()
+	return a.GetSession()
+}
+
+// DiscardNote is called after the frontend confirms that unsaved changes may
+// be lost. Saved files are preserved; drafts are removed, as is app-owned
+// history for an unsaved note that has no disk copy.
+func (a *App) DiscardNote(id string) SessionState {
+	doc := a.sess.Find(id)
+	if doc == nil {
+		return a.GetSession()
+	}
+	if doc.Path == "" {
+		a.removeDocument(doc, true, true)
+	} else {
+		a.removeDocument(doc, true, false)
+	}
+	a.ensureDocumentExists()
+	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	a.refreshWindowTitle()
+	return a.GetSession()
+}
+
+func (a *App) removeDocument(target *session.Document, removeDraft bool, removeHistory bool) {
+	if target == nil {
+		return
+	}
+	filtered := make([]*session.Document, 0, max(0, len(a.sess.Documents)-1))
 	for _, doc := range a.sess.Documents {
-		if doc.ID != id {
+		if doc.ID != target.ID {
 			filtered = append(filtered, doc)
 		}
 	}
 	a.sess.Documents = filtered
-	if a.sess.ActiveID == id {
-		if len(a.sess.Documents) > 0 {
-			a.sess.ActiveID = a.sess.Documents[0].ID
-		} else {
-			a.sess.ActiveID = ""
+	if a.sess.ActiveID == target.ID {
+		a.sess.ActiveID = ""
+		if len(filtered) > 0 {
+			a.sess.ActiveID = filtered[0].ID
 		}
 	}
-	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-	goruntime.GC()
-	debug.FreeOSMemory()
-	return a.GetSession()
+	if removeDraft {
+		a.recordBackgroundError("remove document draft", a.store.RemoveDraft(target))
+	}
+	if removeHistory {
+		a.recordBackgroundError("remove document history", a.store.RemoveHistory(target.ID))
+	}
+}
+
+func (a *App) removePathReferences(path string) {
+	bookmarks := a.sess.Bookmarks[:0]
+	for _, bookmark := range a.sess.Bookmarks {
+		if canonicalPath(bookmark.Path) != path {
+			bookmarks = append(bookmarks, bookmark)
+		}
+	}
+	a.sess.Bookmarks = bookmarks
+	recents := a.sess.RecentFiles[:0]
+	for _, recent := range a.sess.RecentFiles {
+		if canonicalPath(recent.Path) != path {
+			recents = append(recents, recent)
+		}
+	}
+	a.sess.RecentFiles = recents
+	for viewPath := range a.sess.ViewModes {
+		if canonicalPath(viewPath) == path {
+			delete(a.sess.ViewModes, viewPath)
+		}
+	}
+}
+
+func (a *App) ensureDocumentExists() {
+	if len(a.sess.Documents) > 0 {
+		if a.sess.Find(a.sess.ActiveID) == nil {
+			a.sess.ActiveID = a.sess.Documents[0].ID
+		}
+		return
+	}
+	doc := session.NewDocument("", "")
+	doc.Title = "Untitled"
+	a.sess.Add(doc)
+	a.recordBackgroundError("create fallback draft", a.store.WriteDraft(doc, ""))
+}
+
+func (a *App) refreshWindowTitle() {
+	if a.ctx == nil || a.sess == nil {
+		return
+	}
+	title := "Markpad"
+	if doc := a.sess.Active(); doc != nil && doc.Title != "" {
+		title += " - " + doc.Title
+	}
+	runtime.WindowSetTitle(a.ctx, title)
 }
 
 // GetFileInfo returns metadata about the active file for the info modal

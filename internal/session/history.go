@@ -160,6 +160,18 @@ func (s *Store) GetSnapshotContent(docID string, timestamp string) (string, erro
 	return "", fmt.Errorf("snapshot not found")
 }
 
+func (s *Store) RemoveHistory(docID string) error {
+	docID = filepath.Base(strings.TrimSpace(docID))
+	if docID == "" || docID == "." || docID == ".." {
+		return nil
+	}
+	err := os.RemoveAll(s.historyDir(docID))
+	if err != nil {
+		return fmt.Errorf("remove document history: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) pruneHistory(docID string) error {
 	dir := s.historyDir(docID)
 	entries, err := os.ReadDir(dir)
