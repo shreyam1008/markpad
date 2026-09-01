@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"markpad/internal/brand"
@@ -80,6 +81,7 @@ type Store struct {
 	root                 string
 	draft                string
 	recoveredSessionPath string
+	historyMu            sync.Mutex
 }
 
 func NewStore(appName string) (*Store, error) {

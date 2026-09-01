@@ -2,9 +2,11 @@ package session
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestStorePersistsDraftsAndSession(t *testing.T) {
@@ -341,5 +343,22 @@ func TestHistoryTimestampRoundTripPreservesNanoseconds(t *testing.T) {
 		if _, err := store.GetSnapshotContent(doc.ID, entry.Timestamp); err != nil {
 			t.Fatalf("timestamp %q did not round-trip: %v", entry.Timestamp, err)
 		}
+	}
+}
+
+func TestNextSnapshotTimestampAdvancesPastClockCollision(t *testing.T) {
+	dir := t.TempDir()
+	candidate := time.Unix(1_900_000_000, 123_456_789)
+	existing := fmt.Sprintf("%d%s", candidate.UnixNano(), snapshotSuffix)
+	if err := os.WriteFile(filepath.Join(dir, existing), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := nextSnapshotTimestamp(dir, candidate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.UnixNano() != candidate.UnixNano()+1 {
+		t.Fatalf("next timestamp = %d, want %d", got.UnixNano(), candidate.UnixNano()+1)
 	}
 }

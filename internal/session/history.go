@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -39,12 +40,18 @@ func (s *Store) historyDir(docID string) string {
 }
 
 func (s *Store) SaveSnapshot(docID string, content string, source string) error {
+	s.historyMu.Lock()
+	defer s.historyMu.Unlock()
+
 	dir := s.historyDir(docID)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
-	now := time.Now()
+	now, err := nextSnapshotTimestamp(dir, time.Now())
+	if err != nil {
+		return err
+	}
 	lines := 1
 	for _, c := range content {
 		if c == '\n' {
@@ -74,6 +81,39 @@ func (s *Store) SaveSnapshot(docID string, content string, source string) error 
 	}
 
 	return s.pruneHistory(docID)
+}
+
+// nextSnapshotTimestamp makes the timestamp both the public history key and a
+// collision-free filename. Some Windows clocks return the same time for
+// several consecutive calls, so time.Now alone can silently overwrite the
+// previous snapshot. Advancing by one nanosecond preserves ordering without a
+// sleep or platform-specific clock assumptions.
+func nextSnapshotTimestamp(dir string, candidate time.Time) (time.Time, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	nextUnixNano := candidate.UnixNano()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), snapshotSuffix) {
+			continue
+		}
+		stem := strings.TrimSuffix(entry.Name(), snapshotSuffix)
+		existingUnixNano, parseErr := strconv.ParseInt(stem, 10, 64)
+		if parseErr != nil || existingUnixNano < nextUnixNano {
+			continue
+		}
+		if existingUnixNano == int64(1<<63-1) {
+			return time.Time{}, fmt.Errorf("snapshot timestamp range exhausted")
+		}
+		nextUnixNano = existingUnixNano + 1
+	}
+
+	if nextUnixNano == candidate.UnixNano() {
+		return candidate, nil
+	}
+	return time.Unix(0, nextUnixNano).In(candidate.Location()), nil
 }
 
 func (s *Store) ListHistory(docID string) ([]HistoryEntry, error) {
