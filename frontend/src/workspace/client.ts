@@ -67,4 +67,5 @@ export const client = {
   fileDraftInWorkspace: (relativePath: string, content: string): Promise<SessionState> =>
     api().FileDraftInWorkspace(relativePath, content),
   deleteFile: (path: string): Promise<SessionState> => api().DeleteFile(path),
+  quitWithoutSaving: (): Promise<void> => api().QuitWithoutSaving(),
 };

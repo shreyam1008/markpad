@@ -45,6 +45,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.11.0" date="2026-09-01">
+      <description>
+        <p>Strict design system, custom window chrome, stable overlays, viewport-safe menus, modern Markdown and Mermaid diagrams, Git-style history diffs, improved syntax highlighting, consistent confirmations, and unified product assets.</p>
+      </description>
+    </release>
     <release version="0.10.0" date="2026-08-20">
       <description>
         <p>Workspace Lite folder browsing, fast file switching, bounded full-workspace search, confirmed file deletion, external-change save protection, direct draft filing, and a typed React frontend.</p>

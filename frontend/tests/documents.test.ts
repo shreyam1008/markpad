@@ -3,7 +3,9 @@ import { describe, expect, test } from "bun:test";
 import {
   availableViews,
   defaultView,
+  fileBadge,
   fileType,
+  isReadOnly,
   openFileDirty,
   outlineFromMarkdown,
 } from "../src/workspace/documents";
@@ -26,10 +28,40 @@ const note = (values: Partial<NoteInfo> = {}): NoteInfo => ({
 
 describe("document rules", () => {
   test("classifies the supported file families", () => {
-    expect(fileType("README.md", "")).toBe("md");
-    expect(fileType("config.json", "")).toBe("code");
-    expect(fileType("notes.txt", "")).toBe("text");
-    expect(fileType("manual.pdf", "")).toBe("pdf");
+    const families = {
+      md: ["README.md", "guide.markdown", "page.mdx"],
+      text: ["notes.txt", "server.log", "data.csv", "table.tsv", "README"],
+      code: [
+        "config.json",
+        "config.yaml",
+        "main.go",
+        "component.tsx",
+        "styles.css",
+        "query.sql",
+        "changes.diff",
+        "fix.patch",
+        "Dockerfile",
+        ".editorconfig",
+      ],
+      pdf: ["manual.pdf"],
+      image: ["photo.png", "photo.jpeg", "diagram.webp", "icon.ico"],
+      ebook: ["book.epub", "book.mobi", "book.azw3"],
+      office: ["brief.docx", "notes.rtf", "draft.pages"],
+      archive: ["source.zip", "backup.tar", "bundle.7z", "files.rar"],
+    } as const;
+    for (const [family, paths] of Object.entries(families)) {
+      for (const path of paths) expect(fileType(path, "")).toBe(family);
+    }
+  });
+
+  test("keeps binary document families read-only and badges compact", () => {
+    for (const family of ["pdf", "image", "ebook", "office", "archive"] as const) {
+      expect(isReadOnly(family)).toBe(true);
+      expect(availableViews(family)).toEqual(["viewer"]);
+    }
+    expect(fileBadge("component.tsx")).toBe("TSX");
+    expect(fileBadge("settings.yaml")).toBe("YML");
+    expect(fileBadge("photo.jpeg")).toBe("IMG");
   });
 
   test("only markdown supports split", () => {

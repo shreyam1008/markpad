@@ -14,7 +14,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const Version = "0.10.0"
+const Version = "0.11.0"
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -143,12 +143,14 @@ func main() {
 	app.pendingFiles = cliFiles
 
 	err := wails.Run(&options.App{
-		Title:     "Markpad",
-		Width:     1180,
-		Height:    760,
-		MinWidth:  720,
-		MinHeight: 480,
-		Menu:      appMenu,
+		Title:            "Markpad",
+		Width:            1180,
+		Height:           760,
+		MinWidth:         720,
+		MinHeight:        480,
+		Frameless:        true,
+		BackgroundColour: options.NewRGB(240, 243, 240),
+		Menu:             appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets(),
 		},

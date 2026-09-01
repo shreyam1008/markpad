@@ -144,6 +144,7 @@ export interface MarkpadAPI {
   CreateWorkspaceFile(relativePath: string): Promise<SessionState>;
   FileDraftInWorkspace(relativePath: string, content: string): Promise<SessionState>;
   DeleteFile(path: string): Promise<SessionState>;
+  QuitWithoutSaving(): Promise<void>;
 }
 
 export interface MarkpadRuntime {
@@ -152,6 +153,10 @@ export interface MarkpadRuntime {
     callback: (x: number, y: number, paths: string[]) => void,
     useDropTarget: boolean,
   ): void;
+  WindowIsMaximised?(): Promise<boolean>;
+  WindowMinimise?(): void;
+  WindowToggleMaximise?(): void;
+  Quit?(): void;
 }
 
 declare global {

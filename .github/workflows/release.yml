@@ -175,14 +175,15 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            ## What's new in v0.10.0
+            ## What's new in v0.11.0
 
-            - Open one local folder as a lightweight workspace, with no import or database.
-            - Jump across open and workspace files with fuzzy `Ctrl+P` search.
-            - Search folder content with `Ctrl+Shift+F`, highlighted context, and exact match selection.
-            - Create workspace notes and permanently delete files behind an explicit warning.
-            - Prevent silent overwrites when another editor changes, replaces, moves, or deletes an open file.
-            - File an unsaved draft directly into the workspace with `Ctrl+Shift+Enter` and a suggested local filename.
+            - Rebuilt the workbench around a strict semantic design system with stable geometry and no layout shifts.
+            - Added custom native window chrome, consistent dialogs, clear selected states, and viewport-safe menus.
+            - Added Git-style version-history diffs with precise timestamps, additions/deletions, Back, and Restore.
+            - Expanded Markdown to modern GFM plus safe, lazy-loaded Mermaid diagrams.
+            - Improved bounded syntax highlighting across code, diff, and configuration files.
+            - Unified the Markpad icon across the app, executable, installers, and platform packages.
+            - Kept the Windows release binary under the 16 MiB ceiling and the app fully offline.
 
             ## Install
 

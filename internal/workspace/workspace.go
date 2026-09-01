@@ -91,6 +91,8 @@ var supportedExtensions = map[string]string{
 	".dart":       "code",
 	".r":          "code",
 	".pl":         "code",
+	".diff":       "code",
+	".patch":      "code",
 	".php":        "code",
 	".ex":         "code",
 	".exs":        "code",

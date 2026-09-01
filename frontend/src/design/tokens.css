@@ -1,0 +1,146 @@
+/*
+ * Markpad design tokens
+ *
+ * This is the only source of truth for product color, type, geometry, motion,
+ * elevation, and syntax roles. Components consume semantic roles; they never
+ * choose new palette values locally. See ../../../DESIGN.md for the contract.
+ */
+:root {
+  color-scheme: light;
+
+  /* Typography */
+  --mp-font-ui: Inter, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --mp-font-body: var(--mp-font-ui);
+  --mp-font-code: "JetBrains Mono", "Cascadia Code", Iosevka, monospace;
+  --mp-text-9: 9px;
+  --mp-text-10: 10px;
+  --mp-text-11: 11px;
+  --mp-text-12: 12px;
+  --mp-text-13: 13px;
+  --mp-text-15: 15px;
+  --mp-text-18: 18px;
+  --mp-text-24: 24px;
+
+  /* Content */
+  --mp-ink: #17201d;
+  --mp-text: #2c3531;
+  --mp-muted: #66716c;
+  --mp-faint: #87918c;
+  --mp-on-accent: #ffffff;
+
+  /* Surfaces */
+  --mp-canvas: #f6f7f4;
+  --mp-chrome: #f0f3f0;
+  --mp-sidebar: #f3f5f2;
+  --mp-paper: #fcfdfb;
+  --mp-editor: #ffffff;
+  --mp-raised: #ffffff;
+  --mp-code-surface: #f4f7f5;
+
+  /* Boundaries */
+  --mp-border: #cfd8d3;
+  --mp-border-soft: #e1e7e3;
+  --mp-border-strong: #aebdb5;
+  --mp-focus: #0c6754;
+  --mp-focus-soft: rgb(12 103 84 / 18%);
+
+  /* Interaction */
+  --mp-hover: #e7ede9;
+  --mp-selected: #dcefe8;
+  --mp-selected-strong: #cce6dc;
+  --mp-selected-border: #8fbfac;
+  --mp-selected-text: #103f35;
+  --mp-accent: #16705c;
+  --mp-accent-hover: #105f4d;
+  --mp-accent-soft: rgb(22 112 92 / 16%);
+
+  /* Status */
+  --mp-success: #16705c;
+  --mp-warning: #9a5a20;
+  --mp-danger: #b84a38;
+  --mp-danger-hover: #9f382a;
+  --mp-info: #245f85;
+  --mp-success-soft: #edf6f2;
+  --mp-success-border: #bdd8cc;
+  --mp-warning-soft: #faf1e5;
+  --mp-warning-border: #e1c59f;
+  --mp-danger-soft: #faeee9;
+  --mp-danger-border: #dfb5a9;
+
+  /* Syntax: tuned for the code surface, never used as generic UI colors. */
+  --mp-syntax-text: #27322e;
+  --mp-syntax-comment: #687970;
+  --mp-syntax-keyword: #7a3f8f;
+  --mp-syntax-string: #086a52;
+  --mp-syntax-number: #9b4e18;
+  --mp-syntax-title: #1f5f9f;
+  --mp-syntax-variable: #963f54;
+  --mp-syntax-type: #5e52a2;
+  --mp-syntax-literal: #8b431e;
+  --mp-syntax-attribute: #176274;
+  --mp-syntax-meta: #735c14;
+  --mp-syntax-deletion: #9f322e;
+  --mp-syntax-addition: #176a3b;
+
+  /* Geometry: fixed rails prevent state-driven layout shift. */
+  --mp-space-1: 2px;
+  --mp-space-2: 4px;
+  --mp-space-3: 6px;
+  --mp-space-4: 8px;
+  --mp-space-5: 10px;
+  --mp-space-6: 12px;
+  --mp-space-8: 16px;
+  --mp-radius-1: 4px;
+  --mp-radius-2: 5px;
+  --mp-radius-3: 6px;
+  --mp-radius-4: 8px;
+  --mp-radius: var(--mp-radius-3);
+  --mp-titlebar-height: 36px;
+  --mp-document-rail-height: 42px;
+  --mp-format-rail-height: 34px;
+  --mp-status-height: 26px;
+  --mp-control-height: 28px;
+  --mp-sidebar-width: 244px;
+  --mp-sidebar-collapsed-width: 44px;
+  --mp-history-width: 304px;
+  --mp-command-width: 680px;
+  --mp-command-height: 540px;
+
+  /* Motion: only paint/opacity/transform properties may use these. */
+  --mp-motion-fast: 80ms;
+  --mp-motion-standard: 120ms;
+  --mp-motion-slow: 160ms;
+  --mp-ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Elevation */
+  --mp-overlay: rgb(23 32 29 / 30%);
+  --mp-shadow-menu: 0 14px 40px rgb(23 32 29 / 16%);
+  --mp-shadow-dialog: 0 18px 56px rgb(23 32 29 / 22%);
+  --mp-shadow-focus: 0 0 0 3px var(--mp-focus-soft);
+
+  /* Compatibility aliases used by the existing editor and focus utilities. */
+  --markpad-focus: var(--mp-focus);
+  --markpad-focus-soft: var(--mp-focus-soft);
+}
+
+/* Tailwind and component CSS resolve to the exact same semantic palette. */
+@theme {
+  --color-ink: var(--mp-ink);
+  --color-text: var(--mp-text);
+  --color-canvas: var(--mp-canvas);
+  --color-chrome: var(--mp-chrome);
+  --color-sidebar: var(--mp-sidebar);
+  --color-surface: var(--mp-paper);
+  --color-editor: var(--mp-editor);
+  --color-border: var(--mp-border);
+  --color-border-soft: var(--mp-border-soft);
+  --color-hover: var(--mp-hover);
+  --color-accent: var(--mp-accent);
+  --color-accent-hover: var(--mp-accent-hover);
+  --color-accent-text: var(--mp-on-accent);
+  --color-muted: var(--mp-muted);
+  --color-unsaved: var(--mp-warning);
+  --color-danger: var(--mp-danger);
+  --font-sans: var(--mp-font-ui);
+  --font-mono: var(--mp-font-code);
+}

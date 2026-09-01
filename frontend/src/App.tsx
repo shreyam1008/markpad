@@ -1,13 +1,22 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
-import { CommandPalette, type PaletteAction } from "./components/CommandPalette";
+import { AppTitlebar } from "./components/AppTitlebar";
+import { CloseDialog } from "./components/CloseDialog";
+import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
 import { DeleteDialog, type DeleteTarget } from "./components/DeleteDialog";
 import { DocumentWorkspace, type DocumentWorkspaceHandle } from "./components/DocumentWorkspace";
 import { FileDraftDialog, type FileDraftTarget } from "./components/FileDraftDialog";
 import { HistoryPanel } from "./components/HistoryPanel";
 import {
   Bold,
-  Clock3,
   Code2,
   Columns2,
   Copy,
@@ -34,8 +43,10 @@ import {
   Undo2,
   X,
 } from "./components/icons";
+import { QuitDialog } from "./components/QuitDialog";
 import { Sidebar } from "./components/Sidebar";
 import { WorkspaceSearch } from "./components/WorkspaceSearch";
+import { clampFloatingPosition } from "./ui/floating";
 import { client } from "./workspace/client";
 import {
   availableViews,
@@ -83,6 +94,7 @@ interface ContextMenuState {
   note: NoteInfo;
   x: number;
   y: number;
+  placed: boolean;
 }
 
 function storedNumber(key: string, fallback: number) {
@@ -219,6 +231,14 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.11.0</h3>
+          <p>
+            A strict design system, custom window chrome, clearer selection, stable overlays,
+            Git-style history diffs, modern Markdown and Mermaid diagrams, improved syntax themes,
+            viewport-safe menus, consistent confirmation dialogs, and unified product assets.
+          </p>
+        </section>
+        <section>
           <h3 className="font-bold">0.10.0</h3>
           <p>
             Typed React workspace, Workspace Lite folder browsing, fast file and whole-folder
@@ -246,7 +266,7 @@ function ModalLayer({
         <p>
           <strong>Markpad</strong>
         </p>
-        <p className="text-muted">Version 0.10.0</p>
+        <p className="text-muted">Version 0.11.0</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>
@@ -268,24 +288,24 @@ function ModalLayer({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+      className="modal-overlay"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-xl overflow-hidden mx-6">
-        <div className="flex justify-between items-center px-5 pt-4 pb-3 border-b border-border-soft">
-          <h2 className="text-base font-bold">{title}</h2>
-          <button
-            aria-label="Close dialog"
-            className="text-muted hover:text-[#1a1c1b]"
-            onClick={onClose}
-          >
+      <dialog
+        open
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className="modal-card"
+        data-modal-kind={modal.kind}
+      >
+        <header className="modal-header">
+          <h2 id="modal-title">{title}</h2>
+          <button aria-label="Close dialog" className="modal-close" onClick={onClose}>
             <X className="h-4 w-4" />
           </button>
-        </div>
-        <div className="px-5 py-4 text-[13px] leading-6 text-[#3d403e] max-h-[55vh] overflow-y-auto">
-          {body}
-        </div>
-      </div>
+        </header>
+        <div className="modal-body">{body}</div>
+      </dialog>
     </div>
   );
 }
@@ -302,11 +322,13 @@ function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteScope, setPaletteScope] = useState<PaletteScope>("all");
   const [workspaceSearchOpen, setWorkspaceSearchOpen] = useState(false);
   const [folderWorkspace, setFolderWorkspace] = useState<WorkspaceState>(EMPTY_WORKSPACE);
   const [modal, setModal] = useState<Modal>();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [closeCandidate, setCloseCandidate] = useState<NoteInfo>();
+  const [quitDirtyCount, setQuitDirtyCount] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>();
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -320,12 +342,17 @@ function App() {
     Math.min(TEXT_ZOOM_MAX, Math.max(TEXT_ZOOM_MIN, storedNumber("markpad-text-zoom", 14))),
   );
   const workspace = useRef<DocumentWorkspaceHandle>(null);
+  const contextMenuElement = useRef<HTMLDivElement>(null);
   const pendingReveal = useRef<WorkspaceSearchResult | undefined>(undefined);
   const actionsRef = useRef<Record<string, () => void | Promise<void>>>({});
   const sessionRef = useRef(state.session);
   sessionRef.current = state.session;
 
   const active = state.session.notes.find((note) => note.id === state.session.activeId);
+  const activeDocument = useMemo(
+    () => (active ? { ...active, dirty: activeDirty } : undefined),
+    [active, activeDirty],
+  );
   const activeType = fileType(active?.path, active?.kind);
   const modes = availableViews(activeType);
   const readOnly = isReadOnly(activeType);
@@ -492,11 +519,54 @@ function App() {
     }
   }, [setStatus]);
 
+  const showPalette = useCallback((scope: PaletteScope) => {
+    setFindOpen(false);
+    setWorkspaceSearchOpen(false);
+    setHistoryOpen(false);
+    setModal(undefined);
+    setPaletteScope(scope);
+    setPaletteOpen(true);
+  }, []);
+
   const showWorkspaceSearch = useCallback(async () => {
     await workspace.current?.flush();
     setFindOpen(false);
     setPaletteOpen(false);
+    setHistoryOpen(false);
+    setModal(undefined);
     setWorkspaceSearchOpen(true);
+  }, []);
+
+  const toggleHistory = useCallback(() => {
+    setFindOpen(false);
+    setPaletteOpen(false);
+    setWorkspaceSearchOpen(false);
+    setModal(undefined);
+    setHistoryOpen((value) => !value);
+  }, []);
+
+  const showQuitDialog = useCallback((dirtyCount: number) => {
+    setFindOpen(false);
+    setPaletteOpen(false);
+    setWorkspaceSearchOpen(false);
+    setModal(undefined);
+    setContextMenu(undefined);
+    setCloseCandidate(undefined);
+    setQuitDirtyCount(Math.max(1, Math.trunc(dirtyCount)));
+  }, []);
+
+  const showPreferences = useCallback(async () => {
+    setFindOpen(false);
+    setPaletteOpen(false);
+    setWorkspaceSearchOpen(false);
+    setHistoryOpen(false);
+    let storage = "Available in the desktop app";
+    try {
+      storage = await client.storagePath();
+    } catch {
+      // The browser preview intentionally runs without the Wails desktop API.
+    }
+    setModal({ kind: "preferences", storage });
   }, []);
 
   const createWorkspaceFile = useCallback(
@@ -849,7 +919,7 @@ function App() {
         title: "Toggle version history",
         category: "View",
         shortcut: "Ctrl+H",
-        run: () => setHistoryOpen((value) => !value),
+        run: toggleHistory,
       },
       {
         id: "edit.find",
@@ -923,6 +993,7 @@ function App() {
       requestClose,
       requestDeleteNote,
       showFileDraft,
+      toggleHistory,
       showWorkspaceSearch,
       undoAvailable,
     ],
@@ -952,7 +1023,7 @@ function App() {
     toggleview: () => chooseView(modes[(modes.indexOf(state.viewMode) + 1) % modes.length]),
     togglesidebar: () => setSidebarCollapsed((value) => !value),
     find: () => setFindOpen(true),
-    history: () => setHistoryOpen((value) => !value),
+    history: toggleHistory,
     zoomin: () => adjustUiZoom(1),
     zoomout: () => adjustUiZoom(-1),
     zoomreset: () => adjustUiZoom(0),
@@ -962,7 +1033,7 @@ function App() {
     fileinfo: () => showInfo(),
     help: () => setModal({ kind: "help" }),
     about: () => setModal({ kind: "about" }),
-    preferences: async () => setModal({ kind: "preferences", storage: await client.storagePath() }),
+    preferences: showPreferences,
     changelog: () => setModal({ kind: "changelog" }),
   };
 
@@ -1009,6 +1080,12 @@ function App() {
         await syncFolderWorkspace();
       }),
     );
+    cancel.push(
+      runtime.EventsOn("app:quit-requested", (value) => {
+        const count = typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : 1;
+        showQuitDialog(count);
+      }),
+    );
     runtime.OnFileDrop((_x, _y, paths) => {
       void (async () => {
         await workspace.current?.flush();
@@ -1022,7 +1099,7 @@ function App() {
       })();
     }, true);
     return () => cancel.forEach((off) => off?.());
-  }, [loadDocument, syncFolderWorkspace]);
+  }, [loadDocument, showQuitDialog, syncFolderWorkspace]);
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -1031,8 +1108,7 @@ function App() {
       document.body.classList.toggle("shortcuts-visible", ctrl);
       if (ctrl && key === "p") {
         event.preventDefault();
-        setWorkspaceSearchOpen(false);
-        setPaletteOpen(true);
+        showPalette("all");
         return;
       }
       if (ctrl && event.shiftKey && key === "f") {
@@ -1151,22 +1227,51 @@ function App() {
       window.removeEventListener("keyup", keyup, true);
       window.removeEventListener("blur", blur);
     };
-  }, [active, deleteBusy, fileDraftBusy, requestDeleteNote]);
+  }, [active, deleteBusy, fileDraftBusy, requestDeleteNote, showPalette]);
 
   useEffect(() => {
     const close = () => setContextMenu(undefined);
     window.addEventListener("mousedown", close);
-    return () => window.removeEventListener("mousedown", close);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!contextMenu || contextMenu.placed || !contextMenuElement.current) return;
+    const bounds = contextMenuElement.current.getBoundingClientRect();
+    const next = clampFloatingPosition(
+      { x: contextMenu.x, y: contextMenu.y },
+      { width: bounds.width, height: bounds.height },
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    setContextMenu((current) =>
+      current
+        ? {
+            ...current,
+            x: next.x,
+            y: next.y,
+            placed: true,
+          }
+        : current,
+    );
+  }, [contextMenu]);
 
   if (startupError) {
     return (
-      <main className="flex h-full items-center justify-center bg-[#f4f2ed] p-8 text-[#1a1c1b]">
-        <section className="max-w-xl rounded-2xl border border-[#d8d6ce] bg-[#fafaf7] p-6 shadow-xl">
-          <h1 className="text-base font-bold">Markpad could not finish starting</h1>
-          <p className="mt-3 text-sm leading-6 text-[#6b6e68]">{startupError}</p>
-        </section>
-      </main>
+      <div className="markpad-shell flex h-full w-full flex-col">
+        <AppTitlebar />
+        <main className="flex min-h-0 flex-1 items-center justify-center bg-surface p-8 text-ink">
+          <section className="max-w-xl rounded-lg border border-border bg-surface p-6 shadow-xl">
+            <h1 className="text-base font-bold">Markpad could not finish starting</h1>
+            <p className="mt-3 text-sm leading-6 text-muted">{startupError}</p>
+          </section>
+        </main>
+      </div>
     );
   }
 
@@ -1190,177 +1295,205 @@ function App() {
   ] as const;
 
   return (
-    <div id="app" className="flex h-full w-full" style={{ zoom: uiZoom }}>
-      <Sidebar
-        session={displaySession}
-        workspace={folderWorkspace}
-        collapsed={sidebarCollapsed}
-        outline={outline}
-        onCollapse={() => setSidebarCollapsed((value) => !value)}
-        onNew={(format) => void create(format)}
-        onActivate={(id) => void activate(id)}
-        onOpenPath={(path) => void openPath(path)}
-        onToggleStar={(id) => void client.toggleStar(id).then(acceptSession)}
-        onClose={requestClose}
-        onRemoveRecent={(path) => void client.removeRecent(path).then(acceptSession)}
-        onReorder={(ids) => void client.reorder(ids).then(acceptSession)}
-        onContext={(note, x, y) => setContextMenu({ note, x, y })}
-        onOutline={(line) => workspace.current?.goToLine(line)}
-        onChooseWorkspace={() => void chooseWorkspace()}
-        onRefreshWorkspace={() => void refreshFolderWorkspace()}
-        onClearWorkspace={() => void clearFolderWorkspace()}
-        onSearchWorkspace={() => void showWorkspaceSearch()}
-        onCreateWorkspaceFile={(relativePath) => void createWorkspaceFile(relativePath)}
-        onDeleteWorkspaceFile={requestDeleteWorkspaceFile}
+    <div id="app" className="markpad-shell flex h-full w-full flex-col" style={{ zoom: uiZoom }}>
+      <AppTitlebar
+        activeSurface={
+          paletteOpen
+            ? paletteScope === "files"
+              ? "files"
+              : paletteScope === "actions"
+                ? "more"
+                : undefined
+            : workspaceSearchOpen
+              ? "search"
+              : historyOpen
+                ? "history"
+                : modal?.kind === "preferences"
+                  ? "settings"
+                  : undefined
+        }
+        onFiles={() => showPalette("files")}
+        onSearch={() => void showWorkspaceSearch()}
+        onHistory={toggleHistory}
+        onSettings={() => void showPreferences()}
+        onMore={() => showPalette("actions")}
       />
-      <main className="flex-1 min-w-0 flex flex-col overflow-hidden bg-surface">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-semibold text-sm truncate max-w-[220px]">
-              {active?.path ? active.title : "Untitled"}
-            </span>
-            <button
-              className="w-6 h-6 rounded-full border border-border text-muted hover:text-accent hover:border-accent flex-shrink-0 flex items-center justify-center"
-              title="File info"
-              onClick={() => void showInfo()}
-            >
-              <Info className="h-3.5 w-3.5" />
-            </button>
-            {activeDirty && (
-              <span className="text-[13px] font-bold text-unsaved whitespace-nowrap">
-                NOT SAVED
+      <div className="markpad-body flex min-h-0 flex-1">
+        <Sidebar
+          session={displaySession}
+          workspace={folderWorkspace}
+          collapsed={sidebarCollapsed}
+          outline={outline}
+          onCollapse={() => setSidebarCollapsed((value) => !value)}
+          onNew={(format) => void create(format)}
+          onActivate={(id) => void activate(id)}
+          onOpenPath={(path) => void openPath(path)}
+          onToggleStar={(id) => void client.toggleStar(id).then(acceptSession)}
+          onClose={requestClose}
+          onRemoveRecent={(path) => void client.removeRecent(path).then(acceptSession)}
+          onReorder={(ids) => void client.reorder(ids).then(acceptSession)}
+          onContext={(note, x, y) => setContextMenu({ note, x, y, placed: false })}
+          onOutline={(line) => workspace.current?.goToLine(line)}
+          onChooseWorkspace={() => void chooseWorkspace()}
+          onRefreshWorkspace={() => void refreshFolderWorkspace()}
+          onClearWorkspace={() => void clearFolderWorkspace()}
+          onSearchWorkspace={() => void showWorkspaceSearch()}
+          onCreateWorkspaceFile={(relativePath) => void createWorkspaceFile(relativePath)}
+          onDeleteWorkspaceFile={requestDeleteWorkspaceFile}
+        />
+        <main className="markpad-main flex-1 min-w-0 flex flex-col overflow-hidden bg-surface">
+          <div className="document-rail flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
+            <div className="document-tab flex items-center gap-2 min-w-0">
+              <span className="document-title font-semibold text-sm truncate max-w-[220px]">
+                {active?.path ? active.title : "Untitled"}
               </span>
-            )}
-          </div>
-          <div className="flex gap-0.5 bg-hover rounded-lg p-0.5 flex-shrink-0">
-            {modes.map((mode) => {
-              const Icon = mode === "markdown" ? SquarePen : mode === "split" ? Columns2 : Eye;
-              return (
-                <button
-                  key={mode}
-                  className={`view-btn ${state.viewMode === mode ? "active" : ""}`}
-                  onClick={() => chooseView(mode)}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{viewLabel(activeType, mode)}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-1.5 flex-shrink-0">
-            <button
-              className="icon-btn"
-              disabled={!undoAvailable}
-              title="Undo"
-              onClick={() => workspace.current?.undo()}
-            >
-              <Undo2 />
-            </button>
-            <button
-              className="icon-btn"
-              disabled={!redoAvailable}
-              title="Redo"
-              onClick={() => workspace.current?.redo()}
-            >
-              <Redo2 />
-            </button>
-            {canFileDraft ? (
               <button
-                className="file-draft-quick"
-                title="File this draft in the workspace (Ctrl+Shift+Enter)"
-                onClick={showFileDraft}
+                className="document-info w-6 h-6 rounded-full border border-border text-muted hover:text-accent hover:border-accent flex-shrink-0 flex items-center justify-center"
+                title="File info"
+                onClick={() => void showInfo()}
               >
-                <FilePlus2 />
-                <span>File in folder</span>
+                <Info className="h-3.5 w-3.5" />
               </button>
+              {activeDirty && (
+                <span className="document-dirty text-[13px] font-bold text-unsaved whitespace-nowrap">
+                  Unsaved
+                </span>
+              )}
+              {active && (
+                <button
+                  className="document-tab-close"
+                  title={`Close ${active.path ? active.title : "Untitled"}`}
+                  aria-label={`Close ${active.path ? active.title : "Untitled"}`}
+                  onClick={() => requestClose(active)}
+                >
+                  <X />
+                </button>
+              )}
+            </div>
+            <div className="view-switcher flex gap-0.5 bg-hover rounded-lg p-0.5 flex-shrink-0">
+              {modes.map((mode) => {
+                const Icon = mode === "markdown" ? SquarePen : mode === "split" ? Columns2 : Eye;
+                return (
+                  <button
+                    key={mode}
+                    className={`view-btn ${state.viewMode === mode ? "active" : ""}`}
+                    onClick={() => chooseView(mode)}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{viewLabel(activeType, mode)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="document-actions flex gap-1.5 flex-shrink-0">
+              <button
+                className="icon-btn"
+                disabled={!undoAvailable}
+                title="Undo"
+                onClick={() => workspace.current?.undo()}
+              >
+                <Undo2 />
+              </button>
+              <button
+                className="icon-btn"
+                disabled={!redoAvailable}
+                title="Redo"
+                onClick={() => workspace.current?.redo()}
+              >
+                <Redo2 />
+              </button>
+              {canFileDraft ? (
+                <button
+                  className="file-draft-quick"
+                  title="File this draft in the workspace (Ctrl+Shift+Enter)"
+                  onClick={showFileDraft}
+                >
+                  <FilePlus2 />
+                  <span>File in folder</span>
+                </button>
+              ) : null}
+              {!readOnly && (
+                <button
+                  className="document-action document-action-secondary px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border"
+                  onClick={() => void workspace.current?.revert()}
+                >
+                  Cancel
+                </button>
+              )}
+              {!readOnly && (
+                <button
+                  className="document-action document-action-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover"
+                  onClick={() => void workspace.current?.save()}
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  Save
+                </button>
+              )}
+            </div>
+          </div>
+
+          {activeType === "md" && (state.viewMode === "markdown" || state.viewMode === "split") && (
+            <div className="format-rail flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
+              {toolbar.map(([action, Icon, title], index) => (
+                <span className="contents" key={action}>
+                  {[3, 6, 8, 11, 14].includes(index) && <span className="tb-sep" />}
+                  <button
+                    className={`tb ${Icon ? "" : "txt"}`}
+                    title={title}
+                    onClick={() => workspace.current?.format(action)}
+                  >
+                    {Icon ? <Icon /> : title}
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="document-stage relative flex-1 flex overflow-hidden">
+            <DocumentWorkspace
+              key={`${active?.id ?? "empty"}-${state.contentVersion}`}
+              ref={workspace}
+              note={activeDocument}
+              initialContent={state.content}
+              viewMode={state.viewMode}
+              textSize={textSize}
+              findOpen={findOpen}
+              onCloseFind={() => setFindOpen(false)}
+              onSession={acceptSession}
+              onDocument={loadDocument}
+              onWorkspaceChange={syncFolderWorkspace}
+              onDirty={setActiveDirty}
+              onStatus={setStatus}
+              onStats={setStats}
+              onOutline={setOutline}
+              onHistoryAvailability={updateHistoryAvailability}
+              onTextZoom={adjustTextZoom}
+            />
+            <HistoryPanel
+              open={historyOpen}
+              note={active}
+              currentContent={() => workspace.current?.getContent() ?? state.content}
+              onClose={() => setHistoryOpen(false)}
+              onRestore={restoreHistory}
+              onStatus={setStatus}
+            />
+          </div>
+          <div className="status-bar flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
+            <span>{state.status}</span>
+            {folderWorkspace.root ? (
+              <span className="status-workspace" title={folderWorkspace.root}>
+                {folderWorkspace.name} · {folderWorkspace.files.length}
+                {folderWorkspace.truncated ? "+" : ""} files
+              </span>
             ) : null}
-            {!readOnly && (
-              <button
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border"
-                onClick={() => void workspace.current?.revert()}
-              >
-                Cancel
-              </button>
-            )}
-            {!readOnly && (
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-text hover:bg-accent-hover"
-                onClick={() => void workspace.current?.save()}
-              >
-                <Save className="h-3.5 w-3.5" />
-                Save
-              </button>
-            )}
-            <button
-              className="px-2 py-1.5 rounded-lg bg-hover text-muted hover:bg-border"
-              title="Version history"
-              onClick={() => setHistoryOpen((value) => !value)}
-            >
-              <Clock3 className="h-3.5 w-3.5" />
-            </button>
+            <span>{stats}</span>
           </div>
-        </div>
-
-        {activeType === "md" && (state.viewMode === "markdown" || state.viewMode === "split") && (
-          <div className="flex items-center gap-0.5 px-3 py-1 border-b border-border-soft bg-surface overflow-x-auto">
-            {toolbar.map(([action, Icon, title], index) => (
-              <span className="contents" key={action}>
-                {[3, 6, 8, 11, 14].includes(index) && <span className="tb-sep" />}
-                <button
-                  className={`tb ${Icon ? "" : "txt"}`}
-                  title={title}
-                  onClick={() => workspace.current?.format(action)}
-                >
-                  {Icon ? <Icon /> : title}
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="flex-1 flex overflow-hidden">
-          <DocumentWorkspace
-            key={`${active?.id ?? "empty"}-${state.contentVersion}`}
-            ref={workspace}
-            note={active ? { ...active, dirty: activeDirty } : undefined}
-            initialContent={state.content}
-            viewMode={state.viewMode}
-            textSize={textSize}
-            findOpen={findOpen}
-            onCloseFind={() => setFindOpen(false)}
-            onSession={acceptSession}
-            onDocument={loadDocument}
-            onWorkspaceChange={syncFolderWorkspace}
-            onDirty={setActiveDirty}
-            onStatus={setStatus}
-            onStats={setStats}
-            onOutline={setOutline}
-            onHistoryAvailability={updateHistoryAvailability}
-            onTextZoom={adjustTextZoom}
-          />
-          <HistoryPanel
-            open={historyOpen}
-            note={active}
-            currentContent={() => workspace.current?.getContent() ?? state.content}
-            onClose={() => setHistoryOpen(false)}
-            onRestore={restoreHistory}
-            onStatus={setStatus}
-          />
-        </div>
-        <div className="flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
-          <span>{state.status}</span>
-          {folderWorkspace.root ? (
-            <span className="status-workspace" title={folderWorkspace.root}>
-              {folderWorkspace.name} · {folderWorkspace.files.length}
-              {folderWorkspace.truncated ? "+" : ""} files
-            </span>
-          ) : null}
-          <span>{stats}</span>
-        </div>
-      </main>
+        </main>
+      </div>
 
       <CommandPalette
         open={paletteOpen}
+        scope={paletteScope}
         notes={state.session.notes}
         activeId={state.session.activeId}
         actions={paletteActions}
@@ -1385,10 +1518,15 @@ function App() {
 
       {contextMenu && (
         <div
+          ref={contextMenuElement}
           role="menu"
           tabIndex={-1}
-          className="fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[180px] text-[13px]"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          className="context-menu fixed z-50 bg-surface border border-border rounded-xl shadow-lg py-1 min-w-[180px] text-[13px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            visibility: contextMenu.placed ? "visible" : "hidden",
+          }}
           onMouseDown={(event) => event.stopPropagation()}
         >
           {contextMenu.note.path && (
@@ -1495,37 +1633,35 @@ function App() {
       />
 
       {closeCandidate && (
-        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-[60]">
-          <div className="close-dialog">
-            <h2>Save changes?</h2>
-            <p>{closeCandidate.title || "This file"} has unsaved changes.</p>
-            <div className="close-actions">
-              <button className="confirm-btn" onClick={() => setCloseCandidate(undefined)}>
-                Cancel
-              </button>
-              <button
-                className="confirm-btn danger"
-                onClick={async () => {
-                  await loadDocument(await client.discard(closeCandidate.id));
-                  setCloseCandidate(undefined);
-                }}
-              >
-                Don&apos;t Save
-              </button>
-              <button
-                className="confirm-btn primary"
-                onClick={async () => {
-                  if (await workspace.current?.save()) {
-                    await loadDocument(await client.close(closeCandidate.id));
-                    setCloseCandidate(undefined);
-                  }
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <CloseDialog
+          title={closeCandidate.title}
+          onCancel={() => setCloseCandidate(undefined)}
+          onDiscard={() => {
+            void (async () => {
+              await loadDocument(await client.discard(closeCandidate.id));
+              setCloseCandidate(undefined);
+            })();
+          }}
+          onSave={() => {
+            void (async () => {
+              if (await workspace.current?.save()) {
+                await loadDocument(await client.close(closeCandidate.id));
+                setCloseCandidate(undefined);
+              }
+            })();
+          }}
+        />
+      )}
+      {quitDirtyCount > 0 && (
+        <QuitDialog
+          dirtyCount={quitDirtyCount}
+          onCancel={() => setQuitDirtyCount(0)}
+          onDiscard={() => {
+            void client.quitWithoutSaving().catch((error: unknown) => {
+              setStatus(`Quit failed: ${String(error)}`);
+            });
+          }}
+        />
       )}
     </div>
   );

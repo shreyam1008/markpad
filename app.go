@@ -12,6 +12,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"markpad/internal/brand"
@@ -23,11 +24,12 @@ import (
 )
 
 type App struct {
-	ctx          context.Context
-	store        *session.Store
-	sess         *session.Session
-	pendingFiles []string
-	contentMu    sync.Mutex
+	ctx           context.Context
+	store         *session.Store
+	sess          *session.Session
+	pendingFiles  []string
+	contentMu     sync.Mutex
+	quitConfirmed atomic.Bool
 
 	workspaceMu           sync.Mutex
 	workspaceState        workspace.State
@@ -113,14 +115,28 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 func (a *App) beforeClose(ctx context.Context) bool {
-	if a.sess == nil {
+	if a.quitConfirmed.Load() {
 		return false
+	}
+	dirty := a.unsavedDocumentCount()
+	if dirty == 0 {
+		return false
+	}
+	runtime.EventsEmit(ctx, "app:quit-requested", dirty)
+	return true
+}
+
+func (a *App) unsavedDocumentCount() int {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
+	if a.sess == nil {
+		return 0
 	}
 	dirty := 0
 	for _, doc := range a.sess.Documents {
-		if doc.Dirty {
+		if doc != nil && doc.Dirty {
 			// Skip prompting for empty drafts or unmodified default drafts
-			if doc.Path == "" {
+			if doc.Path == "" && a.store != nil {
 				content, err := a.store.ReadDraft(doc)
 				if err == nil && session.IsDefaultDraftContent(content) {
 					continue
@@ -129,22 +145,12 @@ func (a *App) beforeClose(ctx context.Context) bool {
 			dirty++
 		}
 	}
-	if dirty == 0 {
-		return false
-	}
-	label := "file"
-	if dirty != 1 {
-		label = "files"
-	}
-	answer, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
-		Type:          runtime.QuestionDialog,
-		Title:         "Unsaved changes",
-		Message:       fmt.Sprintf("%d %s have unsaved changes. Quit without saving?", dirty, label),
-		Buttons:       []string{"Quit Without Saving", "Cancel"},
-		DefaultButton: "Cancel",
-		CancelButton:  "Cancel",
-	})
-	return err != nil || answer != "Quit Without Saving"
+	return dirty
+}
+
+func (a *App) QuitWithoutSaving() {
+	a.quitConfirmed.Store(true)
+	runtime.Quit(a.ctx)
 }
 
 // ---------- Types returned to frontend ----------
@@ -217,7 +223,15 @@ type WorkspaceSearchResult struct {
 // ---------- Session methods ----------
 
 func (a *App) GetSession() SessionState {
-	state := SessionState{ActiveID: a.sess.ActiveID}
+	state := SessionState{
+		Notes:     []NoteInfo{},
+		Favorites: []NoteInfo{},
+		Recents:   []RecentInfo{},
+	}
+	if a.sess == nil {
+		return state
+	}
+	state.ActiveID = a.sess.ActiveID
 	for _, doc := range a.sess.Documents {
 		kind, size := fileKindAndSize(doc.Path)
 		if doc.Path == "" {
@@ -1393,7 +1407,7 @@ func fileKind(path string) string {
 		return "image"
 	case "zip", "tar", "gz", "bz2", "xz", "7z", "rar":
 		return "archive"
-	case "py", "js", "ts", "jsx", "tsx", "go", "rs", "rb", "lua", "sh", "bash", "zsh", "fish", "json", "yaml", "yml", "xml", "toml", "ini", "cfg", "conf", "properties", "env", "html", "htm", "css", "scss", "less", "svg", "vue", "svelte", "sql", "c", "cpp", "h", "hpp", "java", "cs", "kt", "swift", "dart", "r", "pl", "php", "ex", "exs", "zig", "nim", "ps1", "bat", "cmd", "gradle", "tf", "hcl":
+	case "py", "js", "ts", "jsx", "tsx", "go", "rs", "rb", "lua", "sh", "bash", "zsh", "fish", "json", "yaml", "yml", "xml", "toml", "ini", "cfg", "conf", "properties", "env", "html", "htm", "css", "scss", "less", "svg", "vue", "svelte", "sql", "c", "cpp", "h", "hpp", "java", "cs", "kt", "swift", "dart", "r", "pl", "php", "ex", "exs", "zig", "nim", "ps1", "bat", "cmd", "gradle", "tf", "hcl", "diff", "patch":
 		return "code"
 	default:
 		return "text"

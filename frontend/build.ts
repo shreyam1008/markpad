@@ -1,12 +1,14 @@
-import { $ } from "bun";
+import { rm } from "node:fs/promises";
+
 import tailwind from "bun-plugin-tailwind";
 
-await $`rm -rf ./dist`.quiet();
+await rm(new URL("./dist", import.meta.url), { force: true, recursive: true });
 
 const result = await Bun.build({
   entrypoints: ["./index.html"],
   outdir: "./dist",
   minify: true,
+  splitting: true,
   target: "browser",
   plugins: [tailwind],
   // Compile-time React replacement only. Node is not used at runtime.

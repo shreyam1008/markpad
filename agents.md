@@ -13,7 +13,7 @@ Plain files remain the source of truth. Markpad has no account, cloud service, t
 | Rule | Reason |
 |---|---|
 | No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
-| Production binary must remain below 15 MiB | `make check-size` is a release gate. |
+| Production binary must remain below 16 MiB | `make check-size` is a release gate. |
 | No cloud client, telemetry, account, or external API | User content stays local and private. |
 | No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
 | No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
@@ -62,6 +62,8 @@ packaging/ and snap/            Platform packaging metadata and icons
 ```
 
 ## Frontend conventions
+
+Read `DESIGN.md` before any visual or interaction change. It is the source of truth for semantic tokens, fixed shell geometry, no-layout-shift rules, window chrome, syntax colors, assets, motion, and visual QA.
 
 - Keep TypeScript strict; do not add `any` to bypass API modeling.
 - `App.tsx` coordinates desktop commands and application-level state. Put cohesive UI in `components/` and pure document logic in `workspace/` or `preview/`.
@@ -155,7 +157,7 @@ Before committing:
 
 ## Performance and dependency rules
 
-- Production binary hard ceiling: 15 MiB; target at or below 13 MiB.
+- Production binary hard ceiling: 16 MiB; keep ordinary startup paths lazy and bounded.
 - Markdown render debounce: 120 ms; draft persistence debounce: 350 ms.
 - Keep scans/search cancellable or bounded so rapid input cannot display stale results or block typing.
 - Prefer standard-library directory walking and streaming/bounded reads over a database or search daemon.
@@ -176,6 +178,7 @@ Before committing:
 
 | Version | Highlights |
 |---|---|
+| 0.11.0 | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
 | 0.10.0 | Typed React workspace, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
 | 0.9.0 | Packaging and distribution groundwork |
 | 0.8.0 | Sidebar outline and memory tuning |

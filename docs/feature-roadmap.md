@@ -1,8 +1,8 @@
-# Post-v0.10 feature roadmap
+# Post-v0.11 feature roadmap
 
 ## Stable baseline
 
-Markpad v0.10.0 is a local Markdown notepad with a small optional folder workspace. It includes:
+Markpad v0.11.0 is a local Markdown notepad with a small optional folder workspace. It includes:
 
 - React 19 and strict TypeScript components bundled with Bun.
 - Ordinary local files plus autosaved recovery drafts and bounded saved-version history.
@@ -20,7 +20,7 @@ Workspace data remains plain files. Markpad does not import content, write metad
 2. Typing, switching, and search must stay responsive under documented bounds.
 3. Unsaved content is never silently discarded or overwritten.
 4. New capabilities reuse the normal document lifecycle instead of creating parallel storage.
-5. Keep the app offline, account-free, and below the 15 MiB release ceiling.
+5. Keep the app offline, account-free, and below the 16 MiB release ceiling.
 6. Ship one cohesive user outcome at a time, with failure and reopen behavior covered.
 
 ## Implemented: external-change protection

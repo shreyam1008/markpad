@@ -63,6 +63,8 @@ const code = new Set([
   "tf",
   "gradle",
   "pl",
+  "diff",
+  "patch",
 ]);
 const images = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "ico"]);
 const ebooks = new Set(["epub", "mobi", "azw", "azw3", "fb2"]);

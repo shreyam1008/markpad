@@ -1,7 +1,9 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+/* oxlint-disable jsx-a11y/prefer-tag-over-role -- command palettes use the ARIA combobox/listbox pattern rather than native select semantics. */
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import { fuzzyMatch, rankPaletteFiles } from "../commands";
 import type { NoteInfo, WorkspaceFile } from "../workspace/types";
+import { FileText, Search, SquarePen } from "./icons";
 
 export interface PaletteAction {
   id: string;
@@ -12,6 +14,8 @@ export interface PaletteAction {
   enabled?: boolean;
   run(): void | Promise<unknown>;
 }
+
+export type PaletteScope = "all" | "files" | "actions";
 
 interface Result {
   id: string;
@@ -26,6 +30,7 @@ interface Result {
 
 interface Props {
   open: boolean;
+  scope: PaletteScope;
   notes: NoteInfo[];
   activeId: string;
   actions: PaletteAction[];
@@ -54,6 +59,7 @@ function Highlight({ value, indices }: { value: string; indices: number[] }) {
 
 export function CommandPalette({
   open,
+  scope,
   notes,
   activeId,
   actions,
@@ -69,8 +75,10 @@ export function CommandPalette({
 
   const results = useMemo(() => {
     if (!open) return [];
-    const actionsOnly = deferredQuery.trimStart().startsWith(">");
-    const term = (actionsOnly ? deferredQuery.trimStart().slice(1) : deferredQuery).trim();
+    const commandPrefix = deferredQuery.trimStart().startsWith(">");
+    const actionsOnly = scope === "actions" || commandPrefix;
+    const filesOnly = scope === "files";
+    const term = (commandPrefix ? deferredQuery.trimStart().slice(1) : deferredQuery).trim();
     const files: Result[] = actionsOnly
       ? []
       : rankPaletteFiles(term, notes, workspaceFiles, activeId).map((file) => ({
@@ -80,40 +88,60 @@ export function CommandPalette({
           run: () =>
             file.noteId ? onActivate(file.noteId) : file.path ? onOpenPath(file.path) : undefined,
         }));
-    const commands: Result[] = actions
-      .flatMap((action) => {
-        if (action.enabled === false) return [];
-        const match = fuzzyMatch(
-          term,
-          [action.title, action.category, ...(action.keywords ?? [])].join(" "),
-        );
-        const titleMatch = fuzzyMatch(term, action.title);
-        if (!match) return [];
-        return [
-          {
-            id: action.id,
-            title: action.title,
-            category: action.category,
-            shortcut: action.shortcut ?? "",
-            kind: "action" as const,
-            score: match.score + (titleMatch ? 20 : 0),
-            indices: titleMatch?.indices ?? [],
-            run: action.run,
-          },
-        ];
-      })
-      .sort((a, b) => b.score - a.score);
+    const commands: Result[] = filesOnly
+      ? []
+      : actions
+          .flatMap((action) => {
+            if (action.enabled === false) return [];
+            const match = fuzzyMatch(
+              term,
+              [action.title, action.category, ...(action.keywords ?? [])].join(" "),
+            );
+            const titleMatch = fuzzyMatch(term, action.title);
+            if (!match) return [];
+            return [
+              {
+                id: action.id,
+                title: action.title,
+                category: action.category,
+                shortcut: action.shortcut ?? "",
+                kind: "action" as const,
+                score: match.score + (titleMatch ? 20 : 0),
+                indices: titleMatch?.indices ?? [],
+                run: action.run,
+              },
+            ];
+          })
+          .sort((a, b) => b.score - a.score);
     return [...files.slice(0, 60), ...commands.slice(0, 20)];
-  }, [actions, activeId, deferredQuery, notes, onActivate, onOpenPath, open, workspaceFiles]);
+  }, [
+    actions,
+    activeId,
+    deferredQuery,
+    notes,
+    onActivate,
+    onOpenPath,
+    open,
+    scope,
+    workspaceFiles,
+  ]);
 
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setSelection(0);
-    requestAnimationFrame(() => input.current?.focus());
-  }, [open]);
+    const frame = requestAnimationFrame(() => input.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [open, scope]);
 
-  useEffect(() => setSelection(0), [query]);
+  useEffect(() => {
+    if (!open || !results[selection]) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`command-result-${selection}`)?.scrollIntoView({ block: "nearest" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open, results, selection]);
+
   if (!open) return null;
 
   const run = async (result: Result) => {
@@ -122,12 +150,7 @@ export function CommandPalette({
   };
 
   return (
-    <dialog
-      open
-      id="command-overlay"
-      className="fixed inset-0 z-[70] h-full w-full max-w-none bg-black/20 px-4 pt-[10vh]"
-      aria-label="Command palette"
-    >
+    <dialog open id="command-overlay" className="command-overlay" aria-label="Command palette">
       <button
         type="button"
         tabIndex={-1}
@@ -135,18 +158,29 @@ export function CommandPalette({
         className="command-backdrop"
         onClick={onClose}
       />
-      <div
-        id="command-panel"
-        className="mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-surface shadow-xl"
-      >
+      <div id="command-panel" className="command-panel">
         <div className="command-search-row">
-          <span className="command-prompt">›</span>
+          <Search className="command-search-icon" />
           <input
             ref={input}
-            className="h-12 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-muted"
-            placeholder="Search files and actions"
+            className="command-input"
+            placeholder={
+              scope === "files"
+                ? "Search open files and workspace"
+                : scope === "actions"
+                  ? "Search actions"
+                  : "Search files and actions"
+            }
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            aria-controls="command-results"
+            aria-activedescendant={results[selection] ? `command-result-${selection}` : undefined}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSelection(0);
+            }}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
@@ -170,35 +204,59 @@ export function CommandPalette({
           />
           <kbd>Esc</kbd>
         </div>
-        <div id="command-results" className="max-h-[52vh] overflow-y-auto p-1.5">
-          {results.length === 0 && (
-            <div className="command-empty">No matching files or actions</div>
-          )}
-          {results.map((result, index) => (
-            <button
-              key={result.id}
-              className={`command-item ${index === selection ? "active" : ""}`}
-              onMouseEnter={() => setSelection(index)}
-              onClick={() => void run(result)}
-            >
-              <span className={`command-kind ${result.kind}`}>
-                {result.kind === "file" ? "FILE" : "ACTION"}
-              </span>
-              <span>
-                <span className="command-item-title">
-                  <Highlight value={result.title} indices={result.indices} />
-                </span>
-                <span className="command-item-category">{result.category}</span>
-              </span>
-              <kbd>{result.shortcut}</kbd>
-            </button>
-          ))}
+        <div id="command-results" className="command-results" role="listbox">
+          {results.length === 0 ? (
+            <div className="command-empty">
+              {scope === "files"
+                ? "No matching files"
+                : scope === "actions"
+                  ? "No matching actions"
+                  : "No matching files or actions"}
+            </div>
+          ) : null}
+          {results.map((result, index) => {
+            const previousKind = results[index - 1]?.kind;
+            return (
+              <Fragment key={result.id}>
+                {previousKind !== result.kind ? (
+                  <div className="command-section" aria-hidden="true">
+                    {result.kind === "file" ? "Files" : "Actions"}
+                  </div>
+                ) : null}
+                <button
+                  id={`command-result-${index}`}
+                  className={`command-item ${index === selection ? "active" : ""}`}
+                  role="option"
+                  aria-selected={index === selection}
+                  onMouseMove={() => setSelection(index)}
+                  onClick={() => void run(result)}
+                >
+                  <span className={`command-icon ${result.kind}`} aria-hidden="true">
+                    {result.kind === "file" ? <FileText /> : <SquarePen />}
+                  </span>
+                  <span className="command-item-copy">
+                    <span className="command-item-title">
+                      <Highlight value={result.title} indices={result.indices} />
+                    </span>
+                    <span className="command-item-category">{result.category}</span>
+                  </span>
+                  {result.shortcut ? <kbd>{result.shortcut}</kbd> : null}
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
         <div className="command-footer">
           <span>
-            <kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> open
+            <kbd>↑</kbd> <kbd>↓</kbd> navigate <kbd>Enter</kbd> open
           </span>
-          <span>Files + Actions</span>
+          {scope === "all" ? (
+            <span>
+              Type <kbd>&gt;</kbd> for actions
+            </span>
+          ) : (
+            <span>{scope === "files" ? "Files" : "Actions"} only</span>
+          )}
         </div>
       </div>
     </dialog>

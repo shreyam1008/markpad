@@ -57,6 +57,55 @@ func TestScanFiltersAndSorts(t *testing.T) {
 	}
 }
 
+func TestScanMixedWorkspaceCoversEverySupportedExtensionAndSizeBoundary(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	expected := make(map[string]string, len(supportedExtensions)+2)
+	for extension, kind := range supportedExtensions {
+		name := "sample" + extension
+		writeTestFile(t, root, filepath.Join("supported", name), "representative UTF-8 content\n")
+		expected[filepath.ToSlash(filepath.Join("supported", name))] = kind
+	}
+	writeTestFile(t, root, "supported/README", "extensionless text\n")
+	expected["supported/README"] = "text"
+
+	atLimit := filepath.Join(root, "supported", "at-limit.md")
+	if err := os.WriteFile(atLimit, []byte(strings.Repeat("a", MaxFileSize)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	expected["supported/at-limit.md"] = "markdown"
+
+	writeTestFile(t, root, "unsupported/photo.png", "not part of the searchable text workspace")
+	writeTestFile(t, root, "unsupported/archive.zip", "not part of the searchable text workspace")
+	writeTestFile(t, root, "unsupported/blob.bin", "unsupported")
+	writeTestFile(t, root, "unsupported/binary.go", "package main\x00binary")
+	beyondLimit := filepath.Join(root, "unsupported", "beyond-limit.md")
+	if err := os.WriteFile(beyondLimit, []byte(strings.Repeat("b", MaxFileSize+1)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	state, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(state.Files) != len(expected) {
+		t.Fatalf("Scan() returned %d files, want %d", len(state.Files), len(expected))
+	}
+	for _, file := range state.Files {
+		kind, ok := expected[file.Relative]
+		if !ok {
+			t.Fatalf("Scan() unexpectedly included %q", file.Relative)
+		}
+		if file.Kind != kind {
+			t.Fatalf("Scan() kind for %q = %q, want %q", file.Relative, file.Kind, kind)
+		}
+		delete(expected, file.Relative)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("Scan() omitted supported files: %v", expected)
+	}
+}
+
 func TestScanDepthCap(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

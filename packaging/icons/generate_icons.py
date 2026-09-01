@@ -7,6 +7,8 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[2]
 WINDOWS_ICON = ROOT / "packaging" / "windows" / "markpad.ico"
 MACOS_ICON = ROOT / "packaging" / "macos" / "markpad.icns"
+CANONICAL_SVG = ROOT / "packaging" / "linux" / "markpad.svg"
+FRONTEND_SVG = ROOT / "frontend" / "src" / "assets" / "markpad-mark.svg"
 
 GREEN = "#2f6f61"
 PAPER = "#fffffb"
@@ -71,8 +73,12 @@ def main():
         sizes=[(16, 16), (32, 32), (64, 64), (128, 128), (256, 256), (512, 512), (1024, 1024)],
     )
 
+    FRONTEND_SVG.parent.mkdir(parents=True, exist_ok=True)
+    FRONTEND_SVG.write_bytes(CANONICAL_SVG.read_bytes())
+
     print(f"Wrote {WINDOWS_ICON.relative_to(ROOT)}")
     print(f"Wrote {MACOS_ICON.relative_to(ROOT)}")
+    print(f"Synced {FRONTEND_SVG.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

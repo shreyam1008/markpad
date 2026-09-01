@@ -104,6 +104,11 @@ describe("palette file ranking", () => {
     expect(results[0].indices).toEqual([]);
   });
 
+  test("does not match hidden status metadata as a filename", () => {
+    expect(rankPaletteFiles("file", [openNote], workspaceFiles, "open")).toEqual([]);
+    expect(rankPaletteFiles("current", [openNote], workspaceFiles, "open")).toEqual([]);
+  });
+
   test("caps empty-query files without duplicating open workspace paths", () => {
     const results = rankPaletteFiles("", [openNote], workspaceFiles, "open", 2);
     expect(results.map((result) => result.id)).toEqual([

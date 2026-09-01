@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useDeferredValue,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -118,6 +119,34 @@ function Viewer({
     return () => target.removeEventListener("click", openLink);
   }, [type]);
 
+  useEffect(() => {
+    const target = rendered.current;
+    if (!target || type !== "md") return;
+    const diagrams = [...target.querySelectorAll<HTMLElement>("[data-mermaid-diagram]")].filter(
+      (node) => !node.querySelector("svg") && node.getAttribute("aria-busy") !== "true",
+    );
+    if (!diagrams.length) return;
+    for (const node of diagrams) node.setAttribute("aria-busy", "true");
+    // The renderer is intentionally lazy. If React replaces preview HTML while
+    // the chunk is loading, the next render pass picks up the fresh nodes while
+    // the disconnected set below is ignored.
+    void import("../preview/mermaid")
+      .then(({ renderMermaidDiagrams }) => {
+        return renderMermaidDiagrams(
+          diagrams.filter((node) => node.isConnected),
+          () => true,
+        );
+      })
+      .catch(() => {
+        for (const node of diagrams) {
+          if (!node.isConnected) continue;
+          node.removeAttribute("aria-busy");
+          node.classList.add("mermaid-error");
+          node.setAttribute("aria-label", "Mermaid diagram renderer failed to load");
+        }
+      });
+  });
+
   if (type === "md" || type === "code") {
     return (
       <div
@@ -212,6 +241,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     ref,
   ) {
     const [content, setContent] = useState(initialContent);
+    const deferredContent = useDeferredValue(content);
     const [previewContent, setPreviewContent] = useState(initialContent);
     const [findQuery, setFindQuery] = useState("");
     const [findInfo, setFindInfo] = useState("");
@@ -258,14 +288,16 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     }, [onHistoryAvailability]);
 
     useEffect(() => {
-      if (findOpen) requestAnimationFrame(() => findInput.current?.focus());
+      if (!findOpen) return;
+      const frame = requestAnimationFrame(() => findInput.current?.focus());
+      return () => cancelAnimationFrame(frame);
     }, [findOpen]);
 
     useEffect(() => {
       const initial = initialDocument.current;
       onDirty(initial.dirty);
       updateHistoryButtons();
-      requestAnimationFrame(() => {
+      const frame = requestAnimationFrame(() => {
         if (editor.current) {
           editor.current.scrollTop = initial.scrollTop;
           editor.current.selectionStart = editor.current.selectionEnd = Math.min(
@@ -275,17 +307,18 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         }
         if (viewer.current) viewer.current.scrollTop = initial.viewTop;
       });
+      return () => cancelAnimationFrame(frame);
     }, [initialContent.length, onDirty, updateHistoryButtons]);
 
     useEffect(() => {
-      const stats = editorStats(content, note);
+      const stats = editorStats(deferredContent, note);
       onStats(
         readOnly
           ? `${typeLabel(type)} · ${note?.size ? formatBytes(note.size) : "read-only"}`
           : `${stats.label} · ${stats.lines} ln · ${stats.words} w · ${stats.characters} ch · ~${stats.readMinutes} min · UTF-8`,
       );
-      onOutline(type === "md" ? outlineFromMarkdown(content) : []);
-    }, [content, note, onOutline, onStats, readOnly, type]);
+      onOutline(type === "md" ? outlineFromMarkdown(deferredContent) : []);
+    }, [deferredContent, note, onOutline, onStats, readOnly, type]);
 
     useEffect(() => {
       clearTimeout(previewTimer.current);
@@ -712,11 +745,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
 
     return (
       <>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="document-workspace flex-1 flex flex-col overflow-hidden">
           {findOpen && (
             <div
               id="find-bar"
-              className="flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover"
+              className="find-rail flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover"
             >
               <input
                 ref={findInput}
@@ -733,7 +766,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 className="flex-1 bg-transparent border-none outline-none text-[13px]"
               />
               <span className="text-[11px] text-muted">{findInfo}</span>
-              <button className="text-muted hover:text-[#1a1c1b]" onClick={onCloseFind}>
+              <button className="text-muted hover:text-ink" onClick={onCloseFind}>
                 ×
               </button>
             </div>
@@ -742,7 +775,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             ref={area}
             id="content-area"
             role="presentation"
-            className="flex-1 flex overflow-hidden"
+            className="workspace-panes flex-1 flex overflow-hidden"
             onMouseMove={(event) => {
               if (!resizing.current || !area.current) return;
               const rect = area.current.getBoundingClientRect();
@@ -757,7 +790,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             {showEditor && (
               <div
                 id="editor-container"
-                className="flex-1 overflow-hidden p-3"
+                className="editor-pane flex-1 overflow-hidden p-3"
                 style={viewMode === "split" ? { flex: `0 0 ${split}%` } : undefined}
               >
                 <textarea
@@ -765,9 +798,10 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                   id="editor"
                   value={content}
                   readOnly={readOnly}
+                  placeholder={readOnly ? undefined : "Start writing…"}
                   wrap="off"
                   spellCheck={false}
-                  className="w-full h-full border-none outline-none resize-none bg-editor text-[#1a1c1b] font-mono leading-7 p-5 rounded-lg select-text"
+                  className="editor-surface w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text"
                   style={{ tabSize: 4, fontSize: textSize }}
                   onScroll={savePosition}
                   onKeyUp={savePosition}
@@ -822,7 +856,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 type="button"
                 id="resize-divider"
                 aria-label="Resize editor and preview"
-                className="w-1 cursor-col-resize bg-border hover:bg-accent flex-shrink-0"
+                className="splitter w-1 cursor-col-resize bg-border hover:bg-accent flex-shrink-0"
                 onMouseDown={(event) => {
                   resizing.current = true;
                   event.preventDefault();
@@ -840,7 +874,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
               <div
                 ref={viewer}
                 id="viewer-container"
-                className="flex-1 overflow-auto overscroll-contain p-3"
+                className="preview-pane flex-1 overflow-auto overscroll-contain p-3"
                 style={viewMode === "split" ? { flex: `0 0 ${100 - split}%` } : undefined}
                 onScroll={savePosition}
               >

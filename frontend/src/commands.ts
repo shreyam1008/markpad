@@ -106,7 +106,10 @@ export function rankPaletteFiles(
     const title = note.title || "Untitled";
     const category = note.id === activeId ? "Current file" : note.path || "Unsaved draft";
     const titleMatch = fuzzyMatch(query, title);
-    const fullMatch = titleMatch ?? fuzzyMatch(query, `${title} ${category}`);
+    // Search what the user can identify: the visible name and, for saved notes,
+    // its path. Status labels such as "Current file" are display metadata and
+    // must not create surprising filename matches.
+    const fullMatch = titleMatch ?? (note.path ? fuzzyMatch(query, note.path) : null);
     if (!fullMatch) continue;
     matches.push({
       id: `document.${note.id}`,

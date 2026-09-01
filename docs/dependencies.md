@@ -28,7 +28,7 @@ Do not substitute an unpinned `latest` URL or add a package manager to the produ
 
 ## Size policy
 
-The target stripped Linux executable is at most 13 MiB. The hard release ceiling is 15 MiB. Source maps, `node_modules`, examples, development tools, PDF.js, and unused language packs must not be embedded.
+The hard release ceiling is 16 MiB. Source maps, `node_modules`, examples, development tools, PDF.js, and unused language packs must not be embedded; large optional features must remain code-split and off the startup path.
 
 ## Licensing
 

@@ -118,6 +118,7 @@ function SidebarView({
   const [workspaceCreateOpen, setWorkspaceCreateOpen] = useState(false);
   const [workspaceFileName, setWorkspaceFileName] = useState("");
   const workspaceCreateInput = useRef<HTMLInputElement>(null);
+  const newMenu = useRef<HTMLDivElement>(null);
   const dragged = useRef("");
   const openPaths = useMemo(
     () => new Set(session.notes.filter((note) => note.path).map((note) => note.path)),
@@ -129,8 +130,28 @@ function SidebarView({
   );
 
   useEffect(() => {
-    if (workspaceCreateOpen) requestAnimationFrame(() => workspaceCreateInput.current?.focus());
+    if (!workspaceCreateOpen) return;
+    const frame = requestAnimationFrame(() => workspaceCreateInput.current?.focus());
+    return () => cancelAnimationFrame(frame);
   }, [workspaceCreateOpen]);
+
+  useEffect(() => {
+    if (!newMenuOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !newMenu.current?.contains(event.target)) {
+        setNewMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNewMenuOpen(false);
+    };
+    window.addEventListener("pointerdown", closeOutside, true);
+    window.addEventListener("keydown", closeOnEscape, true);
+    return () => {
+      window.removeEventListener("pointerdown", closeOutside, true);
+      window.removeEventListener("keydown", closeOnEscape, true);
+    };
+  }, [newMenuOpen]);
 
   const toggle = (name: Section) => {
     setSections((current) => {
@@ -144,7 +165,7 @@ function SidebarView({
     return (
       <aside
         id="sidebar"
-        className="w-12 min-w-12 bg-sidebar border-r border-border flex flex-col items-center py-3 gap-2 select-none"
+        className="markpad-sidebar is-collapsed w-12 min-w-12 bg-sidebar border-r border-border flex flex-col items-center py-3 gap-2 select-none"
       >
         <button
           className="icon-btn"
@@ -178,20 +199,23 @@ function SidebarView({
   return (
     <aside
       id="sidebar"
-      className="w-64 min-w-64 bg-sidebar border-r border-border flex flex-col overflow-hidden select-none"
+      className="markpad-sidebar w-64 min-w-64 bg-sidebar border-r border-border flex flex-col overflow-hidden select-none"
     >
-      <div className="flex items-center justify-between p-3 gap-2 flex-shrink-0">
-        <div className="relative flex">
+      <div className="sidebar-command-rail flex items-center justify-between p-3 gap-2 flex-shrink-0">
+        <div ref={newMenu} className="new-menu-root relative flex">
           <button
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-l-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover"
+            className="new-primary flex items-center gap-1.5 px-3 py-1.5 rounded-l-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover"
             title="New Markdown note (Ctrl+N)"
-            onClick={() => onNew("md")}
+            onClick={() => {
+              setNewMenuOpen(false);
+              onNew("md");
+            }}
           >
             <Plus className="h-3.5 w-3.5" />
             New
           </button>
           <button
-            className="flex items-center px-2 rounded-r-lg border-l border-white/20 bg-accent text-accent-text"
+            className="new-menu-trigger flex items-center px-2 rounded-r-lg border-l border-white/20 bg-accent text-accent-text"
             aria-label="Choose new file type"
             aria-expanded={newMenuOpen}
             onClick={() => setNewMenuOpen((value) => !value)}
@@ -199,7 +223,7 @@ function SidebarView({
             <ChevronDown className="h-3 w-3" />
           </button>
           {newMenuOpen && (
-            <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-44 rounded-xl border border-border bg-surface p-1 shadow-lg">
+            <div className="new-menu" role="menu" aria-label="New file type">
               {(
                 [
                   ["md", "Markdown", ".md"],
@@ -211,6 +235,7 @@ function SidebarView({
                 <button
                   key={format}
                   className="new-type-item"
+                  role="menuitem"
                   onClick={() => {
                     onNew(format);
                     setNewMenuOpen(false);
@@ -232,7 +257,7 @@ function SidebarView({
           <PanelLeftClose />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      <div className="sidebar-scroll flex-1 overflow-y-auto px-2 pb-2">
         <section className="workspace-cabinet">
           {workspace.root ? (
             <>

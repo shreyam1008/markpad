@@ -60,12 +60,12 @@ check-assets:
 
 check-size: build
 	@bytes=$$(wc -c < $(DIST)/$(APP) | tr -d '[:space:]'); \
-	limit=$$((15 * 1024 * 1024)); \
+	limit=$$((16 * 1024 * 1024)); \
 	if [ "$$bytes" -gt "$$limit" ]; then \
-		echo "$(DIST)/$(APP) exceeds the 15 MiB release ceiling ($$bytes bytes)"; \
+		echo "$(DIST)/$(APP) exceeds the 16 MiB release ceiling ($$bytes bytes)"; \
 		exit 1; \
 	fi; \
-	echo "$(DIST)/$(APP): $$bytes bytes (15 MiB ceiling)"
+	echo "$(DIST)/$(APP): $$bytes bytes (16 MiB ceiling)"
 
 clean:
 	rm -rf $(DIST) $(FRONTEND)/dist

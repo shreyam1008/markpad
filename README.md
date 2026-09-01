@@ -92,6 +92,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.11.0 | | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
 | 0.10.0 | | React + strict TypeScript frontend, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
 | 0.9.0 | | Packaging and distribution groundwork |
 | 0.8.0 | Falguni | Real-time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, welcome draft close bypass |
@@ -105,7 +106,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 ## Philosophy
 
-Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps the release binary below a 15 MiB ceiling. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
+Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps the release binary below a 16 MiB ceiling. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
 
 ## Keyboard Shortcuts
 

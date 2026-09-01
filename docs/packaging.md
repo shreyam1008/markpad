@@ -12,11 +12,11 @@ make check
 ./dist/markpad README.md
 ```
 
-`make setup` uses the frozen Bun lockfile. `make check` builds the frontend, runs frontend and Go verification, checks runtime assets and formatting, creates the stripped Linux binary, and enforces the 15 MiB ceiling.
+`make setup` uses the frozen Bun lockfile. `make check` builds the frontend, runs frontend and Go verification, checks runtime assets and formatting, creates the stripped Linux binary, and enforces the 16 MiB ceiling.
 
 ## Release CI
 
-Pushing one explicit annotated tag such as `v0.10.0` starts `.github/workflows/release.yml`. Each operating-system job installs pinned Bun dependencies and builds `frontend/dist` before compiling Go.
+Pushing one explicit annotated tag such as `v0.11.0` starts `.github/workflows/release.yml`. Each operating-system job installs pinned Bun dependencies and builds `frontend/dist` before compiling Go.
 
 The release contains:
 
