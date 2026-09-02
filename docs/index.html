@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta name="description" content="Markpad is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Split preview, recovery drafts, fast file switching, and bounded workspace search. No Electron or cloud." />
+    <meta name="description" content="Markpad is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Responsive source viewers, split preview, themes, keyboard settings, recovery drafts, and bounded workspace search. No Electron or cloud." />
     <meta name="keywords" content="markpad, markdown editor, markdown notepad, local folder workspace, workspace search, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -32,13 +32,13 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.11.0",
+        "softwareVersion": "0.12.0",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad"],
-        "description": "A tiny native Markdown notepad and local folder workspace with fast file switching, bounded content search, split preview, version history, and recovery drafts.",
+        "description": "A tiny native Markdown notepad and local folder workspace with fast file switching, responsive source viewers, themes, keyboard settings, bounded content search, split preview, version history, and recovery drafts.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
@@ -123,6 +123,8 @@
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Workspace Search</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Responsive Source Views</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Themes + Keyboard Settings</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Session Restore</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">No Cloud / No Telemetry</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Linux, Windows, macOS</span>
@@ -137,24 +139,27 @@
             <span class="text-xs text-muted ml-2">Markpad - Split View</span>
           </div>
           <div class="bg-gradient-to-br from-accent-soft/30 to-paper">
-            <img src="./photo/image.png" alt="Markpad Split View" class="w-full h-auto block" />
+            <img src="./photo/markpad-split.png" alt="Markpad split workspace" class="w-full h-auto block" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-6">
           <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
             <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
               <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-              <span class="text-xs text-muted ml-2">Markpad - Workspace & Outline</span>
+              <span class="text-xs text-muted ml-2">Markpad - Code View</span>
             </div>
             <div class="bg-gradient-to-br from-accent-soft/20 to-paper">
-              <img src="./photo/image copy.png" alt="Markpad Workspace" class="w-full h-auto block" />
+              <img src="./photo/markpad-code.png" alt="Markpad responsive code view" class="w-full h-auto block" />
             </div>
           </div>
-          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden flex flex-col justify-center p-6 bg-gradient-to-br from-accent-soft/10 to-paper">
-            <h3 class="font-extrabold text-base mb-2 text-accent">Real-Time Outline Navigation</h3>
-            <p class="text-xs text-muted leading-relaxed">
-              Markpad parses markdown headers dynamically as you type. Click any item in the Outline drawer to scroll both the editor and the preview panes synchronously.
-            </p>
+          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
+            <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
+              <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
+              <span class="text-xs text-muted ml-2">Markpad - Themes & Settings</span>
+            </div>
+            <div class="bg-gradient-to-br from-accent-soft/10 to-paper">
+              <img src="./photo/markpad-settings.png" alt="Markpad themes and keyboard settings" class="w-full h-auto block" />
+            </div>
           </div>
         </div>
       </section>
@@ -199,6 +204,14 @@
             <p class="text-sm text-muted">Code files get language-aware highlighting via highlight.js. No markdown clutter — just clean, readable code.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Responsive Source Views</h3>
+            <p class="text-sm text-muted">Long code lines stay in a local scroll region, while plain text wraps safely without widening the workbench.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
+            <h3 class="font-bold mb-2">Themes & Keyboard Settings</h3>
+            <p class="text-sm text-muted">System, light, dark, and five color themes share one shortcut catalog with interface scale and reduced-motion controls.</p>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Version History + Diffs</h3>
             <p class="text-sm text-muted">Every save creates a snapshot. Click any version for a unified diff. Green for added, red for removed. Restore instantly.</p>
           </div>
@@ -226,7 +239,7 @@
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
           <h2 class="text-3xl font-bold">Get Markpad for your platform.</h2>
-          <p class="text-muted mt-2">Built by GitHub Actions on every tagged release.</p>
+          <p class="text-muted mt-2">v0.12.0 · Built by GitHub Actions on every tagged release.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
@@ -274,7 +287,7 @@
 
     <footer class="border-t border-line py-8 text-center text-sm text-muted">
       <p>Built with care by <a href="https://github.com/shreyam1008" class="text-accent hover:underline">Shreyam Adhikari</a></p>
-      <p class="mt-1">MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
+      <p class="mt-1">v0.12.0 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
     </footer>
   </body>
 </html>

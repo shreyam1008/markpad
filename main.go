@@ -12,9 +12,14 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"markpad/internal/brand"
 )
 
-const Version = "0.11.0"
+const Version = "0.12.0"
+
+// Linker-overridable for isolated QA builds; releases always use the brand contract default.
+var singleInstanceID = brand.SingleInstanceID
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -106,14 +111,24 @@ func main() {
 		runtime.EventsEmit(app.ctx, "menu:history")
 	})
 	viewMenu.AddSeparator()
-	viewMenu.AddText("Zoom In", keys.CmdOrCtrl("="), func(cd *menu.CallbackData) {
+	viewMenu.AddText("Increase Interface Scale", keys.CmdOrCtrl("="), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:zoomin")
 	})
-	viewMenu.AddText("Zoom Out", keys.CmdOrCtrl("-"), func(cd *menu.CallbackData) {
+	viewMenu.AddText("Decrease Interface Scale", keys.CmdOrCtrl("-"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:zoomout")
 	})
-	viewMenu.AddText("Reset Zoom", keys.CmdOrCtrl("0"), func(cd *menu.CallbackData) {
+	viewMenu.AddText("Reset Interface Scale", keys.CmdOrCtrl("0"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:zoomreset")
+	})
+	viewMenu.AddSeparator()
+	viewMenu.AddText("Increase Text Size", keys.Combo("=", keys.CmdOrCtrlKey, keys.OptionOrAltKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:textzoomin")
+	})
+	viewMenu.AddText("Decrease Text Size", keys.Combo("-", keys.CmdOrCtrlKey, keys.OptionOrAltKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:textzoomout")
+	})
+	viewMenu.AddText("Reset Text Size", keys.Combo("0", keys.CmdOrCtrlKey, keys.OptionOrAltKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:textzoomreset")
 	})
 
 	settingsMenu := appMenu.AddSubmenu("Settings")
@@ -159,7 +174,7 @@ func main() {
 			DisableWebViewDrop: true,
 		},
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId:               "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single",
+			UniqueId:               singleInstanceID,
 			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
 		},
 		OnStartup:     app.startup,

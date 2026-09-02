@@ -178,6 +178,7 @@ Before committing:
 
 | Version | Highlights |
 |---|---|
+| 0.12.0 | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
 | 0.10.0 | Typed React workspace, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
 | 0.9.0 | Packaging and distribution groundwork |

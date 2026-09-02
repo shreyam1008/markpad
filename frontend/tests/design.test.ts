@@ -23,6 +23,7 @@ describe("design contract", () => {
       "--mp-status-height",
       "--mp-sidebar-width",
       "--mp-history-width",
+      "--mp-settings-width",
       "--mp-command-width",
       "--mp-syntax-keyword",
       "--mp-syntax-string",
@@ -30,6 +31,8 @@ describe("design contract", () => {
       "--mp-overlay",
       "--mp-shadow-dialog",
       "--mp-danger-soft",
+      "--mp-editor-line-height",
+      "--mp-reading-width",
     ]) {
       expect(tokens).toContain(`${token}:`);
     }
@@ -106,6 +109,44 @@ describe("design contract", () => {
     expect(history).toContain("snapshotTime(entry.timestamp)");
   });
 
+  test("opens real tokenized settings without shifting the document", async () => {
+    const [tokens, styles, settings, preferences, app, shortcuts] = await Promise.all([
+      source("../src/design/tokens.css"),
+      source("../src/styles.css"),
+      source("../src/components/SettingsPanel.tsx"),
+      source("../src/preferences.ts"),
+      source("../src/App.tsx"),
+      source("../src/shortcuts.ts"),
+    ]);
+    const workbench = styles.slice(styles.indexOf("/* Markpad Workbench"));
+    expect(workbench).toContain(".settings-panel {");
+    expect(workbench).toContain("position: absolute");
+    expect(settings).toContain('aria-label="Settings categories"');
+    expect(settings).toContain('label: "Keyboard"');
+    expect(settings).toContain("getHotkeyManager().registrations.state");
+    expect(settings).toContain("Restore defaults");
+    expect(app).toContain("{settingsOpen ? (");
+    expect(app).toContain("useHotkeys(hotkeyDefinitions");
+    expect(shortcuts).toContain('"Mod+Alt+0"');
+    expect(preferences).toContain('PREFERENCES_KEY = "markpad-preferences-v1"');
+    for (const palette of ["graphite", "nord", "solarized", "rose", "contrast"]) {
+      expect(tokens).toContain(`[data-palette="${palette}"]`);
+    }
+    expect(tokens).toContain(':root[data-appearance="dark"]');
+    expect(tokens).toContain(':root[data-line-spacing="relaxed"]');
+    expect(tokens).toContain(':root[data-reading-width="focused"]');
+  });
+
+  test("applies saved appearance before the React bundle can paint", async () => {
+    const [html, main] = await Promise.all([source("../index.html"), source("../src/main.tsx")]);
+    expect(html).toContain('content="light dark"');
+    expect(html).toContain('localStorage.getItem("markpad-preferences-v1")');
+    expect(html.indexOf("root.dataset.appearance")).toBeLessThan(
+      html.indexOf('script type="module"'),
+    );
+    expect(main).toContain("applyPreferencesToDocument(initialPreferences)");
+  });
+
   test("owns syntax styling instead of importing a stock theme", async () => {
     const [styles, renderer] = await Promise.all([
       source("../src/styles.css"),
@@ -119,6 +160,22 @@ describe("design contract", () => {
     expect(styles).toContain("var(--mp-syntax-keyword)");
     expect(renderer).toContain("200_000");
     expect(renderer).toContain("2_000");
+  });
+
+  test("contains long source lines inside responsive text and code viewers", async () => {
+    const [styles, workspace] = await Promise.all([
+      source("../src/styles.css"),
+      source("../src/components/DocumentWorkspace.tsx"),
+    ]);
+    const workbench = styles.slice(styles.indexOf("/* Markpad Workbench"));
+    expect(workspace).toContain("viewer-${type}");
+    expect(workspace).toContain("viewer-text");
+    expect(styles).toMatch(/#viewer pre \{[\s\S]*?overflow-x: auto !important;/);
+    expect(styles).toMatch(/\.plain-text-view \{[\s\S]*?white-space: pre-wrap;/);
+    expect(workbench).toContain("overflow-x: hidden !important");
+    expect(workbench).toContain(".preview-pane .viewer-code > pre {");
+    expect(workbench).toContain("padding-inline: clamp(24px, 4vw, 64px) !important");
+    expect(workbench).toContain("width: min(100%, 110ch)");
   });
 
   test("keeps derived document props stable and diagrams off the startup path", async () => {

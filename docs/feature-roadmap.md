@@ -1,8 +1,8 @@
-# Post-v0.11 feature roadmap
+# Post-v0.12 feature roadmap
 
 ## Stable baseline
 
-Markpad v0.11.0 is a local Markdown notepad with a small optional folder workspace. It includes:
+Markpad v0.12.0 is a local Markdown notepad with a small optional folder workspace. It includes:
 
 - React 19 and strict TypeScript components bundled with Bun.
 - Ordinary local files plus autosaved recovery drafts and bounded saved-version history.
@@ -11,6 +11,9 @@ Markpad v0.11.0 is a local Markdown notepad with a small optional folder workspa
 - Workspace Lite: one persisted folder, bounded deterministic scan, manual refresh/change/clear, and safe Markdown/text creation.
 - `Ctrl+Shift+F` case-insensitive exact content search with relative path, line, snippet, and exact match selection.
 - Permanent saved-file deletion only after a warning that covers both the disk file and any unsaved edits, with backend path-safety checks.
+- A strict semantic design system with stable geometry, custom Wails window chrome, and consistent icons across the app and packages.
+- System/light/dark modes, five color themes, interface scale controls, reduced motion, and one shared keyboard shortcut catalog.
+- Responsive source viewers: code keeps long lines inside a local scroll region and plain text wraps without app-wide overflow.
 
 Workspace data remains plain files. Markpad does not import content, write metadata into the selected folder, or create a search database.
 
@@ -25,7 +28,7 @@ Workspace data remains plain files. Markpad does not import content, write metad
 
 ## Implemented: external-change protection
 
-Status: IMPLEMENTED, release pending
+Status: SHIPPED IN v0.12.0
 
 ### User value
 
@@ -47,7 +50,7 @@ Avoid overwriting changes made by another editor after a file was opened in Mark
 
 ## Implemented: file a draft in Workspace Lite
 
-Status: IMPLEMENTED, release pending
+Status: SHIPPED IN v0.12.0
 
 ### User value
 
@@ -63,7 +66,6 @@ Keep capture as fast as an unsaved notepad while removing the file-dialog fricti
 
 ## Later, only after the baseline is proven
 
-- OS-aware dark mode with one polished dark palette.
 - Refresh-on-focus, if manual workspace refresh proves insufficient.
 - Source/preview scroll synchronization.
 - HTML/PDF export using a deliberately bounded local path.

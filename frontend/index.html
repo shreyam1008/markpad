@@ -3,7 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        const root = document.documentElement;
+        let saved = {};
+        try {
+          saved = JSON.parse(localStorage.getItem("markpad-preferences-v1") || "{}");
+        } catch {}
+        const modes = ["system", "light", "dark"];
+        const palettes = ["markpad", "graphite", "nord", "solarized", "rose", "contrast"];
+        const mode = modes.includes(saved.themeMode) ? saved.themeMode : "system";
+        const appearance =
+          mode === "system"
+            ? matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : mode;
+        root.dataset.appearance = appearance;
+        root.dataset.themeMode = mode;
+        root.dataset.palette = palettes.includes(saved.palette) ? saved.palette : "markpad";
+        root.style.colorScheme = appearance;
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="./src/assets/markpad-mark.svg" />
     <title>Markpad</title>
   </head>

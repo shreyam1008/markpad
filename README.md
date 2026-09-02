@@ -4,7 +4,7 @@ A tiny native Markdown notepad and local file viewer. Opens fast, saves your wor
 
 No Electron. No cloud. One small binary, pure local and offline.
 
-![Markpad Screenshot](photo/image.png)
+![Markpad split workspace](photo/markpad-split.png)
 
 ## Install
 
@@ -59,6 +59,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **PDF handoff** — PDFs open in the operating system's default viewer without bundling a PDF engine
 - **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
 - **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs use the OS viewer, images show inline, others get info cards
+- **Responsive source viewers** — Long code lines stay inside a local scroll region; plain text wraps safely without pushing the workbench wider
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
@@ -72,6 +73,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **Autosaved drafts** — Unsaved work survives app close
 - **Status bar** — File type, line/word/char counts, reading time, encoding
 - **In-app changelog** — Help > Changelog shows version history
+- **Themes and settings** — Light, dark, system, five color themes, interface scale, reduced motion, and a single keyboard catalog
 
 ## File Handling
 
@@ -92,6 +94,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.12.0 | | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
 | 0.10.0 | | React + strict TypeScript frontend, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
 | 0.9.0 | | Packaging and distribution groundwork |
@@ -119,6 +122,8 @@ Markpad exists because many "lightweight" editors ship a browser engine. This on
 | `Ctrl+Shift+S` | Save As |
 | `Ctrl+Shift+E` | Cycle view |
 | `Ctrl+Shift+B` | Toggle sidebar |
+| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Interface scale up / down / reset |
+| `Ctrl+scroll` | Interface scale up / down |
 | `Ctrl+H` | Version history |
 | `Ctrl+F` | Find |
 | `Ctrl+P` | Find files and actions |

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import markURL from "../assets/markpad-mark.svg";
+import { shortcutLabel } from "../shortcuts";
 import {
   Clock3,
   Ellipsis,
@@ -72,7 +73,7 @@ export function AppTitlebar({
               className={activeSurface === "files" ? "active" : undefined}
               aria-pressed={activeSurface === "files"}
               onClick={onFiles}
-              title="Find files (Ctrl+P)"
+              title={`Find files (${shortcutLabel("general.palette")})`}
             >
               <Files />
               <span>Files</span>
@@ -85,7 +86,7 @@ export function AppTitlebar({
               className={activeSurface === "search" ? "active" : undefined}
               aria-pressed={activeSurface === "search"}
               onClick={onSearch}
-              title="Search workspace (Ctrl+Shift+F)"
+              title={`Search workspace (${shortcutLabel("navigation.workspace-search")})`}
             >
               <Search />
               <span>Search</span>
@@ -98,7 +99,7 @@ export function AppTitlebar({
               className={activeSurface === "history" ? "active" : undefined}
               aria-pressed={activeSurface === "history"}
               onClick={onHistory}
-              title="Version history (Ctrl+H)"
+              title={`Version history (${shortcutLabel("navigation.history")})`}
             >
               <Clock3 />
               <span>History</span>

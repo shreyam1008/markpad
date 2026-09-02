@@ -2,7 +2,7 @@
 
 Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun 1.3.14, and embedded into the application. `node_modules` and build tools are never embedded.
 
-The current production dependency set is pinned:
+The current production dependency set is pinned for v0.12.0:
 
 | Package | Version | Purpose |
 |---|---:|---|
@@ -11,6 +11,9 @@ The current production dependency set is pinned:
 | DOMPurify | 3.4.13 | Rendered-HTML sanitization |
 | highlight.js | 11.11.1 | Bounded code highlighting |
 | Lucide | 1.31.0 | Tree-shaken interface icon nodes |
+| TanStack React Hotkeys | 0.10.0 | Cross-platform global shortcut lifecycle, metadata, and display |
+
+TanStack Hotkeys is the only interaction helper. It replaces Markpad's manual app-wide key map, prevents stale React closures, and exposes the registered bindings to the Keyboard settings screen. The adapter and its small core/store dependencies are bundled into the offline frontend, are MIT licensed, and make no runtime network calls. It is not used as general application state management. The 2026-09-02 Windows production build measured 16,209,920 bytes after integration, 567,296 bytes below the 16 MiB ceiling.
 
 Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-time dependencies only. Markpad intentionally has no bundled PDF renderer, component suite, or secondary frontend bundler.
 

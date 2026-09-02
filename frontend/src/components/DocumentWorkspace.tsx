@@ -60,6 +60,7 @@ interface Props {
   initialContent: string;
   viewMode: ViewMode;
   textSize: number;
+  themeKey: string;
   findOpen: boolean;
   onCloseFind(): void;
   onSession(session: SessionState): void;
@@ -153,7 +154,7 @@ function Viewer({
         ref={rendered}
         id="viewer"
         role="document"
-        className="markdown-body bg-editor rounded-lg p-6 min-h-full select-text"
+        className={`markdown-body viewer-document viewer-${type} bg-editor rounded-lg p-6 min-h-full select-text`}
         style={{ "--markpad-text-size": `${textSize}px` } as React.CSSProperties}
         dangerouslySetInnerHTML={{ __html: html }}
       />
@@ -163,7 +164,7 @@ function Viewer({
     return (
       <div
         id="viewer"
-        className="markdown-body bg-editor rounded-lg p-6 min-h-full select-text"
+        className="markdown-body viewer-document viewer-text bg-editor rounded-lg p-6 min-h-full select-text"
         style={{ fontSize: textSize }}
       >
         <pre className="plain-text-view">{content}</pre>
@@ -226,6 +227,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       initialContent,
       viewMode,
       textSize,
+      themeKey,
       findOpen,
       onCloseFind,
       onSession,
@@ -878,7 +880,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 style={viewMode === "split" ? { flex: `0 0 ${100 - split}%` } : undefined}
                 onScroll={savePosition}
               >
-                <Viewer note={note} content={previewContent} textSize={textSize} />
+                <Viewer key={themeKey} note={note} content={previewContent} textSize={textSize} />
               </div>
             )}
           </div>

@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
+import { shortcutLabel } from "../shortcuts";
 import { fileBadge, fileType, typeLabel } from "../workspace/documents";
 import type {
   DraftFormat,
@@ -205,7 +206,7 @@ function SidebarView({
         <div ref={newMenu} className="new-menu-root relative flex">
           <button
             className="new-primary flex items-center gap-1.5 px-3 py-1.5 rounded-l-lg bg-accent text-accent-text text-xs font-semibold hover:bg-accent-hover"
-            title="New Markdown note (Ctrl+N)"
+            title={`New Markdown note (${shortcutLabel("file.new")})`}
             onClick={() => {
               setNewMenuOpen(false);
               onNew("md");
@@ -281,7 +282,7 @@ function SidebarView({
                 <div className="workspace-actions">
                   <button
                     type="button"
-                    title="Search folder (Ctrl+Shift+F)"
+                    title={`Search folder (${shortcutLabel("navigation.workspace-search")})`}
                     aria-label="Search folder"
                     onClick={onSearchWorkspace}
                   >
@@ -394,7 +395,8 @@ function SidebarView({
                   </div>
                   {workspace.files.length > SIDEBAR_WORKSPACE_LIMIT ? (
                     <button type="button" className="workspace-more" onClick={onSearchWorkspace}>
-                      {workspace.files.length - SIDEBAR_WORKSPACE_LIMIT} more files · use Ctrl+P
+                      {workspace.files.length - SIDEBAR_WORKSPACE_LIMIT} more files · use{" "}
+                      {shortcutLabel("general.palette")}
                     </button>
                   ) : null}
                   {workspace.truncated ? (

@@ -16,11 +16,15 @@ import {
   Image as ImageNode,
   Info as InfoNode,
   Italic as ItalicNode,
+  Keyboard as KeyboardNode,
   Link as LinkNode,
   List as ListNode,
   ListOrdered as ListOrderedNode,
   ListTodo as ListTodoNode,
   Minus as MinusNode,
+  Monitor as MonitorNode,
+  Moon as MoonNode,
+  Palette as PaletteNode,
   PanelLeftClose as PanelLeftCloseNode,
   PanelLeftOpen as PanelLeftOpenNode,
   Pencil as PencilNode,
@@ -28,18 +32,23 @@ import {
   Quote as QuoteNode,
   RefreshCw as RefreshCwNode,
   Redo2 as Redo2Node,
+  RotateCcw as RotateCcwNode,
   Save as SaveNode,
   Search as SearchNode,
   Settings as SettingsNode,
   SquarePen as SquarePenNode,
   Star as StarNode,
   Strikethrough as StrikethroughNode,
+  Sun as SunNode,
   Square as SquareNode,
   Table2 as Table2Node,
   TriangleAlert as TriangleAlertNode,
   Trash2 as Trash2Node,
+  Type as TypeNode,
   Undo2 as Undo2Node,
   X as XNode,
+  Check as CheckNode,
+  HardDrive as HardDriveNode,
   type IconNode,
 } from "lucide";
 import { createElement, forwardRef, type SVGProps } from "react";
@@ -89,11 +98,15 @@ export const FolderOpen = icon(FolderOpenNode);
 export const ImageIcon = icon(ImageNode);
 export const Info = icon(InfoNode);
 export const Italic = icon(ItalicNode);
+export const Keyboard = icon(KeyboardNode);
 export const Link = icon(LinkNode);
 export const List = icon(ListNode);
 export const ListOrdered = icon(ListOrderedNode);
 export const ListTodo = icon(ListTodoNode);
 export const Minus = icon(MinusNode);
+export const Monitor = icon(MonitorNode);
+export const Moon = icon(MoonNode);
+export const Palette = icon(PaletteNode);
 export const PanelLeftClose = icon(PanelLeftCloseNode);
 export const PanelLeftOpen = icon(PanelLeftOpenNode);
 export const Pencil = icon(PencilNode);
@@ -101,17 +114,22 @@ export const Plus = icon(PlusNode);
 export const Quote = icon(QuoteNode);
 export const RefreshCw = icon(RefreshCwNode);
 export const Redo2 = icon(Redo2Node);
+export const RotateCcw = icon(RotateCcwNode);
 export const Save = icon(SaveNode);
 export const Search = icon(SearchNode);
 export const Settings = icon(SettingsNode);
 export const SquarePen = icon(SquarePenNode);
 export const Star = icon(StarNode);
 export const Strikethrough = icon(StrikethroughNode);
+export const Sun = icon(SunNode);
 export const Table2 = icon(Table2Node);
 export const AlertTriangle = icon(TriangleAlertNode);
 export const Trash2 = icon(Trash2Node);
+export const Type = icon(TypeNode);
 export const Undo2 = icon(Undo2Node);
 export const X = icon(XNode);
+export const Check = icon(CheckNode);
+export const HardDrive = icon(HardDriveNode);
 export const WindowClose = icon(XNode);
 export const WindowMaximize = icon(SquareNode);
 export const WindowMinimize = icon(MinusNode);

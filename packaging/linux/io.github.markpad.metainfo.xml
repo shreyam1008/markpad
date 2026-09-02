@@ -45,9 +45,9 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
-    <release version="0.11.0" date="2026-09-01">
+    <release version="0.12.0" date="2026-09-02">
       <description>
-        <p>Strict design system, custom window chrome, stable overlays, viewport-safe menus, modern Markdown and Mermaid diagrams, Git-style history diffs, improved syntax highlighting, consistent confirmations, and unified product assets.</p>
+        <p>Responsive source viewers, strict semantic design system, custom window chrome, stable overlays, viewport-safe menus, modern Markdown and Mermaid diagrams, Git-style history diffs, improved syntax highlighting, keyboard settings, and unified product assets.</p>
       </description>
     </release>
     <release version="0.10.0" date="2026-08-20">

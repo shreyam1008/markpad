@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1–v0.10)
+## Completed (v0.1–v0.12)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider
@@ -49,10 +49,13 @@
 - [x] Windows and macOS release icon resources restored
 - [x] External-change protection before saving, with reload/overwrite/save-a-copy resolution
 - [x] Title-derived, collision-safe filing of recovery drafts into Workspace Lite
+- [x] Strict semantic design system, custom Wails chrome, unified icons, themes, and stable overlays
+- [x] Shared keyboard catalog with interface scale, settings, and native menu labels
+- [x] Responsive code/plain-text viewers with local overflow containment
+- [x] Fresh privacy-safe screenshots for the website and README
 
 ## Next
 
-- [ ] Dark mode with OS theme detection and manual toggle
 - [ ] Browser-compatible build (same app runs in browser via WASM or static)
 - [ ] File watcher: detect external changes and prompt reload
 - [ ] Source/preview scroll sync for Markdown
@@ -60,7 +63,6 @@
 - [ ] Signed/notarized macOS builds
 - [x] Windows NSIS installer
 - [ ] Snap store / Flatpak packaging
-- [ ] Real screenshots on website and README
 - [x] External-change detection before overwriting an open saved file
 - [ ] Optional refresh-on-focus after manual refresh behavior is proven
 - [ ] Measure Workspace Lite scan/search latency on representative folder corpora

@@ -8,6 +8,10 @@ This document is a build contract, not a mood board. Read it before changing any
 
 `frontend/src/styles.css` owns shared components and layout. React components own structure and behavior. Inline styles are reserved for values that are truly dynamic, such as user-controlled split width or pointer coordinates.
 
+`frontend/src/preferences.ts` owns the versioned settings schema, validation, legacy zoom migration, persistence, System-mode subscription, and root data attributes. The tiny blocking bootstrap in `frontend/index.html` resolves saved mode and palette before CSS or React can paint; `main.tsx` then applies the validated full schema. Keep the bootstrap allowlists synchronized with the schema so the native webview never flashes the wrong theme.
+
+`frontend/src/shortcuts.ts` owns global shortcut bindings, action identifiers, names, descriptions, groups, and platform-aware labels. TanStack Hotkeys registers that catalog and exposes its live metadata to Settings. Wails native menu events, the React hotkeys, command-palette labels, visible help, and Settings must route through the same `actionsRef` callbacks; never add another app-wide manual key map.
+
 ## Visual hierarchy
 
 The permanent surface stack is:
@@ -30,6 +34,8 @@ Do not add gradients, glass, backdrop blur, ornamental illustrations, or card gr
 - Danger, warning, success, and info colors communicate status only. They are not decoration.
 - State cannot depend on color alone: retain text, icons, borders, or `aria-current` as a second signal.
 - Aim for at least 4.5:1 contrast for ordinary text and 3:1 for controls, focus indicators, and large text.
+- Every color theme is a paired light/dark semantic palette. A new theme must define the whole workbench—surfaces, boundaries, interaction, focus, status, syntax, overlay, and diagram roles—not a lone accent color.
+- `System` is a mode, not a palette. It follows `prefers-color-scheme` live while preserving the selected palette.
 
 ## No-layout-shift law
 
@@ -61,6 +67,7 @@ Avoid timers, looping animations, layout measurement loops, and broad React rere
 | Sidebar           | `--mp-sidebar-width`           | 244 px default; responsive token overrides only  |
 | Collapsed sidebar | `--mp-sidebar-collapsed-width` | 44 px fixed                                      |
 | History inspector | `--mp-history-width`           | 304 px overlay; never resizes the document       |
+| Settings inspector| `--mp-settings-width`          | 544 px overlay; absent from layout when closed   |
 | Command palette   | `--mp-command-width`           | 680 px maximum; fixed search/results/footer grid |
 | Icon action       | `--mp-control-height`          | 28 px square unless explicitly documented        |
 
@@ -84,11 +91,16 @@ The Wails background color must match `chrome` to prevent a white startup flash.
 - Pointer-positioned menus use viewport coordinates, measure once before paint, and clamp every edge to an 8 px viewport gutter. Never render a context menu from raw `clientX`/`clientY` alone. Oversized menus scroll internally, and any window resize or ancestor scroll dismisses them so they cannot become detached from their target.
 - The command palette uses one visible active option. Hover is deliberately weaker than keyboard selection, results have stable section labels, and its footer owns a fixed grid row so it cannot cover results. Filename search matches visible names and paths only; labels such as `Current file` are presentation metadata, never hidden search keywords. Files and More open explicit file-only and action-only scopes so their labels predict their results.
 - History is an overlay inspector. Its loading, empty, timeline, version-loading, error, and diff states all occupy the same final bounds. Every version shows relative time plus a precise timestamp, and Restore is the only primary action. Selected versions use a visible Back control, saved-to-current direction, stable line-number gutters, and Git-style addition/deletion colors and totals.
+- Settings is an overlay inspector with Appearance, Writing, Keyboard, and Files categories. Changes save automatically, render immediately, and never mutate document content. It is fully unmounted when closed. Opening it closes History, Search, palette, and modal surfaces; Escape closes it.
+- Appearance owns System/Light/Dark, paired color themes, UI scale, and reduced motion. Writing owns text size, line spacing, and reading width. Files explains storage and file behavior; it does not masquerade as a preference when no setting exists.
+- Keyboard snapshots the live TanStack registrations each time Settings mounts and groups them by task. UI-scale shortcuts, text-size shortcuts, native menu accelerators, command-palette labels, and Ctrl/Cmd+wheel behavior must update the same preference state immediately. Use `Mod` for cross-platform Command/Ctrl behavior and `formatForDisplay` for labels.
 - Async lists and previews ignore stale responses after the selected document or version changes.
 
 ## Syntax highlighting
 
 Markpad owns the Highlight.js presentation in `styles.css`; do not import a stock Highlight.js theme. Syntax roles live in `tokens.css`, and code surfaces use the code surface, code font, stable tab size, a boundary, and a selection-colored leading rule.
+
+Reading width is a prose preference, not a universal source-view constraint. Markdown follows the selected reading measure. Code expands across the available pane and keeps any exceptionally long line inside its own horizontal scroller. Plain text uses a wider 110-character measure and wraps unbroken content instead of widening the application canvas.
 
 Highlighting remains capped at 200,000 characters and 2,000 lines. Styling work must not weaken escaping, DOM sanitization, or those performance limits.
 
@@ -97,6 +109,8 @@ Highlighting remains capped at 200,000 characters and 2,000 lines. Styling work 
 Marked owns CommonMark and GFM parsing: headings, emphasis, strike-through, autolinks, reference links, lists, task lists, tables, blockquotes, images, inline code, and fenced code. DOMPurify remains the mandatory boundary for generated HTML.
 
 Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. Mermaid is dynamically imported only when a document contains a diagram; ordinary notes must not load it. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
+
+Theme changes remount only the preview renderer, not the editor or the document workspace. Mermaid is reinitialized from current semantic tokens for the new preview; an appearance change must never discard unsaved text or reset the editor cursor.
 
 ## Assets and icons
 

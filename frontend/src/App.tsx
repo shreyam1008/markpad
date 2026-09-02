@@ -1,3 +1,4 @@
+import { useHeldKeys, useHotkeys } from "@tanstack/react-hotkeys";
 import {
   useCallback,
   useEffect,
@@ -6,6 +7,7 @@ import {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 import { AppTitlebar } from "./components/AppTitlebar";
@@ -44,8 +46,22 @@ import {
   X,
 } from "./components/icons";
 import { QuitDialog } from "./components/QuitDialog";
+import { SettingsPanel } from "./components/SettingsPanel";
 import { Sidebar } from "./components/Sidebar";
 import { WorkspaceSearch } from "./components/WorkspaceSearch";
+import {
+  applyPreferencesToDocument,
+  initialPreferences,
+  savePreferences,
+  subscribeSystemTheme,
+  systemPrefersDark,
+  TEXT_SIZE_MAX,
+  TEXT_SIZE_MIN,
+  UI_SCALE_MAX,
+  UI_SCALE_MIN,
+  type Preferences,
+} from "./preferences";
+import { createHotkeyDefinitions, shortcutLabel } from "./shortcuts";
 import { clampFloatingPosition } from "./ui/floating";
 import { client } from "./workspace/client";
 import {
@@ -70,11 +86,6 @@ import type {
   WorkspaceState,
 } from "./workspace/types";
 
-const UI_ZOOM_MIN = 0.8;
-const UI_ZOOM_MAX = 1.5;
-const TEXT_ZOOM_MIN = 10;
-const TEXT_ZOOM_MAX = 28;
-
 const EMPTY_WORKSPACE: WorkspaceState = {
   root: "",
   name: "",
@@ -87,7 +98,6 @@ type Modal =
   | { kind: "info"; info: FileInfo; storage: string }
   | { kind: "help" }
   | { kind: "about" }
-  | { kind: "preferences"; storage: string }
   | { kind: "changelog" };
 
 interface ContextMenuState {
@@ -95,11 +105,6 @@ interface ContextMenuState {
   x: number;
   y: number;
   placed: boolean;
-}
-
-function storedNumber(key: string, fallback: number) {
-  const value = Number(localStorage.getItem(key));
-  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function ModalLayer({
@@ -192,37 +197,21 @@ function ModalLayer({
         </p>
         <h3 className="font-bold pt-2">Shortcuts</h3>
         <p>
-          <kbd>Ctrl+P</kbd> Files and commands · <kbd>Ctrl+N</kbd> New · <kbd>Ctrl+O</kbd> Open
+          <kbd>{shortcutLabel("general.palette")}</kbd> Files and commands ·{" "}
+          <kbd>{shortcutLabel("file.new")}</kbd> New · <kbd>{shortcutLabel("file.open")}</kbd> Open
         </p>
         <p>
-          <kbd>Ctrl+F</kbd> Find in file · <kbd>Ctrl+Shift+F</kbd> Find in folder ·{" "}
-          <kbd>Ctrl+Shift+O</kbd> Open folder
+          <kbd>{shortcutLabel("navigation.find")}</kbd> Find in file ·{" "}
+          <kbd>{shortcutLabel("navigation.workspace-search")}</kbd> Find in folder ·{" "}
+          <kbd>{shortcutLabel("file.open-folder")}</kbd> Open folder
         </p>
         <p>
-          <kbd>Ctrl+Shift+Enter</kbd> File an unsaved draft in the workspace
+          <kbd>{shortcutLabel("file.file-draft")}</kbd> File an unsaved draft in the workspace
         </p>
         <p>
-          <kbd>Ctrl+1/2/3</kbd> Editor / Split / Preview · <kbd>Ctrl+0</kbd> Reset zoom
-        </p>
-      </div>
-    );
-  } else if (modal.kind === "preferences") {
-    title = "Preferences";
-    body = (
-      <div className="space-y-2">
-        <p>Markpad keeps settings intentionally small and automatic.</p>
-        <p>
-          <strong>Storage</strong>
-          <br />
-          <span className="text-muted break-all">{modal.storage}</span>
-        </p>
-        <p>
-          <strong>File handling</strong>
-          <br />
-          <span className="text-muted">
-            Markdown: Editor, Split, Preview. Code and text: Editor, Viewer. Binary documents:
-            external handoff.
-          </span>
+          <kbd>{shortcutLabel("view.editor")}</kbd> / <kbd>{shortcutLabel("view.split")}</kbd> /{" "}
+          <kbd>{shortcutLabel("view.preview")}</kbd> Editor / Split / Preview ·{" "}
+          <kbd>{shortcutLabel("appearance.interface-reset")}</kbd> Reset interface scale
         </p>
       </div>
     );
@@ -230,6 +219,14 @@ function ModalLayer({
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.12.0</h3>
+          <p>
+            Responsive code and plain-text viewers, local overflow containment, unified keyboard
+            settings, interface scale controls, improved dark-theme contrast, and fresh product
+            screenshots.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.11.0</h3>
           <p>
@@ -266,7 +263,7 @@ function ModalLayer({
         <p>
           <strong>Markpad</strong>
         </p>
-        <p className="text-muted">Version 0.11.0</p>
+        <p className="text-muted">Version 0.12.0</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>
@@ -320,6 +317,8 @@ function App() {
   const [redoAvailable, setRedoAvailable] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [storagePath, setStoragePath] = useState("Available in the desktop app");
   const [findOpen, setFindOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteScope, setPaletteScope] = useState<PaletteScope>("all");
@@ -335,18 +334,21 @@ function App() {
   const [fileDraftTarget, setFileDraftTarget] = useState<FileDraftTarget>();
   const [fileDraftBusy, setFileDraftBusy] = useState(false);
   const [fileDraftError, setFileDraftError] = useState("");
-  const [uiZoom, setUiZoom] = useState(() =>
-    Math.min(UI_ZOOM_MAX, Math.max(UI_ZOOM_MIN, storedNumber("markpad-ui-zoom", 1))),
-  );
-  const [textSize, setTextSize] = useState(() =>
-    Math.min(TEXT_ZOOM_MAX, Math.max(TEXT_ZOOM_MIN, storedNumber("markpad-text-zoom", 14))),
-  );
+  const [preferences, setPreferences] = useState<Preferences>(initialPreferences);
+  const prefersDark = useSyncExternalStore(subscribeSystemTheme, systemPrefersDark, () => false);
   const workspace = useRef<DocumentWorkspaceHandle>(null);
   const contextMenuElement = useRef<HTMLDivElement>(null);
   const pendingReveal = useRef<WorkspaceSearchResult | undefined>(undefined);
   const actionsRef = useRef<Record<string, () => void | Promise<void>>>({});
   const sessionRef = useRef(state.session);
   sessionRef.current = state.session;
+
+  useLayoutEffect(() => {
+    applyPreferencesToDocument(preferences, prefersDark);
+    savePreferences(preferences);
+  }, [preferences, prefersDark]);
+
+  const updatePreferences = useCallback((next: Preferences) => setPreferences(next), []);
 
   const active = state.session.notes.find((note) => note.id === state.session.activeId);
   const activeDocument = useMemo(
@@ -373,6 +375,18 @@ function App() {
   );
 
   const setStatus = useCallback((status: string) => dispatch({ type: "status", status }), []);
+  const showModal = useCallback((next: Modal) => {
+    setSettingsOpen(false);
+    setModal(next);
+  }, []);
+  const showFind = useCallback(() => {
+    setPaletteOpen(false);
+    setWorkspaceSearchOpen(false);
+    setHistoryOpen(false);
+    setSettingsOpen(false);
+    setModal(undefined);
+    setFindOpen(true);
+  }, []);
   const updateHistoryAvailability = useCallback((undo: boolean, redo: boolean) => {
     setUndoAvailable(undo);
     setRedoAvailable(redo);
@@ -523,6 +537,7 @@ function App() {
     setFindOpen(false);
     setWorkspaceSearchOpen(false);
     setHistoryOpen(false);
+    setSettingsOpen(false);
     setModal(undefined);
     setPaletteScope(scope);
     setPaletteOpen(true);
@@ -533,6 +548,7 @@ function App() {
     setFindOpen(false);
     setPaletteOpen(false);
     setHistoryOpen(false);
+    setSettingsOpen(false);
     setModal(undefined);
     setWorkspaceSearchOpen(true);
   }, []);
@@ -542,6 +558,7 @@ function App() {
     setPaletteOpen(false);
     setWorkspaceSearchOpen(false);
     setModal(undefined);
+    setSettingsOpen(false);
     setHistoryOpen((value) => !value);
   }, []);
 
@@ -549,6 +566,7 @@ function App() {
     setFindOpen(false);
     setPaletteOpen(false);
     setWorkspaceSearchOpen(false);
+    setSettingsOpen(false);
     setModal(undefined);
     setContextMenu(undefined);
     setCloseCandidate(undefined);
@@ -560,14 +578,15 @@ function App() {
     setPaletteOpen(false);
     setWorkspaceSearchOpen(false);
     setHistoryOpen(false);
-    let storage = "Available in the desktop app";
+    setModal(undefined);
+    setSettingsOpen((open) => !open);
+    if (storagePath !== "Available in the desktop app") return;
     try {
-      storage = await client.storagePath();
+      setStoragePath(await client.storagePath());
     } catch {
       // The browser preview intentionally runs without the Wails desktop API.
     }
-    setModal({ kind: "preferences", storage });
-  }, []);
+  }, [storagePath]);
 
   const createWorkspaceFile = useCallback(
     async (relativePath: string) => {
@@ -753,24 +772,24 @@ function App() {
     async (note = active) => {
       if (!note) return;
       const [info, storage] = await Promise.all([client.fileInfo(note.id), client.storagePath()]);
-      setModal({ kind: "info", info, storage });
+      showModal({ kind: "info", info, storage });
     },
-    [active],
+    [active, showModal],
   );
 
   const adjustUiZoom = useCallback(
     (direction: number) => {
-      setUiZoom((current) => {
+      setPreferences((current) => {
         const next =
           direction === 0
             ? 1
             : Math.min(
-                UI_ZOOM_MAX,
-                Math.max(UI_ZOOM_MIN, Number((current + direction * 0.1).toFixed(1))),
+                UI_SCALE_MAX,
+                Math.max(UI_SCALE_MIN, Number((current.uiScale + direction * 0.1).toFixed(1))),
               );
-        localStorage.setItem("markpad-ui-zoom", String(next));
-        setStatus(`Interface zoom: ${Math.round(next * 100)}%`);
-        return next;
+        const updated = { ...current, uiScale: next };
+        setStatus(`Interface scale: ${Math.round(next * 100)}%`);
+        return updated;
       });
     },
     [setStatus],
@@ -778,11 +797,14 @@ function App() {
 
   const adjustTextZoom = useCallback(
     (direction: number) => {
-      setTextSize((current) => {
-        const next = Math.min(TEXT_ZOOM_MAX, Math.max(TEXT_ZOOM_MIN, current + direction));
-        localStorage.setItem("markpad-text-zoom", String(next));
-        setStatus(`Text zoom: ${Math.round((next / 14) * 100)}%`);
-        return next;
+      setPreferences((current) => {
+        const next =
+          direction === 0
+            ? 14
+            : Math.min(TEXT_SIZE_MAX, Math.max(TEXT_SIZE_MIN, current.textSize + direction));
+        const updated = { ...current, textSize: next };
+        setStatus(`Text size: ${next}px`);
+        return updated;
       });
     },
     [setStatus],
@@ -803,19 +825,25 @@ function App() {
         id: "file.new-markdown",
         title: "New Markdown file",
         category: "File",
-        shortcut: "Ctrl+N",
+        shortcut: shortcutLabel("file.new"),
         keywords: ["md", "note"],
         run: () => create("md"),
       },
       { id: "file.new-text", title: "New text file", category: "File", run: () => create("txt") },
       { id: "file.new-json", title: "New JSON file", category: "File", run: () => create("json") },
       { id: "file.new-yaml", title: "New YAML file", category: "File", run: () => create("yaml") },
-      { id: "file.open", title: "Open file", category: "File", shortcut: "Ctrl+O", run: open },
+      {
+        id: "file.open",
+        title: "Open file",
+        category: "File",
+        shortcut: shortcutLabel("file.open"),
+        run: open,
+      },
       {
         id: "file.open-folder",
         title: folderWorkspace.root ? "Change workspace folder" : "Open workspace folder",
         category: "File",
-        shortcut: "Ctrl+Shift+O",
+        shortcut: shortcutLabel("file.open-folder"),
         keywords: ["choose", "directory", "vault"],
         run: chooseWorkspace,
       },
@@ -823,7 +851,7 @@ function App() {
         id: "file.refresh-folder",
         title: "Refresh workspace folder",
         category: "File",
-        shortcut: "F5",
+        shortcut: shortcutLabel("file.refresh"),
         enabled: !!folderWorkspace.root,
         run: refreshFolderWorkspace,
       },
@@ -838,7 +866,7 @@ function App() {
         id: "file.save",
         title: "Save",
         category: "File",
-        shortcut: "Ctrl+S",
+        shortcut: shortcutLabel("file.save"),
         enabled: !readOnly,
         run: () => workspace.current?.save(),
       },
@@ -846,7 +874,7 @@ function App() {
         id: "file.save-as",
         title: "Save as",
         category: "File",
-        shortcut: "Ctrl+Shift+S",
+        shortcut: shortcutLabel("file.save-as"),
         enabled: !readOnly,
         run: () => workspace.current?.saveAs(),
       },
@@ -854,7 +882,7 @@ function App() {
         id: "file.file-draft",
         title: `File draft in ${folderWorkspace.name || "workspace"}`,
         category: "File",
-        shortcut: "Ctrl+Shift+Enter",
+        shortcut: shortcutLabel("file.file-draft"),
         keywords: ["promote", "organize", "folder", "note"],
         enabled: canFileDraft,
         run: showFileDraft,
@@ -863,15 +891,15 @@ function App() {
         id: "file.rename",
         title: "Rename file",
         category: "File",
-        shortcut: "F2",
+        shortcut: shortcutLabel("file.rename"),
         enabled: !!active?.path,
-        run: () => active && setModal({ kind: "rename", note: active }),
+        run: () => active && showModal({ kind: "rename", note: active }),
       },
       {
         id: "file.close",
         title: "Close current file",
         category: "File",
-        shortcut: "Ctrl+W",
+        shortcut: shortcutLabel("file.close"),
         enabled: !!active,
         run: () => requestClose(active),
       },
@@ -887,7 +915,7 @@ function App() {
         id: "view.editor",
         title: "Show editor",
         category: "View",
-        shortcut: "Ctrl+1",
+        shortcut: shortcutLabel("view.editor"),
         enabled: modes.includes("markdown"),
         run: () => chooseView("markdown"),
       },
@@ -895,7 +923,7 @@ function App() {
         id: "view.split",
         title: "Show split view",
         category: "View",
-        shortcut: "Ctrl+2",
+        shortcut: shortcutLabel("view.split"),
         enabled: modes.includes("split"),
         run: () => chooseView("split"),
       },
@@ -903,7 +931,7 @@ function App() {
         id: "view.preview",
         title: "Show preview",
         category: "View",
-        shortcut: "Ctrl+3",
+        shortcut: shortcutLabel("view.preview"),
         enabled: modes.includes("viewer"),
         run: () => chooseView("viewer"),
       },
@@ -911,29 +939,29 @@ function App() {
         id: "view.sidebar",
         title: "Toggle sidebar",
         category: "View",
-        shortcut: "Ctrl+Shift+B",
+        shortcut: shortcutLabel("view.sidebar"),
         run: () => setSidebarCollapsed((value) => !value),
       },
       {
         id: "view.history",
         title: "Toggle version history",
         category: "View",
-        shortcut: "Ctrl+H",
+        shortcut: shortcutLabel("navigation.history"),
         run: toggleHistory,
       },
       {
         id: "edit.find",
         title: "Find in file",
         category: "Edit",
-        shortcut: "Ctrl+F",
+        shortcut: shortcutLabel("navigation.find"),
         enabled: !readOnly,
-        run: () => setFindOpen(true),
+        run: showFind,
       },
       {
         id: "edit.find-folder",
         title: "Find in workspace folder",
         category: "Edit",
-        shortcut: "Ctrl+Shift+F",
+        shortcut: shortcutLabel("navigation.workspace-search"),
         keywords: ["search", "grep", "all files", "content"],
         run: showWorkspaceSearch,
       },
@@ -941,7 +969,7 @@ function App() {
         id: "edit.undo",
         title: "Undo",
         category: "Edit",
-        shortcut: "Ctrl+Z",
+        shortcut: shortcutLabel("edit.undo"),
         enabled: undoAvailable,
         run: () => workspace.current?.undo(),
       },
@@ -949,34 +977,63 @@ function App() {
         id: "edit.redo",
         title: "Redo",
         category: "Edit",
-        shortcut: "Ctrl+Shift+Z",
+        shortcut: shortcutLabel("edit.redo"),
         enabled: redoAvailable,
         run: () => workspace.current?.redo(),
       },
       {
         id: "view.zoom-in",
-        title: "Zoom interface in",
+        title: "Increase interface scale",
         category: "View",
-        shortcut: "Ctrl++",
+        shortcut: shortcutLabel("appearance.interface-in"),
         run: () => adjustUiZoom(1),
       },
       {
         id: "view.zoom-out",
-        title: "Zoom interface out",
+        title: "Decrease interface scale",
         category: "View",
-        shortcut: "Ctrl+-",
+        shortcut: shortcutLabel("appearance.interface-out"),
         run: () => adjustUiZoom(-1),
       },
       {
         id: "view.zoom-reset",
-        title: "Reset interface zoom",
+        title: "Reset interface scale",
         category: "View",
-        shortcut: "Ctrl+0",
+        shortcut: shortcutLabel("appearance.interface-reset"),
         run: () => adjustUiZoom(0),
+      },
+      {
+        id: "view.text-zoom-in",
+        title: "Increase text size",
+        category: "View",
+        shortcut: shortcutLabel("appearance.text-in"),
+        run: () => adjustTextZoom(1),
+      },
+      {
+        id: "view.text-zoom-out",
+        title: "Decrease text size",
+        category: "View",
+        shortcut: shortcutLabel("appearance.text-out"),
+        run: () => adjustTextZoom(-1),
+      },
+      {
+        id: "view.text-zoom-reset",
+        title: "Reset text size",
+        category: "View",
+        shortcut: shortcutLabel("appearance.text-reset"),
+        run: () => adjustTextZoom(0),
+      },
+      {
+        id: "app.settings",
+        title: "Open settings",
+        category: "App",
+        shortcut: shortcutLabel("general.preferences"),
+        run: showPreferences,
       },
     ],
     [
       active,
+      adjustTextZoom,
       adjustUiZoom,
       canFileDraft,
       chooseWorkspace,
@@ -993,6 +1050,9 @@ function App() {
       requestClose,
       requestDeleteNote,
       showFileDraft,
+      showFind,
+      showModal,
+      showPreferences,
       toggleHistory,
       showWorkspaceSearch,
       undoAvailable,
@@ -1000,6 +1060,25 @@ function App() {
   );
 
   actionsRef.current = {
+    palette: () => showPalette("all"),
+    dismiss: () => {
+      setPaletteOpen(false);
+      setWorkspaceSearchOpen(false);
+      setSettingsOpen(false);
+      setModal(undefined);
+      setContextMenu(undefined);
+      setCloseCandidate(undefined);
+      setQuitDirtyCount(0);
+      if (!deleteBusy) {
+        setDeleteTarget(undefined);
+        setDeleteError("");
+      }
+      if (!fileDraftBusy) {
+        setFileDraftTarget(undefined);
+        setFileDraftError("");
+      }
+      setFindOpen(false);
+    },
     new: () => create("md"),
     open,
     openfolder: chooseWorkspace,
@@ -1022,20 +1101,45 @@ function App() {
     viewpreview: () => chooseView("viewer"),
     toggleview: () => chooseView(modes[(modes.indexOf(state.viewMode) + 1) % modes.length]),
     togglesidebar: () => setSidebarCollapsed((value) => !value),
-    find: () => setFindOpen(true),
+    find: showFind,
     history: toggleHistory,
     zoomin: () => adjustUiZoom(1),
     zoomout: () => adjustUiZoom(-1),
     zoomreset: () => adjustUiZoom(0),
+    textzoomin: () => adjustTextZoom(1),
+    textzoomout: () => adjustTextZoom(-1),
+    textzoomreset: () => adjustTextZoom(0),
+    formatbold: () => workspace.current?.format("bold"),
+    formatitalic: () => workspace.current?.format("italic"),
+    formatlink: () => workspace.current?.format("link"),
+    delete: () => {
+      if (active) requestDeleteNote(active);
+    },
     rename: () => {
-      if (active?.path) setModal({ kind: "rename", note: active });
+      if (active?.path) showModal({ kind: "rename", note: active });
     },
     fileinfo: () => showInfo(),
-    help: () => setModal({ kind: "help" }),
-    about: () => setModal({ kind: "about" }),
+    help: () => showModal({ kind: "help" }),
+    about: () => showModal({ kind: "about" }),
     preferences: showPreferences,
-    changelog: () => setModal({ kind: "changelog" }),
+    changelog: () => showModal({ kind: "changelog" }),
   };
+
+  const hotkeyDefinitions = useMemo(
+    () =>
+      createHotkeyDefinitions((action) => {
+        void actionsRef.current[action]?.();
+      }),
+    [],
+  );
+  useHotkeys(hotkeyDefinitions, { conflictBehavior: "error" });
+  const heldKeys = useHeldKeys();
+  const shortcutsVisible = heldKeys.includes("Control") || heldKeys.includes("Meta");
+
+  useEffect(() => {
+    document.body.classList.toggle("shortcuts-visible", shortcutsVisible);
+    return () => document.body.classList.remove("shortcuts-visible");
+  }, [shortcutsVisible]);
 
   useEffect(() => {
     const runtime = window.runtime;
@@ -1064,6 +1168,9 @@ function App() {
       "zoomin",
       "zoomout",
       "zoomreset",
+      "textzoomin",
+      "textzoomout",
+      "textzoomreset",
       "preferences",
       "fileinfo",
       "changelog",
@@ -1100,134 +1207,6 @@ function App() {
     }, true);
     return () => cancel.forEach((off) => off?.());
   }, [loadDocument, showQuitDialog, syncFolderWorkspace]);
-
-  useEffect(() => {
-    const keydown = (event: KeyboardEvent) => {
-      const ctrl = event.ctrlKey || event.metaKey;
-      const key = event.key.toLowerCase();
-      document.body.classList.toggle("shortcuts-visible", ctrl);
-      if (ctrl && key === "p") {
-        event.preventDefault();
-        showPalette("all");
-        return;
-      }
-      if (ctrl && event.shiftKey && key === "f") {
-        event.preventDefault();
-        void actionsRef.current.searchworkspace?.();
-        return;
-      }
-      if (ctrl && event.shiftKey && key === "o") {
-        event.preventDefault();
-        void actionsRef.current.openfolder?.();
-        return;
-      }
-      if (ctrl && event.shiftKey && key === "enter") {
-        event.preventDefault();
-        void actionsRef.current.filedraft?.();
-        return;
-      }
-      if (event.key === "F5") {
-        event.preventDefault();
-        void actionsRef.current.refreshworkspace?.();
-        return;
-      }
-      if (event.key === "Escape") {
-        setPaletteOpen(false);
-        setWorkspaceSearchOpen(false);
-        setModal(undefined);
-        setContextMenu(undefined);
-        setCloseCandidate(undefined);
-        if (!deleteBusy) {
-          setDeleteTarget(undefined);
-          setDeleteError("");
-        }
-        if (!fileDraftBusy) {
-          setFileDraftTarget(undefined);
-          setFileDraftError("");
-        }
-        setFindOpen(false);
-        return;
-      }
-      if (event.key === "F2") {
-        event.preventDefault();
-        void actionsRef.current.rename?.();
-        return;
-      }
-      if (!ctrl) return;
-      const map: Record<string, string> = {
-        n: "new",
-        o: "open",
-        s: event.shiftKey ? "saveas" : "save",
-        w: "close",
-        f: "find",
-        h: "history",
-        z: event.shiftKey ? "redo" : "undo",
-      };
-      if (key === "tab") {
-        event.preventDefault();
-        void actionsRef.current[event.shiftKey ? "previousfile" : "nextfile"]?.();
-        return;
-      }
-      if (key === "1" || key === "2" || key === "3") {
-        event.preventDefault();
-        void actionsRef.current[["vieweditor", "viewsplit", "viewpreview"][Number(key) - 1]]?.();
-        return;
-      }
-      if (event.shiftKey && key === "b") {
-        event.preventDefault();
-        void actionsRef.current.togglesidebar?.();
-        return;
-      }
-      if (event.shiftKey && key === "e") {
-        event.preventDefault();
-        void actionsRef.current.toggleview?.();
-        return;
-      }
-      if (key === "delete" && active) {
-        event.preventDefault();
-        requestDeleteNote(active);
-        return;
-      }
-      if (key === "=" || key === "+" || event.code === "NumpadAdd") {
-        event.preventDefault();
-        void actionsRef.current.zoomin?.();
-        return;
-      }
-      if (key === "-" || event.code === "NumpadSubtract") {
-        event.preventDefault();
-        void actionsRef.current.zoomout?.();
-        return;
-      }
-      if (key === "0" || event.code === "Numpad0") {
-        event.preventDefault();
-        void actionsRef.current.zoomreset?.();
-        return;
-      }
-      if (key === "b" || key === "i" || key === "k") {
-        event.preventDefault();
-        workspace.current?.format(key === "b" ? "bold" : key === "i" ? "italic" : "link");
-        return;
-      }
-      if (map[key]) {
-        event.preventDefault();
-        void actionsRef.current[map[key]]?.();
-      }
-    };
-    const keyup = (event: KeyboardEvent) => {
-      if (event.key === "Control" || event.key === "Meta") {
-        document.body.classList.remove("shortcuts-visible");
-      }
-    };
-    window.addEventListener("keydown", keydown, true);
-    window.addEventListener("keyup", keyup, true);
-    const blur = () => document.body.classList.remove("shortcuts-visible");
-    window.addEventListener("blur", blur);
-    return () => {
-      window.removeEventListener("keydown", keydown, true);
-      window.removeEventListener("keyup", keyup, true);
-      window.removeEventListener("blur", blur);
-    };
-  }, [active, deleteBusy, fileDraftBusy, requestDeleteNote, showPalette]);
 
   useEffect(() => {
     const close = () => setContextMenu(undefined);
@@ -1295,7 +1274,11 @@ function App() {
   ] as const;
 
   return (
-    <div id="app" className="markpad-shell flex h-full w-full flex-col" style={{ zoom: uiZoom }}>
+    <div
+      id="app"
+      className="markpad-shell flex h-full w-full flex-col"
+      style={{ zoom: preferences.uiScale }}
+    >
       <AppTitlebar
         activeSurface={
           paletteOpen
@@ -1308,7 +1291,7 @@ function App() {
               ? "search"
               : historyOpen
                 ? "history"
-                : modal?.kind === "preferences"
+                : settingsOpen
                   ? "settings"
                   : undefined
         }
@@ -1405,7 +1388,7 @@ function App() {
               {canFileDraft ? (
                 <button
                   className="file-draft-quick"
-                  title="File this draft in the workspace (Ctrl+Shift+Enter)"
+                  title={`File this draft in the workspace (${shortcutLabel("file.file-draft")})`}
                   onClick={showFileDraft}
                 >
                   <FilePlus2 />
@@ -1456,7 +1439,8 @@ function App() {
               note={activeDocument}
               initialContent={state.content}
               viewMode={state.viewMode}
-              textSize={textSize}
+              textSize={preferences.textSize}
+              themeKey={`${preferences.palette}-${preferences.themeMode}-${prefersDark}`}
               findOpen={findOpen}
               onCloseFind={() => setFindOpen(false)}
               onSession={acceptSession}
@@ -1477,6 +1461,14 @@ function App() {
               onRestore={restoreHistory}
               onStatus={setStatus}
             />
+            {settingsOpen ? (
+              <SettingsPanel
+                preferences={preferences}
+                storagePath={storagePath}
+                onChange={updatePreferences}
+                onClose={() => setSettingsOpen(false)}
+              />
+            ) : null}
           </div>
           <div className="status-bar flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
             <span>{state.status}</span>
@@ -1576,7 +1568,7 @@ function App() {
               <button
                 className="ctx-item flex items-center gap-2"
                 onClick={() => {
-                  setModal({ kind: "rename", note: contextMenu.note });
+                  showModal({ kind: "rename", note: contextMenu.note });
                   setContextMenu(undefined);
                 }}
               >
