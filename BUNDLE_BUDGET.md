@@ -17,6 +17,15 @@ The Windows figures were re-measured on 2026-09-02 after the workbench redesign,
 
 The Settings/theme pass plus unified keyboard system adds one focused runtime dependency: `@tanstack/react-hotkeys@0.10.0`. It replaces the app-wide manual action listener, provides platform-aware `Mod` handling and live registration metadata, and lets Settings render the shortcuts that are actually active. Its core/store packages are bundled locally and make no runtime network calls. The current v0.12.0 Windows build leaves 567,296 bytes of headroom below the ceiling.
 
+The unreleased CodeMirror editor pass adds the modular CodeMirror 6 core and
+lazy language modes without changing the runtime boundary. A local stripped
+Windows builds made with the release-pinned Bun 1.3.14 measured 16,765,440 bytes
+(15.989 MiB) for amd64 and 15,793,152 bytes (15.06 MiB) for arm64. Both remain
+below the 16 MiB ceiling; production builds also drop dependency console and
+debugger statements. Language chunks are embedded for offline use but loaded by
+the editor only when a matching source file is opened; the existing bounded
+Highlight.js renderer remains the static-viewer fallback.
+
 `node_modules`, Bun, TypeScript, Oxlint, Oxfmt, tests, examples, and source maps are development inputs. They are not embedded in the release.
 
 ## Runtime memory

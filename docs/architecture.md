@@ -22,7 +22,7 @@ The selected workspace root is persisted with session state. Scan and search res
 
 ## Frontend
 
-`frontend/index.html` is the Bun HTML entry point. React and TypeScript components under `frontend/src` own the browser-side controller. Tailwind provides layout and component styling; handwritten CSS is limited to the editor, rendered Markdown, code blocks, split geometry, and accessibility behavior.
+`frontend/index.html` is the Bun HTML entry point. React and TypeScript components under `frontend/src` own the browser-side controller. CodeMirror 6 owns incremental source editing and source undo/redo, while `DocumentWorkspace` keeps drafts and persistence authoritative and retains bounded snapshot history for textarea documents. Tailwind provides layout and component styling; handwritten CSS is limited to the editor, rendered Markdown, code blocks, split geometry, and accessibility behavior.
 
 Bun bundles all production dependencies into `frontend/dist`, and Go embeds only that generated directory. Markpad must not fetch executable code, stylesheets, fonts, or document-rendering resources at runtime.
 

@@ -2,7 +2,8 @@
 
 Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun 1.3.14, and embedded into the application. `node_modules` and build tools are never embedded.
 
-The current production dependency set is pinned for v0.12.0:
+The checked-in dependency set is pinned for the current development build (the
+last published baseline is v0.12.0):
 
 | Package | Version | Purpose |
 |---|---:|---|
@@ -10,10 +11,17 @@ The current production dependency set is pinned for v0.12.0:
 | Marked | 18.0.9 | Markdown parsing |
 | DOMPurify | 3.4.13 | Rendered-HTML sanitization |
 | highlight.js | 11.11.1 | Bounded code highlighting |
+| `@codemirror/commands` | 6.11.0 | Source-editor keymaps, indentation, and incremental undo/redo history |
+| `@codemirror/lang-javascript` | 6.2.5 | Incremental JavaScript, TypeScript, and JSX parsing |
+| `@codemirror/language` | 6.12.4 | Language compartments and semantic highlighting |
+| `@codemirror/legacy-modes` | 6.5.4 | Lazy parsers for the broader source-language set |
+| `@codemirror/state` | 6.7.2 | Incremental editor state and transactions |
+| `@codemirror/view` | 6.43.10 | Editor DOM, gutters, selection, and scrolling |
+| `@lezer/highlight` | 1.2.3 | Shared semantic token tags for the CodeMirror theme |
 | Lucide | 1.31.0 | Tree-shaken interface icon nodes |
 | TanStack React Hotkeys | 0.10.0 | Cross-platform global shortcut lifecycle, metadata, and display |
 
-TanStack Hotkeys is the only interaction helper. It replaces Markpad's manual app-wide key map, prevents stale React closures, and exposes the registered bindings to the Keyboard settings screen. The adapter and its small core/store dependencies are bundled into the offline frontend, are MIT licensed, and make no runtime network calls. It is not used as general application state management. The 2026-09-02 Windows production build measured 16,209,920 bytes after integration, 567,296 bytes below the 16 MiB ceiling.
+TanStack Hotkeys is the only app-wide interaction helper. It replaces Markpad's manual app-wide key map, prevents stale React closures, and exposes the registered bindings to the Keyboard settings screen. CodeMirror is scoped to the editable code surface; its language modules are split and loaded only after a matching file opens. The adapters and their small core dependencies are bundled into the offline frontend, are MIT licensed, and make no runtime network calls. Neither package is used as general application state management. TanStack Highlight was evaluated and rejected for editing because it produces static HTML rather than an editor model.
 
 Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-time dependencies only. Markpad intentionally has no bundled PDF renderer, component suite, or secondary frontend bundler.
 

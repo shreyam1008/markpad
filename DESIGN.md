@@ -98,11 +98,34 @@ The Wails background color must match `chrome` to prevent a white startup flash.
 
 ## Syntax highlighting
 
-Markpad owns the Highlight.js presentation in `styles.css`; do not import a stock Highlight.js theme. Syntax roles live in `tokens.css`, and code surfaces use the code surface, code font, stable tab size, a boundary, and a selection-colored leading rule.
+Editable source uses CodeMirror 6 with a small semantic theme defined in
+`components/CodeEditor.tsx`. The editor owns incremental parsing, selection,
+indentation, line numbers, bracket matching, and local scrolling; the parent
+workspace remains the authority for drafts and persistence. Source undo/redo
+uses CodeMirror's change-based history so large files do not retain a complete
+string snapshot for every keystroke; textarea documents keep the bounded app
+history. Language
+modes are loaded on demand from `@codemirror/legacy-modes`, with the richer
+Lezer JavaScript/TypeScript parser loaded only for those files. Unsupported
+extensions remain fully editable plain source rather than losing editor
+behavior.
+
+Markpad owns the Highlight.js presentation in `styles.css` for static rendered
+code and Markdown fences; do not import a stock Highlight.js theme. Syntax
+roles live in `tokens.css`, and both editor and viewer code surfaces consume
+the same code font, selection signal, and semantic token roles. TanStack
+Highlight is intentionally not used for editing: it returns static HTML and
+does not provide editor state or incremental tokenization.
 
 Reading width is a prose preference, not a universal source-view constraint. Markdown follows the selected reading measure. Code expands across the available pane and keeps any exceptionally long line inside its own horizontal scroller. Plain text uses a wider 110-character measure and wraps unbroken content instead of widening the application canvas.
 
-Highlighting remains capped at 200,000 characters and 2,000 lines. Styling work must not weaken escaping, DOM sanitization, or those performance limits.
+Static Highlight.js rendering remains capped at 200,000 characters and 2,000
+lines. CodeMirror editing stays incremental and virtualized for larger source
+files. For source documents at or above 256,000 characters, rapid app-history
+snapshots are coalesced so typing cannot retain a full-document copy for every
+keystroke; the workspace boundary separately caps readable files at 2 MiB.
+Styling work must not weaken escaping, DOM sanitization, or the static rendering
+limits.
 
 ## Modern Markdown and diagrams
 

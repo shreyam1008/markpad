@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	maxEditableFileSize = 10 << 20
+	maxEditableFileSize = 2 << 20
 	maxReadOnlyFileSize = 50 << 20
 )
 

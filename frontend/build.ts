@@ -8,6 +8,7 @@ const result = await Bun.build({
   entrypoints: ["./index.html"],
   outdir: "./dist",
   minify: true,
+  drop: ["console", "debugger"],
   splitting: true,
   target: "browser",
   plugins: [tailwind],

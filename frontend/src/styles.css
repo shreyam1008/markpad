@@ -2574,6 +2574,55 @@ textarea {
   font-style: italic;
 }
 
+/* CodeMirror keeps source editing incremental while this shell owns the
+ * palette, spacing, and scroll rails. Never let a long token widen the pane. */
+#editor.code-editor-host {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  white-space: normal;
+  border: 1px solid var(--mp-border-soft);
+  background: var(--mp-editor);
+  color: var(--mp-syntax-text);
+}
+
+#editor.code-editor-host .cm-editor {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: var(--mp-editor);
+  color: var(--mp-syntax-text);
+}
+
+#editor.code-editor-host .cm-scroller {
+  min-width: 0;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+#editor.code-editor-host .cm-content {
+  min-width: max-content;
+}
+
+#editor.code-editor-host .cm-line,
+#editor.code-editor-host .cm-gutterElement {
+  font-variant-ligatures: none;
+  tab-size: 4;
+}
+
+#editor.code-editor-host .cm-gutterElement {
+  min-width: 2.25em;
+  text-align: right;
+}
+
+#editor.code-editor-host .cm-gutters {
+  user-select: none;
+}
+
+#editor.code-editor-host .cm-focused .cm-selectionBackground {
+  background: var(--mp-selected-strong) !important;
+}
+
 .preview-pane {
   background: var(--mp-paper);
 }

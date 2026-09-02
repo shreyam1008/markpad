@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { shouldCoalesceLargeEdit } from "../history/edit";
 import { renderCode, renderMarkdown } from "../preview/render";
 import { client } from "../workspace/client";
 import {
@@ -28,6 +29,7 @@ import type {
   SessionState,
   ViewMode,
 } from "../workspace/types";
+import { CodeEditor, type EditorHandle } from "./CodeEditor";
 import { SaveConflictDialog } from "./SaveConflictDialog";
 
 const DRAFT_DELAY = 350;
@@ -39,6 +41,7 @@ interface EditState {
   content: string;
   start: number;
   end: number;
+  at: number;
 }
 
 export interface DocumentWorkspaceHandle {
@@ -253,7 +256,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       "",
     );
     const [saveConflictError, setSaveConflictError] = useState("");
-    const editor = useRef<HTMLTextAreaElement>(null);
+    const editor = useRef<EditorHandle | null>(null);
     const viewer = useRef<HTMLDivElement>(null);
     const area = useRef<HTMLDivElement>(null);
     const findInput = useRef<HTMLInputElement>(null);
@@ -275,6 +278,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         content: initialContent,
         start: note?.cursor ?? 0,
         end: note?.cursor ?? 0,
+        at: 0,
       },
     ]);
     const historyIndex = useRef(0);
@@ -302,10 +306,8 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       const frame = requestAnimationFrame(() => {
         if (editor.current) {
           editor.current.scrollTop = initial.scrollTop;
-          editor.current.selectionStart = editor.current.selectionEnd = Math.min(
-            initial.cursor,
-            initialContent.length,
-          );
+          const cursor = Math.min(initial.cursor, initialContent.length);
+          editor.current.setSelectionRange(cursor, cursor);
         }
         if (viewer.current) viewer.current.scrollTop = initial.viewTop;
       });
@@ -394,7 +396,14 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       (value: string, start: number, end: number) => {
         if (history.current[historyIndex.current]?.content === value) return;
         history.current = history.current.slice(0, historyIndex.current + 1);
-        history.current.push({ content: value, start, end });
+        const now = Date.now();
+        const previous = history.current.at(-1);
+        const coalesceLargeEdit =
+          previous !== undefined &&
+          shouldCoalesceLargeEdit(value.length, history.current.length, previous.at, now);
+        const next = { content: value, start, end, at: now };
+        if (coalesceLargeEdit) history.current[history.current.length - 1] = next;
+        else history.current.push(next);
         historyIndex.current = history.current.length - 1;
         while (
           history.current.length > HISTORY_LIMIT ||
@@ -417,11 +426,13 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         const dirty = committedDirty.current || value !== committed.current;
         dirtyRef.current = dirty;
         onDirty(dirty);
-        record(
-          value,
-          start ?? editor.current?.selectionStart ?? 0,
-          end ?? editor.current?.selectionEnd ?? 0,
-        );
+        if (type !== "code") {
+          record(
+            value,
+            start ?? editor.current?.selectionStart ?? 0,
+            end ?? editor.current?.selectionEnd ?? 0,
+          );
+        }
         if (note && dirty && !note.dirty) void client.markDirty(note.id);
         clearTimeout(draftTimer.current);
         if (note) {
@@ -431,11 +442,16 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           }, DRAFT_DELAY);
         }
       },
-      [note, onDirty, onSession, readOnly, record],
+      [note, onDirty, onSession, readOnly, record, type],
     );
 
     const stepHistory = useCallback(
       (direction: number) => {
+        if (type === "code") {
+          if (direction < 0) editor.current?.undo?.();
+          else editor.current?.redo?.();
+          return;
+        }
         const next = historyIndex.current + direction;
         if (next < 0 || next >= history.current.length) return;
         historyIndex.current = next;
@@ -447,13 +463,12 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         onDirty(dirty);
         requestAnimationFrame(() => {
           if (!editor.current) return;
-          editor.current.selectionStart = state.start;
-          editor.current.selectionEnd = state.end;
+          editor.current.setSelectionRange(state.start, state.end);
           editor.current.focus();
         });
         updateHistoryButtons();
       },
-      [onDirty, updateHistoryButtons],
+      [onDirty, type, updateHistoryButtons],
     );
 
     const format = useCallback(
@@ -534,7 +549,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         changeContent(value, start + cursor, start + cursor);
         requestAnimationFrame(() => {
           if (!editor.current) return;
-          editor.current.selectionStart = editor.current.selectionEnd = start + cursor;
+          editor.current.setSelectionRange(start + cursor, start + cursor);
           editor.current.focus();
         });
       },
@@ -579,11 +594,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         );
         input.focus();
         input.setSelectionRange(start, end);
-        const lineHeight = Number.parseFloat(getComputedStyle(input).lineHeight) || 28;
+        const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
         input.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - input.clientHeight / 3);
         savePosition();
       },
-      [savePosition],
+      [savePosition, textSize],
     );
 
     const acceptSavedSession = useCallback(
@@ -722,7 +737,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           for (let index = 0; index < line; index++) position += lines[index].length + 1;
           input.focus();
           input.setSelectionRange(position, position);
-          const lineHeight = Number.parseFloat(getComputedStyle(input).lineHeight) || 28;
+          const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
           input.scrollTop = Math.max(0, line * lineHeight - input.clientHeight / 3);
         },
         getContent: () => contentRef.current,
@@ -739,6 +754,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         saveAsCurrent,
         saveCurrent,
         stepHistory,
+        textSize,
       ],
     );
 
@@ -795,62 +811,80 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 className="editor-pane flex-1 overflow-hidden p-3"
                 style={viewMode === "split" ? { flex: `0 0 ${split}%` } : undefined}
               >
-                <textarea
-                  ref={editor}
-                  id="editor"
-                  value={content}
-                  readOnly={readOnly}
-                  placeholder={readOnly ? undefined : "Start writing…"}
-                  wrap="off"
-                  spellCheck={false}
-                  className="editor-surface w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text"
-                  style={{ tabSize: 4, fontSize: textSize }}
-                  onScroll={savePosition}
-                  onKeyUp={savePosition}
-                  onChange={(event) =>
-                    changeContent(
-                      event.target.value,
-                      event.target.selectionStart,
-                      event.target.selectionEnd,
-                    )
-                  }
-                  onKeyDown={(event) => {
-                    if (event.key === "Tab") {
-                      event.preventDefault();
-                      const input = event.currentTarget;
-                      const value =
-                        contentRef.current.slice(0, input.selectionStart) +
-                        "    " +
-                        contentRef.current.slice(input.selectionEnd);
-                      const cursor = input.selectionStart + 4;
-                      changeContent(value, cursor, cursor);
-                      requestAnimationFrame(() => input.setSelectionRange(cursor, cursor));
-                      return;
+                {type === "code" ? (
+                  <CodeEditor
+                    ref={editor}
+                    value={content}
+                    path={note?.path || note?.title || ""}
+                    textSize={textSize}
+                    readOnly={readOnly}
+                    initialCursor={initialDocument.current.cursor}
+                    initialScrollTop={initialDocument.current.scrollTop}
+                    onChange={changeContent}
+                    onScroll={savePosition}
+                    onSelectionChange={savePosition}
+                    onHistoryAvailability={onHistoryAvailability}
+                  />
+                ) : (
+                  <textarea
+                    ref={(node) => {
+                      editor.current = node;
+                    }}
+                    id="editor"
+                    value={content}
+                    readOnly={readOnly}
+                    placeholder={readOnly ? undefined : "Start writing…"}
+                    wrap="off"
+                    spellCheck={false}
+                    className="editor-surface w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text"
+                    style={{ tabSize: 4, fontSize: textSize }}
+                    onScroll={savePosition}
+                    onKeyUp={savePosition}
+                    onChange={(event) =>
+                      changeContent(
+                        event.target.value,
+                        event.target.selectionStart,
+                        event.target.selectionEnd,
+                      )
                     }
-                    if (event.key !== "Enter" || event.ctrlKey || event.shiftKey || event.altKey)
-                      return;
-                    const input = event.currentTarget;
-                    const position = input.selectionStart;
-                    const value = contentRef.current;
-                    const lineStart = value.lastIndexOf("\n", position - 1) + 1;
-                    const line = value.slice(lineStart, position);
-                    const empty = /^(\s*)(?:[-*]|\d+\.|- \[[ x]\])\s$/.exec(line);
-                    const task = /^(\s*)- \[[ x]\]\s(.+)/.exec(line);
-                    const bullet = /^(\s*)([-*])\s(.+)/.exec(line);
-                    const numbered = /^(\s*)(\d+)\.\s(.+)/.exec(line);
-                    if (!empty && !task && !bullet && !numbered) return;
-                    event.preventDefault();
-                    let insertion = "\n";
-                    if (task) insertion = `\n${task[1]}- [ ] `;
-                    else if (bullet) insertion = `\n${bullet[1]}${bullet[2]} `;
-                    else if (numbered) insertion = `\n${numbered[1]}${Number(numbered[2]) + 1}. `;
-                    const before = empty ? value.slice(0, lineStart) : value.slice(0, position);
-                    const next = before + insertion + value.slice(position);
-                    const cursor = before.length + insertion.length;
-                    changeContent(next, cursor, cursor);
-                    requestAnimationFrame(() => input.setSelectionRange(cursor, cursor));
-                  }}
-                />
+                    onKeyDown={(event) => {
+                      if (event.key === "Tab") {
+                        event.preventDefault();
+                        const input = event.currentTarget;
+                        const value =
+                          contentRef.current.slice(0, input.selectionStart) +
+                          "    " +
+                          contentRef.current.slice(input.selectionEnd);
+                        const cursor = input.selectionStart + 4;
+                        changeContent(value, cursor, cursor);
+                        requestAnimationFrame(() => input.setSelectionRange(cursor, cursor));
+                        return;
+                      }
+                      if (event.key !== "Enter" || event.ctrlKey || event.shiftKey || event.altKey)
+                        return;
+                      const input = event.currentTarget;
+                      const position = input.selectionStart;
+                      const value = contentRef.current;
+                      const lineStart = value.lastIndexOf("\n", position - 1) + 1;
+                      const line = value.slice(lineStart, position);
+                      const empty = /^(\s*)(?:[-*]|\d+\.|- \[[ x]\])\s$/.exec(line);
+                      const task = /^(\s*)- \[[ x]\]\s(.+)/.exec(line);
+                      const bullet = /^(\s*)([-*])\s(.+)/.exec(line);
+                      const numbered = /^(\s*)(\d+)\.\s(.+)/.exec(line);
+                      if (!empty && !task && !bullet && !numbered) return;
+                      event.preventDefault();
+                      let insertion = "\n";
+                      if (task) insertion = `\n${task[1]}- [ ] `;
+                      else if (bullet) insertion = `\n${bullet[1]}${bullet[2]} `;
+                      else if (numbered) insertion = `\n${numbered[1]}${Number(numbered[2]) + 1}. `;
+                      const before = empty ? value.slice(0, lineStart) : value.slice(0, position);
+                      const next = before + insertion + value.slice(position);
+                      const cursor = before.length + insertion.length;
+                      changeContent(next, cursor, cursor);
+                      requestAnimationFrame(() => input.setSelectionRange(cursor, cursor));
+                    }}
+                  />
+                )}
               </div>
             )}
             {viewMode === "split" && (
