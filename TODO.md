@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1–v0.12)
+## Completed (v0.1–v0.13)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider
@@ -53,23 +53,35 @@
 - [x] Shared keyboard catalog with interface scale, settings, and native menu labels
 - [x] Responsive code/plain-text viewers with local overflow containment
 - [x] Fresh privacy-safe screenshots for the website and README
+- [x] Incremental CodeMirror editor with lazy language modes and bounded change history
+- [x] Relative Markdown images resolved through the native boundary with bounded sequential hydration
+- [x] Prose-first Markdown source wrapping and exact search/outline navigation across wrapped lines
 
-## Next
+## Live feature board
 
-- [ ] Browser-compatible build (same app runs in browser via WASM or static)
-- [ ] File watcher: detect external changes and prompt reload
-- [ ] Source/preview scroll sync for Markdown
-- [ ] Export to HTML/PDF from Markdown
-- [ ] Signed/notarized macOS builds
-- [x] Windows NSIS installer
-- [ ] Snap store / Flatpak packaging
-- [x] External-change detection before overwriting an open saved file
-- [ ] Optional refresh-on-focus after manual refresh behavior is proven
-- [ ] Measure Workspace Lite scan/search latency on representative folder corpora
+GitHub issues are the actionable cards; [the roadmap](docs/feature-roadmap.md) explains sequencing and product constraints.
 
-## Performance (Ongoing)
+### Now — v0.14.0
 
-- [ ] Rope or piece-table document model for very large files
-- [ ] Incremental Markdown parsing
-- [ ] Benchmark corpus (1 MB, 10 MB, 50 MB files)
-- [ ] Track cold start time, idle RSS, typing latency
+- [ ] [#1 Focus mode: distraction-free writing](https://github.com/shreyam1008/markpad/issues/1)
+- [ ] [#2 Bounded source/preview scroll synchronization](https://github.com/shreyam1008/markpad/issues/2)
+- [ ] [#3 Performance baseline and Windows bundle-headroom recovery](https://github.com/shreyam1008/markpad/issues/3)
+
+### Next — validated plain-file workflows
+
+- [ ] [#4 Workspace task list derived from Markdown checkboxes](https://github.com/shreyam1008/markpad/issues/4)
+- [ ] [#5 Daily note quick open using ordinary workspace files](https://github.com/shreyam1008/markpad/issues/5)
+
+### Explore — prove interaction and cost first
+
+- [ ] [#6 Pinned reference note beside the active document](https://github.com/shreyam1008/markpad/issues/6)
+- [ ] Refresh-on-focus after manual refresh behavior is measured
+- [ ] Bounded local HTML/PDF export
+- [ ] Signed/notarized macOS builds and tested store packages
+
+### Performance backlog
+
+- [ ] Recover at least 256 KiB of Windows amd64 bundle headroom before another runtime dependency
+- [ ] Benchmark cold/warm start, private memory/PSS, typing latency, and folder scan/search
+- [ ] Keep 1 MiB and 2 MiB fixture corpora outside release artifacts
+- [ ] Investigate a rope or piece table only if the existing 2 MiB editable-file boundary changes

@@ -32,7 +32,7 @@
         "name": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.12.0",
+        "softwareVersion": "0.13.0",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://shreyam1008.github.io/markpad/",
@@ -43,41 +43,7 @@
       }
     </script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              bg: '#f4f2ed', paper: '#fffffc', ink: '#1a1c1b', muted: '#6b6e68',
-              accent: '#2f6f61', 'accent-light': '#3d9484', 'accent-soft': '#dde8df',
-              line: '#d8d6ce', gold: '#d49e2a',
-            },
-            fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-            animation: { 'fade-up': 'fadeUp 0.6s ease-out both', 'float': 'float 6s ease-in-out infinite' },
-            keyframes: {
-              fadeUp: { '0%': { opacity: '0', transform: 'translateY(24px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-              float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
-            }
-          }
-        }
-      }
-    </script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <style>
-      html { scroll-behavior: smooth; }
-      .delay-1 { animation-delay: 0.1s; }
-      .delay-2 { animation-delay: 0.2s; }
-      .delay-3 { animation-delay: 0.3s; }
-      .delay-4 { animation-delay: 0.4s; }
-      .window-dots span { width: 12px; height: 12px; border-radius: 50%; }
-      .window-dots span:nth-child(1) { background: #ff5f57; }
-      .window-dots span:nth-child(2) { background: #ffbd2e; }
-      .window-dots span:nth-child(3) { background: #27c93f; }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="bg-bg text-ink font-sans antialiased">
 
@@ -91,6 +57,7 @@
         <nav class="flex items-center gap-6 text-sm font-medium text-muted">
           <a href="#features" class="hover:text-accent transition-colors">Features</a>
           <a href="#screenshots" class="hover:text-accent transition-colors">Screenshots</a>
+          <a href="#roadmap" class="hover:text-accent transition-colors">Roadmap</a>
           <a href="#downloads" class="hover:text-accent transition-colors">Downloads</a>
           <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent transition-colors">GitHub</a>
         </nav>
@@ -201,7 +168,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Syntax Highlighting</h3>
-            <p class="text-sm text-muted">Code files get language-aware highlighting via highlight.js. No markdown clutter — just clean, readable code.</p>
+            <p class="text-sm text-muted">CodeMirror gives source files incremental language-aware editing; bounded Code View keeps static reading fast.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Responsive Source Views</h3>
@@ -217,7 +184,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">PDF & Image Preview</h3>
-            <p class="text-sm text-muted">PDFs open in your system viewer. Images display inline. No heavy PDF engine is bundled.</p>
+            <p class="text-sm text-muted">PDFs open in your system viewer. Images and relative Markdown image paths render locally through bounded readers.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Single Instance</h3>
@@ -234,12 +201,50 @@
         </div>
       </section>
 
+      <!-- Roadmap -->
+      <section id="roadmap" class="max-w-5xl mx-auto px-6 pb-24">
+        <div class="text-center mb-12">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Public roadmap</p>
+          <h2 class="text-3xl font-bold">Small steps. Visible tradeoffs.</h2>
+          <p class="text-muted mt-3 max-w-2xl mx-auto">The issue board is the source of truth. Features move forward only when they preserve plain files, offline use, stable interaction, and the 16 MiB ceiling.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-5">
+          <div class="p-6 bg-paper rounded-2xl border border-accent/40">
+            <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Now · v0.14</p>
+            <h3 class="font-bold mb-3">Focus and navigation</h3>
+            <ul class="space-y-3 text-sm text-muted">
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/1">Focus mode without document remounts →</a></li>
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/2">Bounded source/preview scroll sync →</a></li>
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/3">Performance baseline and bundle headroom →</a></li>
+            </ul>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line">
+            <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Next</p>
+            <h3 class="font-bold mb-3">Plain-file workflows</h3>
+            <ul class="space-y-3 text-sm text-muted">
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/4">Workspace tasks derived from checkboxes →</a></li>
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/5">Daily-note quick open →</a></li>
+            </ul>
+          </div>
+          <div class="p-6 bg-paper rounded-2xl border border-line">
+            <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Explore</p>
+            <h3 class="font-bold mb-3">Prove before building</h3>
+            <ul class="space-y-3 text-sm text-muted">
+              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/6">Pinned reference note →</a></li>
+              <li>Bounded local export</li>
+              <li>Refresh-on-focus after measurement</li>
+            </ul>
+          </div>
+        </div>
+        <p class="text-center text-sm text-muted mt-7">Inspired by good plain-file workflows in ZenNotes, deliberately reduced to Markpad's lighter contract. <a class="text-accent hover:underline" href="https://github.com/shreyam1008/markpad/blob/main/docs/feature-roadmap.md">Read the full roadmap →</a></p>
+      </section>
+
       <!-- Downloads -->
       <section id="downloads" class="max-w-4xl mx-auto px-6 pb-24">
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
           <h2 class="text-3xl font-bold">Get Markpad for your platform.</h2>
-          <p class="text-muted mt-2">v0.12.0 · Built by GitHub Actions on every tagged release.</p>
+          <p class="text-muted mt-2">v0.13.0 · Built by GitHub Actions on every tagged release.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
@@ -287,7 +292,7 @@
 
     <footer class="border-t border-line py-8 text-center text-sm text-muted">
       <p>Built with care by <a href="https://github.com/shreyam1008" class="text-accent hover:underline">Shreyam Adhikari</a></p>
-      <p class="mt-1">v0.12.0 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
+      <p class="mt-1">v0.13.0 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
     </footer>
   </body>
 </html>

@@ -58,8 +58,10 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
 - **PDF handoff** — PDFs open in the operating system's default viewer without bundling a PDF engine
 - **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
+- **Relative Markdown images** — Saved notes resolve local image paths beside the `.md` file through a bounded native reader
 - **File verticals** — Markdown gets Editor/Split/Preview, code gets Edit/Code View, plain text opens in Editor, PDFs use the OS viewer, images show inline, others get info cards
-- **Responsive source viewers** — Long code lines stay inside a local scroll region; plain text wraps safely without pushing the workbench wider
+- **Real code editing** — CodeMirror provides incremental language-aware editing, line numbers, bracket matching, and bounded undo history
+- **Responsive source viewers** — Markdown and plain text wrap safely; long code lines stay inside their own local scroll region
 - **Split view** — Editor, side-by-side split, or preview. `Ctrl+Shift+E` to cycle
 - **Version history** — Every save is a snapshot. Click any entry for a unified diff. Restore or go back. `Ctrl+H`
 - **Session restore** — Close and reopen. Every note, draft, favorite, recently opened file comes back
@@ -94,6 +96,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.13.0 | | Incremental CodeMirror editor, lazy language modes, bounded relative Markdown images, prose wrapping, exact wrapped-note navigation |
 | 0.12.0 | | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
 | 0.10.0 | | React + strict TypeScript frontend, command palette, Workspace Lite folder navigation/search, confirmed saved-file deletion |
@@ -106,6 +109,12 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 | 0.3.0 | Aaradhya | Split view, formatting toolbar, drag reorder, syntax highlighting |
 | 0.2.0 | | Version history, find, zoom, menus |
 | 0.1.0 | | Initial release |
+
+## Roadmap
+
+The [public feature roadmap](docs/feature-roadmap.md) is organized as Now / Next / Explore, with each active card backed by a GitHub issue. The v0.14 milestone focuses on distraction-free writing, bounded Split-view scroll sync, and recovering meaningful bundle headroom. After that: a plain-file workspace task list, daily-note quick open, and a carefully measured pinned-reference experiment.
+
+See the live cards in [GitHub Issues](https://github.com/shreyam1008/markpad/issues) or the compact checklist in [TODO.md](TODO.md).
 
 ## Philosophy
 

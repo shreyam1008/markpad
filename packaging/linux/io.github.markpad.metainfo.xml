@@ -45,6 +45,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.13.0" date="2026-09-02">
+      <description>
+        <p>Incremental CodeMirror source editing, lazy language modes, bounded relative Markdown image loading, prose-first source wrapping, and exact navigation through wrapped notes.</p>
+      </description>
+    </release>
     <release version="0.12.0" date="2026-09-02">
       <description>
         <p>Responsive source viewers, strict semantic design system, custom window chrome, stable overlays, viewport-safe menus, modern Markdown and Mermaid diagrams, Git-style history diffs, improved syntax highlighting, keyboard settings, and unified product assets.</p>

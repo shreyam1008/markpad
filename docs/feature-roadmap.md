@@ -1,94 +1,86 @@
-# Post-v0.12 feature roadmap
+# Markpad feature roadmap
 
-## Stable baseline
+Updated for v0.13.0 on 2026-09-02. GitHub issues are the live cards; this document explains why they are ordered this way.
 
-Markpad v0.12.0 is a local Markdown notepad with a small optional folder workspace. It includes:
+## Stable baseline — v0.13.0
 
-- React 19 and strict TypeScript components bundled with Bun.
-- Ordinary local files plus autosaved recovery drafts and bounded saved-version history.
-- Editor, Split, Preview/Code View, image preview, and operating-system PDF handoff.
-- `Ctrl+P` fuzzy navigation across open files, workspace relative paths, and stable actions.
-- Workspace Lite: one persisted folder, bounded deterministic scan, manual refresh/change/clear, and safe Markdown/text creation.
-- `Ctrl+Shift+F` case-insensitive exact content search with relative path, line, snippet, and exact match selection.
-- Permanent saved-file deletion only after a warning that covers both the disk file and any unsaved edits, with backend path-safety checks.
-- A strict semantic design system with stable geometry, custom Wails window chrome, and consistent icons across the app and packages.
-- System/light/dark modes, five color themes, interface scale controls, reduced motion, and one shared keyboard shortcut catalog.
-- Responsive source viewers: code keeps long lines inside a local scroll region and plain text wraps without app-wide overflow.
+Markpad is a local Markdown notepad with an optional single-folder workspace:
 
-Workspace data remains plain files. Markpad does not import content, write metadata into the selected folder, or create a search database.
+- Plain local files plus autosaved recovery drafts and bounded saved-version history.
+- Editor, Split, Preview/Code View, incremental CodeMirror source editing, image preview, and operating-system PDF handoff.
+- Modern GFM, safe lazy Mermaid diagrams, and relative Markdown images resolved beside saved notes through a bounded native reader.
+- `Ctrl+P` fuzzy navigation and bounded `Ctrl+Shift+F` folder search without a persistent index.
+- A strict semantic design system, custom Wails chrome, system/light/dark modes, five color themes, and one live keyboard catalog.
+- External-change protection, confirmed disk deletion, and collision-safe filing of instant drafts into ordinary workspace files.
+
+Workspace data remains plain files. Markpad does not import content, write metadata into the selected folder, create a search database, or require an account.
 
 ## Product rules
 
 1. Plain local files remain the source of truth.
-2. Typing, switching, and search must stay responsive under documented bounds.
+2. Typing, switching, preview, and search stay responsive under explicit bounds.
 3. Unsaved content is never silently discarded or overwritten.
 4. New capabilities reuse the normal document lifecycle instead of creating parallel storage.
-5. Keep the app offline, account-free, and below the 16 MiB release ceiling.
-6. Ship one cohesive user outcome at a time, with failure and reopen behavior covered.
+5. The app stays offline, account-free, and below the 16 MiB release ceiling.
+6. Every feature ships with empty, failure, reopen, keyboard, and narrow-window behavior.
+7. No new embedded runtime dependency lands until Windows amd64 regains at least 256 KiB of bundle headroom.
 
-## Implemented: external-change protection
+## Now — v0.14.0
 
-Status: SHIPPED IN v0.12.0
+### [#1 Focus mode: distraction-free writing](https://github.com/shreyam1008/markpad/issues/1)
 
-### User value
+Hide chrome without remounting the document, losing cursor state, or creating a second shell. This takes the useful core of ZenNotes' Zen mode and keeps it a reversible presentation state.
 
-Avoid overwriting changes made by another editor after a file was opened in Markpad.
+### [#2 Bounded source/preview scroll synchronization](https://github.com/shreyam1008/markpad/issues/2)
 
-### Smallest useful slice
+Keep Split view near the same Markdown block using headings and block anchors. It must avoid feedback loops, continuous full-document measurement, and jitter around images, tables, fences, or Mermaid diagrams.
 
-- Persist a SHA-256 content fingerprint plus useful source metadata after open/save.
-- Stream-hash and identity-check the current path immediately before a normal save.
-- Offer explicit keep-editing, save-a-copy, reload, overwrite, or recreate choices while preserving the current draft.
-- Preserve the draft in Version History before reload and refresh workspace metadata after resolution.
+### [#3 Performance baseline and bundle-headroom recovery](https://github.com/shreyam1008/markpad/issues/3)
 
-### Acceptance criteria
+Restore at least 256 KiB below the Windows ceiling and publish repeatable cold/warm startup, private-memory/PSS, typing, preview, and representative folder-search measurements.
 
-- A changed file is never overwritten without a visible choice.
-- Reload cannot discard the Markpad draft silently.
-- Atomic replacement, deletion, and rename are distinguished from an ordinary unchanged save.
-- Behavior is covered by focused filesystem tests.
+## Next — plain-file workflows
 
-## Implemented: file a draft in Workspace Lite
+### [#4 Workspace task list](https://github.com/shreyam1008/markpad/issues/4)
 
-Status: SHIPPED IN v0.12.0
+Derive unchecked tasks from ordinary Markdown checkbox lines on demand. Selecting or toggling a task routes through the exact file location and normal conflict-safe save path. This is a list, not a Kanban database.
 
-### User value
+### [#5 Daily note quick open](https://github.com/shreyam1008/markpad/issues/5)
 
-Keep capture as fast as an unsaved notepad while removing the file-dialog friction when that thought becomes part of the chosen workspace.
+Open or create `YYYY-MM-DD.md` in a chosen workspace subfolder through the existing collision-safe file lifecycle. No scheduler, daemon, template marketplace, or hidden metadata.
 
-### Shipped slice
+## Explore — prove before promotion
 
-- Suggest a bounded, readable Markdown/text filename from the first useful draft line.
-- Avoid case-insensitive suggestion collisions and let the user edit a nested relative path.
-- Reserve the backend path with no-overwrite semantics, then promote the same recovery document into the workspace.
-- Refresh the inventory and preserve the saved document across reopen.
-- Expose the workflow through a visible control, the command palette, the native File menu, and `Ctrl+Shift+Enter`.
+### [#6 Pinned reference note](https://github.com/shreyam1008/markpad/issues/6)
 
-## Later, only after the baseline is proven
+Prototype one read-only reference beside the active document. Promotion requires stable geometry, keyboard focus, narrow-window fallback, session restore, and measured memory cost.
 
-- Refresh-on-focus, if manual workspace refresh proves insufficient.
-- Source/preview scroll synchronization.
-- HTML/PDF export using a deliberately bounded local path.
-- Signed/notarized macOS artifacts and store publication.
-- Repeatable cold-start, memory, typing-latency, and workspace-search benchmarks.
+### Other candidates
 
-## Explicitly deferred vault features
+- Refresh-on-focus after manual refresh behavior is measured.
+- Bounded local HTML/PDF export.
+- Signed/notarized macOS artifacts and verified store packages.
+- Optional slash insertion only if it is faster than the existing toolbar and command palette.
+- Wikilink navigation only after plain relative Markdown links are excellent; backlinks remain deferred without an on-demand bounded design.
 
-These are not part of Workspace Lite and should not be bundled into maintenance work:
+## Ideas deliberately outside Markpad's near-term scope
 
-- Persistent full-text indexing or a database.
-- Multiple simultaneous workspaces.
-- File watchers/daemons before refresh-on-focus is justified.
-- Wikilinks, backlinks, graph views, databases, canvas, or Git integration.
-- Task boards, daily-note generators, template marketplaces, sync, collaboration, AI, MCP, accounts, or cloud services.
-- Automatic bulk deletion or hidden retention policies.
+ZenNotes also demonstrates math engines, a CLI, MCP, sync, cloud backup/publishing, mobile clients, comments, backlinks, and a full vault model. Those are useful references, not automatic requirements. Markpad will not add:
+
+- Cloud sync, accounts, collaboration, publishing, or telemetry.
+- A persistent full-text index or proprietary database.
+- Background daemons or file watchers before on-focus refresh is justified.
+- TikZ/JSXGraph/function-plot runtimes, an MCP server, or a bundled CLI while the binary has effectively no headroom.
+- Multiple simultaneous workspaces, graph views, databases, canvas, or automatic bulk deletion.
 
 ## Release policy
 
-Before calling a feature shipped:
+Before moving a card to shipped:
 
-1. Run its focused tests.
-2. Run `make check` from installed frozen dependencies.
-3. Exercise its main native flow with a clean profile and reopen the app.
-4. Verify persisted and failure states.
-5. Update behavior, architecture, release notes, and bundle limits where relevant.
+1. Meet the linked issue's acceptance criteria.
+2. Run focused tests plus `make check` from frozen dependencies.
+3. Exercise the native Windows/Linux/macOS flow that changed, including failure and reopen behavior.
+4. Measure bundle and memory impact and update `BUNDLE_BUDGET.md`.
+5. Update behavior, architecture, changelog, website, screenshots, and package metadata where relevant.
+
+Inspiration reference: [ZenNotes](https://zennotes.org/) keeps notes as plain Markdown and exposes keyboard-first focus, tasks, daily notes, references, and navigation. Markpad borrows only the slices that preserve its smaller local-notepad contract.

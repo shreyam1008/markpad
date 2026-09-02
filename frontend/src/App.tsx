@@ -220,6 +220,14 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.13.0</h3>
+          <p>
+            Lightweight CodeMirror editing with lazy language modes and incremental history, bounded
+            relative-image loading for saved Markdown files, prose-first source wrapping, and exact
+            navigation through wrapped notes.
+          </p>
+        </section>
+        <section>
           <h3 className="font-bold">0.12.0</h3>
           <p>
             Responsive code and plain-text viewers, local overflow containment, unified keyboard
@@ -263,7 +271,7 @@ function ModalLayer({
         <p>
           <strong>Markpad</strong>
         </p>
-        <p className="text-muted">Version 0.12.0</p>
+        <p className="text-muted">Version 0.13.0</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>

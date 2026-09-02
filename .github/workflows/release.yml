@@ -191,16 +191,14 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            ## What's new in v0.12.0
+            ## What's new in v0.13.0
 
-            - Rebuilt the workbench around a strict semantic design system with stable geometry and no layout shifts.
-            - Added custom native window chrome, consistent dialogs, clear selected states, and viewport-safe menus.
-            - Added Git-style version-history diffs with precise timestamps, additions/deletions, Back, and Restore.
-            - Expanded Markdown to modern GFM plus safe, lazy-loaded Mermaid diagrams.
-            - Improved bounded syntax highlighting across code, diff, and configuration files.
-            - Unified the Markpad icon across the app, executable, installers, and platform packages.
-            - Contained long source lines in responsive code/text viewers and aligned interface-scale shortcuts with Settings.
-            - Kept the Windows release binary under the 16 MiB ceiling and the app fully offline.
+            - Added lightweight CodeMirror 6 editing with incremental history, line numbers, bracket matching, and lazy language modes.
+            - Kept static Code View fast and bounded while giving editable source files real language-aware interaction.
+            - Made relative Markdown images resolve safely beside saved notes without `file://` URLs or network access.
+            - Added prose-first Markdown source wrapping and exact search/outline navigation through wrapped content.
+            - Bounded embedded-image size, count, hydration, and cache use to protect responsiveness.
+            - Kept the Windows release binary below the 16 MiB ceiling and the application fully offline.
 
             ## Install
 

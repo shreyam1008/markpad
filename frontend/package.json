@@ -1,16 +1,17 @@
 {
   "name": "markpad-frontend",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "bun --hot index.html",
     "build": "tsc --noEmit && bun run build.ts",
+    "build:docs": "bun run build-docs.ts",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --react-plugin --jsx-a11y-plugin --import-plugin src tests",
-    "fmt": "oxfmt src tests build.ts index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
-    "fmt:check": "oxfmt --check src tests build.ts index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
+    "fmt": "oxfmt src tests build.ts build-docs.ts index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
+    "fmt:check": "oxfmt --check src tests build.ts build-docs.ts index.html package.json tsconfig.json bunfig.toml .oxfmtrc.json",
     "check": "bun run typecheck && bun run test && bun run lint && bun run fmt:check"
   },
   "dependencies": {
