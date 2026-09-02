@@ -53,6 +53,8 @@ export const client = {
   openFolder: (path: string): Promise<void> => api().OpenContainingFolder(path),
   storagePath: (): Promise<string> => api().GetStoragePath(),
   readBase64: (path: string): Promise<string> => api().ReadFileBase64(path),
+  readMarkdownAsset: (markdownPath: string, source: string): Promise<string> =>
+    api().ReadMarkdownAsset(markdownPath, source),
   openURL: (url: string): Promise<void> => api().OpenURL(url),
   openExternal: (path: string): Promise<void> => api().OpenExternalPath(path),
   reorder: (ids: string[]): Promise<SessionState> => api().ReorderNotes(ids),

@@ -19,12 +19,14 @@ The Settings/theme pass plus unified keyboard system adds one focused runtime de
 
 The unreleased CodeMirror editor pass adds the modular CodeMirror 6 core and
 lazy language modes without changing the runtime boundary. A local stripped
-Windows builds made with the release-pinned Bun 1.3.14 measured 16,765,440 bytes
-(15.989 MiB) for amd64 and 15,793,152 bytes (15.06 MiB) for arm64. Both remain
+Windows builds made with the release-pinned Bun 1.3.14 measured 16,775,168 bytes
+(15.998 MiB) for amd64 and 15,802,880 bytes (15.07 MiB) for arm64. Both remain
 below the 16 MiB ceiling; production builds also drop dependency console and
-debugger statements. Language chunks are embedded for offline use but loaded by
-the editor only when a matching source file is opened; the existing bounded
-Highlight.js renderer remains the static-viewer fallback.
+debugger statements. The amd64 artifact has 2,048 bytes of remaining headroom,
+so further embedded growth requires a compensating reduction. Language chunks
+are embedded for offline use but loaded by the editor only when a matching
+source file is opened; the existing bounded Highlight.js renderer remains the
+static-viewer fallback.
 
 `node_modules`, Bun, TypeScript, Oxlint, Oxfmt, tests, examples, and source maps are development inputs. They are not embedded in the release.
 

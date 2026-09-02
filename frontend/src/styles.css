@@ -2574,6 +2574,12 @@ textarea {
   font-style: italic;
 }
 
+#editor.markdown-editor-surface {
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 /* CodeMirror keeps source editing incremental while this shell owns the
  * palette, spacing, and scroll rails. Never let a long token widen the pane. */
 #editor.code-editor-host {
@@ -2677,6 +2683,35 @@ textarea {
 
 .preview-pane .markdown-body a {
   color: var(--mp-accent);
+}
+
+.preview-pane .viewer-md img {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  height: auto;
+  max-height: min(70vh, 720px);
+  margin: var(--mp-space-8) auto;
+  border: 1px solid var(--mp-border-soft);
+  border-radius: var(--mp-radius-3);
+  background: var(--mp-chrome);
+  object-fit: contain;
+}
+
+.preview-pane .viewer-md img[data-markpad-local-image="loading"] {
+  width: 100%;
+  min-height: clamp(140px, 28vh, 260px);
+  border-style: dashed;
+  color: transparent;
+}
+
+.preview-pane .viewer-md img[data-markpad-local-image="error"] {
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: var(--mp-space-5);
+  border-color: var(--mp-danger-border);
+  background: var(--mp-danger-soft);
+  color: var(--mp-danger-hover);
 }
 
 /* Markpad syntax theme. Highlighting stays bounded in preview/render.ts. */

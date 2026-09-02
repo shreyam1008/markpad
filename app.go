@@ -1308,6 +1308,22 @@ func (a *App) ReadFileBase64(path string) (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
+// ReadMarkdownAsset resolves an image beside a saved Markdown document and
+// returns an embeddable URL. Browsers cannot directly load local file paths
+// inside the desktop webview, so the native boundary supplies the bytes.
+func (a *App) ReadMarkdownAsset(markdownPath, source string) (string, error) {
+	path, err := resolveMarkdownAssetPath(markdownPath, source)
+	if err != nil {
+		return "", err
+	}
+	data, err := readFileWithinLimit(path, maxMarkdownImageSize)
+	if err != nil {
+		return "", err
+	}
+	mimeType := markdownImageMIMEType(path)
+	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data), nil
+}
+
 func formatSize(b int64) string {
 	if b < 1024 {
 		return fmt.Sprintf("%d B", b)

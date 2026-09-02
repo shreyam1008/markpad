@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseMarkdown, renderCode } from "../src/preview/render";
+import { isRelativeMarkdownAsset, parseMarkdown, renderCode } from "../src/preview/render";
 
 describe("bounded code rendering", () => {
   test("renders every supported code extension without runtime language loading", () => {
@@ -71,6 +71,16 @@ describe("bounded code rendering", () => {
 });
 
 describe("modern Markdown rendering", () => {
+  test("distinguishes local relative images from remote and embedded sources", () => {
+    expect(isRelativeMarkdownAsset("./screenshots/markpad.png")).toBe(true);
+    expect(isRelativeMarkdownAsset("../assets/hero image.webp?raw=1")).toBe(true);
+    expect(isRelativeMarkdownAsset("https://example.com/hero.png")).toBe(false);
+    expect(isRelativeMarkdownAsset("data:image/png;base64,AA==")).toBe(false);
+    expect(isRelativeMarkdownAsset("/assets/hero.png")).toBe(false);
+    expect(isRelativeMarkdownAsset("C:\\assets\\hero.png")).toBe(false);
+    expect(isRelativeMarkdownAsset("#diagram")).toBe(false);
+  });
+
   test("renders GFM tables, tasks, strike-through, autolinks, and fenced code", () => {
     const html = parseMarkdown(`~~old~~
 

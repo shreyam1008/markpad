@@ -135,6 +135,18 @@ export function renderMarkdown(content: string): string {
   }
 }
 
+export function isRelativeMarkdownAsset(source: string): boolean {
+  const value = source.trim();
+  return (
+    Boolean(value) &&
+    !value.startsWith("#") &&
+    !value.startsWith("/") &&
+    !value.startsWith("\\") &&
+    !value.startsWith("//") &&
+    !/^[a-z][a-z\d+.-]*:/i.test(value)
+  );
+}
+
 export function renderCode(content: string, path: string): string {
   const language = languageForPath(path);
   if (content.length > 200_000 || content.split("\n").length > 2_000) {

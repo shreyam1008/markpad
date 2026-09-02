@@ -4,13 +4,14 @@ import {
   useDeferredValue,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 
 import { shouldCoalesceLargeEdit } from "../history/edit";
-import { renderCode, renderMarkdown } from "../preview/render";
+import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
 import { client } from "../workspace/client";
 import {
   editorStats,
@@ -36,6 +37,42 @@ const DRAFT_DELAY = 350;
 const PREVIEW_DELAY = 120;
 const HISTORY_LIMIT = 80;
 const HISTORY_CHAR_LIMIT = 1_000_000;
+const LOCAL_IMAGE_LIMIT = 24;
+const LOCAL_IMAGE_CACHE_CHAR_LIMIT = 12 * 1024 * 1024;
+
+function revealWrappedTextareaPosition(input: HTMLTextAreaElement, position: number) {
+  const style = getComputedStyle(input);
+  const mirror = document.createElement("div");
+  Object.assign(mirror.style, {
+    position: "fixed",
+    inset: "0 auto auto -10000px",
+    visibility: "hidden",
+    pointerEvents: "none",
+    boxSizing: "border-box",
+    width: `${input.clientWidth}px`,
+    height: "auto",
+    padding: style.padding,
+    border: "0",
+    whiteSpace: "pre-wrap",
+    overflowWrap: style.overflowWrap,
+    wordBreak: style.wordBreak,
+    tabSize: style.tabSize,
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    fontStyle: style.fontStyle,
+    fontVariant: style.fontVariant,
+    fontWeight: style.fontWeight,
+    letterSpacing: style.letterSpacing,
+    lineHeight: style.lineHeight,
+  });
+  mirror.textContent = input.value.slice(0, position);
+  const marker = document.createElement("span");
+  marker.textContent = input.value.slice(position, position + 1) || "\u200b";
+  mirror.append(marker);
+  document.body.append(mirror);
+  input.scrollTop = Math.max(0, marker.offsetTop - input.clientHeight / 3);
+  mirror.remove();
+}
 
 interface EditState {
   content: string;
@@ -89,6 +126,10 @@ function Viewer({
   const type = fileType(note?.path, note?.kind);
   const [image, setImage] = useState("");
   const rendered = useRef<HTMLDivElement>(null);
+  const localAssetPath = useRef("");
+  const localAssetCache = useRef(new Map<string, string>());
+  const localAssetRequests = useRef(new Map<string, Promise<string>>());
+  const localAssetRejectedSize = useRef(new Map<string, number>());
   const html = useMemo(() => {
     if (type === "md") return renderMarkdown(content);
     if (type === "code") return renderCode(content, note?.path ?? "");
@@ -108,6 +149,103 @@ function Viewer({
       active = false;
     };
   }, [note?.path, type]);
+
+  useLayoutEffect(() => {
+    const target = rendered.current;
+    if (!target || type !== "md" || !note?.path) return;
+    let active = true;
+    if (localAssetPath.current !== note.path) {
+      localAssetPath.current = note.path;
+      localAssetCache.current.clear();
+      localAssetRejectedSize.current.clear();
+    }
+    const groups = new Map<string, HTMLImageElement[]>();
+    for (const imageNode of target.querySelectorAll<HTMLImageElement>("img[src]")) {
+      const source = imageNode.getAttribute("src") ?? "";
+      if (!isRelativeMarkdownAsset(source)) continue;
+      imageNode.dataset.markpadLocalImage = "loading";
+      imageNode.removeAttribute("src");
+      const nodes = groups.get(source);
+      if (nodes) nodes.push(imageNode);
+      else groups.set(source, [imageNode]);
+    }
+    const entries = [...groups.entries()];
+    const allowedEntries = entries.slice(0, LOCAL_IMAGE_LIMIT);
+    const allowedSources = new Set(allowedEntries.map(([source]) => source));
+    const allowedRequestKeys = new Set(allowedEntries.map(([source]) => `${note.path}\0${source}`));
+    for (const source of localAssetCache.current.keys()) {
+      if (!allowedSources.has(source)) localAssetCache.current.delete(source);
+    }
+    for (const requestKey of localAssetRejectedSize.current.keys()) {
+      if (!allowedRequestKeys.has(requestKey)) localAssetRejectedSize.current.delete(requestKey);
+    }
+    for (const [, nodes] of entries.slice(LOCAL_IMAGE_LIMIT)) {
+      for (const node of nodes) {
+        node.dataset.markpadLocalImage = "error";
+        node.title = `Markpad previews up to ${LOCAL_IMAGE_LIMIT} local images per note`;
+      }
+    }
+    void (async () => {
+      let budgetExhausted = false;
+      let cachedSize = [...localAssetCache.current.values()].reduce(
+        (total, dataURL) => total + dataURL.length,
+        0,
+      );
+      for (const [source, nodes] of allowedEntries) {
+        if (!active) return;
+        const requestKey = `${note.path}\0${source}`;
+        let dataURL = localAssetCache.current.get(source);
+        if (!dataURL) {
+          const rejectedSize = localAssetRejectedSize.current.get(requestKey);
+          if (
+            budgetExhausted ||
+            (rejectedSize !== undefined && cachedSize + rejectedSize > LOCAL_IMAGE_CACHE_CHAR_LIMIT)
+          ) {
+            for (const node of nodes) node.dataset.markpadLocalImage = "error";
+            continue;
+          }
+          if (cachedSize >= LOCAL_IMAGE_CACHE_CHAR_LIMIT) {
+            budgetExhausted = true;
+            for (const node of nodes) node.dataset.markpadLocalImage = "error";
+            continue;
+          }
+          let request = localAssetRequests.current.get(requestKey);
+          if (!request) {
+            request = client.readMarkdownAsset(note.path, source);
+            localAssetRequests.current.set(requestKey, request);
+          }
+          try {
+            dataURL = await request;
+          } catch {
+            if (active) for (const node of nodes) node.dataset.markpadLocalImage = "error";
+            continue;
+          } finally {
+            if (localAssetRequests.current.get(requestKey) === request) {
+              localAssetRequests.current.delete(requestKey);
+            }
+          }
+          if (!active) return;
+          if (cachedSize + dataURL.length > LOCAL_IMAGE_CACHE_CHAR_LIMIT) {
+            budgetExhausted = true;
+            localAssetRejectedSize.current.set(requestKey, dataURL.length);
+            for (const node of nodes) node.dataset.markpadLocalImage = "error";
+            continue;
+          }
+          localAssetCache.current.set(source, dataURL);
+          localAssetRejectedSize.current.delete(requestKey);
+          cachedSize += dataURL.length;
+        }
+        for (const node of nodes) {
+          if (!node.isConnected) continue;
+          node.src = dataURL;
+          node.dataset.markpadLocalImage = "ready";
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [html, note?.path, type]);
 
   useEffect(() => {
     const target = rendered.current;
@@ -594,8 +732,12 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         );
         input.focus();
         input.setSelectionRange(start, end);
-        const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
-        input.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - input.clientHeight / 3);
+        if (input instanceof HTMLTextAreaElement) {
+          revealWrappedTextareaPosition(input, start);
+        } else {
+          const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
+          input.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - input.clientHeight / 3);
+        }
         savePosition();
       },
       [savePosition, textSize],
@@ -737,8 +879,12 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           for (let index = 0; index < line; index++) position += lines[index].length + 1;
           input.focus();
           input.setSelectionRange(position, position);
-          const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
-          input.scrollTop = Math.max(0, line * lineHeight - input.clientHeight / 3);
+          if (input instanceof HTMLTextAreaElement) {
+            revealWrappedTextareaPosition(input, position);
+          } else {
+            const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
+            input.scrollTop = Math.max(0, line * lineHeight - input.clientHeight / 3);
+          }
         },
         getContent: () => contentRef.current,
       }),
@@ -834,9 +980,9 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                     value={content}
                     readOnly={readOnly}
                     placeholder={readOnly ? undefined : "Start writing…"}
-                    wrap="off"
+                    wrap={type === "md" ? "soft" : "off"}
                     spellCheck={false}
-                    className="editor-surface w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text"
+                    className={`editor-surface ${type === "md" ? "markdown-editor-surface" : ""} w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text`}
                     style={{ tabSize: 4, fontSize: textSize }}
                     onScroll={savePosition}
                     onKeyUp={savePosition}

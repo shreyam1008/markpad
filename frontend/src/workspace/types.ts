@@ -133,6 +133,7 @@ export interface MarkpadAPI {
   OpenContainingFolder(path: string): Promise<void>;
   GetStoragePath(): Promise<string>;
   ReadFileBase64(path: string): Promise<string>;
+  ReadMarkdownAsset(markdownPath: string, source: string): Promise<string>;
   OpenURL(url: string): Promise<void>;
   OpenExternalPath(path: string): Promise<void>;
   ReorderNotes(ids: string[]): Promise<SessionState>;

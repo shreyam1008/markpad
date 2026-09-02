@@ -131,6 +131,10 @@ limits.
 
 Marked owns CommonMark and GFM parsing: headings, emphasis, strike-through, autolinks, reference links, lists, task lists, tables, blockquotes, images, inline code, and fenced code. DOMPurify remains the mandatory boundary for generated HTML.
 
+Markdown source is prose-first: it soft-wraps inside its pane and never creates application-level horizontal overflow. Code remains the only document type with a deliberate horizontal source scroller.
+
+Relative Markdown image paths resolve from the saved note's directory through the native boundary, never through `file://` URLs or a network request. Remote and embedded image URLs retain their sanitized browser behavior. Local images must remain proportionally contained inside the reading column and expose explicit loading and error states. Native reads, distinct-image count, sequential hydration, and the per-note data-URL cache are bounded; preview rerenders prune stale cached sources instead of multiplying requests.
+
 Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. Mermaid is dynamically imported only when a document contains a diagram; ordinary notes must not load it. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
 
 Theme changes remount only the preview renderer, not the editor or the document workspace. Mermaid is reinitialized from current semantic tokens for the new preview; an appearance change must never discard unsaved text or reset the editor cursor.
