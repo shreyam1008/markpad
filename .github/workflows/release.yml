@@ -198,11 +198,11 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            ## What's new in v0.13.1
+            ## What's new in v0.13.2
 
-            - Fixed the blank Linux window by producing a WebKitGTK-safe embedded frontend bundle for Wails' in-memory asset scheme.
-            - The ordinary launcher and `markpad` command work without environment flags or manual workarounds.
-            - Added a native Linux window smoke test that launches the release binary, captures the real GTK window, and verifies visible Markpad UI text before publishing.
+            - Removed Linux's redundant native `File / Edit / View / Settings / Help` menu so the custom Markpad title bar is the only application chrome.
+            - Added a subtle Linux-only outer edge and sharper window-control glyphs while keeping the Windows presentation unchanged.
+            - Extended the native Linux smoke test to reject any future duplicate application menu before publishing.
             - Preserved the v0.9.2 session schema and existing files, drafts, history, workspace, and settings during upgrade.
 
             ## Install

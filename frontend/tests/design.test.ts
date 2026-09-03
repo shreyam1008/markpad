@@ -52,9 +52,11 @@ describe("design contract", () => {
   });
 
   test("keeps window chrome fixed, accessible, and correctly draggable", async () => {
-    const [styles, titlebar] = await Promise.all([
+    const [styles, titlebar, main, types] = await Promise.all([
       source("../src/styles.css"),
       source("../src/components/AppTitlebar.tsx"),
+      source("../src/main.tsx"),
+      source("../src/workspace/types.ts"),
     ]);
     expect(styles).toContain("--wails-draggable: drag");
     expect(styles).toContain("--wails-draggable: no-drag");
@@ -63,6 +65,10 @@ describe("design contract", () => {
     expect(titlebar).toContain('aria-label="Close window"');
     expect(titlebar).toContain("WindowToggleMaximise");
     expect(titlebar).toContain('aria-label="App navigation"');
+    expect(main).toContain("document.documentElement.dataset.platform = platform");
+    expect(types).toContain("Environment?(): Promise<{ platform?: string }>");
+    expect(styles).toContain(':root[data-platform="linux"] body::after');
+    expect(styles).toContain(':root[data-platform="linux"] .window-control svg');
     for (const surface of ["Files", "Search", "History", "Settings", "More"]) {
       expect(titlebar).toContain(`<span>${surface}</span>`);
     }

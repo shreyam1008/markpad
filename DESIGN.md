@@ -81,6 +81,10 @@ Modal overlays use viewport-fixed grid centering; native `<dialog>` positioning 
 
 Markpad uses Wails frameless mode with a custom 36 px title bar. `.app-titlebar` is the drag region; `.app-titlebar-controls` is explicitly non-draggable. Minimize, maximize/restore, and close controls always reserve 46 px each. Double-clicking empty title-bar space toggles maximize. Every close source must go through Wails so the unsaved-document guard runs. That guard cancels the native close and emits `app:quit-requested`; React owns the resulting Markpad alert dialog. Never use an operating-system message box for an unsaved-close confirmation.
 
+Linux must not mount Wails' native GTK application menu: it creates a second `File / Edit / View / Settings / Help` strip above the custom title bar. Retain the application menu for non-Linux platform integration, while Linux uses the title-bar surfaces, command palette, and unified React shortcuts.
+
+Linux also receives a paint-only 1 px outer hairline because frameless WebKitGTK windows do not get the DWM border that Windows supplies. Its custom window-control glyphs render at 14 px for reliable clarity under Linux font and display scaling; the fixed 46 px hit targets and 36 px title-bar geometry remain unchanged.
+
 App-level surfaces belong in `.app-titlebar-actions`: Files, Search, History, Settings, and More. They remain non-draggable, expose a persistent selected state while their surface is open, and collapse to icons at compact widths. Creation, Open, Save, view mode, undo, and other file/document actions stay in the sidebar, document rail, or command palette. Never duplicate those actions in both chrome levels.
 
 The Wails background color must match `chrome` to prevent a white startup flash. Do not hide, delay, or animate the title bar during boot or hydration. The error screen must retain working window controls.
