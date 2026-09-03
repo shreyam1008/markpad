@@ -122,6 +122,10 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           go build -tags production -trimpath -ldflags="-s -w -H windowsgui" -o dist/markpad.exe .
+          $bytes = (Get-Item dist/markpad.exe).Length
+          $limit = [math]::Floor(16.1 * 1MB)
+          if ($bytes -gt $limit) { throw "dist/markpad.exe exceeds the 16.1 MiB release ceiling ($bytes bytes)" }
+          Write-Host "dist/markpad.exe: $bytes bytes (16.1 MiB ceiling)"
       - name: Install NSIS
         shell: pwsh
         run: choco install -y nsis
@@ -196,8 +200,8 @@ jobs:
           body: |
             ## What's new in v0.13.1
 
-            - Fixed blank Markpad windows caused by WebKitGTK's DMA-BUF renderer on affected Linux graphics stacks.
-            - Applied the Linux compatibility default inside Markpad, so the ordinary launcher and `markpad` command need no flags.
+            - Fixed the blank Linux window by producing a WebKitGTK-safe embedded frontend bundle for Wails' in-memory asset scheme.
+            - The ordinary launcher and `markpad` command work without environment flags or manual workarounds.
             - Added a native Linux window smoke test that launches the release binary, captures the real GTK window, and verifies visible Markpad UI text before publishing.
             - Preserved the v0.9.2 session schema and existing files, drafts, history, workspace, and settings during upgrade.
 

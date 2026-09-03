@@ -39,7 +39,7 @@ Do not substitute an unpinned `latest` URL or add a package manager to the produ
 
 ## Size policy
 
-The hard release ceiling is 16 MiB. Source maps, `node_modules`, examples, development tools, PDF.js, and unused language packs must not be embedded; large optional features must remain code-split and off the startup path.
+The hard release ceilings are 16 MiB on Linux and 16.1 MiB on Windows. Source maps, `node_modules`, examples, development tools, PDF.js, and unused language packs must not be embedded. The production frontend stays a single WebKitGTK-safe module until native testing proves split modules reliable.
 
 ## Licensing
 

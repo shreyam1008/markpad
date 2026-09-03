@@ -4,6 +4,12 @@ import { readFile } from "node:fs/promises";
 const source = (path: string) => readFile(new URL(path, import.meta.url), "utf8");
 
 describe("design contract", () => {
+  test("keeps the embedded production entry compatible with Linux WebKitGTK", async () => {
+    const build = await source("../build.ts");
+    expect(build).toContain("splitting: false");
+    expect(build).toContain('replaceAll(" crossorigin", "")');
+  });
+
   test("defines the permanent semantic and geometry roles", async () => {
     const tokens = await source("../src/design/tokens.css");
     for (const token of [

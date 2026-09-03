@@ -135,7 +135,7 @@ Markdown source is prose-first: it soft-wraps inside its pane and never creates 
 
 Relative Markdown image paths resolve from the saved note's directory through the native boundary, never through `file://` URLs or a network request. Remote and embedded image URLs retain their sanitized browser behavior. Local images must remain proportionally contained inside the reading column and expose explicit loading and error states. Native reads, distinct-image count, sequential hydration, and the per-note data-URL cache are bounded; preview rerenders prune stale cached sources instead of multiplying requests.
 
-Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. Mermaid is dynamically imported only when a document contains a diagram; ordinary notes must not load it. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
+Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. The renderer is invoked only when a document contains a diagram. The production frontend remains one ES-module entry because split module graphs do not execute reliably from Wails' in-memory scheme on Linux WebKitGTK; do not re-enable `splitting` without a native Linux window test. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
 
 Theme changes remount only the preview renderer, not the editor or the document workspace. Mermaid is reinitialized from current semantic tokens for the new preview; an appearance change must never discard unsaved text or reset the editor cursor.
 
@@ -157,7 +157,7 @@ Theme changes remount only the preview renderer, not the editor or the document 
 
 ## Performance and loading
 
-Markpad is a Wails application targeting the operating system webview. Keep the release binary under the 16 MiB budget in `BUNDLE_BUDGET.md`. Full Mermaid support is code-split and must not enter the baseline startup path.
+Markpad is a Wails application targeting the operating system webview. Keep release binaries under the platform budgets in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
 
 - No runtime network calls, font downloads, preload splash art, or heavyweight asset decoding.
 - Avoid backdrop filters and large blurred shadows.
@@ -174,4 +174,4 @@ For every visible change:
 3. Verify current desktop width and a narrow width; controls may simplify but must not jump.
 4. Exercise minimize, maximize/restore, title-bar double-click, close, and unsaved-close protection in Wails.
 5. Check code, Markdown, plain text, a large-file fallback, split resizing, and reduced motion.
-6. Build the production binary and verify the 16 MiB budget and offline asset scan.
+6. Build the production binary and verify its platform budget and offline asset scan.

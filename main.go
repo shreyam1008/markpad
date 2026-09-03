@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"os"
-	gort "runtime"
 	"runtime/debug"
 	"strings"
 
@@ -27,16 +25,6 @@ func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Println(Version)
 		os.Exit(0)
-	}
-
-	// WebKitGTK can create a fully blank window on affected Linux graphics
-	// stacks when its DMA-BUF renderer is selected. Keep the compatibility
-	// choice inside Markpad so the normal launcher and `markpad` command work.
-	// Respect an explicit user value for diagnostics and future WebKit fixes.
-	if gort.GOOS == "linux" {
-		if _, configured := os.LookupEnv("WEBKIT_DISABLE_DMABUF_RENDERER"); !configured {
-			_ = os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
-		}
 	}
 
 	// Optimize WebKit memory consumption on Linux/Unix systems by disabling JIT compiler
@@ -180,14 +168,6 @@ func main() {
 		Menu:             appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets(),
-			Middleware: func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-					// WebKitGTK treats Wails' in-memory scheme as an opaque origin.
-					// Allow the app's own ES-module chunks to load from that scheme.
-					writer.Header().Set("Access-Control-Allow-Origin", "*")
-					next.ServeHTTP(writer, request)
-				})
-			},
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,

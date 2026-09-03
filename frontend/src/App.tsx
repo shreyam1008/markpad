@@ -222,8 +222,9 @@ function ModalLayer({
         <section>
           <h3 className="font-bold">0.13.1</h3>
           <p>
-            Linux WebKitGTK rendering compatibility and an automated native-window smoke test that
-            verifies visible application content before release.
+            A WebKitGTK-safe production bundle fixes blank Linux windows with no launch flags, and
+            an automated native-window smoke test verifies visible application content before every
+            release.
           </p>
         </section>
         <section>

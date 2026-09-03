@@ -96,7 +96,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 | Version | Name | Highlights |
 |---------|------|------------|
-| 0.13.1 | | Linux WebKitGTK blank-window compatibility and native rendered-window release smoke test |
+| 0.13.1 | | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | | Incremental CodeMirror editor, lazy language modes, bounded relative Markdown images, prose wrapping, exact wrapped-note navigation |
 | 0.12.0 | | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
@@ -119,7 +119,7 @@ See the live cards in [GitHub Issues](https://github.com/shreyam1008/markpad/iss
 
 ## Philosophy
 
-Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps the release binary below a 16 MiB ceiling. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
+Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps release binaries around 16 MiB or less. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
 
 ## Keyboard Shortcuts
 

@@ -21,7 +21,7 @@ Workspace data remains plain files. Markpad does not import content, write metad
 2. Typing, switching, preview, and search stay responsive under explicit bounds.
 3. Unsaved content is never silently discarded or overwritten.
 4. New capabilities reuse the normal document lifecycle instead of creating parallel storage.
-5. The app stays offline, account-free, and below the 16 MiB release ceiling.
+5. The app stays offline, account-free, and within the platform release ceilings.
 6. Every feature ships with empty, failure, reopen, keyboard, and narrow-window behavior.
 7. No new embedded runtime dependency lands until Windows amd64 regains at least 256 KiB of bundle headroom.
 

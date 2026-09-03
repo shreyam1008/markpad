@@ -24,33 +24,13 @@
         root.dataset.themeMode = mode;
         root.dataset.palette = palettes.includes(saved.palette) ? saved.palette : "markpad";
         root.style.colorScheme = appearance;
-
-        const showBootError = (message) => {
-          const status = document.getElementById("boot-status");
-          if (status) status.textContent = `Markpad could not start: ${message}`;
-        };
-        window.addEventListener(
-          "error",
-          (event) => {
-            const source = event.target?.src || event.target?.href;
-            showBootError(event.message || (source ? `failed to load ${source}` : "unknown error"));
-          },
-          true,
-        );
-        window.addEventListener("unhandledrejection", (event) => {
-          showBootError(event.reason?.message || String(event.reason || "unknown error"));
-        });
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="./src/assets/markpad-mark.svg" />
     <title>Markpad</title>
   </head>
   <body>
-    <div id="root">
-      <p id="boot-status" style="padding: 24px; font: 14px system-ui; color: #17211f">
-        Starting Markpad…
-      </p>
-    </div>
+    <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

@@ -13,7 +13,7 @@ Plain files remain the source of truth. Markpad has no account, cloud service, t
 | Rule | Reason |
 |---|---|
 | No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
-| Production binary must remain below 16 MiB | `make check-size` is a release gate. |
+| Production binary must remain below its platform ceiling | `make check-size` gates Linux at 16 MiB; the release workflow gates Windows at 16.1 MiB. |
 | No cloud client, telemetry, account, or external API | User content stays local and private. |
 | No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
 | No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
@@ -157,7 +157,7 @@ Before committing:
 
 ## Performance and dependency rules
 
-- Production binary hard ceiling: 16 MiB; keep ordinary startup paths lazy and bounded.
+- Production binary hard ceilings: 16 MiB on Linux and 16.1 MiB on Windows; keep ordinary startup work bounded.
 - Markdown render debounce: 120 ms; draft persistence debounce: 350 ms.
 - Keep scans/search cancellable or bounded so rapid input cannot display stale results or block typing.
 - Prefer standard-library directory walking and streaming/bounded reads over a database or search daemon.
@@ -178,7 +178,7 @@ Before committing:
 
 | Version | Highlights |
 |---|---|
-| 0.13.1 | Linux WebKitGTK rendering compatibility and native rendered-window release smoke test |
+| 0.13.1 | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | Incremental CodeMirror editing, lazy language modes, bounded local Markdown images, wrapped-note navigation |
 | 0.12.0 | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
