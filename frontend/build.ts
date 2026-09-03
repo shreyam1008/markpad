@@ -9,9 +9,7 @@ const result = await Bun.build({
   outdir: "./dist",
   minify: true,
   drop: ["console", "debugger"],
-  // WebKitGTK cannot reliably execute a split ES-module graph served from
-  // Wails' custom `wails://` scheme. Keep one entry bundle for native Linux.
-  splitting: false,
+  splitting: true,
   target: "browser",
   plugins: [tailwind],
   // Compile-time React replacement only. Node is not used at runtime.

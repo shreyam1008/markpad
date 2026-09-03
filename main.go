@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	gort "runtime"
 	"runtime/debug"
@@ -179,6 +180,14 @@ func main() {
 		Menu:             appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets(),
+			Middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+					// WebKitGTK treats Wails' in-memory scheme as an opaque origin.
+					// Allow the app's own ES-module chunks to load from that scheme.
+					writer.Header().Set("Access-Control-Allow-Origin", "*")
+					next.ServeHTTP(writer, request)
+				})
+			},
 		},
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop:     true,
