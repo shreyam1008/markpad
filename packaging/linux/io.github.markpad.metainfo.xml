@@ -45,6 +45,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.13.1" date="2026-09-03">
+      <description>
+        <p>Linux WebKitGTK rendering compatibility plus an automated native-window smoke test that verifies visible application content before release.</p>
+      </description>
+    </release>
     <release version="0.13.0" date="2026-09-02">
       <description>
         <p>Incremental CodeMirror source editing, lazy language modes, bounded relative Markdown image loading, prose-first source wrapping, and exact navigation through wrapped notes.</p>

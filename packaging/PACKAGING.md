@@ -2,13 +2,13 @@
 
 Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
-Release target: v0.13.0
+Release target: v0.13.1
 
 ## GitHub release first
 
 Push `main`, wait for CI, then push only the annotated release tag. `.github/workflows/release.yml` builds:
 
-- `markpad`, `markpad_0.13.0_amd64.deb`, and `Markpad.AppImage` for Linux.
+- `markpad`, `markpad_0.13.1_amd64.deb`, and `Markpad.AppImage` for Linux.
 - `markpad-setup.exe` for Windows, with the Markpad ICO embedded into both application and installer.
 - `Markpad.dmg` and `Markpad-macOS.zip`, with the Markpad ICNS in the app bundle.
 
@@ -25,28 +25,28 @@ Verify all artifacts before submitting to a store. Do not publish a Scoop, WinGe
 ```sh
 sudo snap install snapcraft --classic
 snapcraft
-snap install --dangerous ./markpad_0.13.0_amd64.snap
+snap install --dangerous ./markpad_0.13.1_amd64.snap
 ```
 
 After smoke testing:
 
 ```sh
 snapcraft login
-snapcraft upload markpad_0.13.0_amd64.snap --release=stable
+snapcraft upload markpad_0.13.1_amd64.snap --release=stable
 ```
 
 The Snap Store operation is external and is not performed by the GitHub release workflow.
 
 ## Flatpak
 
-The Flatpak manifest needs the immutable commit for the published `v0.13.0` tag and vendored Go sources. Generate those after the tag exists, validate with `flatpak-builder`, and submit the resulting manifest to Flathub. Do not guess the commit ID in advance.
+The Flatpak manifest needs the immutable commit for the published `v0.13.1` tag and vendored Go sources. Generate those after the tag exists, validate with `flatpak-builder`, and submit the resulting manifest to Flathub. Do not guess the commit ID in advance.
 
 ## WinGet
 
 After `markpad-setup.exe` exists:
 
 1. Compute its SHA-256 (`Get-FileHash markpad-setup.exe -Algorithm SHA256`).
-2. Create a new `0.13.0` manifest directory from the previous version.
+2. Create a new `0.13.1` manifest directory from the previous version.
 3. Update download URL, package version, and installer hash.
 4. Run `winget validate` and submit to `microsoft/winget-pkgs`.
 
@@ -54,7 +54,7 @@ Never edit a historical version directory in place.
 
 ## Scoop
 
-After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.13.0`, the exact release URL, and the real SHA-256. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
+After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.13.1`, the exact release URL, and the real SHA-256. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
 
 ## Final checklist
 

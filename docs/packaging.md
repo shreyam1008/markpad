@@ -16,7 +16,7 @@ make check
 
 ## Release CI
 
-Pushing one explicit annotated tag such as `v0.13.0` starts `.github/workflows/release.yml`. Each operating-system job installs pinned Bun dependencies and builds `frontend/dist` before compiling Go.
+Pushing one explicit annotated tag such as `v0.13.1` starts `.github/workflows/release.yml`. Each operating-system job installs pinned Bun dependencies and builds `frontend/dist` before compiling Go. The Linux job must also pass the native rendered-window smoke test.
 
 The release contains:
 

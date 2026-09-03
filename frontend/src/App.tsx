@@ -220,6 +220,13 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.13.1</h3>
+          <p>
+            Linux WebKitGTK rendering compatibility and an automated native-window smoke test that
+            verifies visible application content before release.
+          </p>
+        </section>
+        <section>
           <h3 className="font-bold">0.13.0</h3>
           <p>
             Lightweight CodeMirror editing with lazy language modes and incremental history, bounded
@@ -271,7 +278,7 @@ function ModalLayer({
         <p>
           <strong>Markpad</strong>
         </p>
-        <p className="text-muted">Version 0.13.0</p>
+        <p className="text-muted">Version 0.13.1</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>

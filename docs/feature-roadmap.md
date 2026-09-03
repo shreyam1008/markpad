@@ -1,8 +1,8 @@
 # Markpad feature roadmap
 
-Updated for v0.13.0 on 2026-09-02. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.13.1 on 2026-09-03. GitHub issues are the live cards; this document explains why they are ordered this way.
 
-## Stable baseline — v0.13.0
+## Stable baseline — v0.13.1
 
 Markpad is a local Markdown notepad with an optional single-folder workspace:
 

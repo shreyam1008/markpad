@@ -32,8 +32,21 @@ jobs:
             -o Acquire::https::Timeout=30 \
             -o Dpkg::Use-Pty=0 \
             install -y --no-install-recommends \
-            gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev ripgrep
+            gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev ripgrep \
+            xvfb xauth xdotool imagemagick tesseract-ocr
       - name: Install frontend dependencies
         run: make setup
       - name: Check, test, and build
         run: make check
+      - name: Smoke-test the rendered Linux window
+        run: bash .github/scripts/linux-ui-smoke.sh
+      - name: Upload Linux UI smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-ui-smoke
+          path: |
+            dist/linux-ui-smoke.log
+            dist/linux-ui-smoke.txt
+            dist/linux-ui-smoke.png
+          if-no-files-found: ignore

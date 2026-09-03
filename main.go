@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	gort "runtime"
 	"runtime/debug"
 	"strings"
 
@@ -16,7 +17,7 @@ import (
 	"markpad/internal/brand"
 )
 
-const Version = "0.13.0"
+const Version = "0.13.1"
 
 // Linker-overridable for isolated QA builds; releases always use the brand contract default.
 var singleInstanceID = brand.SingleInstanceID
@@ -25,6 +26,16 @@ func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Println(Version)
 		os.Exit(0)
+	}
+
+	// WebKitGTK can create a fully blank window on affected Linux graphics
+	// stacks when its DMA-BUF renderer is selected. Keep the compatibility
+	// choice inside Markpad so the normal launcher and `markpad` command work.
+	// Respect an explicit user value for diagnostics and future WebKit fixes.
+	if gort.GOOS == "linux" {
+		if _, configured := os.LookupEnv("WEBKIT_DISABLE_DMABUF_RENDERER"); !configured {
+			_ = os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
+		}
 	}
 
 	// Optimize WebKit memory consumption on Linux/Unix systems by disabling JIT compiler

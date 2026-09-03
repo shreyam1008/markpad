@@ -178,6 +178,7 @@ Before committing:
 
 | Version | Highlights |
 |---|---|
+| 0.13.1 | Linux WebKitGTK rendering compatibility and native rendered-window release smoke test |
 | 0.13.0 | Incremental CodeMirror editing, lazy language modes, bounded local Markdown images, wrapped-note navigation |
 | 0.12.0 | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
