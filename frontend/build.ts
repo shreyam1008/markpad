@@ -9,7 +9,9 @@ const result = await Bun.build({
   outdir: "./dist",
   minify: true,
   drop: ["console", "debugger"],
-  splitting: true,
+  // WebKitGTK cannot reliably execute a split ES-module graph served from
+  // Wails' custom `wails://` scheme. Keep one entry bundle for native Linux.
+  splitting: false,
   target: "browser",
   plugins: [tailwind],
   // Compile-time React replacement only. Node is not used at runtime.
@@ -23,7 +25,7 @@ if (!result.success) {
 // Wails serves bundled assets from its in-memory `wails://` scheme on Linux.
 // Bun adds `crossorigin` to module and stylesheet entry tags, which makes
 // WebKitGTK reject those custom-scheme requests and leaves the window blank.
-// Relative chunk imports remain intact, so lazy-loaded features stay lazy.
+// Removing the attribute also keeps the entry request same-scheme.
 const indexPath = new URL("./dist/index.html", import.meta.url);
 const indexHtml = await readFile(indexPath, "utf8");
 await writeFile(indexPath, indexHtml.replaceAll(" crossorigin", ""), "utf8");
