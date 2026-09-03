@@ -21,6 +21,24 @@ trap cleanup EXIT
 Xvfb "$DISPLAY" -screen 0 1280x800x24 -nolisten tcp >dist/linux-ui-xvfb.log 2>&1 &
 xvfb_pid=$!
 
+for _ in $(seq 1 40); do
+  if xdotool getdisplaygeometry >/dev/null 2>&1; then
+    break
+  fi
+  if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+    cat dist/linux-ui-xvfb.log
+    echo "Xvfb exited before its display became ready" >&2
+    exit 1
+  fi
+  sleep 0.25
+done
+
+if ! xdotool getdisplaygeometry >/dev/null 2>&1; then
+  cat dist/linux-ui-xvfb.log
+  echo "Xvfb display did not become ready" >&2
+  exit 1
+fi
+
 dbus-run-session -- ./dist/markpad >dist/linux-ui-smoke.log 2>&1 &
 app_pid=$!
 
