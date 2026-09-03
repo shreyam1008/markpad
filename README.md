@@ -96,6 +96,7 @@ Markpad does not bundle or download a PDF engine. Images are read locally throug
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.13.2 | | Clean native Linux chrome without the duplicate GTK menu, with a subtle window edge and sharper controls |
 | 0.13.1 | | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | | Incremental CodeMirror editor, lazy language modes, bounded relative Markdown images, prose wrapping, exact wrapped-note navigation |
 | 0.12.0 | | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |

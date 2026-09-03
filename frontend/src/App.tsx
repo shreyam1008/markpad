@@ -220,6 +220,14 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.13.2</h3>
+          <p>
+            Cleaner native Linux chrome removes the duplicate GTK application menu, adds a subtle
+            frameless-window edge, and sharpens the window controls while preserving the Windows
+            presentation.
+          </p>
+        </section>
+        <section>
           <h3 className="font-bold">0.13.1</h3>
           <p>
             A WebKitGTK-safe production bundle fixes blank Linux windows with no launch flags, and
@@ -279,7 +287,7 @@ function ModalLayer({
         <p>
           <strong>Markpad</strong>
         </p>
-        <p className="text-muted">Version 0.13.1</p>
+        <p className="text-muted">Version 0.13.2</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>

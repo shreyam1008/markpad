@@ -3,7 +3,7 @@
 Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun 1.3.14, and embedded into the application. `node_modules` and build tools are never embedded.
 
 The checked-in dependency set is pinned for the current development build (the
-last published baseline is v0.13.1):
+last published baseline is v0.13.2):
 
 | Package | Version | Purpose |
 |---|---:|---|
