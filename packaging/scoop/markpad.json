@@ -17,11 +17,11 @@
     ]
   },
   "shortcuts": [
-    ["C:\\Program Files\\Markpad\\markpad.exe", "Quillpane"]
+    ["C:\\Program Files (x86)\\Markpad\\markpad.exe", "Quillpane"]
   ],
   "uninstaller": {
     "script": [
-      "$uninstaller = \"C:\\Program Files\\Markpad\\uninstall.exe\"",
+      "$uninstaller = \"C:\\Program Files (x86)\\Markpad\\uninstall.exe\"",
       "if (Test-Path $uninstaller) { Start-Process -Wait $uninstaller -ArgumentList '/S' }"
     ]
   },
