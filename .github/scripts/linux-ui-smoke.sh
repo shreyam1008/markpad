@@ -73,4 +73,10 @@ if ! grep -Eqi 'Open a folder|Untitled|New' dist/linux-ui-smoke.txt; then
   exit 1
 fi
 
-echo "Linux UI smoke passed: visible Quillpane content rendered."
+if grep -Eqi 'File[[:space:]]+Edit[[:space:]]+View[[:space:]]+Settings[[:space:]]+Help' dist/linux-ui-smoke.txt; then
+  cat dist/linux-ui-smoke.txt
+  echo "Quillpane rendered a redundant native Linux application menu above its custom title bar" >&2
+  exit 1
+fi
+
+echo "Linux UI smoke passed: visible Quillpane content rendered without a duplicate native menu."

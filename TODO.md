@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1–v0.13.1)
+## Completed (v0.1–v0.13.2)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider
@@ -29,6 +29,7 @@
 - [x] Auto-list continuation (bullets, numbered, task lists)
 - [x] GitHub Actions CI/CD (Linux deb/AppImage, Windows exe, macOS dmg)
 - [x] Native Linux rendered-window smoke test and WebKitGTK-safe embedded frontend bundle
+- [x] Platform-aware Linux chrome without the duplicate native application menu
 - [x] GitHub Pages website with SEO
 - [x] Scroll position memory per note (editor + viewer + cursor)
 - [x] Extended syntax highlighting (lua, dart, toml, dockerfile, cmake, elixir, nim, zig + full lang map)

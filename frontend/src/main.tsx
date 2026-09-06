@@ -9,6 +9,15 @@ import "./styles.css";
 
 applyPreferencesToDocument(initialPreferences);
 
+void window.runtime
+  ?.Environment?.()
+  .then(({ platform }) => {
+    if (platform) document.documentElement.dataset.platform = platform;
+  })
+  .catch(() => {
+    // Browser previews and older Wails runtimes may not expose platform details.
+  });
+
 document.body.className =
   "h-screen w-screen overflow-hidden bg-canvas text-ink font-sans text-sm antialiased select-none";
 

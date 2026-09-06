@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	goruntime "runtime"
 	"runtime/debug"
 	"strings"
 
@@ -16,10 +17,17 @@ import (
 	"markpad/internal/brand"
 )
 
-const Version = "0.13.1"
+const Version = "0.13.2"
 
 // Linker-overridable for isolated QA builds; releases always use the brand contract default.
 var singleInstanceID = brand.SingleInstanceID
+
+func nativeApplicationMenu(goos string, appMenu *menu.Menu) *menu.Menu {
+	if goos == "linux" {
+		return nil
+	}
+	return appMenu
+}
 
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
@@ -165,7 +173,7 @@ func main() {
 		MinHeight:        480,
 		Frameless:        true,
 		BackgroundColour: options.NewRGB(240, 243, 240),
-		Menu:             appMenu,
+		Menu:             nativeApplicationMenu(goruntime.GOOS, appMenu),
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets(),
 		},

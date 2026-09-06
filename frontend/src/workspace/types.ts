@@ -149,6 +149,7 @@ export interface MarkpadAPI {
 }
 
 export interface MarkpadRuntime {
+  Environment?(): Promise<{ platform?: string }>;
   EventsOn(name: string, callback: (...args: unknown[]) => void): () => void;
   OnFileDrop(
     callback: (x: number, y: number, paths: string[]) => void,
