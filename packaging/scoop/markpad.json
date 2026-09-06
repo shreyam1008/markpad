@@ -1,7 +1,7 @@
 {
   "version": "0.9.2",
   "description": "Quillpane (formerly Markpad) is a small native Markdown notepad and local file viewer. No Electron and no cloud account.",
-  "homepage": "https://shreyam1008.github.io/markpad/",
+  "homepage": "https://quillpane.shreyam1008.com.np/",
   "license": "MIT",
   "architecture": {
     "64bit": {

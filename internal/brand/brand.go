@@ -20,11 +20,11 @@ const (
 	BinaryName       = "markpad"
 	SingleInstanceID = "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single"
 
-	// The repository and website remain at their legacy addresses during the
-	// compatibility window; redirects and ownership of replacement addresses
-	// must be verified before they become canonical.
-	SourceURL  = "https://github.com/shreyam1008/markpad"
-	WebsiteURL = "https://shreyam1008.github.io/markpad/"
+	// The repository remains at its legacy address; the verified custom domain
+	// is now canonical while the old Pages URL remains a compatibility redirect.
+	SourceURL       = "https://github.com/shreyam1008/markpad"
+	WebsiteURL      = "https://quillpane.shreyam1008.com.np/"
+	LegacyWebsiteURL = "https://shreyam1008.github.io/markpad/"
 )
 
 // WindowTitle keeps document titles consistent without spreading the display

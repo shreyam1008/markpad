@@ -4,6 +4,7 @@ import {
   LEGACY_PRODUCT_NAME,
   PREVIEW_PRODUCT_NAME,
   PRODUCT_NAME,
+  LEGACY_WEBSITE_URL,
   SOURCE_URL,
   STORAGE_KEYS,
   WEBSITE_URL,
@@ -25,8 +26,9 @@ describe("brand migration contract", () => {
     });
   });
 
-  test("keeps old addresses until redirects are verified", () => {
-    expect(WEBSITE_URL).toBe("https://shreyam1008.github.io/markpad/");
+  test("uses the verified custom domain and keeps the legacy address", () => {
+    expect(WEBSITE_URL).toBe("https://quillpane.shreyam1008.com.np/");
+    expect(LEGACY_WEBSITE_URL).toBe("https://shreyam1008.github.io/markpad/");
     expect(SOURCE_URL).toBe("https://github.com/shreyam1008/markpad");
   });
 });

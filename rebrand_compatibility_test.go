@@ -46,7 +46,7 @@ func TestRebrandPreservesDurableIdentities(t *testing.T) {
 			"PackageIdentifier: ShreyamAdhikari.Markpad",
 		}},
 		{"docs/index.html", []string{
-			"<link rel=\"canonical\" href=\"https://shreyam1008.github.io/markpad/\" />",
+			"<link rel=\"canonical\" href=\"https://quillpane.shreyam1008.com.np/\" />",
 		}},
 	}
 

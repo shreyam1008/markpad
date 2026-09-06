@@ -93,6 +93,7 @@ in the compatibility release:
 | WinGet ID | ShreyamAdhikari.Markpad | Package IDs are identifiers, not display strings. |
 | Linux/AppStream IDs | Existing markpad IDs | Avoids parallel installs and broken desktop upgrades. |
 | Repository and release URLs | shreyam1008/markpad | Existing installers, links, and release artifacts remain resolvable. |
+| Public website | https://quillpane.shreyam1008.com.np/ | Verified custom domain is canonical; the old GitHub Pages address redirects here. |
 | Logo and icon filenames | Existing markpad assets | The maintainer has frozen the current logo for this migration. |
 
 The CSS custom-property prefix and internal Go/TypeScript type names may remain
@@ -118,10 +119,9 @@ Rollback is one display constant change; no user data needs to move.
    Visual Studio Marketplace, and intended trademark classes.
 2. Reserve the required accounts and namespaces only after that same-day check.
 3. The Cloudflare CNAME and GitHub Pages custom-domain setting for
-   quillpane.shreyam1008.com.np are configured. Push the matching CNAME site
-   change, then verify HTTPS/certificate issuance, redirects, canonical
-   metadata, assets, and the old GitHub Pages URL before switching the
-   canonical URL.
+   quillpane.shreyam1008.com.np are configured and verified. The certificate
+   is usable, HTTPS is enforced, the old GitHub Pages URL redirects to the new
+   host, and the deployed page now owns the new canonical/OG/schema URLs.
 4. Build a fresh compatibility release from the current source, calculate real
    hashes, and test upgrades on Linux, Windows, and macOS.
 5. Keep the current logo assets unchanged; do not run icon generation as part
@@ -149,11 +149,9 @@ Rollback is one display constant change; no user data needs to move.
 
 ## Store and domain gate
 
-The DNS record and GitHub Pages custom-domain setting are now configured, but
-the new site is not called live until the CNAME deployment, certificate,
-anonymous HTTPS check, canonical metadata, and redirects have all passed. The
-owner still controls account verification, namespace reservation, signing,
-certification, and the final store submit/publish actions.
+The custom domain is live and verified. Store accounts, namespace reservation,
+signing, certification, and the final store submit/publish actions remain
+owner-controlled; prepared manifests are still not public listings.
 
 The first useful lane is:
 
