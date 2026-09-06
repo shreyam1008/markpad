@@ -30,7 +30,7 @@ jobs:
       - name: Install and launch packaged app
         run: |
           flatpak install --user --noninteractive ./quillpane.flatpak
-          xvfb-run -a -s '-screen 0 1280x800x24' dbus-run-session -- bash .github/scripts/flatpak-ui-smoke.sh
+          XDG_CURRENT_DESKTOP=GNOME xvfb-run -a -s '-screen 0 1280x800x24' dbus-run-session -- bash .github/scripts/flatpak-ui-smoke.sh
       - name: Upload window evidence
         if: always()
         uses: actions/upload-artifact@v4

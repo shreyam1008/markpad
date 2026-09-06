@@ -20,3 +20,17 @@ import -window "$window_id" flatpak-evidence/window.png
 tesseract flatpak-evidence/window.png flatpak-evidence/window --psm 6
 grep -Eqi 'Open a folder|Untitled|New' flatpak-evidence/window.txt
 echo 'Flatpak launch and rendered-window smoke test passed.'
+
+# Open a disposable host fixture through the portal, without a filesystem grant.
+fixture=$(realpath .github/fixtures/flatpak-note.md)
+xdotool windowfocus --sync "$window_id"
+xdotool key --clearmodifiers ctrl+o
+sleep 3
+xdotool key --clearmodifiers ctrl+l
+xdotool type --clearmodifiers --delay 10 "$fixture"
+xdotool key Return
+sleep 3
+import -window "$window_id" flatpak-evidence/portal-open.png
+tesseract flatpak-evidence/portal-open.png flatpak-evidence/portal-open --psm 6
+grep -Eqi 'Quillpane portal check|disposable note' flatpak-evidence/portal-open.txt
+echo 'Portal-mediated file open and rendered content passed.'
