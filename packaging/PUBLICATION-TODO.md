@@ -69,10 +69,19 @@ Policy: https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai
 - [x] Owner saves IARC declaration; dashboard age ratings Complete (Everyone / 3+).
 - [x] Save English description, four features, short description and developer name.
 - [x] Enter runFullTrust justification and reviewer functional-test instructions.
-- [ ] Verify submission options complete; last overview still reported Incomplete.
-- [ ] Capture and upload genuine current Windows screenshots, preserving the logo.
+- [x] Save runFullTrust justification; Microsoft enabled and accepted certification submission.
+- [x] Capture and upload two genuine Windows screenshots with captions, preserving the logo; Store listings Complete.
+- [x] Upgrade standalone Windows app to v0.13.3; verify saved demo note, preview and split view. This is not an installed-MSIX test.
 - [ ] Test the installed MSIX: launch, open/save, history, recovery, upgrade/removal.
-- [ ] Submit for certification and verify the eventual anonymous Store listing.
+- [x] Submit for certification on 2026-09-06: dashboard shows In certification, pre-processing in progress; automatic publishing after approval.
+- [ ] Verify certification approval and eventual anonymous Store listing. Not live yet.
+
+Dashboard: https://partner.microsoft.com/en-us/dashboard/products/9MZDJLQ6V8L3/overview
+Eventual public URL (not yet verified live): https://apps.microsoft.com/detail/9MZDJLQ6V8L3
+Uploaded screenshots: `dist/store-screenshots/quillpane-preview-store.png` and
+`dist/store-screenshots/quillpane-split-store.png` (verified PNG encoding).
+Optional trailer, promotional artwork and logo overrides are not uploaded;
+the Store uses the existing package logo. Xbox assets are not applicable.
 
 Package source and reproducible build script: `windows/store/`. SHA256 of the uploaded MSIX:
 `7f40e2f7097e4b344efee16d05f5df748e67c989657fc27ba1a54e8f5e23f17d`.
