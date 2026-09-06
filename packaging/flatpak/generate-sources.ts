@@ -37,9 +37,18 @@ for (const mod of modules) {
   const escaped = mod.Path.replace(/[A-Z]/g, (c: string) => `!${c.toLowerCase()}`);
   const version = mod.Version.replace(/[A-Z]/g, (c: string) => `!${c.toLowerCase()}`);
   for (const [ext, path] of [['zip', mod.Zip], ['mod', mod.GoMod], ['info', mod.Info]]) {
+    const url = `https://proxy.golang.org/${escaped}/@v/${version}.${ext}`;
+    // Go may rewrite cached .info JSON with Origin metadata. Hash proxy bytes,
+    // not that locally rewritten representation.
+    let bytes = readFileSync(path);
+    if (ext === 'info') {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Proxy returned ${response.status}: ${url}`);
+      bytes = Buffer.from(await response.arrayBuffer());
+    }
     goSources.push({
-      type: 'file', url: `https://proxy.golang.org/${escaped}/@v/${version}.${ext}`,
-      sha256: createHash('sha256').update(readFileSync(path)).digest('hex'),
+      type: 'file', url,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
       dest: `go/pkg/mod/cache/download/${escaped}/@v`, 'dest-filename': `${version}.${ext}`,
     });
   }

@@ -12,7 +12,7 @@ jobs:
       - name: Install Flatpak tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr
+          sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
       - name: Verify runtime ABI

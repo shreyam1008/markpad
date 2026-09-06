@@ -1,0 +1,16 @@
+--- a/vendor/github.com/wailsapp/wails/v2/internal/frontend/desktop/linux/window.c
++++ b/vendor/github.com/wailsapp/wails/v2/internal/frontend/desktop/linux/window.c
+@@ -768,4 +768,2 @@
+-    GtkWidget *dlgWidget = gtk_file_chooser_dialog_new(options->title, options->window, options->action,
+-                                                       "_Cancel", GTK_RESPONSE_CANCEL,
+-                                                       label, GTK_RESPONSE_ACCEPT,
+-                                                       NULL);
++    GtkFileChooserNative *dlgWidget = gtk_file_chooser_native_new(options->title,
++        options->window, options->action, label, "_Cancel");
+@@ -817,1 +815,1 @@
+-    gint response = gtk_dialog_run(GTK_DIALOG(dlgWidget));
++    gint response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(dlgWidget));
+@@ -865,1 +863,2 @@
+-    gtk_widget_destroy(dlgWidget);
++    gtk_native_dialog_destroy(GTK_NATIVE_DIALOG(dlgWidget));
++    g_object_unref(dlgWidget);
