@@ -31,6 +31,10 @@ snapcraft
 snap install --dangerous ./quillpane_0.13.3_amd64.snap
 ```
 
+The workflow-built `quillpane_0.13.3_amd64.snap` is attached to the `v0.13.3`
+GitHub release with SHA-256
+`26bb3252ea582b870c1aa25e65d77b249383b819cf6d87c19dad5296f7a63faf`.
+
 After smoke testing:
 
 ```sh

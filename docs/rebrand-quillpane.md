@@ -138,6 +138,9 @@ Rollback is one display constant change; no user data needs to move.
 - Keep old install commands working for at least two stable releases.
 - WinGet PR #430348 is open with the updated display metadata; the personal
   Scoop bucket is live after PR #7 passed install/upgrade/uninstall CI.
+  The reproducible `quillpane_0.13.3_amd64.snap` is attached to the GitHub
+  release; Snap Store publication still needs the authenticated `quillpane`
+  namespace.
 
 ### Phase 3 — optional namespace transition
 
