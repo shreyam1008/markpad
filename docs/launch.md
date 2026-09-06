@@ -1,6 +1,6 @@
 # Launch Plan
 
-Markpad is positioned as a tiny native Markdown notepad: traditional Notepad speed, modern Markdown viewing, autosaved drafts, and no Electron.
+Quillpane (formerly Markpad) is positioned as a tiny native Markdown notepad: traditional Notepad speed, modern Markdown viewing, autosaved drafts, and no Electron.
 
 ## Messaging
 

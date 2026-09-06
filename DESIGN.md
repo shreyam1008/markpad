@@ -1,6 +1,6 @@
-# Markpad Design System
+# Quillpane Design System
 
-This document is a build contract, not a mood board. Read it before changing any visible frontend. Markpad should feel like a precise native workbench: quiet surfaces, obvious state, stable geometry, immediate response, and no decorative weight.
+This document is a build contract, not a mood board. Read it before changing any visible frontend. Quillpane should feel like a precise native workbench: quiet surfaces, obvious state, stable geometry, immediate response, and no decorative weight.
 
 ## Source of truth
 
@@ -79,7 +79,7 @@ Modal overlays use viewport-fixed grid centering; native `<dialog>` positioning 
 
 ## Window chrome
 
-Markpad uses Wails frameless mode with a custom 36 px title bar. `.app-titlebar` is the drag region; `.app-titlebar-controls` is explicitly non-draggable. Minimize, maximize/restore, and close controls always reserve 46 px each. Double-clicking empty title-bar space toggles maximize. Every close source must go through Wails so the unsaved-document guard runs. That guard cancels the native close and emits `app:quit-requested`; React owns the resulting Markpad alert dialog. Never use an operating-system message box for an unsaved-close confirmation.
+Quillpane uses Wails frameless mode with a custom 36 px title bar. `.app-titlebar` is the drag region; `.app-titlebar-controls` is explicitly non-draggable. Minimize, maximize/restore, and close controls always reserve 46 px each. Double-clicking empty title-bar space toggles maximize. Every close source must go through Wails so the unsaved-document guard runs. That guard cancels the native close and emits `app:quit-requested`; React owns the resulting Quillpane alert dialog. Never use an operating-system message box for an unsaved-close confirmation.
 
 App-level surfaces belong in `.app-titlebar-actions`: Files, Search, History, Settings, and More. They remain non-draggable, expose a persistent selected state while their surface is open, and collapse to icons at compact widths. Creation, Open, Save, view mode, undo, and other file/document actions stay in the sidebar, document rail, or command palette. Never duplicate those actions in both chrome levels.
 
@@ -110,7 +110,7 @@ Lezer JavaScript/TypeScript parser loaded only for those files. Unsupported
 extensions remain fully editable plain source rather than losing editor
 behavior.
 
-Markpad owns the Highlight.js presentation in `styles.css` for static rendered
+Quillpane owns the Highlight.js presentation in `styles.css` for static rendered
 code and Markdown fences; do not import a stock Highlight.js theme. Syntax
 roles live in `tokens.css`, and both editor and viewer code surfaces consume
 the same code font, selection signal, and semantic token roles. TanStack
@@ -142,10 +142,10 @@ Theme changes remount only the preview renderer, not the editor or the document 
 ## Assets and icons
 
 - Functional interface icons come from `frontend/src/components/icons.tsx`, which performs direct Lucide node imports for tree-shaking.
-- `packaging/linux/markpad.svg` is the canonical Markpad product mark. `frontend/src/assets/markpad-mark.svg`, the document favicon, Windows ICO/resource, macOS ICNS, Linux desktop icon, installers, and shortcuts must all show that same mark. Run the icon generator and regenerate Windows resources for a brand change; never ship a local `go build` without the checked-in Windows resource object.
+- `packaging/linux/markpad.svg` is the frozen Quillpane product mark and retains its legacy filename. `frontend/src/assets/markpad-mark.svg`, the document favicon, Windows ICO/resource, macOS ICNS, Linux desktop icon, installers, and shortcuts must all continue to show that same mark. Do not regenerate logo resources during the name migration; a future logo change is a separate maintainer decision.
 - SVG is preferred for small interface and brand assets. Raster assets require a reason and an explicit size check.
 - No remote images, web fonts, CDN assets, base64 blobs, random inline SVGs in feature components, or decorative stock imagery.
-- Every asset ships locally and must keep Markpad operational with no network.
+- Every asset ships locally and must keep Quillpane operational with no network.
 
 ## Tailwind and CSS rules
 
@@ -153,11 +153,11 @@ Theme changes remount only the preview renderer, not the editor or the document 
 - Arbitrary color utilities and raw color values are forbidden in new or modified components.
 - Arbitrary dimensions are allowed only for genuinely one-off content constraints, never for permanent shell geometry.
 - Do not add a component suite, CSS-in-JS runtime, general state manager, animation package, or icon package.
-- Legacy CSS above the `Markpad Workbench` section is compatibility code, not a pattern for new work.
+- Legacy CSS above the `Quillpane Workbench` section is compatibility code, not a pattern for new work.
 
 ## Performance and loading
 
-Markpad is a Wails application targeting the operating system webview. Keep release binaries under the platform budgets in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
+Quillpane is a Wails application targeting the operating system webview. Keep release binaries under the platform budgets in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
 
 - No runtime network calls, font downloads, preload splash art, or heavyweight asset decoding.
 - Avoid backdrop filters and large blurred shadows.

@@ -346,7 +346,7 @@ func (a *App) NewNoteOfType(format string) SessionState {
 	a.sess.Add(doc)
 	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 	return a.GetSession()
 }
 
@@ -449,7 +449,7 @@ func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
 	return SaveResult{Session: a.GetSession()}, nil
 }
 
-// ReloadActiveFromDisk is an explicit conflict resolution. The Markpad draft
+// ReloadActiveFromDisk is an explicit conflict resolution. The Quillpane draft
 // is saved in history before the disk version becomes the clean recovery copy.
 func (a *App) ReloadActiveFromDisk(markpadContent string) (SessionState, error) {
 	a.contentMu.Lock()
@@ -480,7 +480,7 @@ func (a *App) ReloadActiveFromDisk(markpadContent string) (SessionState, error) 
 	}
 	if err := a.store.SaveSnapshot(doc.ID, markpadContent, "before-external-reload"); err != nil {
 		*doc = oldDocument
-		return a.GetSession(), fmt.Errorf("protect Markpad draft before reload: %w", err)
+		return a.GetSession(), fmt.Errorf("protect %s draft before reload: %w", brand.ProductName, err)
 	}
 	if err := a.store.SaveSnapshot(doc.ID, string(diskContent), "external-reload"); err != nil {
 		*doc = oldDocument
@@ -500,7 +500,7 @@ func (a *App) ReloadActiveFromDisk(markpadContent string) (SessionState, error) 
 	if err := a.store.Save(a.sess); err != nil {
 		*doc = oldDocument
 		if draftErr := a.store.WriteDraft(doc, markpadContent); draftErr != nil {
-			return a.GetSession(), fmt.Errorf("persist reload: %v; restore Markpad draft: %w", err, draftErr)
+			return a.GetSession(), fmt.Errorf("persist reload: %v; restore %s draft: %w", err, brand.ProductName, draftErr)
 		}
 		return a.GetSession(), fmt.Errorf("persist reload: %w", err)
 	}
@@ -568,7 +568,7 @@ func (a *App) saveAsDialogLocked(content string) (SessionState, error) {
 	if err := a.store.Save(a.sess); err != nil {
 		return a.GetSession(), err
 	}
-	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 	return a.GetSession(), nil
 }
 
@@ -609,7 +609,7 @@ func (a *App) RenameNote(id string, name string) (SessionState, error) {
 		doc.Path, doc.Title, doc.Format = oldPath, oldTitle, oldFormat
 		return a.GetSession(), err
 	}
-	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 	return a.GetSession(), nil
 }
 
@@ -666,7 +666,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 		if err := a.store.Save(a.sess); err != nil {
 			return a.GetSession(), err
 		}
-		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 		return a.GetSession(), nil
 	}
 	if isReadOnlyPath(path) {
@@ -674,7 +674,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 		a.sess.AddRecent(path)
 		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 		return a.GetSession(), nil
 	}
 	data, err := readOpenFile(path)
@@ -686,7 +686,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 		a.sess.AddRecent(path)
 		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-		runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+		runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 		return a.GetSession(), nil
 	}
 	doc := a.sess.AddFile(path, string(data))
@@ -694,7 +694,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, string(data)))
 	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, string(data), "open"))
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-	runtime.WindowSetTitle(a.ctx, "Markpad - "+doc.Title)
+	runtime.WindowSetTitle(a.ctx, brand.WindowTitle(doc.Title))
 	return a.GetSession(), nil
 }
 

@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import { shouldCoalesceLargeEdit } from "../history/edit";
 import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
 import { client } from "../workspace/client";
@@ -182,7 +183,7 @@ function Viewer({
     for (const [, nodes] of entries.slice(LOCAL_IMAGE_LIMIT)) {
       for (const node of nodes) {
         node.dataset.markpadLocalImage = "error";
-        node.title = `Markpad previews up to ${LOCAL_IMAGE_LIMIT} local images per note`;
+        node.title = `${PRODUCT_NAME} previews up to ${LOCAL_IMAGE_LIMIT} local images per note`;
       }
     }
     void (async () => {
@@ -347,7 +348,7 @@ function Viewer({
         <p className="text-sm text-muted mb-1">
           {type === "pdf"
             ? "PDF files open in your system viewer."
-            : "This document is read-only in Markpad."}
+            : `This document is read-only in ${PRODUCT_NAME}.`}
         </p>
         {note?.size ? <p className="text-xs text-muted mb-5">{formatBytes(note.size)}</p> : null}
         <button
@@ -820,7 +821,10 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           if (resolution === "reload") {
             const session = await client.reloadSource(contentRef.current);
             setSaveConflict(undefined);
-            await onDocument(session, "Reloaded disk version · Markpad draft kept in history");
+            await onDocument(
+              session,
+              `Reloaded disk version · ${PRODUCT_NAME} draft kept in history`,
+            );
             await onWorkspaceChange();
             return;
           }
@@ -1073,7 +1077,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             if (saveConflictBusy) return;
             setSaveConflict(undefined);
             setSaveConflictError("");
-            onStatus("Save cancelled · Markpad draft kept");
+            onStatus(`Save cancelled · ${PRODUCT_NAME} draft kept`);
           }}
           onSaveCopy={() => void resolveSaveConflict("copy")}
           onReload={() => void resolveSaveConflict("reload")}

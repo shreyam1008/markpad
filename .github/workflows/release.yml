@@ -112,8 +112,8 @@ jobs:
             --out rsrc `
             --manifest gui `
             --icon packaging/windows/markpad.ico `
-            --product-name "Markpad" `
-            --file-description "Markpad Markdown notepad" `
+            --product-name "Quillpane" `
+            --file-description "Quillpane Markdown notepad" `
             --original-filename "markpad.exe" `
             --product-version "$version" `
             --file-version "$version"
@@ -171,7 +171,7 @@ jobs:
       - name: Build dmg
         run: |
           for i in 1 2 3; do
-            hdiutil create -volname Markpad -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg" && break
+            hdiutil create -volname Quillpane -srcfolder "dist/Markpad.app" -ov -format UDZO "dist/Markpad.dmg" && break
             echo "hdiutil attempt $i failed, retrying in 5s..."
             sleep 5
           done
@@ -202,7 +202,7 @@ jobs:
 
             - Fixed the blank Linux window by producing a WebKitGTK-safe embedded frontend bundle for Wails' in-memory asset scheme.
             - The ordinary launcher and `markpad` command work without environment flags or manual workarounds.
-            - Added a native Linux window smoke test that launches the release binary, captures the real GTK window, and verifies visible Markpad UI text before publishing.
+            - Added a native Linux window smoke test that launches the release binary, captures the real GTK window, and verifies visible Quillpane UI text before publishing.
             - Preserved the v0.9.2 session schema and existing files, drafts, history, workspace, and settings during upgrade.
 
             ## Install
@@ -219,4 +219,4 @@ jobs:
 
             **Windows:** `markpad-setup.exe` — installer with Start Menu + Desktop shortcuts
 
-            **macOS:** `Markpad.dmg` — drag to Applications; `Markpad-macOS.zip` is also provided
+            **macOS:** `Markpad.dmg` — drag to Applications; `Markpad-macOS.zip` is also provided. The app displays as Quillpane; legacy artifact names remain upgrade-compatible.

@@ -1,9 +1,9 @@
-name: markpad
+name: quillpane
 base: core24
 version: '0.13.1'
-summary: Small native Markdown notepad
+summary: Quillpane - small native Markdown notepad
 description: |
-  Markpad is a tiny native Markdown notepad built with Go and the system webview.
+  Quillpane (formerly Markpad) is a tiny native Markdown notepad built with Go and the system webview.
   No Electron, no cloud, and a small release binary.
 
   Features: folder workspaces, fast file switching, bounded workspace search,
@@ -22,7 +22,7 @@ platforms:
     build-for: [amd64]
 
 apps:
-  markpad:
+  quillpane:
     command: bin/markpad
     extensions: [gnome]
     plugs:
@@ -36,7 +36,7 @@ apps:
       - browser-support
 
 parts:
-  markpad:
+  quillpane:
     plugin: go
     source: .
     build-snaps:

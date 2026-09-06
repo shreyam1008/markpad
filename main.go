@@ -158,7 +158,7 @@ func main() {
 	app.pendingFiles = cliFiles
 
 	err := wails.Run(&options.App{
-		Title:            "Markpad",
+		Title:            brand.ProductName,
 		Width:            1180,
 		Height:           760,
 		MinWidth:         720,

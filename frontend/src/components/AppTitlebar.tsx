@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import markURL from "../assets/markpad-mark.svg";
+import { PRODUCT_NAME } from "../brand";
 import { shortcutLabel } from "../shortcuts";
 import {
   Clock3,
@@ -62,7 +63,7 @@ export function AppTitlebar({
     >
       <div className="app-titlebar-brand">
         <img className="app-titlebar-mark" src={markURL} alt="" draggable={false} />
-        <span>Markpad</span>
+        <span>{PRODUCT_NAME}</span>
       </div>
       {onFiles || onSearch || onHistory || onSettings || onMore ? (
         <nav className="app-titlebar-actions" aria-label="App navigation">

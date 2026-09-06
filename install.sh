@@ -50,12 +50,12 @@ VERSION="${TAG#v}"
 if command -v markpad >/dev/null 2>&1; then
   CURRENT=$(markpad --version 2>/dev/null || echo "unknown")
   if [ "$CURRENT" = "$VERSION" ]; then
-    info "Markpad $VERSION is already installed and up to date."
+    info "Quillpane $VERSION (formerly Markpad) is already installed and up to date."
     exit 0
   fi
-  warn "Updating Markpad: $CURRENT → $VERSION"
+  warn "Updating Quillpane (formerly Markpad): $CURRENT → $VERSION"
 else
-  info "Installing Markpad $VERSION"
+  info "Installing Quillpane $VERSION (formerly Markpad)"
 fi
 
 # Download binary
@@ -86,7 +86,7 @@ curl -sL "https://raw.githubusercontent.com/$REPO/main/packaging/linux/markpad.s
 
 cat > "$APP_DIR/markpad.desktop" <<DESKTOP
 [Desktop Entry]
-Name=Markpad
+Name=Quillpane
 GenericName=Text Editor
 Comment=A tiny native Markdown notepad
 Exec=markpad %F
@@ -104,9 +104,9 @@ if command -v update-desktop-database >/dev/null 2>&1; then
 fi
 
 echo ""
-printf "${BOLD}${GREEN}✓ Markpad %s installed!${NC}\n" "$VERSION"
+printf "${BOLD}${GREEN}✓ Quillpane %s installed!${NC}\n" "$VERSION"
 echo ""
 echo "  Run from terminal:   markpad"
-echo "  Open from launcher:  search 'Markpad'"
+echo "  Open from launcher:  search 'Quillpane'"
 echo "  Update anytime:      re-run this script"
 echo ""

@@ -10,8 +10,8 @@ import {
 } from "../src/brand";
 
 describe("brand migration contract", () => {
-  test("keeps the current display name until a successor is approved", () => {
-    expect(PRODUCT_NAME).toBe("Markpad");
+  test("uses Quillpane as the approved display name", () => {
+    expect(PRODUCT_NAME).toBe("Quillpane");
     expect(PREVIEW_PRODUCT_NAME).toBe("Quillpane");
     expect(LEGACY_PRODUCT_NAME).toBe("Markpad");
   });

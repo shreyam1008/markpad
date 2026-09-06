@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import { client } from "../workspace/client";
 import { searchResultKey, splitSearchHighlight } from "../workspace/search";
 import type { WorkspaceSearchResult, WorkspaceState } from "../workspace/types";
@@ -239,7 +240,9 @@ export function WorkspaceSearch({ open, workspace, onClose, onChooseWorkspace, o
         ) : (
           <div className="workspace-search-empty no-folder">
             <strong>Choose a folder first</strong>
-            <span>Markpad searches local text files without creating an index or database.</span>
+            <span>
+              {PRODUCT_NAME} searches local text files without creating an index or database.
+            </span>
             <button
               ref={chooseFolder}
               type="button"

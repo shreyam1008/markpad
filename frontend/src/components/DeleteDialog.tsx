@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import { Trash2 } from "./icons";
 
 export interface DeleteTarget {
@@ -49,12 +50,12 @@ export function DeleteDialog({ target, busy, error, onCancel, onConfirm }: Props
         <div>
           <h2 id="delete-title">Delete {permanent ? "file" : "draft"}?</h2>
           <p className="delete-name">{target.name}</p>
-          <p className="delete-path">{target.path || "Unsaved Markpad draft"}</p>
+          <p className="delete-path">{target.path || `Unsaved ${PRODUCT_NAME} draft`}</p>
         </div>
         <div className="delete-warning">
           {permanent
-            ? "This permanently removes the file from disk. Markpad cannot undo this action."
-            : "This removes the unsaved draft from Markpad. This action cannot be undone."}
+            ? `This permanently removes the file from disk. ${PRODUCT_NAME} cannot undo this action.`
+            : `This removes the unsaved draft from ${PRODUCT_NAME}. This action cannot be undone.`}
           {target.dirty ? " Any unsaved changes will also be lost." : ""}
         </div>
         {error ? <p className="delete-error">{error}</p> : null}

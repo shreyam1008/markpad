@@ -1,10 +1,10 @@
-# Markpad
+# Quillpane
 
-A tiny native Markdown notepad and local file viewer. Opens fast, saves your work, gets out of the way.
+Quillpane (formerly Markpad) is a tiny native Markdown notepad and local file viewer. Opens fast, saves your work, gets out of the way.
 
 No Electron. No cloud. One small binary, pure local and offline.
 
-![Markpad split workspace](photo/markpad-split.png)
+![Quillpane split workspace](photo/markpad-split.png)
 
 ## Install
 
@@ -25,11 +25,11 @@ Or grab a package from [Releases](https://github.com/shreyam1008/markpad/release
 
 ### Windows
 
-Download the installer from [Releases](https://github.com/shreyam1008/markpad/releases) → `markpad-setup.exe`. Run it. Markpad appears in Start Menu and Desktop.
+Download the installer from [Releases](https://github.com/shreyam1008/markpad/releases) → `markpad-setup.exe`. Run it. Quillpane appears in Start Menu and Desktop; the installer filename remains `markpad-setup.exe` for compatibility.
 
 ### macOS
 
-Download `Markpad.dmg` from [Releases](https://github.com/shreyam1008/markpad/releases). Open, drag to Applications.
+Download `Markpad.dmg` from [Releases](https://github.com/shreyam1008/markpad/releases). Open, drag to Applications. The app displays as Quillpane while the legacy artifact name remains stable.
 
 ### Build from source
 
@@ -53,7 +53,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **Fast file switching** — `Ctrl+P` fuzzy-searches open files, workspace paths, and actions
 - **Workspace search** — `Ctrl+Shift+F` searches bounded local file content and opens the exact matching line
 - **Explicit file actions** — Create notes inside the workspace; permanent saved-file deletion warns before removing the file and any unsaved edits
-- **Safe shared-file editing** — Saving pauses if another app changed, replaced, or deleted the source; reload preserves the Markpad draft in history
+- **Safe shared-file editing** — Saving pauses if another app changed, replaced, or deleted the source; reload preserves the Quillpane draft in history
 - **File a draft** — Turn an instant recovery draft into a title-named workspace file with `Ctrl+Shift+Enter`; existing files are never overwritten
 - **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
 - **PDF handoff** — PDFs open in the operating system's default viewer without bundling a PDF engine
@@ -79,7 +79,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 
 ## File Handling
 
-Markpad stays lightweight by treating file families differently:
+Quillpane stays lightweight by treating file families differently:
 
 | Family | Behavior |
 |--------|----------|
@@ -90,13 +90,13 @@ Markpad stays lightweight by treating file families differently:
 | Image | Inline preview with Open Externally button |
 | Ebook/office/archive | Read-only info card with Open Externally |
 
-Markpad does not bundle or download a PDF engine. Images are read locally through Go and displayed as base64 data URLs.
+Quillpane does not bundle or download a PDF engine. Images are read locally through Go and displayed as base64 data URLs.
 
 ## Versions
 
 | Version | Name | Highlights |
 |---------|------|------------|
-| 0.13.1 | | WebKitGTK-safe production bundle and native rendered-window release smoke test |
+| 0.13.1 | Quillpane (formerly Markpad) | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | | Incremental CodeMirror editor, lazy language modes, bounded relative Markdown images, prose wrapping, exact wrapped-note navigation |
 | 0.12.0 | | Responsive code/text viewers, keyboard settings, interface scale, dark-theme contrast, fresh screenshots |
 | 0.11.0 | | Strict design system, custom window chrome, stable overlays, modern Markdown/Mermaid, Git-style history diffs, unified assets |
@@ -119,7 +119,7 @@ See the live cards in [GitHub Issues](https://github.com/shreyam1008/markpad/iss
 
 ## Philosophy
 
-Markpad exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps release binaries around 16 MiB or less. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
+Quillpane exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps release binaries around 16 MiB or less. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
 
 ## Keyboard Shortcuts
 

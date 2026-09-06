@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import { FilePlus2 } from "./icons";
 
 export interface FileDraftTarget {
@@ -53,7 +54,7 @@ export function FileDraftDialog({ target, busy, error, onCancel, onConfirm }: Pr
           <p className="file-draft-kicker">Workspace filing slip</p>
           <h2 id="file-draft-title">File this draft in {target.workspaceName}</h2>
           <p id="file-draft-description">
-            Turn the recovery draft into an ordinary local file without leaving Markpad.
+            Turn the recovery draft into an ordinary local file without leaving {PRODUCT_NAME}.
           </p>
         </div>
         <form

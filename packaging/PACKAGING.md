@@ -1,4 +1,4 @@
-# Markpad packaging guide
+# Quillpane packaging guide
 
 Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
@@ -8,15 +8,15 @@ Release target: v0.13.1
 
 Push `main`, wait for CI, then push only the annotated release tag. `.github/workflows/release.yml` builds:
 
-- `markpad`, `markpad_0.13.1_amd64.deb`, and `Markpad.AppImage` for Linux.
-- `markpad-setup.exe` for Windows, with the Markpad ICO embedded into both application and installer.
-- `Markpad.dmg` and `Markpad-macOS.zip`, with the Markpad ICNS in the app bundle.
+- `markpad`, `markpad_0.13.1_amd64.deb`, and `Markpad.AppImage` for Linux. These legacy artifact names remain stable while the app displays as Quillpane.
+- `markpad-setup.exe` for Windows, with the unchanged Markpad ICO embedded into both application and installer.
+- `Markpad.dmg` and `Markpad-macOS.zip`, with the unchanged Markpad ICNS in the app bundle.
 
 Verify all artifacts before submitting to a store. Do not publish a Scoop, WinGet, or Flatpak manifest with a placeholder hash or commit ID.
 
 ## Product icon contract
 
-`packaging/linux/markpad.svg` is the canonical product mark. Run `python packaging/icons/generate_icons.py` after changing it; that command regenerates the Windows ICO and macOS ICNS and synchronizes the frontend SVG/favicon asset. Then regenerate the checked-in Windows resource objects for `amd64` and `arm64` with `go-winres`. The resource objects make an ordinary local `go build` show the proper executable and taskbar icon instead of reserving branding for CI release builds.
+`packaging/linux/markpad.svg` and its generated companions are the frozen Quillpane product mark for this migration. Do not change or regenerate the logo assets as part of the name migration; the maintainer controls a future logo update separately.
 
 ## Snap Store
 
@@ -43,10 +43,10 @@ The Flatpak manifest needs the immutable commit for the published `v0.13.1` tag 
 
 ## WinGet
 
-After `markpad-setup.exe` exists:
+After the Quillpane compatibility installer `markpad-setup.exe` exists:
 
 1. Compute its SHA-256 (`Get-FileHash markpad-setup.exe -Algorithm SHA256`).
-2. Create a new `0.13.1` manifest directory from the previous version.
+2. Create a new `0.13.1` manifest directory from the previous version, keeping `ShreyamAdhikari.Markpad` as the compatibility package ID and using `Quillpane` as the display name.
 3. Update download URL, package version, and installer hash.
 4. Run `winget validate` and submit to `microsoft/winget-pkgs`.
 
@@ -54,7 +54,7 @@ Never edit a historical version directory in place.
 
 ## Scoop
 
-After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.13.1`, the exact release URL, and the real SHA-256. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
+After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.13.1`, the exact release URL, and the real SHA-256. Keep the manifest filename, binary path, and upgrade path stable; show Quillpane as the display name. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
 
 ## Final checklist
 

@@ -1,10 +1,10 @@
 # Current behavior contract
 
-This document defines the behavior Markpad should preserve while it is cleaned up.
+This document defines the behavior Quillpane should preserve while it is cleaned up.
 
 ## Documents
 
-Markpad opens local Markdown, plain-text, source-code, image, and PDF files. Text content can be edited and saved. Images are displayed locally. PDFs are represented by a read-only handoff card and open in the operating system's default PDF application. Images and PDFs do not expose editor, split, formatting, undo, revert, or save actions.
+Quillpane opens local Markdown, plain-text, source-code, image, and PDF files. Text content can be edited and saved. Images are displayed locally. PDFs are represented by a read-only handoff card and open in the operating system's default PDF application. Images and PDFs do not expose editor, split, formatting, undo, revert, or save actions.
 
 New unsaved notes are stored as drafts. Markdown is the default; the New menu can also create text, JSON, and YAML drafts. Normal application exit preserves dirty drafts. Choosing **Don't Save** while closing explicitly discards the dirty content.
 
@@ -20,9 +20,9 @@ The active view, selection, and scroll position should remain stable while switc
 
 ## Saving and recovery
 
-Save writes to the current path. Save As chooses a new path. Failed writes must leave editor content intact and produce a visible error. Markpad records the disk content it opened or last saved; if that source changes, is replaced, disappears, or cannot be verified after a legacy-session restore, a normal save pauses before writing. The user must explicitly choose to keep editing, save a copy, reload the disk version, overwrite it, or recreate a deleted file.
+Save writes to the current path. Save As chooses a new path. Failed writes must leave editor content intact and produce a visible error. Quillpane records the disk content it opened or last saved; if that source changes, is replaced, disappears, or cannot be verified after a legacy-session restore, a normal save pauses before writing. The user must explicitly choose to keep editing, save a copy, reload the disk version, overwrite it, or recreate a deleted file.
 
-Conflict reload first records the current Markpad draft in Version History, then makes the verified disk content the clean recovery copy. Overwrite and recreate are explicit destructive choices. Resolving a conflict refreshes the Workspace Lite inventory when a folder is open.
+Conflict reload first records the current Quillpane draft in Version History, then makes the verified disk content the clean recovery copy. Overwrite and recreate are explicit destructive choices. Resolving a conflict refreshes the Workspace Lite inventory when a folder is open.
 
 Saved files can be renamed from the command palette, with `F2`, or from the file context menu. Rename stays within the current directory and updates the open document, favorites, recents, and session metadata.
 
@@ -30,13 +30,13 @@ A saved file can be permanently deleted only after a clear frontend confirmation
 
 ## Workspace Lite
 
-The user may select one local folder. Markpad persists that choice, scans supported regular text files (including visible extensionless text such as `README` and `Makefile`) within fixed limits, and displays relative paths without importing or copying content. Hidden paths, symlinks, and common generated/dependency directories are excluded. Change, clear, and refresh (`F5`) are explicit actions; there is no filesystem watcher.
+The user may select one local folder. Quillpane persists that choice, scans supported regular text files (including visible extensionless text such as `README` and `Makefile`) within fixed limits, and displays relative paths without importing or copying content. Hidden paths, symlinks, and common generated/dependency directories are excluded. Change, clear, and refresh (`F5`) are explicit actions; there is no filesystem watcher.
 
 `Ctrl+P` fuzzy-searches open documents, workspace filenames/relative paths, and existing application actions. A selected workspace file opens through the normal document lifecycle.
 
 `Ctrl+Shift+F` runs case-insensitive exact search across the cached bounded inventory. Results show relative path, one-based line, and a short snippet. Opening a result focuses the file and selects the exact occurrence using the returned zero-based UTF-16 column and preview offsets. Rapid queries must not surface stale results. Search is disposable and does not create a database or persistent index.
 
-New workspace files may be Markdown or text, never overwrite an existing path, and cannot escape the root. An unsaved Markdown or text recovery draft can be filed directly into the workspace: Markpad suggests a collision-free path from its first useful line, allows an editable nested relative path, and promotes the same open document to the new plain file. Manual refresh makes other external additions, removals, and content edits visible.
+New workspace files may be Markdown or text, never overwrite an existing path, and cannot escape the root. An unsaved Markdown or text recovery draft can be filed directly into the workspace: Quillpane suggests a collision-free path from its first useful line, allows an editable nested relative path, and promotes the same open document to the new plain file. Manual refresh makes other external additions, removals, and content edits visible.
 
 ## Keyboard workflow
 
@@ -44,7 +44,7 @@ New workspace files may be Markdown or text, never overwrite an existing path, a
 
 The session file, drafts, and history are stored below the user configuration directory. Writes use replacement through a temporary file so interrupted writes do not partially overwrite the previous state.
 
-If the main session file cannot be decoded or contains an unsafe/invalid structure, Markpad preserves the unreadable file, starts a recoverable clean session, and tells the user what happened.
+If the main session file cannot be decoded or contains an unsafe/invalid structure, Quillpane preserves the unreadable file, starts a recoverable clean session, and tells the user what happened.
 
 ## History
 
@@ -56,4 +56,4 @@ Favorites are user-managed shortcuts. Recent files are derived from opened files
 
 ## Offline and privacy
 
-All parsing, sanitizing, syntax highlighting, document rendering, persistence, and history are local. Markpad has no telemetry and must not download runtime dependencies. External URLs open only after an explicit user action.
+All parsing, sanitizing, syntax highlighting, document rendering, persistence, and history are local. Quillpane has no telemetry and must not download runtime dependencies. External URLs open only after an explicit user action.

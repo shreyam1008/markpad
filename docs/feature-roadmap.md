@@ -1,10 +1,10 @@
-# Markpad feature roadmap
+# Quillpane feature roadmap
 
 Updated for v0.13.1 on 2026-09-03. GitHub issues are the live cards; this document explains why they are ordered this way.
 
 ## Stable baseline — v0.13.1
 
-Markpad is a local Markdown notepad with an optional single-folder workspace:
+Quillpane (formerly Quillpane) is a local Markdown notepad with an optional single-folder workspace:
 
 - Plain local files plus autosaved recovery drafts and bounded saved-version history.
 - Editor, Split, Preview/Code View, incremental CodeMirror source editing, image preview, and operating-system PDF handoff.
@@ -13,7 +13,7 @@ Markpad is a local Markdown notepad with an optional single-folder workspace:
 - A strict semantic design system, custom Wails chrome, system/light/dark modes, five color themes, and one live keyboard catalog.
 - External-change protection, confirmed disk deletion, and collision-safe filing of instant drafts into ordinary workspace files.
 
-Workspace data remains plain files. Markpad does not import content, write metadata into the selected folder, create a search database, or require an account.
+Workspace data remains plain files. Quillpane does not import content, write metadata into the selected folder, create a search database, or require an account.
 
 ## Product rules
 
@@ -63,9 +63,9 @@ Prototype one read-only reference beside the active document. Promotion requires
 - Optional slash insertion only if it is faster than the existing toolbar and command palette.
 - Wikilink navigation only after plain relative Markdown links are excellent; backlinks remain deferred without an on-demand bounded design.
 
-## Ideas deliberately outside Markpad's near-term scope
+## Ideas deliberately outside Quillpane's near-term scope
 
-ZenNotes also demonstrates math engines, a CLI, MCP, sync, cloud backup/publishing, mobile clients, comments, backlinks, and a full vault model. Those are useful references, not automatic requirements. Markpad will not add:
+ZenNotes also demonstrates math engines, a CLI, MCP, sync, cloud backup/publishing, mobile clients, comments, backlinks, and a full vault model. Those are useful references, not automatic requirements. Quillpane will not add:
 
 - Cloud sync, accounts, collaboration, publishing, or telemetry.
 - A persistent full-text index or proprietary database.
@@ -83,4 +83,4 @@ Before moving a card to shipped:
 4. Measure bundle and memory impact and update `BUNDLE_BUDGET.md`.
 5. Update behavior, architecture, changelog, website, screenshots, and package metadata where relevant.
 
-Inspiration reference: [ZenNotes](https://zennotes.org/) keeps notes as plain Markdown and exposes keyboard-first focus, tasks, daily notes, references, and navigation. Markpad borrows only the slices that preserve its smaller local-notepad contract.
+Inspiration reference: [ZenNotes](https://zennotes.org/) keeps notes as plain Markdown and exposes keyboard-first focus, tasks, daily notes, references, and navigation. Quillpane borrows only the slices that preserve its smaller local-notepad contract.

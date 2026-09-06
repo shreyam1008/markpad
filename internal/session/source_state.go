@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"markpad/internal/brand"
 )
 
 const maxSourceHashBytes = 10 << 20
@@ -51,9 +53,9 @@ func (e *ExternalChangeError) Error() string {
 	case SourceReplaced:
 		return fmt.Sprintf("source file was replaced: %s", e.Path)
 	case SourceUnverified:
-		return fmt.Sprintf("source file changed before Markpad could establish a safe baseline: %s", e.Path)
+		return fmt.Sprintf("source file changed before %s could establish a safe baseline: %s", brand.ProductName, e.Path)
 	default:
-		return fmt.Sprintf("source file changed outside Markpad: %s", e.Path)
+		return fmt.Sprintf("source file changed outside %s: %s", brand.ProductName, e.Path)
 	}
 }
 

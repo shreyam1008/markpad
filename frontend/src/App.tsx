@@ -10,6 +10,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { PRODUCT_NAME, SOURCE_URL, VERSION } from "./brand";
 import { AppTitlebar } from "./components/AppTitlebar";
 import { CloseDialog } from "./components/CloseDialog";
 import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
@@ -143,7 +144,8 @@ function ModalLayer({
           className="w-full border border-border rounded-lg bg-editor px-3 py-2 text-[13px] outline-none"
         />
         <p className="my-2 text-[11px] text-muted">
-          The file stays in the same folder. Changing the extension changes how Markpad opens it.
+          The file stays in the same folder. Changing the extension changes how {PRODUCT_NAME} opens
+          it.
         </p>
         <div className="flex justify-end gap-2 mt-4">
           <button type="button" className="confirm-btn" onClick={onClose}>
@@ -189,7 +191,7 @@ function ModalLayer({
     body = (
       <div className="space-y-2">
         <p>
-          <strong>Markpad</strong> is a native Markdown notepad.
+          <strong>{PRODUCT_NAME}</strong> is a native Markdown notepad.
         </p>
         <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, and office documents.</p>
         <p>
@@ -273,18 +275,18 @@ function ModalLayer({
       </div>
     );
   } else {
-    title = "About Markpad";
+    title = `About ${PRODUCT_NAME}`;
     body = (
       <div className="space-y-2">
         <p>
-          <strong>Markpad</strong>
+          <strong>{PRODUCT_NAME}</strong>
         </p>
-        <p className="text-muted">Version 0.13.1</p>
+        <p className="text-muted">Version {VERSION}</p>
         <p>A tiny local notepad built with Go, Wails, React, and the operating system webview.</p>
         <p>No Electron, cloud, telemetry, or runtime network dependency.</p>
         <p>
           <a
-            href="https://github.com/shreyam1008/markpad"
+            href={SOURCE_URL}
             className="text-accent underline"
             onClick={(event) => {
               event.preventDefault();
@@ -1262,7 +1264,7 @@ function App() {
         <AppTitlebar />
         <main className="flex min-h-0 flex-1 items-center justify-center bg-surface p-8 text-ink">
           <section className="max-w-xl rounded-lg border border-border bg-surface p-6 shadow-xl">
-            <h1 className="text-base font-bold">Markpad could not finish starting</h1>
+            <h1 className="text-base font-bold">{PRODUCT_NAME} could not finish starting</h1>
             <p className="mt-3 text-sm leading-6 text-muted">{startupError}</p>
           </section>
         </main>

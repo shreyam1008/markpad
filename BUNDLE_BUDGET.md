@@ -1,6 +1,6 @@
 # Bundle Budget
 
-Markpad uses the operating system webview and embeds a production frontend inside one Go binary.
+Quillpane uses the operating system webview and embeds a production frontend inside one Go binary. The executable and storage compatibility identifiers remain Markpad.
 
 ## Current release shape
 
@@ -39,16 +39,16 @@ The operating-system webview is the dominant memory cost. Keep document-specific
 - Syntax highlighting is skipped for very large content.
 - Edit history is capped by state count and total text.
 - Saved history is capped at 50 snapshots per document.
-- PDF data is not loaded into Markpad.
+- PDF data is not loaded into Quillpane.
 - Workspace scans include at most 10,000 files, visit at most 100,000 entries, descend at most 32 levels, and accept files no larger than 2 MiB.
 - Each workspace search reads at most 64 MiB and returns at most 200 results; it has no persistent index.
 - Pre-save source verification stream-hashes at most 10 MiB and stores one SHA-256 digest plus filesystem identity per open saved document.
 
 ### Windows measurement note
 
-Task Manager's top-level `markpad.exe` row is not the whole application. On the 2026-09-01 Windows QA machine, the rebuilt warm blank app showed 35.6 MiB working set in the Go host and 352.7 MiB summed working set / 162.3 MiB private bytes across the eight-process Markpad/WebView2 tree. Summed working set double-counts shared pages, so private bytes are the more useful comparison on Windows. This is a single-machine warm snapshot, not a cross-machine benchmark.
+Task Manager's top-level `markpad.exe` row is not the whole application. On the 2026-09-01 Windows QA machine, the rebuilt warm blank app showed 35.6 MiB working set in the Go host and 352.7 MiB summed working set / 162.3 MiB private bytes across the eight-process Quillpane/WebView2 tree. Summed working set double-counts shared pages, so private bytes are the more useful comparison on Windows. This is a single-machine warm snapshot, not a cross-machine benchmark.
 
-For reference, DBX on that machine measured 424.0 MiB summed working set / 176.3 MiB private bytes across seven processes. Markpad is still below the binary-size budget and opens warmly in about 376 ms, but its WebView2 renderer remains the main memory target; the apparent 35 MiB host-only number must not be used as the total.
+For reference, DBX on that machine measured 424.0 MiB summed working set / 176.3 MiB private bytes across seven processes. Quillpane is still below the binary-size budget and opens warmly in about 376 ms, but its WebView2 renderer remains the main memory target; the apparent 35 MiB host-only number must not be used as the total.
 
 ## Dependency rules
 

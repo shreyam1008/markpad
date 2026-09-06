@@ -1480,7 +1480,7 @@ body,
 }
 
 /* Save conflicts are a visible safety boundary, with the least destructive
-   action focused first and the Markpad recovery guarantee stated in place. */
+   action focused first and the Quillpane recovery guarantee stated in place. */
 .save-conflict-overlay,
 .file-draft-overlay {
   z-index: 100;
@@ -1945,7 +1945,7 @@ button,
   }
 }
 
-/* Markpad Workbench
+/* Markpad Workbench — Quillpane compatibility shell
  * A dense desktop shell inspired by the restraint of native developer tools.
  * These rules intentionally sit last so the existing interaction markup and
  * behavior stay intact while the visual system remains easy to iterate on. */
@@ -2714,7 +2714,7 @@ textarea {
   color: var(--mp-danger-hover);
 }
 
-/* Markpad syntax theme. Highlighting stays bounded in preview/render.ts. */
+/* Quillpane syntax theme. Highlighting stays bounded in preview/render.ts. */
 .preview-pane .markdown-body pre,
 .preview-pane .plain-text-view,
 #viewer > pre {

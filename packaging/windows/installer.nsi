@@ -4,7 +4,7 @@
   !define BASEDIR "..\.."
 !endif
 
-Name "Markpad"
+Name "Quillpane"
 OutFile "${BASEDIR}\dist\markpad-setup.exe"
 InstallDir "$PROGRAMFILES\Markpad"
 InstallDirRegKey HKLM "Software\Markpad" "InstallDir"
@@ -26,16 +26,22 @@ Section "Install"
   SetOutPath "$INSTDIR"
   File "${BASEDIR}\dist\markpad.exe"
 
+  ; Remove old display-name shortcuts during an in-place upgrade.
+  Delete "$SMPROGRAMS\Markpad\Markpad.lnk"
+  Delete "$SMPROGRAMS\Markpad\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\Markpad"
+  Delete "$DESKTOP\Markpad.lnk"
+
   ; Create start menu shortcut
-  CreateDirectory "$SMPROGRAMS\Markpad"
-  CreateShortcut "$SMPROGRAMS\Markpad\Markpad.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
-  CreateShortcut "$SMPROGRAMS\Markpad\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateDirectory "$SMPROGRAMS\Quillpane"
+  CreateShortcut "$SMPROGRAMS\Quillpane\Quillpane.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
+  CreateShortcut "$SMPROGRAMS\Quillpane\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
   ; Create desktop shortcut
-  CreateShortcut "$DESKTOP\Markpad.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
+  CreateShortcut "$DESKTOP\Quillpane.lnk" "$INSTDIR\markpad.exe" "" "$INSTDIR\markpad.exe" 0
 
   ; Write uninstall info
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayName" "Markpad"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayName" "Quillpane"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "DisplayIcon" "$INSTDIR\markpad.exe,0"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Markpad" "Publisher" "Shreyam Adhikari"
@@ -52,6 +58,10 @@ Section "Uninstall"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
 
+  Delete "$SMPROGRAMS\Quillpane\Quillpane.lnk"
+  Delete "$SMPROGRAMS\Quillpane\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\Quillpane"
+  Delete "$DESKTOP\Quillpane.lnk"
   Delete "$SMPROGRAMS\Markpad\Markpad.lnk"
   Delete "$SMPROGRAMS\Markpad\Uninstall.lnk"
   RMDir "$SMPROGRAMS\Markpad"

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>io.github.markpad</id>
-  <name>Markpad</name>
-  <summary>Small native Markdown notepad with split view and version history</summary>
+  <name>Quillpane</name>
+  <summary>Quillpane - small native Markdown notepad with split view and version history</summary>
   <developer id="io.github.shreyam1008">
     <name>Shreyam Adhikari</name>
   </developer>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <description>
-    <p>Markpad is a small native Markdown notepad built with Go and the system webview. It keeps ordinary files local, without Electron, accounts, or telemetry.</p>
+    <p>Quillpane (formerly Markpad) is a small native Markdown notepad built with Go and the system webview. It keeps ordinary files local, without Electron, accounts, or telemetry.</p>
     <p>Features include:</p>
     <ul>
       <li>Split view: Editor, side-by-side split, and preview modes with resizable divider</li>
@@ -35,6 +35,8 @@
     <category>TextEditor</category>
   </categories>
   <keywords>
+    <keyword>quillpane</keyword>
+    <keyword>markpad</keyword>
     <keyword>notepad</keyword>
     <keyword>note</keyword>
     <keyword>markdown</keyword>

@@ -44,13 +44,13 @@ app_pid=$!
 
 window_id=""
 for _ in $(seq 1 60); do
-  window_id="$(xdotool search --onlyvisible --name 'Markpad' 2>/dev/null | head -n 1 || true)"
+  window_id="$(xdotool search --onlyvisible --name 'Quillpane' 2>/dev/null | head -n 1 || true)"
   if [[ -n "$window_id" ]]; then
     break
   fi
   if ! kill -0 "$app_pid" 2>/dev/null; then
     cat dist/linux-ui-smoke.log
-    echo "Markpad exited before opening a window" >&2
+    echo "Quillpane exited before opening a window" >&2
     exit 1
   fi
   sleep 0.25
@@ -58,7 +58,7 @@ done
 
 if [[ -z "$window_id" ]]; then
   cat dist/linux-ui-smoke.log
-  echo "Markpad did not open a visible window" >&2
+  echo "Quillpane did not open a visible window" >&2
   exit 1
 fi
 
@@ -69,8 +69,8 @@ tesseract dist/linux-ui-smoke.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dis
 if ! grep -Eqi 'Open a folder|Untitled|New' dist/linux-ui-smoke.txt; then
   cat dist/linux-ui-smoke.log
   cat dist/linux-ui-smoke.txt
-  echo "Markpad opened a window, but its application UI did not render" >&2
+  echo "Quillpane opened a window, but its application UI did not render" >&2
   exit 1
 fi
 
-echo "Linux UI smoke passed: visible Markpad content rendered."
+echo "Linux UI smoke passed: visible Quillpane content rendered."

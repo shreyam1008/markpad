@@ -55,7 +55,7 @@ modules:
 
 # NOTE FOR FLATHUB SUBMISSION:
 #
-# 1. Markpad uses Wails v2 with CGO + WebKitGTK.
+# 1. Quillpane uses Wails v2 with CGO + WebKitGTK.
 #    The GNOME runtime (org.gnome.Platform) includes WebKitGTK, so no extra module needed.
 #
 # 2. Production Go builds embed frontend/dist. The manifest still needs an

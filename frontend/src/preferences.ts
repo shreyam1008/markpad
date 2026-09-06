@@ -83,7 +83,7 @@ export function loadPreferences(
     const saved = storage.getItem(PREFERENCES_KEY);
     if (saved) return normalizePreferences(JSON.parse(saved));
   } catch {
-    // A damaged setting should never prevent Markpad from opening.
+    // A damaged setting should never prevent Quillpane from opening.
   }
 
   return normalizePreferences({

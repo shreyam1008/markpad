@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import type { SaveConflictInfo } from "../workspace/types";
 import { Copy, RefreshCw, Save } from "./icons";
 
@@ -16,10 +17,10 @@ interface Props {
 }
 
 const conflictCopy: Record<SaveConflictInfo["kind"], string> = {
-  modified: "Another app changed this file after Markpad opened it.",
-  deleted: "This file was deleted or moved after Markpad opened it.",
-  replaced: "This path is no longer the regular file Markpad opened.",
-  unverified: "This restored draft predates Markpad’s file-version safety record.",
+  modified: `Another app changed this file after ${PRODUCT_NAME} opened it.`,
+  deleted: `This file was deleted or moved after ${PRODUCT_NAME} opened it.`,
+  replaced: `This path is no longer the regular file ${PRODUCT_NAME} opened.`,
+  unverified: `This restored draft predates ${PRODUCT_NAME}’s file-version safety record.`,
 };
 
 export function SaveConflictDialog({
@@ -75,7 +76,7 @@ export function SaveConflictDialog({
         </span>
         <div>
           <p className="save-conflict-kicker">Save paused</p>
-          <h2 id="save-conflict-title">The file changed outside Markpad</h2>
+          <h2 id="save-conflict-title">The file changed outside {PRODUCT_NAME}</h2>
           <p className="save-conflict-path">{conflict.path}</p>
           {modifiedLabel ? <p className="save-conflict-time">Changed {modifiedLabel}</p> : null}
         </div>
@@ -83,8 +84,8 @@ export function SaveConflictDialog({
           {conflictCopy[conflict.kind]}
         </p>
         <p id="save-conflict-safety" className="save-conflict-safety">
-          Your Markpad draft is safe. Reload stores it in Version History before showing the disk
-          version.
+          Your {PRODUCT_NAME} draft is safe. Reload stores it in Version History before showing the
+          disk version.
         </p>
         {error ? (
           <p className="save-conflict-error" role="alert">

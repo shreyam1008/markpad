@@ -7,9 +7,9 @@
   <key>CFBundleIdentifier</key>
   <string>io.github.markpad</string>
   <key>CFBundleName</key>
-  <string>Markpad</string>
+  <string>Quillpane</string>
   <key>CFBundleDisplayName</key>
-  <string>Markpad</string>
+  <string>Quillpane</string>
   <key>CFBundleIconFile</key>
   <string>markpad</string>
   <key>CFBundlePackageType</key>

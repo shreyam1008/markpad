@@ -4,6 +4,8 @@ import {
   type UseHotkeyDefinition,
 } from "@tanstack/react-hotkeys";
 
+import { PRODUCT_NAME } from "./brand";
+
 export type ShortcutGroup = "General" | "File" | "Navigation" | "Edit" | "View" | "Appearance";
 
 export type ShortcutAction =
@@ -100,7 +102,7 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "preferences",
     "General",
     "Settings",
-    "Open Markpad settings.",
+    `Open ${PRODUCT_NAME} settings.`,
   ),
   shortcut(
     "general.dismiss",
@@ -273,7 +275,7 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "zoomin",
     "Appearance",
     "Increase interface scale",
-    "Make Markpad controls and chrome larger.",
+    `Make ${PRODUCT_NAME} controls and chrome larger.`,
     { commandId: "appearance.interface-in", displayKey: "+" },
   ),
   shortcut(
@@ -282,7 +284,7 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "zoomin",
     "Appearance",
     "Increase interface scale",
-    "Make Markpad controls and chrome larger.",
+    `Make ${PRODUCT_NAME} controls and chrome larger.`,
     { commandId: "appearance.interface-in", showInSettings: false },
   ),
   shortcut(
@@ -291,7 +293,7 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "zoomout",
     "Appearance",
     "Decrease interface scale",
-    "Make Markpad controls and chrome smaller.",
+    `Make ${PRODUCT_NAME} controls and chrome smaller.`,
   ),
   shortcut(
     "appearance.interface-reset",

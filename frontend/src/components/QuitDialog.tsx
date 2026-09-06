@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import { AlertTriangle } from "./icons";
 
 interface Props {
@@ -54,11 +55,11 @@ export function QuitDialog({ dirtyCount, onCancel, onDiscard }: Props) {
       >
         <h2 id="quit-dialog-title" className="close-dialog-title quit-dialog-title">
           <AlertTriangle />
-          <span>Quit Markpad?</span>
+          <span>Quit {PRODUCT_NAME}?</span>
         </h2>
         <p id="quit-dialog-description">{subject} unsaved changes.</p>
         <p id="quit-dialog-note">
-          Markpad will keep recovery drafts, but it will not update your files.
+          {PRODUCT_NAME} will keep recovery drafts, but it will not update your files.
         </p>
         <div className="close-actions quit-actions">
           <button ref={cancel} type="button" className="confirm-btn" onClick={onCancel}>

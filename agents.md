@@ -1,12 +1,12 @@
-# Markpad Agent Guide
+# Quillpane Agent Guide
 
-> This is the source of truth for agents working on Markpad. Read it completely before changing the repository.
+> This is the source of truth for agents working on Quillpane. Read it completely before changing the repository.
 
 ## Product identity
 
-Markpad is a small, native, local-first Markdown notepad and folder workspace built with Go, Wails v2, and the operating-system webview. It should feel immediate like a traditional notepad while providing live Markdown preview, recovery drafts, saved-version history, fast file navigation, and bounded folder search.
+Quillpane (formerly Markpad) is a small, native, local-first Markdown notepad and folder workspace built with Go, Wails v2, and the operating-system webview. It should feel immediate like a traditional notepad while providing live Markdown preview, recovery drafts, saved-version history, fast file navigation, and bounded folder search.
 
-Plain files remain the source of truth. Markpad has no account, cloud service, telemetry, sync engine, or runtime network dependency.
+Plain files remain the source of truth. Quillpane has no account, cloud service, telemetry, sync engine, or runtime network dependency.
 
 ## Hard constraints
 
@@ -90,7 +90,7 @@ Read `DESIGN.md` before any visual or interaction change. It is the source of tr
 
 ## Workspace Lite contract
 
-Markpad may persist one selected folder. It does not import files or create a database/index.
+Quillpane may persist one selected folder. It does not import files or create a database/index.
 
 - The inventory contains supported regular text files plus visible extensionless text files such as `README` and `Makefile`, ordered deterministically by relative path.
 - `Ctrl+P` searches open documents, workspace filenames/paths, and actions with the existing lightweight fuzzy matcher.
@@ -101,7 +101,7 @@ Markpad may persist one selected folder. It does not import files or create a da
 - Hidden paths and the directories `build`, `coverage`, `dist`, `node_modules`, `obj`, `out`, `target`, and `vendor` are excluded.
 - Scan caps: 10,000 included files, 100,000 visited entries, 2 MiB per file, and depth 32.
 - Search caps: 64 MiB per query, 200 results, 256 query runes, and 400 preview runes.
-- Do not add persistent indexing, filesystem watchers, multiple workspaces, backlinks, a graph, Git integration, or a Markpad metadata folder unless separately approved.
+- Do not add persistent indexing, filesystem watchers, multiple workspaces, backlinks, a graph, Git integration, or a legacy Markpad metadata folder unless separately approved.
 
 ## File behavior
 
@@ -128,7 +128,7 @@ Saved files default to Viewer; new drafts default to Editor. View, cursor, edito
 
 Normal exit preserves dirty drafts. An explicit discard or confirmed permanent file deletion may remove recovery content only after user choice. A corrupt session must be preserved for recovery rather than overwritten silently.
 
-Saved documents persist a content fingerprint for the source last opened or saved. A normal save must stop on an external modification, replacement, deletion, or unverifiable legacy baseline. Reload protects the Markpad draft in saved-version history before adopting disk content; overwrite/recreate remains an explicit user choice.
+Saved documents persist a content fingerprint for the source last opened or saved. A normal save must stop on an external modification, replacement, deletion, or unverifiable legacy baseline. Reload protects the Quillpane draft in saved-version history before adopting disk content; overwrite/recreate remains an explicit user choice.
 
 ## Commands and verification
 

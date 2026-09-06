@@ -1,6 +1,7 @@
 import { detectPlatform, getHotkeyManager } from "@tanstack/react-hotkeys";
 import { useMemo, useState } from "react";
 
+import { PRODUCT_NAME } from "../brand";
 import {
   DEFAULT_PREFERENCES,
   TEXT_SIZE_MAX,
@@ -59,7 +60,7 @@ const modes: Array<{ id: ThemeMode; label: string; icon: typeof Monitor }> = [
 ];
 
 const palettes: Array<{ id: ThemePalette; label: string; description: string }> = [
-  { id: "markpad", label: "Markpad", description: "Calm jade" },
+  { id: "markpad", label: PRODUCT_NAME, description: "Calm jade" },
   { id: "graphite", label: "Graphite", description: "Neutral blue" },
   { id: "nord", label: "Nord", description: "Cool arctic" },
   { id: "solarized", label: "Solarized", description: "Warm contrast" },
@@ -106,7 +107,7 @@ export function SettingsPanel({ preferences, storagePath, onChange, onClose }: P
       <header className="settings-header">
         <div>
           <strong>Settings</strong>
-          <span>Personalize Markpad</span>
+          <span>Personalize {PRODUCT_NAME}</span>
         </div>
         <button
           type="button"
@@ -193,7 +194,7 @@ export function SettingsPanel({ preferences, storagePath, onChange, onClose }: P
               <div className="settings-row">
                 <div>
                   <strong>Interface scale</strong>
-                  <span>Resize Markpad’s controls and chrome.</span>
+                  <span>Resize {PRODUCT_NAME}’s controls and chrome.</span>
                   <span className="settings-shortcut-hint">
                     <kbd>{shortcutDisplay("Mod+=", "+")}</kbd>
                     <kbd>{shortcutDisplay("Mod+-")}</kbd>
@@ -333,8 +334,8 @@ export function SettingsPanel({ preferences, storagePath, onChange, onClose }: P
               <div className="settings-section-heading">
                 <h2 id="settings-keyboard-title">Keyboard</h2>
                 <p>
-                  These are the live TanStack registrations used by Markpad, its menus, and the
-                  command palette.
+                  These are the live TanStack registrations used by {PRODUCT_NAME}, its menus, and
+                  the command palette.
                 </p>
               </div>
               <div className="settings-info-card shortcut-summary">
@@ -382,7 +383,7 @@ export function SettingsPanel({ preferences, storagePath, onChange, onClose }: P
             <section aria-labelledby="settings-files-title">
               <div className="settings-section-heading">
                 <h2 id="settings-files-title">Files</h2>
-                <p>Markpad stays local and lets the operating system own your files.</p>
+                <p>{PRODUCT_NAME} stays local and lets the operating system own your files.</p>
               </div>
               <div className="settings-info-card">
                 <HardDrive />

@@ -1,15 +1,14 @@
-// Package brand separates the product's public name from durable legacy
+// Package brand separates Quillpane's public name from durable Markpad
 // identifiers that existing installations rely on.
 package brand
 
 import "strings"
 
 const (
-	// ProductName remains the current public display name until a successor is
-	// explicitly approved and reserved.
-	ProductName = "Markpad"
-	// PreviewProductName remains fixed if ProductName is rolled back, so drafts
-	// created while the preview was active are still recognized safely.
+	// ProductName is the approved public display name for the migration release.
+	ProductName = "Quillpane"
+	// PreviewProductName is retained as a compatibility alias for drafts created
+	// during the earlier reversible preview.
 	PreviewProductName = "Quillpane"
 
 	// LegacyProductName remains the compatibility name used by existing builds.
@@ -21,8 +20,9 @@ const (
 	BinaryName       = "markpad"
 	SingleInstanceID = "c7b3e4a1-9f2d-4e8b-a6c1-markpad-single"
 
-	// The repository and website stay at their legacy addresses until redirects
-	// and ownership of the replacement addresses are verified.
+	// The repository and website remain at their legacy addresses during the
+	// compatibility window; redirects and ownership of replacement addresses
+	// must be verified before they become canonical.
 	SourceURL  = "https://github.com/shreyam1008/markpad"
 	WebsiteURL = "https://shreyam1008.github.io/markpad/"
 )

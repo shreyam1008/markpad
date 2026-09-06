@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "../brand";
 import type {
   DraftFormat,
   FileInfo,
@@ -12,7 +13,7 @@ import type {
 
 function api(): MarkpadAPI {
   const bound = window.go?.main?.App;
-  if (!bound) throw new Error("The Markpad desktop API is not available");
+  if (!bound) throw new Error(`The ${PRODUCT_NAME} desktop API is not available`);
   return bound;
 }
 

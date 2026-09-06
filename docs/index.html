@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Markpad — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
-    <meta name="description" content="Markpad is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Responsive source viewers, split preview, themes, keyboard settings, recovery drafts, and bounded workspace search. No Electron or cloud." />
-    <meta name="keywords" content="markpad, markdown editor, markdown notepad, local folder workspace, workspace search, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
+    <title>Quillpane — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
+    <meta name="description" content="Quillpane is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Responsive source viewers, split preview, themes, keyboard settings, recovery drafts, and bounded workspace search. No Electron or cloud." />
+    <meta name="keywords" content="quillpane, markpad, markdown editor, markdown notepad, local folder workspace, workspace search, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -14,14 +14,14 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Markpad" />
-    <meta property="og:title" content="Markpad — Native Markdown Notepad" />
+    <meta property="og:site_name" content="Quillpane" />
+    <meta property="og:title" content="Quillpane — Native Markdown Notepad" />
     <meta property="og:description" content="A tiny native Markdown notepad with folder browsing, fast file switching, bounded content search, split preview, and recovery drafts. No Electron or cloud." />
     <meta property="og:url" content="https://shreyam1008.github.io/markpad/" />
     <meta property="og:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Markpad — Native Markdown Notepad" />
+    <meta name="twitter:title" content="Quillpane — Native Markdown Notepad" />
     <meta name="twitter:description" content="Small, fast, native Markdown notepad by shreyam1008. Split view, version history, favorites, session restore. No Electron." />
     <meta name="twitter:image" content="https://shreyam1008.github.io/markpad/og.png" />
 
@@ -29,7 +29,7 @@
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "Markpad",
+        "name": "Quillpane",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
         "softwareVersion": "0.13.1",
@@ -52,7 +52,7 @@
       <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
         <a href="#top" class="flex items-center gap-2 font-bold text-lg group">
           <span class="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center text-sm font-extrabold group-hover:scale-110 transition-transform">M</span>
-          <span>Markpad</span>
+          <span>Quillpane</span>
         </a>
         <nav class="flex items-center gap-6 text-sm font-medium text-muted">
           <a href="#features" class="hover:text-accent transition-colors">Features</a>
@@ -70,7 +70,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny notepad<br/>that gets out of the way.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Open a file or a whole folder. Edit Markdown with live preview, jump to any note with Ctrl+P, and search local content with Ctrl+Shift+F. No Electron, cloud, or telemetry.
+          Quillpane (formerly Markpad) opens a file or a whole folder. Edit Markdown with live preview, jump to any note with Ctrl+P, and search local content with Ctrl+Shift+F. No Electron, cloud, or telemetry.
         </p>
         <div class="flex justify-center gap-3 mb-6 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -103,29 +103,29 @@
         <div class="bg-paper rounded-2xl border border-line shadow-xl overflow-hidden animate-float">
           <div class="flex items-center gap-2 px-4 py-3 bg-bg/60 border-b border-line/60">
             <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-            <span class="text-xs text-muted ml-2">Markpad - Split View</span>
+            <span class="text-xs text-muted ml-2">Quillpane - Split View</span>
           </div>
           <div class="bg-gradient-to-br from-accent-soft/30 to-paper">
-            <img src="./photo/markpad-split.png" alt="Markpad split workspace" class="w-full h-auto block" />
+            <img src="./photo/markpad-split.png" alt="Quillpane split workspace" class="w-full h-auto block" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-6">
           <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
             <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
               <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-              <span class="text-xs text-muted ml-2">Markpad - Code View</span>
+              <span class="text-xs text-muted ml-2">Quillpane - Code View</span>
             </div>
             <div class="bg-gradient-to-br from-accent-soft/20 to-paper">
-              <img src="./photo/markpad-code.png" alt="Markpad responsive code view" class="w-full h-auto block" />
+              <img src="./photo/markpad-code.png" alt="Quillpane responsive code view" class="w-full h-auto block" />
             </div>
           </div>
           <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
             <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
               <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-              <span class="text-xs text-muted ml-2">Markpad - Themes & Settings</span>
+              <span class="text-xs text-muted ml-2">Quillpane - Themes & Settings</span>
             </div>
             <div class="bg-gradient-to-br from-accent-soft/10 to-paper">
-              <img src="./photo/markpad-settings.png" alt="Markpad themes and keyboard settings" class="w-full h-auto block" />
+              <img src="./photo/markpad-settings.png" alt="Quillpane themes and keyboard settings" class="w-full h-auto block" />
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@
       <!-- Features -->
       <section id="features" class="max-w-5xl mx-auto px-6 pb-24">
         <div class="text-center mb-12">
-          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Why Markpad</p>
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Why Quillpane</p>
           <h2 class="text-3xl font-bold">Notepad speed. Modern features.</h2>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -188,7 +188,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Single Instance</h3>
-            <p class="text-sm text-muted">Only one window runs at a time. Opening a file while Markpad is running adds it to the existing window.</p>
+            <p class="text-sm text-muted">Only one window runs at a time. Opening a file while Quillpane is running adds it to the existing window.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Smart Lists</h3>
@@ -236,14 +236,14 @@
             </ul>
           </div>
         </div>
-        <p class="text-center text-sm text-muted mt-7">Inspired by good plain-file workflows in ZenNotes, deliberately reduced to Markpad's lighter contract. <a class="text-accent hover:underline" href="https://github.com/shreyam1008/markpad/blob/main/docs/feature-roadmap.md">Read the full roadmap →</a></p>
+        <p class="text-center text-sm text-muted mt-7">Inspired by good plain-file workflows in ZenNotes, deliberately reduced to Quillpane's lighter contract. <a class="text-accent hover:underline" href="https://github.com/shreyam1008/markpad/blob/main/docs/feature-roadmap.md">Read the full roadmap →</a></p>
       </section>
 
       <!-- Downloads -->
       <section id="downloads" class="max-w-4xl mx-auto px-6 pb-24">
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
-          <h2 class="text-3xl font-bold">Get Markpad for your platform.</h2>
+          <h2 class="text-3xl font-bold">Get Quillpane for your platform.</h2>
           <p class="text-muted mt-2">v0.13.1 · Built and native-window smoke-tested by GitHub Actions on every tagged release.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
