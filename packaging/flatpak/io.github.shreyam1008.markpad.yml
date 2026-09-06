@@ -50,6 +50,8 @@ modules:
         while IFS= read -r -d '' file; do
         install -Dm644 "$file" "/app/share/licenses/io.github.shreyam1008.markpad/dependencies/$file";
         done
+      # Go's extracted module cache is read-only; allow builder cleanup of it.
+      - chmod -R u+w go
     sources:
       - type: git
         url: https://github.com/shreyam1008/markpad.git
