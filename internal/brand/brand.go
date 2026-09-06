@@ -22,8 +22,8 @@ const (
 
 	// The repository remains at its legacy address; the verified custom domain
 	// is now canonical while the old Pages URL remains a compatibility redirect.
-	SourceURL       = "https://github.com/shreyam1008/markpad"
-	WebsiteURL      = "https://quillpane.shreyam1008.com.np/"
+	SourceURL        = "https://github.com/shreyam1008/markpad"
+	WebsiteURL       = "https://quillpane.shreyam1008.com.np/"
 	LegacyWebsiteURL = "https://shreyam1008.github.io/markpad/"
 )
 
