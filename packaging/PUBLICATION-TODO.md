@@ -60,9 +60,22 @@ Policy: https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai
 ## Microsoft Store
 
 - [x] Sign in and reach individual developer onboarding.
-- [ ] Owner completes live government-ID photo/selfie verification.
-- [ ] Owner supplies accurate profile details and completes enrollment.
-- [ ] Reserve app identity, choose supported Windows package/signing route,
-  finish listing metadata, submit for certification, verify public listing.
+- [x] Owner completes live government-ID photo/selfie verification.
+- [x] Owner supplies accurate profile details and completes enrollment.
+- [x] Reserve Quillpane: product `9MZDJLQ6V8L3`, submission `1152921505701821886`.
+- [x] Build MSIX `0.13.3.0` for Windows 11 x64; MakeAppx and Microsoft upload validation passed.
+- [x] Save free worldwide public availability and Productivity properties.
+- [x] Publish and verify HTTPS privacy notice: https://quillpane.shreyam1008.com.np/privacy.html
+- [x] Owner saves IARC declaration; dashboard age ratings Complete (Everyone / 3+).
+- [x] Save English description, four features, short description and developer name.
+- [x] Enter runFullTrust justification and reviewer functional-test instructions.
+- [ ] Verify submission options complete; last overview still reported Incomplete.
+- [ ] Capture and upload genuine current Windows screenshots, preserving the logo.
+- [ ] Test the installed MSIX: launch, open/save, history, recovery, upgrade/removal.
+- [ ] Submit for certification and verify the eventual anonymous Store listing.
+
+Package source and reproducible build script: `windows/store/`. SHA256 of the uploaded MSIX:
+`7f40e2f7097e4b344efee16d05f5df748e67c989657fc27ba1a54e8f5e23f17d`.
+Store package validation is not functional testing or certification approval.
 
 Account login is not completed Store enrollment or app publication.
