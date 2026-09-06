@@ -58,8 +58,8 @@ modules:
         tag: v0.13.3
         commit: 4d0667fc2239956d3c49f680907028c93bb58ba9
       - type: file
-        url: https://raw.githubusercontent.com/shreyam1008/markpad/4a1d824ae95f9068fd70dace379f4f53821bea77/packaging/flatpak/io.github.shreyam1008.markpad.metainfo.xml
-        sha256: 75187e1ad187d6b8ce3ab392f39cacd604d8a7a577938f75f846423a3a38e0f9
+        url: https://raw.githubusercontent.com/shreyam1008/markpad/aeb908085bad46597c6b0eb184fbfa65e9e17d05/packaging/flatpak/io.github.shreyam1008.markpad.metainfo.xml
+        sha256: 11848b317111b1d991656c97cf3fee0db17a24cf917757f56c5b9ee480143023
       - type: file
         path: wails-file-portal.patch
       - node-sources.json
