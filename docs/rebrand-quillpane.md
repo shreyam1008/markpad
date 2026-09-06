@@ -1,6 +1,6 @@
 # Quillpane migration from Markpad
 
-Status: Quillpane selected as the public product name; compatibility migration in progress
+Status: Quillpane selected; display migration and v0.13.3 compatibility release complete; store publication pending
 Audit date: 2026-09-06
 Legal status: naming decision by the maintainer; not trademark, domain, or store-namespace clearance
 
@@ -101,7 +101,7 @@ markpad; changing them has no user value and increases migration risk.
 
 ## Staged transfer
 
-### Phase 0 — display migration (current work)
+### Phase 0 — display migration (complete)
 
 - Centralize Quillpane as the public display name in Go and TypeScript.
 - Keep the Markpad logo and all generated icon resources unchanged.
@@ -112,22 +112,23 @@ markpad; changing them has no user value and increases migration risk.
 
 Rollback is one display constant change; no user data needs to move.
 
-### Phase 1 — reservation and release gate
+### Phase 1 — reservation and release gate (mostly complete)
 
 1. Re-run exact-name and similarity searches for Quillpane across GitHub,
    product domains, Snap, Flathub, WinGet, Scoop, Homebrew, Open VSX, the
    Visual Studio Marketplace, and intended trademark classes.
 2. Reserve the required accounts and namespaces only after that same-day check.
-3. The Cloudflare CNAME and GitHub Pages custom-domain setting for
+3. **Complete:** The Cloudflare CNAME and GitHub Pages custom-domain setting for
    quillpane.shreyam1008.com.np are configured and verified. The certificate
    is usable, HTTPS is enforced, the old GitHub Pages URL redirects to the new
    host, and the deployed page now owns the new canonical/OG/schema URLs.
-4. Build a fresh compatibility release from the current source, calculate real
-   hashes, and test upgrades on Linux, Windows, and macOS.
-5. Keep the current logo assets unchanged; do not run icon generation as part
-   of the name release.
+4. **Complete:** Build a fresh compatibility release from the current source;
+   `v0.13.3` passed the Linux, Windows, and macOS release workflow, and the
+   Windows hash is recorded in the package manifests.
+5. **Complete:** Keep the current logo assets unchanged; no icon generation was
+   part of the name release.
 
-### Phase 2 — co-branded compatibility release
+### Phase 2 — co-branded compatibility release (complete in v0.13.3)
 
 - Ship **Quillpane (formerly Markpad)** in visible display copy.
 - Continue producing the markpad executable and accepting all old data paths.
@@ -135,6 +136,8 @@ Rollback is one display constant change; no user data needs to move.
 - Publish a migration notice that explicitly says notes, drafts, history, and
   settings remain in place.
 - Keep old install commands working for at least two stable releases.
+- WinGet PR #430348 is open with the updated display metadata; the personal
+  Scoop bucket is live after PR #7 passed install/upgrade/uninstall CI.
 
 ### Phase 3 — optional namespace transition
 
@@ -153,13 +156,16 @@ The custom domain is live and verified. Store accounts, namespace reservation,
 signing, certification, and the final store submit/publish actions remain
 owner-controlled; prepared manifests are still not public listings.
 
-The first useful lane is:
+The first useful lanes are:
 
 1. GitHub release and legacy GitHub Pages URL;
-2. Snap under a separately checked quillpane namespace;
-3. Flatpak/Flathub with the existing reverse-DNS identity during the migration;
-4. WinGet and Scoop with the existing package ID/path and Quillpane display name;
-5. Microsoft Store after a signed Windows installer and Partner Center
+2. Scoop with the Quillpane display name (live in the personal bucket);
+3. WinGet with the existing package ID/path and Quillpane display name (PR
+   pending review);
+4. Snap under a separately checked quillpane namespace;
+5. Flatpak/Flathub with the existing reverse-DNS identity after the offline
+   build is complete;
+6. Microsoft Store after a signed Windows installer and Partner Center
    identity are ready.
 
 Never call a prepared manifest live until an anonymous public check records

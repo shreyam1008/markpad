@@ -47,7 +47,12 @@ The `v0.13.3` compatibility installer exists at the public release URL. The new 
 
 ## Scoop
 
-The repository template now uses version `0.13.3`, the exact release URL, and the real SHA-256. A Quillpane manifest is also staged in the personal Scoop bucket for install/upgrade/uninstall CI; it is not a default Scoop bucket listing until that PR is merged.
+The repository template now uses version `0.13.3`, the exact release URL, and the real SHA-256. The Quillpane manifest is live in the personal bucket after PR #7 passed install/upgrade/uninstall CI. It is a personal-bucket channel, not a claim that Quillpane is in the default Scoop bucket.
+
+```powershell
+scoop bucket add shreyam https://github.com/shreyam1008/scoop-bucket
+scoop install shreyam/quillpane
+```
 
 ## Final checklist
 
