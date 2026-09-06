@@ -20,7 +20,7 @@ jobs:
       - name: Download pinned sources then compile without network
         run: |
           flatpak-builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak-builder --user --disable-download --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak-builder --user --disable-download --mirror-screenshots-url=https://dl.flathub.org/media --compose-url-policy=full --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
         run: |
           appstreamcli validate --no-net build-flatpak/files/share/metainfo/io.github.shreyam1008.markpad.metainfo.xml

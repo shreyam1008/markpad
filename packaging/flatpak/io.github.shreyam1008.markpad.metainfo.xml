@@ -46,6 +46,12 @@
     <keyword>viewer</keyword>
   </keywords>
   <content_rating type="oars-1.1" />
+  <screenshots>
+    <screenshot type="default">
+      <caption>A new local Markdown note in Quillpane on Linux</caption>
+      <image type="source" width="1180" height="760">https://raw.githubusercontent.com/shreyam1008/markpad/main/packaging/flatpak/screenshots/quillpane-linux.png</image>
+    </screenshot>
+  </screenshots>
   <releases>
     <release version="0.13.3" date="2026-09-06">
       <description>
