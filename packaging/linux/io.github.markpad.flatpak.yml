@@ -70,5 +70,7 @@ modules:
 # 5. Update desktop file to use id io.github.markpad (Flathub requires reverse-DNS id).
 #    The current markpad.desktop has Icon=markpad — rename to io.github.markpad.
 #
-# 6. Fork https://github.com/flathub/flathub and submit PR.
+# 6. After the build and disclosure audit, a HUMAN must author and open the PR.
+#    AI agents must not generate its commit message, description, or replies.
+#    See ../PUBLICATION-TODO.md for the remaining ID and offline-build gates.
 #    Submission guide: https://docs.flathub.org/docs/for-app-authors/submission

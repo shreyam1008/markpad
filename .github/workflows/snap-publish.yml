@@ -1,0 +1,31 @@
+name: Publish verified Snap artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snap-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download pinned release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh release download v0.13.3 --pattern quillpane_0.13.3_amd64.snap
+          echo '26bb3252ea582b870c1aa25e65d77b249383b819cf6d87c19dad5296f7a63faf  quillpane_0.13.3_amd64.snap' | sha256sum --strict --check -
+      - name: Upload to candidate for installation testing
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: quillpane_0.13.3_amd64.snap
+          release: candidate

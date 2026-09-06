@@ -1,10 +1,13 @@
 name: pages
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - "docs/**"
+      - "packaging/linux/build-apt-repo.sh"
+      - ".github/workflows/pages.yml"
 
 permissions:
   contents: read
@@ -24,6 +27,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/configure-pages@v5
+      - name: Prepare authenticated APT repository from stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APT_SIGNING_PRIVATE_KEY: ${{ secrets.APT_SIGNING_PRIVATE_KEY }}
+          APT_SIGNING_KEY_ID: ${{ vars.APT_SIGNING_KEY_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$APT_SIGNING_PRIVATE_KEY"
+          export GNUPGHOME="$RUNNER_TEMP/apt-gnupg"
+          install -d -m 700 "$GNUPGHOME"
+          printf '%s' "$APT_SIGNING_PRIVATE_KEY" | gpg --batch --import
+          mkdir -p apt-dist
+          gh release download v0.13.3 --pattern markpad_0.13.3_amd64.deb --dir apt-dist
+          echo 'cf7e050f802cd98516c045a617a3eecf1e06352fce1cef3f08fa073572f35409  apt-dist/markpad_0.13.3_amd64.deb' | sha256sum --strict --check -
+          test "$(dpkg-deb -f apt-dist/markpad_0.13.3_amd64.deb Package)" = markpad
+          bash packaging/linux/build-apt-repo.sh docs/apt apt-dist
+          sudo install -m 644 docs/apt/key.gpg /usr/share/keyrings/quillpane-test.gpg
+          printf 'deb [signed-by=/usr/share/keyrings/quillpane-test.gpg] file:%s/docs/apt stable main\n' "$GITHUB_WORKSPACE" | sudo tee /etc/apt/sources.list.d/quillpane-test.list
+          sudo apt-get update
+          sudo apt-get install -y markpad
+          dpkg-query -W markpad
+          sudo apt-get remove -y markpad
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
