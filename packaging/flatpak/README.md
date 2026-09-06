@@ -43,10 +43,11 @@ Successful compilation is not a claim of Flathub acceptance.
 - [ ] Offline source build and metadata validation pass.
 - [ ] Actual exported application launches and renders under Flatpak.
 - [ ] Human file open/save/history/restart tests pass.
-- [ ] Review filesystem=home against mandatory portal requirements; remove it
-  if portal-based folder/file access covers the workspace use case.
+- [ ] Verify the Flatpak-only GtkFileChooserNative patch for open/save/folder
+  selection. The manifest now grants neither home nor host filesystem access.
 - [ ] Metadata is fetched from an immutable upstream source, not copied into
-  the Flathub submission; add verified app screenshots and flathub.json.
+  the Flathub submission; add current Linux app screenshots. flathub.json limits
+  this first package to the tested x86_64 architecture.
 - [ ] Verify dependency redistribution licenses and generated license exports.
 - [ ] Owner completes AI provenance audit and maintenance commitment.
 

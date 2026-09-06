@@ -42,3 +42,8 @@ jobs:
           name: quillpane-flatpak-test
           path: quillpane.flatpak
           if-no-files-found: error
+      - name: Run official Flathub manifest and repository lints
+        run: |
+          flatpak install --user --noninteractive flathub org.flatpak.Builder
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak-repo
