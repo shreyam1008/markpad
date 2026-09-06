@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.shreyam1008.markpad</id>
+  <name>Quillpane</name>
+  <summary>Edit local Markdown notes with split view and version history</summary>
+  <developer id="io.github.shreyam1008">
+    <name>Shreyam Adhikari</name>
+  </developer>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>Quillpane (formerly Markpad) is a small native Markdown notepad built with Go and the system webview. It keeps ordinary files local, without Electron, accounts, or telemetry.</p>
+    <p>Features include:</p>
+    <ul>
+      <li>Split view: Editor, side-by-side split, and preview modes with resizable divider</li>
+      <li>Version history: every save creates a snapshot you can browse, preview, and restore</li>
+      <li>Session restore: all notes, drafts, and favorites survive app close</li>
+      <li>Formatting toolbar with bold, italic, headings, code, tables, lists, links, and more</li>
+      <li>Find in editor with wrap-around search</li>
+      <li>Open one local folder and switch files quickly with the command palette</li>
+      <li>Bounded workspace search with file, line, and matching snippet</li>
+      <li>External-change protection before overwriting files edited by another application</li>
+      <li>One-step filing of recovery drafts into the selected workspace folder</li>
+      <li>Auto-list continuation for bullets, numbered lists, and task lists</li>
+      <li>Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML, CSS, and more</li>
+      <li>Favorites, drag-and-drop reorder, file type icons, word count, reading time</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.shreyam1008.markpad.desktop</launchable>
+  <url type="homepage">https://quillpane.shreyam1008.com.np/</url>
+  <url type="bugtracker">https://github.com/shreyam1008/markpad/issues</url>
+  <url type="vcs-browser">https://github.com/shreyam1008/markpad</url>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+  </categories>
+  <keywords>
+    <keyword>quillpane</keyword>
+    <keyword>markpad</keyword>
+    <keyword>notepad</keyword>
+    <keyword>note</keyword>
+    <keyword>markdown</keyword>
+    <keyword>editor</keyword>
+    <keyword>text</keyword>
+    <keyword>writer</keyword>
+    <keyword>viewer</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.13.3" date="2026-09-06">
+      <description>
+        <p>Quillpane public-name migration with the verified custom domain canonical; existing Markpad executable, data paths, package identifiers, release URLs, and logo remain compatible.</p>
+      </description>
+    </release>
+    <release version="0.13.2" date="2026-09-03">
+      <description>
+        <p>Cleaner native Linux chrome without the duplicate GTK application menu, plus a subtle frameless-window edge and sharper window controls.</p>
+      </description>
+    </release>
+    <release version="0.13.1" date="2026-09-03">
+      <description>
+        <p>Linux WebKitGTK rendering compatibility plus an automated native-window smoke test that verifies visible application content before release.</p>
+      </description>
+    </release>
+    <release version="0.13.0" date="2026-09-02">
+      <description>
+        <p>Incremental CodeMirror source editing, lazy language modes, bounded relative Markdown image loading, prose-first source wrapping, and exact navigation through wrapped notes.</p>
+      </description>
+    </release>
+    <release version="0.12.0" date="2026-09-02">
+      <description>
+        <p>Responsive source viewers, strict semantic design system, custom window chrome, stable overlays, viewport-safe menus, modern Markdown and Mermaid diagrams, Git-style history diffs, improved syntax highlighting, keyboard settings, and unified product assets.</p>
+      </description>
+    </release>
+    <release version="0.10.0" date="2026-08-20">
+      <description>
+        <p>Workspace Lite folder browsing, fast file switching, bounded full-workspace search, confirmed file deletion, external-change save protection, direct draft filing, and a typed React frontend.</p>
+      </description>
+    </release>
+    <release version="0.9.0" date="2026-06-11">
+      <description>
+        <p>Terminal installer, visual layout refinements, and distribution packaging manifests.</p>
+      </description>
+    </release>
+    <release version="0.8.0" date="2026-06-08">
+      <description>
+        <p>Real-Time Sidebar Outline (Table of Contents), memory optimizations (disabled JIT, tuned GCPercent), sidebar transitions, and exit flow fixes.</p>
+      </description>
+    </release>
+    <release version="0.4.0" date="2026-04-30">
+      <description>
+        <p>Version history, auto-list continuation, external links open in browser, UX refinements.</p>
+      </description>
+    </release>
+  </releases>
+</component>

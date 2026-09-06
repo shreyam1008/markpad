@@ -1,0 +1,53 @@
+app-id: io.github.shreyam1008.markpad
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+command: markpad
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # Native GTK folder selection and workspace editing currently need home access.
+  # No host-wide filesystem access and no network permission.
+  - --filesystem=home
+modules:
+  - name: bun-build-tool
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 bun /app/bin/bun
+    cleanup: ['*']
+    sources:
+      - type: archive
+        url: https://github.com/oven-sh/bun/releases/download/bun-v1.3.14/bun-linux-x64.zip
+        sha256: 951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f
+  - name: quillpane
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/golang/bin
+      env:
+        GOPATH: /run/build/quillpane/go
+        GOCACHE: /run/build/quillpane/go-cache
+        GOPROXY: 'off'
+        GOSUMDB: 'off'
+        GOTOOLCHAIN: local
+        CGO_ENABLED: '1'
+    build-commands:
+      - cd frontend && bun run build.ts
+      - go build -mod=readonly -tags 'production,webkit2_41' -trimpath -ldflags='-s -w' -o markpad .
+      - install -Dm755 markpad /app/bin/markpad
+      - install -Dm644 packaging/linux/markpad.desktop /app/share/applications/io.github.shreyam1008.markpad.desktop
+      - desktop-file-edit --set-icon=io.github.shreyam1008.markpad /app/share/applications/io.github.shreyam1008.markpad.desktop
+      - install -Dm644 packaging/linux/markpad.svg /app/share/icons/hicolor/scalable/apps/io.github.shreyam1008.markpad.svg
+      - install -Dm644 io.github.shreyam1008.markpad.metainfo.xml /app/share/metainfo/io.github.shreyam1008.markpad.metainfo.xml
+    sources:
+      - type: git
+        url: https://github.com/shreyam1008/markpad.git
+        tag: v0.13.3
+        commit: 4d0667fc2239956d3c49f680907028c93bb58ba9
+      - type: file
+        path: io.github.shreyam1008.markpad.metainfo.xml
+      - node-sources.json
+      - go-sources.json
