@@ -47,8 +47,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/shreyam1008/markpad.git
-        tag: v0.9.0
-        commit: placeholder-replace-with-actual-commit-sha
+        tag: v0.13.3
+        commit: 4d0667fc2239956d3c49f680907028c93bb58ba9
       # Go vendor sources for offline Flatpak build.
       # Generate with: python3 flatpak-go-vendor.py go.sum > go-vendor-sources.json
       - go-vendor-sources.json
@@ -61,7 +61,8 @@ modules:
 # 2. Production Go builds embed frontend/dist. The manifest still needs an
 #    offline Bun/tooling source and an explicit frontend install/build step.
 #
-# 3. Replace placeholder commit SHA with actual tag SHA.
+# 3. The published v0.13.3 tag is pinned to commit
+#    4d0667fc2239956d3c49f680907028c93bb58ba9.
 #
 # 4. Generate go-vendor-sources.json for offline Go modules.
 #    Tool: https://github.com/flatpak/flatpak-builder-tools/tree/master/go-vendor

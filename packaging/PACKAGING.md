@@ -39,27 +39,21 @@ The Snap Store operation is external and is not performed by the GitHub release 
 
 ## Flatpak
 
-The Flatpak manifest needs the immutable commit for the published `v0.13.3` tag and vendored Go sources. Generate those after the tag exists, validate with `flatpak-builder`, and submit the resulting manifest to Flathub. Do not guess the commit ID in advance.
+The manifest is pinned to the published `v0.13.3` source commit, but it is not Flathub-ready yet. The remaining release work is to provide the frontend's Bun dependencies and Go vendor sources as offline Flatpak sources, add the frontend build step, run `flatpak-builder` on Linux, and complete the Flathub review. Do not submit the current draft while those sources are missing.
 
 ## WinGet
 
-After the Quillpane compatibility installer `markpad-setup.exe` exists:
-
-1. Compute its SHA-256 (`Get-FileHash markpad-setup.exe -Algorithm SHA256`).
-2. Create a new `0.13.3` manifest directory from the previous version, keeping `ShreyamAdhikari.Markpad` as the compatibility package ID and using `Quillpane` as the display name.
-3. Update download URL, package version, and installer hash.
-4. Run `winget validate` and submit to `microsoft/winget-pkgs`.
-
-Never edit a historical version directory in place.
+The `v0.13.3` compatibility installer exists at the public release URL. The new manifest directory keeps `ShreyamAdhikari.Markpad` as the compatibility package ID, uses `Quillpane` as the display name, and passes local `winget validate`. Never edit a historical version directory in place. The public WinGet PR still waits on the signing/maintainer review gate.
 
 ## Scoop
 
-After the Windows installer exists, update `packaging/scoop/markpad.json` with version `0.13.3`, the exact release URL, and the real SHA-256. Validate installation from a test bucket before publishing it. The repository copy is only a template while its hash is a placeholder; do not advertise it as installable.
+The repository template now uses version `0.13.3`, the exact release URL, and the real SHA-256. A Quillpane manifest is also staged in the personal Scoop bucket for install/upgrade/uninstall CI; it is not a default Scoop bucket listing until that PR is merged.
 
 ## Final checklist
 
-- `make setup`, `make check`, and `git diff --check` passed before tagging.
-- Version and 2026-09-03 release date are synchronized in source and non-hash packaging metadata.
+- `make setup`, `make check`, and `git diff --check` passed in the release workflow before tagging.
+- Version and 2026-09-06 release date are synchronized in source and non-hash packaging metadata.
+- The GitHub release workflow passed for Linux, Windows, and macOS at `v0.13.3`; the generated installer artifacts are not code-signed yet.
 - AppStream metadata validates.
 - Windows application and NSIS installer show the expected ICO.
 - macOS bundle contains `Contents/Resources/markpad.icns` and its plist references it.
