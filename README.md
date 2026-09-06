@@ -4,6 +4,8 @@ Quillpane (formerly Markpad) is a tiny native Markdown notepad and local file vi
 
 No Electron. No cloud. One small binary, pure local and offline.
 
+Project site: <https://quillpane.shreyam1008.com.np/>
+
 ![Quillpane split workspace](photo/markpad-split.png)
 
 ## Install
@@ -26,6 +28,15 @@ Or grab a package from [Releases](https://github.com/shreyam1008/markpad/release
 ### Windows
 
 Download the installer from [Releases](https://github.com/shreyam1008/markpad/releases) → `markpad-setup.exe`. Run it. Quillpane appears in Start Menu and Desktop; the installer filename remains `markpad-setup.exe` for compatibility.
+
+### Scoop (personal bucket)
+
+```powershell
+scoop bucket add shreyam https://github.com/shreyam1008/scoop-bucket
+scoop install shreyam/quillpane
+```
+
+The official WinGet update is under review; it is not advertised as available until Microsoft publishes it.
 
 ### macOS
 

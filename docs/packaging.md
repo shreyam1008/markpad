@@ -1,6 +1,6 @@
-# Packaging
+# Quillpane packaging
 
-Markpad targets small native artifacts without Electron or a bundled browser runtime. The generated frontend is required input to every Go build because `frontend_assets.go` embeds `frontend/dist`.
+Quillpane (formerly Markpad) targets small native artifacts without Electron or a bundled browser runtime. The generated frontend is required input to every Go build because `frontend_assets.go` embeds `frontend/dist`.
 
 ## Local Linux build
 
@@ -34,4 +34,4 @@ The release contains:
 6. Push only the intended annotated version tag; do not use `git push --tags`.
 7. Verify every expected artifact and its application icon before announcing the release.
 
-Store manifests that need release hashes or commit IDs are updated only after GitHub artifacts exist. Signing/notarization and store submissions remain separate distribution work.
+Store manifests that need release hashes or commit IDs are updated only after GitHub artifacts exist. The personal Scoop bucket is live for `quillpane`; WinGet is under official review, while signing/notarization, Flatpak, Snap, and Microsoft Store submissions remain separate distribution work.
