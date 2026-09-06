@@ -21,7 +21,7 @@ The authenticated dashboard showed zero published snaps on 2026-09-06. The
 hosted-build landing page did not expose a repository connection for this
 registered-but-unpublished name. Registration is not publication.
 
-## APT: deployment and verification in progress
+## APT: signed repository live
 
 The Pages workflow now assembles signed APT metadata from the checksum-pinned
 v0.13.3 Debian artifact on every deployment, so docs updates preserve the lane.
@@ -34,10 +34,11 @@ Owner recovery material is outside Git at
 `C:\Users\shreyam\.codex\distribution-signing\quillpane` with restricted ACLs.
 Back up securely and rotate before expiry; never publish that directory.
 
-- [ ] Pages workflow authenticated APT install/removal test passes.
-- [ ] Verify public `/apt/key.asc` and `/apt/dists/stable/InRelease`.
-- [ ] Verify anonymous HTTPS APT install, launch, upgrade, uninstall.
-- [ ] Only then mark APT live in the portfolio control plane.
+- [x] Pages workflow authenticated APT install/removal test passes.
+- [x] Public key and signed repository verified through anonymous HTTPS APT.
+- [x] Anonymous HTTPS install/removal passed in [run 34028740165](https://github.com/shreyam1008/markpad/actions/runs/34028740165).
+- [ ] Complete desktop GUI launch and upgrade smoke tests.
+- [x] Signed APT marked live in the portfolio control plane; no GUI smoke-test claim.
 
 ## Flathub: not ready for a submission yet
 

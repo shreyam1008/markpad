@@ -4,6 +4,8 @@ Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
 Release target: v0.13.3
 
+Current execution state and human gates: [publication checklist](PUBLICATION-TODO.md).
+
 ## GitHub release first
 
 Push `main`, wait for CI, then push only the annotated release tag. `.github/workflows/release.yml` builds:
@@ -42,7 +44,27 @@ snapcraft login
 snapcraft upload quillpane_0.13.3_amd64.snap --release=stable
 ```
 
-The Snap Store operation is external and is not performed by the GitHub release workflow.
+The `Publish verified Snap artifact` workflow can upload this exact artifact to
+candidate once `SNAPCRAFT_STORE_CREDENTIALS` is configured. Test candidate before
+stable promotion. The name is registered, but no store release is claimed yet.
+
+## Signed APT
+
+Pages now generates a signed repository from the checksum-pinned v0.13.3 `.deb`
+and tests installation/removal before deployment. A second check verifies the
+anonymous HTTPS repository after deployment. Package name remains `markpad`.
+See [the checklist](PUBLICATION-TODO.md#apt-signed-repository-live)
+for verification status and signing-key recovery/rotation responsibilities.
+
+```sh
+curl -fsSLo /tmp/quillpane-key.asc https://quillpane.shreyam1008.com.np/apt/key.asc
+gpg --show-keys --with-fingerprint /tmp/quillpane-key.asc
+# Verify: 35B80DDD8D3781FD3781FE188EEFA506FAF81409
+sudo install -m 644 /tmp/quillpane-key.asc /usr/share/keyrings/quillpane.asc
+echo 'deb [signed-by=/usr/share/keyrings/quillpane.asc] https://quillpane.shreyam1008.com.np/apt stable main' | sudo tee /etc/apt/sources.list.d/quillpane.list
+sudo apt-get update
+sudo apt-get install markpad
+```
 
 ## Flatpak
 
