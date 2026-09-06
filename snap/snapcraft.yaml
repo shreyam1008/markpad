@@ -1,6 +1,6 @@
 name: quillpane
 base: core24
-version: '0.13.2'
+version: '0.13.3'
 summary: Quillpane - small native Markdown notepad
 description: |
   Quillpane (formerly Markpad) is a tiny native Markdown notepad built with Go and the system webview.

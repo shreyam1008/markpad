@@ -96,6 +96,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.13.3 | Quillpane (formerly Markpad) | Public-name migration with the verified Quillpane domain canonical; Markpad executable, storage, package IDs, release URLs, and logo preserved |
 | 0.13.2 | Quillpane (formerly Markpad) | Clean native Linux chrome without the duplicate GTK menu, with a subtle window edge and sharper controls |
 | 0.13.1 | Quillpane (formerly Markpad) | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | | Incremental CodeMirror editor, lazy language modes, bounded relative Markdown images, prose wrapping, exact wrapped-note navigation |

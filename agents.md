@@ -178,6 +178,7 @@ Before committing:
 
 | Version | Highlights |
 |---|---|
+| 0.13.3 | Public Quillpane name and canonical custom domain with Markpad compatibility anchors preserved |
 | 0.13.2 | Platform-aware Linux chrome without the duplicate GTK menu, with a subtle frame and sharper controls |
 | 0.13.1 | WebKitGTK-safe production bundle and native rendered-window release smoke test |
 | 0.13.0 | Incremental CodeMirror editing, lazy language modes, bounded local Markdown images, wrapped-note navigation |

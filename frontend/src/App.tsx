@@ -222,6 +222,14 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.13.3</h3>
+          <p>
+            Quillpane becomes the public product name and canonical web address while the Markpad
+            executable, local data contract, package identifiers, release URLs, and existing logo
+            remain compatible for upgrades.
+          </p>
+        </section>
+        <section>
           <h3 className="font-bold">0.13.2</h3>
           <p>
             Cleaner native Linux chrome removes the duplicate GTK application menu, adds a subtle

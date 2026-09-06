@@ -47,6 +47,11 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.13.3" date="2026-09-06">
+      <description>
+        <p>Quillpane public-name migration with the verified custom domain canonical; existing Markpad executable, data paths, package identifiers, release URLs, and logo remain compatible.</p>
+      </description>
+    </release>
     <release version="0.13.2" date="2026-09-03">
       <description>
         <p>Cleaner native Linux chrome without the duplicate GTK application menu, plus a subtle frameless-window edge and sharper window controls.</p>

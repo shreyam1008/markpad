@@ -1,10 +1,10 @@
 # Quillpane feature roadmap
 
-Updated for v0.13.2 on 2026-09-03. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.13.3 on 2026-09-06. GitHub issues are the live cards; this document explains why they are ordered this way.
 
-## Stable baseline — v0.13.2
+## Stable baseline — v0.13.3
 
-Quillpane (formerly Quillpane) is a local Markdown notepad with an optional single-folder workspace:
+Quillpane (formerly Markpad) is a local Markdown notepad with an optional single-folder workspace:
 
 - Plain local files plus autosaved recovery drafts and bounded saved-version history.
 - Editor, Split, Preview/Code View, incremental CodeMirror source editing, image preview, and operating-system PDF handoff.

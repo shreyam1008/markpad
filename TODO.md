@@ -1,6 +1,6 @@
 # TODO
 
-## Completed (v0.1–v0.13.2)
+## Completed (v0.1–v0.13.3)
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider

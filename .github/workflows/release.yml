@@ -198,7 +198,9 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            ## What's new in v0.13.2
+            ## What's new in v${{ github.ref_name }}
+
+            - Quillpane is now the public product name and canonical web address; the existing Markpad executable, data paths, package IDs, release URLs, and logo remain compatible for upgrades.
 
             - Fixed the blank Linux window by producing a WebKitGTK-safe embedded frontend bundle for Wails' in-memory asset scheme.
             - The ordinary launcher and `markpad` command work without environment flags or manual workarounds.
