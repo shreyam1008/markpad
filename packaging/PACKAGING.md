@@ -20,19 +20,22 @@ Verify all artifacts before submitting to a store. Do not publish a Scoop, WinGe
 
 ## Snap Store
 
-`snap/snapcraft.yaml` builds the frozen Bun frontend before Go. Build and inspect locally:
+`snap/snapcraft.yaml` builds the frozen Bun frontend before Go. The repository
+also has a `Build Snap` workflow that produces a downloadable `.snap` artifact
+from a selected immutable ref. Build and inspect locally when Linux tooling is
+available:
 
 ```sh
 sudo snap install snapcraft --classic
 snapcraft
-snap install --dangerous ./markpad_0.13.3_amd64.snap
+snap install --dangerous ./quillpane_0.13.3_amd64.snap
 ```
 
 After smoke testing:
 
 ```sh
 snapcraft login
-snapcraft upload markpad_0.13.3_amd64.snap --release=stable
+snapcraft upload quillpane_0.13.3_amd64.snap --release=stable
 ```
 
 The Snap Store operation is external and is not performed by the GitHub release workflow.
