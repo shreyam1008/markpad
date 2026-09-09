@@ -10,10 +10,10 @@ repository, verifies a local APT installation, then publishes the complete docs
 artifact to `cf-pages`. Cloudflare deploys that branch through GitHub integration.
 APT signing secrets stay in GitHub Actions; Cloudflare receives only public files.
 
-The existing GitHub Pages deployment and anonymous HTTPS APT check remain in the
-workflow during migration. Rollback restores the custom-domain CNAME to
-`shreyam1008.github.io`, DNS-only. Keep `/apt/`, public signing keys, package
-hashes, canonical metadata and the explicit HTTP 404 page intact.
+GitHub Pages hosting was disabled on 9 September 2026. The workflow now publishes
+only the Cloudflare artifact branch and retains the anonymous HTTPS APT check.
+Keep `/apt/`, public signing keys, package hashes, canonical metadata and the
+explicit HTTP 404 page intact.
 `docs/_headers` makes APT metadata revalidate instead of reusing stale metadata.
 
 Migration verification: the Pages artifact passed GPG verification for both
@@ -23,3 +23,7 @@ passed local and anonymous HTTPS APT installation on Ubuntu.
 
 Website visitor analytics are separate from the installed app, which remains
 local-only and has no telemetry.
+
+Rollback now requires re-enabling and successfully deploying GitHub Pages before
+restoring its DNS target; changing DNS alone is not sufficient. Retiring GitHub
+Pages also retires the old github.io-hosted URLs and redirects.
