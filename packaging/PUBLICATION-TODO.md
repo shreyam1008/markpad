@@ -74,10 +74,10 @@ Policy: https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai
 - [x] Upgrade standalone Windows app to v0.13.3; verify saved demo note, preview and split view. This is not an installed-MSIX test.
 - [ ] Test the installed MSIX: launch, open/save, history, recovery, upgrade/removal.
 - [x] Submit for certification on 2026-09-06: dashboard shows In certification, pre-processing in progress; automatic publishing after approval.
-- [ ] Verify certification approval and eventual anonymous Store listing. Not live yet.
+- [x] Verify anonymous Microsoft Store listing: 9 September 2026, India market, Quillpane by shreyam1008 with Download button, 3+ rating and two screenshots. Public availability verified; installed-MSIX smoke test remains pending.
 
 Dashboard: https://partner.microsoft.com/en-us/dashboard/products/9MZDJLQ6V8L3/overview
-Eventual public URL (not yet verified live): https://apps.microsoft.com/detail/9MZDJLQ6V8L3
+Verified public URL (9 September 2026): https://apps.microsoft.com/detail/9MZDJLQ6V8L3
 Uploaded screenshots: `dist/store-screenshots/quillpane-preview-store.png` and
 `dist/store-screenshots/quillpane-split-store.png` (verified PNG encoding).
 Optional trailer, promotional artwork and logo overrides are not uploaded;
