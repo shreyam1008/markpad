@@ -1,4 +1,4 @@
-name: pages
+name: Publish Cloudflare site
 
 on:
   workflow_dispatch:
@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -21,12 +19,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/configure-pages@v5
       - name: Prepare authenticated APT repository from stable release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,11 +71,6 @@ jobs:
             git -C "$PAGES_DIR" commit -m "site: publish ${GITHUB_SHA::7} with signed APT repository"
             git -C "$PAGES_DIR" push origin cf-pages
           fi
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-      - id: deployment
-        uses: actions/deploy-pages@v4
       - name: Verify anonymous HTTPS APT installation
         run: |
           set -euo pipefail
