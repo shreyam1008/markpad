@@ -8,24 +8,24 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: APT repository for markpad
-Date: Wed, 09 Sep 2026 04:43:38 +0000
+Date: Wed, 09 Sep 2026 05:03:02 +0000
 MD5Sum:
  c56bfdd9e09c7a92f710f6c85f6d1b6d              467 main/binary-amd64/Packages
- 6cdeb51d629c793fe232b4728222df41              368 main/binary-amd64/Packages.gz
+ 93d6e1a22211625dcf2fa37438db39e4              368 main/binary-amd64/Packages.gz
 SHA256:
  83fdd97310aa0cad2333a70ae2ecad5925dfa3043ecb3ddfe52ffc06d4be5128              467 main/binary-amd64/Packages
- 2eab29fa780e6926550de9730b6aae9ce3e350abdd5e8cd45dfa0c524253c505              368 main/binary-amd64/Packages.gz
+ 7868010d7edd7bf0c8c9e199e7bb63399d4b4085dec63240608fe3fde9d63edf              368 main/binary-amd64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqg4/oACgkQju+lBvr4
-FAmqJwv9Gf2e9uN/hPZwGywhoMzmsd1nQSgKSz4FQ2VRAzatZmMZ2AxSA+xYOK4X
-6R8q045RDik1ftvoixpR1/wBBjS74C/dg7t4y+Ek7k3KJEOhCT8StqvZ9wu83hvd
-9l7raAC6i1LZuEJvl3LfWSkI/9/ss+EASPh3YOzdwf5SBSi2PZUGVi7OpLE7LMx6
-1DsSZGo5EqyPUU4tBPZwrMsHVpdme7YmfzzLmoNuBcUVvNr+AayLpevd0D/Kk1o8
-1WKmmHQvrqspKr2L7GML6tjedpI8fvAJNU+s+z9oaRSAhPa6tBZBCxJrIW9SCF2s
-fumDnzKL459cqPkll8FZbM7jbO/howHB9C0eRgIhoilBr6lv4vlq4I4wf2XfO62I
-lWwQU15BqnKzqHZckiBGeUEmKcapla7CgaSPA5g+e6xBMzGqmp3Bnu6Aan14Xaa4
-rCc1/Ly2ZEwKb7oPrZvc3IPEMrErcXs+Ff2l11do2NvRVgWq4f9tsxUFdnxynA3O
-QaUOOALA
-=uhZ1
+iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqg6IYACgkQju+lBvr4
+FAlB2wv+LOYN1ZZSgCFNkB64KSKJcN8wkLF6QeCCKgr1+PX7l4Pp6mo/tgqFv6G3
+oxnoA/VsXaL3oCqYcG3xu/BEaYhQEmF1vY4lVwU/HrBKXAYz8ez35zTqbgEFU6Ud
+GwxoBTfzazrgM1FSC5q9U4Gub6pyS+/GkcqM2t1tvzm2MWEkN0FLC3/8uKogEq1y
+wGMrkCe8C2bp0FIGQzDGDY1g48SxFrkj1jXHd3TmvykJcfEpGLXJ5ZUki74PQ33m
+fuJXUbizpHlZwmoyef2iFmtGyhGGYyHa8hm9vcmVNsYzg/nDysdf9yRHVPXAVVk/
+OIbXny8J75cCbr2RRzLdKBN7dnDKjZthpTNOfkgOlnG3DDZU00TeLvSh4nxECk4M
+6UhNnNx5v++b83/UeJ543CijqtGs8VgSzM01PcwwJeJVn05yDyyVimpi8fBnGxTy
+L3ecWNXOwGl/icUu+qRLCvIPo8NcmcL7lviZ7EBgzw6YLBpHV/p2VRGN72rQ2dWs
+dxxsI1kh
+=cOua
 -----END PGP SIGNATURE-----
