@@ -1,0 +1,80 @@
+@import "../frontend/node_modules/tailwindcss/index.css";
+@source "./index.html";
+
+@theme {
+  --color-bg: #f4f2ed;
+  --color-paper: #fffffc;
+  --color-ink: #1a1c1b;
+  --color-muted: #6b6e68;
+  --color-accent: #2f6f61;
+  --color-accent-light: #3d9484;
+  --color-accent-soft: #dde8df;
+  --color-line: #d8d6ce;
+  --color-gold: #d49e2a;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --animate-fade-up: fade-up 0.6s ease-out both;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 76px;
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+}
+
+.delay-4 {
+  animation-delay: 0.4s;
+}
+
+.window-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.window-dots span:nth-child(1) {
+  background: #ff5f57;
+}
+
+.window-dots span:nth-child(2) {
+  background: #ffbd2e;
+}
+
+.window-dots span:nth-child(3) {
+  background: #27c93f;
+}

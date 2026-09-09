@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://quillpane.shreyam1008.com.np/sitemap.xml
