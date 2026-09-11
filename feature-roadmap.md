@@ -1,6 +1,6 @@
 # Quillpane feature roadmap
 
-Updated for v0.13.3 on 2026-09-06. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.13.4 on 2026-09-11. Preview copy now uses the native clipboard; Help offers release checks and guided downloads. In-app automatic installation remains future work. GitHub issues are the live cards; this document explains why they are ordered this way.
 
 ## Stable baseline — v0.13.3
 
