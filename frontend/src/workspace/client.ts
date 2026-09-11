@@ -18,6 +18,7 @@ function api(): MarkpadAPI {
 }
 
 export const client = {
+  checkForUpdates: () => api().CheckForUpdates(),
   session: (): Promise<SessionState> => api().GetSession(),
   activeContent: (): Promise<string> => api().GetActiveContent(),
   content: (id: string): Promise<string> => api().GetNoteContent(id),

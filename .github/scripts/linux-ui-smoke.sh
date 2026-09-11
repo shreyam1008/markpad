@@ -39,7 +39,8 @@ if ! xdotool getdisplaygeometry >/dev/null 2>&1; then
   exit 1
 fi
 
-dbus-run-session -- ./dist/markpad >dist/linux-ui-smoke.log 2>&1 &
+printf 'Clipboard sentinel 12345\n' >dist/clipboard-smoke.md
+dbus-run-session -- ./dist/markpad "$PWD/dist/clipboard-smoke.md" >dist/linux-ui-smoke.log 2>&1 &
 app_pid=$!
 
 window_id=""
@@ -80,3 +81,28 @@ if grep -Eqi 'File[[:space:]]+Edit[[:space:]]+View[[:space:]]+Settings[[:space:]
 fi
 
 echo "Linux UI smoke passed: visible Quillpane content rendered without a duplicate native menu."
+
+# Exercise the OS clipboard from rendered Markdown, not a browser-only mock.
+tesseract dist/linux-ui-smoke.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-smoke.tsv
+read -r word_x word_y < <(awk -F '\t' '$12 == "sentinel" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-smoke.tsv)
+if [[ -z "${word_x:-}" || -z "${word_y:-}" ]]; then
+  echo "Clipboard test text did not render" >&2
+  exit 1
+fi
+xdotool windowfocus --sync "$window_id"
+xdotool mousemove --window "$window_id" "$word_x" "$word_y" click --repeat 2 --delay 100 1
+xdotool key --clearmodifiers ctrl+c
+sleep 0.5
+copied="$(timeout 5 xclip -selection clipboard -o)"
+if [[ "${copied// /}" != "sentinel" ]]; then
+  echo "Preview Ctrl+C did not copy the selected word" >&2
+  exit 1
+fi
+xdotool key --clearmodifiers ctrl+x
+sleep 0.5
+copied="$(timeout 5 xclip -selection clipboard -o)"
+if [[ "${copied// /}" != "sentinel" ]] || [[ "$(cat dist/clipboard-smoke.md)" != "Clipboard sentinel 12345" ]]; then
+  echo "Preview Cut did not preserve clipboard text and source file" >&2
+  exit 1
+fi
+echo "Linux native preview clipboard smoke passed."

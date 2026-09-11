@@ -37,7 +37,7 @@ jobs:
             install -y --no-install-recommends \
             gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev \
             wget file desktop-file-utils ripgrep \
-            xvfb xauth xdotool imagemagick tesseract-ocr
+            xvfb xauth xdotool xclip imagemagick tesseract-ocr
       - name: Install frontend dependencies
         run: make setup
       - name: Check, test, and build release binary
@@ -200,15 +200,9 @@ jobs:
           body: |
             ## What's new in v${{ github.ref_name }}
 
-            - Quillpane is now the public product name and canonical web address; the existing Markpad executable, data paths, package IDs, release URLs, and logo remain compatible for upgrades.
-
-            - Fixed the blank Linux window by producing a WebKitGTK-safe embedded frontend bundle for Wails' in-memory asset scheme.
-            - The ordinary launcher and `markpad` command work without environment flags or manual workarounds.
-            - Added a native Linux window smoke test that launches the release binary, captures the real GTK window, and verifies visible Quillpane UI text before publishing.
-            - Removed Linux's redundant native `File / Edit / View / Settings / Help` menu so the custom Markpad title bar is the only application chrome.
-            - Added a subtle Linux-only outer edge and sharper window-control glyphs while keeping the Windows presentation unchanged.
-            - Extended the native Linux smoke test to reject any future duplicate application menu before publishing.
-            - Preserved the v0.9.2 session schema and existing files, drafts, history, workspace, and settings during upgrade.
+            - Fixed preview copying with an explicit native clipboard path for Ctrl/Cmd+C; preview Cut preserves document content.
+            - Added Help release checks, download actions, busy/error feedback, and installation guidance.
+            - Added a real Linux preview clipboard smoke test to CI and release validation.
 
             ## Install
 

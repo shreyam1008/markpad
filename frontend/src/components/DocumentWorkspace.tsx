@@ -12,6 +12,7 @@ import {
 
 import { PRODUCT_NAME } from "../brand";
 import { shouldCoalesceLargeEdit } from "../history/edit";
+import { previewSelection, writeClipboard } from "../preview/clipboard";
 import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
 import { client } from "../workspace/client";
 import {
@@ -502,6 +503,38 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         window.removeEventListener("keyup", up, true);
       };
     }, [onTextZoom]);
+
+    useEffect(() => {
+      const copy = (event: ClipboardEvent | KeyboardEvent) => {
+        const root = viewer.current;
+        if (!root) return;
+        const text = previewSelection(root, window.getSelection());
+        if (!text) return;
+        // Cancel native Cut too: a rendered preview must never mutate a document.
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if ("clipboardData" in event) event.clipboardData?.setData("text/plain", text);
+        void writeClipboard(text).then(
+          () => onStatus("Copied preview selection"),
+          () => onStatus("Could not copy selection. Please try again."),
+        );
+      };
+      // Some OS webviews never dispatch copy/cut for a non-editable selection.
+      // This is scoped to DOM selections in this pane; editor shortcuts stay native.
+      const keydown = (event: KeyboardEvent) => {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+        const key = event.key.toLowerCase();
+        if (key === "c" || key === "x") copy(event);
+      };
+      document.addEventListener("keydown", keydown, true);
+      document.addEventListener("copy", copy, true);
+      document.addEventListener("cut", copy, true);
+      return () => {
+        document.removeEventListener("keydown", keydown, true);
+        document.removeEventListener("copy", copy, true);
+        document.removeEventListener("cut", copy, true);
+      };
+    }, [onStatus]);
 
     const savePosition = useCallback(() => {
       if (!note?.id) return;
@@ -1057,15 +1090,19 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
               />
             )}
             {showViewer && (
-              <div
+              <section
                 ref={viewer}
                 id="viewer-container"
+                // The scrollable preview needs keyboard focus for native clipboard and scrolling.
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+                tabIndex={0}
+                aria-label="Document preview"
                 className="preview-pane flex-1 overflow-auto overscroll-contain p-3"
                 style={viewMode === "split" ? { flex: `0 0 ${100 - split}%` } : undefined}
                 onScroll={savePosition}
               >
                 <Viewer key={themeKey} note={note} content={previewContent} textSize={textSize} />
-              </div>
+              </section>
             )}
           </div>
         </div>

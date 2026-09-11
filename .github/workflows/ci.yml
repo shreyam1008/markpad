@@ -33,7 +33,7 @@ jobs:
             -o Dpkg::Use-Pty=0 \
             install -y --no-install-recommends \
             gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev ripgrep \
-            xvfb xauth xdotool imagemagick tesseract-ocr
+            xvfb xauth xdotool xclip imagemagick tesseract-ocr
       - name: Install frontend dependencies
         run: make setup
       - name: Check, test, and build

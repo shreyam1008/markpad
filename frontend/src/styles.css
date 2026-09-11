@@ -3783,6 +3783,11 @@ textarea {
   color: var(--mp-syntax-deletion);
 }
 
+.preview-pane {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Mermaid is a lazy Markdown capability. Ordinary notes never load its runtime. */
 .markdown-body pre.mermaid {
   display: flex;

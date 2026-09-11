@@ -1,6 +1,9 @@
 # TODO
 
-## Completed (v0.1–v0.13.3)
+## Completed (v0.1–v0.13.4)
+
+- [x] Native preview clipboard copy and non-destructive preview Cut
+- [x] Help release checks and guided update downloads
 
 - [x] Go + Wails v2 app scaffold (replaced Gio)
 - [x] Editor, Split, Preview modes with resizable divider

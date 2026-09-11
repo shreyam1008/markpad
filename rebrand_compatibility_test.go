@@ -39,8 +39,8 @@ func TestRebrandPreservesDurableIdentities(t *testing.T) {
 			"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Markpad",
 		}},
 		{"packaging/scoop/markpad.json", []string{
-			"https://github.com/shreyam1008/markpad/releases/download/v0.9.2/markpad-setup.exe",
-			"C:\\\\Program Files\\\\Markpad\\\\markpad.exe",
+			"https://github.com/shreyam1008/markpad/releases/download/v0.13.3/markpad-setup.exe",
+			"C:\\\\Program Files (x86)\\\\Markpad\\\\markpad.exe",
 		}},
 		{"packaging/winget/manifests/s/ShreyamAdhikari/Markpad/0.9.2/ShreyamAdhikari.Markpad.yaml", []string{
 			"PackageIdentifier: ShreyamAdhikari.Markpad",

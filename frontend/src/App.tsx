@@ -49,6 +49,7 @@ import {
 import { QuitDialog } from "./components/QuitDialog";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Sidebar } from "./components/Sidebar";
+import { UpdateCheck } from "./components/UpdateCheck";
 import { WorkspaceSearch } from "./components/WorkspaceSearch";
 import {
   applyPreferencesToDocument,
@@ -190,6 +191,7 @@ function ModalLayer({
     title = "Help";
     body = (
       <div className="space-y-2">
+        <UpdateCheck />
         <p>
           <strong>{PRODUCT_NAME}</strong> is a native Markdown notepad.
         </p>
@@ -221,6 +223,13 @@ function ModalLayer({
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.13.4</h3>
+          <p>
+            Preview selections copy through the native clipboard without changing the document. Help
+            now checks for releases and opens update downloads with installation guidance.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.13.3</h3>
           <p>

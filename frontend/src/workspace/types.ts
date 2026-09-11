@@ -104,6 +104,7 @@ export interface WorkspaceSearchResult {
 }
 
 export interface MarkpadAPI {
+  CheckForUpdates(): Promise<UpdateInfo>;
   GetSession(): Promise<SessionState>;
   GetActiveContent(): Promise<string>;
   GetNoteContent(id: string): Promise<string>;
@@ -149,6 +150,7 @@ export interface MarkpadAPI {
 }
 
 export interface MarkpadRuntime {
+  ClipboardSetText?(text: string): Promise<boolean>;
   Environment?(): Promise<{ platform?: string }>;
   EventsOn(name: string, callback: (...args: unknown[]) => void): () => void;
   OnFileDrop(
@@ -159,6 +161,13 @@ export interface MarkpadRuntime {
   WindowMinimise?(): void;
   WindowToggleMaximise?(): void;
   Quit?(): void;
+}
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  available: boolean;
+  url: string;
 }
 
 declare global {

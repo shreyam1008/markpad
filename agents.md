@@ -14,7 +14,7 @@ Plain files remain the source of truth. Quillpane has no account, cloud service,
 |---|---|
 | No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
 | Production binary must remain below its platform ceiling | `make check-size` gates Linux at 16 MiB; the release workflow gates Windows at 16.1 MiB. |
-| No cloud client, telemetry, account, or external API | User content stays local and private. |
+| No cloud client, telemetry, or account; only explicit Help release checks may contact GitHub | User content stays local and private. |
 | No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
 | No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
 | Avoid new Go dependencies | Prefer the standard library; Wails is the only direct Go dependency. |
