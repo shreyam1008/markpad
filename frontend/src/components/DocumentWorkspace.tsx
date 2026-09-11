@@ -137,6 +137,9 @@ function Viewer({
     if (type === "code") return renderCode(content, note?.path ?? "");
     return "";
   }, [content, note?.path, type]);
+  // React compares this prop by identity. Replacing it on a shortcut-hint render
+  // rewrites innerHTML and destroys the selection as soon as Ctrl/Cmd is pressed.
+  const renderedHTML = useMemo(() => ({ __html: html }), [html]);
 
   useEffect(() => {
     let active = true;
@@ -299,7 +302,7 @@ function Viewer({
         role="document"
         className={`markdown-body viewer-document viewer-${type} bg-editor rounded-lg p-6 min-h-full select-text`}
         style={{ "--markpad-text-size": `${textSize}px` } as React.CSSProperties}
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={renderedHTML}
       />
     );
   }

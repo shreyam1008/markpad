@@ -49,4 +49,5 @@ jobs:
             dist/linux-ui-smoke.log
             dist/linux-ui-smoke.txt
             dist/linux-ui-smoke.png
+            dist/linux-ui-clipboard.png
           if-no-files-found: ignore

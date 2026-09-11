@@ -93,14 +93,15 @@ xdotool windowfocus --sync "$window_id"
 xdotool mousemove --window "$window_id" "$word_x" "$word_y" click --repeat 2 --delay 100 1
 xdotool key --clearmodifiers ctrl+c
 sleep 0.5
-copied="$(timeout 5 xclip -selection clipboard -o)"
+import -display "$DISPLAY" -window "$window_id" dist/linux-ui-clipboard.png
+copied="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
 if [[ "${copied// /}" != "sentinel" ]]; then
   echo "Preview Ctrl+C did not copy the selected word" >&2
   exit 1
 fi
 xdotool key --clearmodifiers ctrl+x
 sleep 0.5
-copied="$(timeout 5 xclip -selection clipboard -o)"
+copied="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
 if [[ "${copied// /}" != "sentinel" ]] || [[ "$(cat dist/clipboard-smoke.md)" != "Clipboard sentinel 12345" ]]; then
   echo "Preview Cut did not preserve clipboard text and source file" >&2
   exit 1
