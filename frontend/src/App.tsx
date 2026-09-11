@@ -63,6 +63,7 @@ import {
   UI_SCALE_MIN,
   type Preferences,
 } from "./preferences";
+import { writeClipboard } from "./preview/clipboard";
 import { createHotkeyDefinitions, shortcutLabel } from "./shortcuts";
 import { clampFloatingPosition } from "./ui/floating";
 import { client } from "./workspace/client";
@@ -1601,7 +1602,10 @@ function App() {
               <button
                 className="ctx-item flex items-center gap-2"
                 onClick={() => {
-                  void navigator.clipboard.writeText(contextMenu.note.path);
+                  void writeClipboard(contextMenu.note.path).then(
+                    () => setStatus("Copied file path"),
+                    () => setStatus("Could not copy file path"),
+                  );
                   setContextMenu(undefined);
                 }}
               >

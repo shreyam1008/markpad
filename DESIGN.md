@@ -163,7 +163,7 @@ Theme changes remount only the preview renderer, not the editor or the document 
 
 Quillpane is a Wails application targeting the operating system webview. Keep release binaries under the platform budgets in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
 
-- No runtime network calls, font downloads, preload splash art, or heavyweight asset decoding.
+- No runtime font downloads, preload splash art, or heavyweight asset decoding. Only the explicit Help update check may request public GitHub release metadata; document rendering remains offline.
 - Avoid backdrop filters and large blurred shadows.
 - Prefer CSS states over JS measurement. Mount small controls near their owner.
 - Preserve bounded rendering for large files, stable scrollbar gutters, and content containment.

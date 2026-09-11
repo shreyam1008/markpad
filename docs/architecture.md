@@ -8,6 +8,8 @@ Quillpane (formerly Markpad) is a local Wails desktop application with three del
 
 Platform-specific operations belong at this boundary. Session persistence must not depend on Wails or browser state.
 
+`updates.go` performs an on-demand, timeout-bounded GitHub stable-release check from Help. It sends no document data, introduces no background updater, and opens the official release downloads for user-managed installation. Preview selections and Copy Path use the Wails native clipboard; preview keyboard copy also handles webviews that omit DOM clipboard events.
+
 ## Session domain
 
 `internal/session` owns open-document metadata, drafts, favorites, recent files, preferences, scroll state, bounded saved-version history, and the content fingerprint last opened or saved for each source file.
