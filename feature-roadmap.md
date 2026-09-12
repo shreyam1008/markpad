@@ -1,19 +1,19 @@
 # Quillpane feature roadmap
 
-Updated for v0.13.5 on 2026-09-12. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.13.6 on 2026-09-12. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
 
 ## Stable baseline — v0.13.3
 
-Quillpane (formerly Markpad) is a local Markdown notepad with an optional single-folder workspace:
+Quillpane (formerly Markpad) is a local Markdown notepad for individual files:
 
 - Plain local files plus autosaved recovery drafts and bounded saved-version history.
 - Editor, Split, Preview/Code View, incremental CodeMirror source editing, image preview, and operating-system PDF handoff.
 - Modern GFM, safe lazy Mermaid diagrams, and relative Markdown images resolved beside saved notes through a bounded native reader.
-- `Ctrl+P` fuzzy navigation and bounded `Ctrl+Shift+F` folder search without a persistent index.
+- `Ctrl+P` fuzzy navigation, current-file search, synchronized Split scrolling, and a detailed Help tour.
 - A strict semantic design system, custom Wails chrome, system/light/dark modes, five color themes, and one live keyboard catalog.
-- External-change protection, confirmed disk deletion, and collision-safe filing of instant drafts into ordinary workspace files.
+- External-change protection, confirmed disk deletion, and ordinary Save As for recovery drafts.
 
-Workspace data remains plain files. Quillpane does not import content, write metadata into the selected folder, create a search database, or require an account.
+Data remains plain files. Folder workspaces and their scanner/search/filing commands were removed at the owner's request in 0.13.6. Folder-based ideas below are deferred pending a new product decision.
 
 ## Product rules
 
@@ -23,7 +23,7 @@ Workspace data remains plain files. Quillpane does not import content, write met
 4. New capabilities reuse the normal document lifecycle instead of creating parallel storage.
 5. The app stays offline, account-free, and within the platform release ceilings.
 6. Every feature ships with empty, failure, reopen, keyboard, and narrow-window behavior.
-7. No new embedded runtime dependency lands until Windows amd64 regains at least 256 KiB of bundle headroom.
+7. Further runtime dependencies require measured bundle headroom. Driver.js 1.8.0 is the owner-requested tour exception measured in BUNDLE_BUDGET.md.
 
 ## Now — v0.14.0
 
@@ -33,11 +33,11 @@ Hide chrome without remounting the document, losing cursor state, or creating a 
 
 ### [#2 Bounded source/preview scroll synchronization](https://github.com/shreyam1008/markpad/issues/2)
 
-Keep Split view near the same Markdown block using headings and block anchors. It must avoid feedback loops, continuous full-document measurement, and jitter around images, tables, fences, or Mermaid diagrams.
+Normalized reading-progress sync shipped in 0.13.6. A later enhancement may keep Split view near the same Markdown block using headings and block anchors. It must avoid feedback loops, continuous full-document measurement, and jitter around images, tables, fences, or Mermaid diagrams.
 
 ### [#3 Performance baseline and bundle-headroom recovery](https://github.com/shreyam1008/markpad/issues/3)
 
-Restore at least 256 KiB below the Windows ceiling and publish repeatable cold/warm startup, private-memory/PSS, typing, preview, and representative folder-search measurements.
+Restore at least 256 KiB below the Windows ceiling and publish repeatable cold/warm startup, private-memory/PSS, typing, preview, and current-file search measurements.
 
 ## Next — plain-file workflows
 

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quillpane — A Tiny Native Markdown Notepad for Linux, Windows, and macOS</title>
     <meta name="application-name" content="Quillpane" />
-    <meta name="description" content="Quillpane is a small, fast, native Markdown notepad and local folder workspace built with Go and Wails. Responsive source viewers, split preview, themes, keyboard settings, recovery drafts, and bounded workspace search. No Electron or cloud." />
-    <meta name="keywords" content="quillpane, markpad, markdown editor, markdown notepad, local folder workspace, workspace search, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
+    <meta name="description" content="Quillpane is a small, fast, native Markdown notepad built with Go and Wails. Responsive source viewers, split preview, themes, keyboard settings, recovery drafts, and current-file search. No Electron or cloud." />
+    <meta name="keywords" content="quillpane, markpad, markdown editor, markdown notepad, individual files, guided tour, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#2f6f61" />
@@ -21,7 +21,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Quillpane" />
     <meta property="og:title" content="Quillpane — Native Markdown Notepad" />
-    <meta property="og:description" content="A tiny native Markdown notepad with folder browsing, fast file switching, bounded content search, split preview, and recovery drafts. No Electron or cloud." />
+    <meta property="og:description" content="A tiny native Markdown notepad with a guided tour, fast file switching, current-file search, split preview, and recovery drafts. No Electron or cloud." />
     <meta property="og:url" content="https://quillpane.shreyam1008.com.np/" />
     <meta property="og:image" content="https://quillpane.shreyam1008.com.np/photo/markpad-split.png" />
     <meta property="og:image:alt" content="Split Markdown editor and preview in Quillpane, formerly Markpad." />
@@ -49,13 +49,13 @@
         "alternateName": "Markpad",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Linux, Windows, macOS",
-        "softwareVersion": "0.13.5",
+        "softwareVersion": "0.13.6",
         "author": { "@type": "Person", "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np" },
         "license": "https://opensource.org/licenses/MIT",
         "url": "https://quillpane.shreyam1008.com.np/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad"],
-        "description": "A tiny native Markdown notepad and local folder workspace with fast file switching, responsive source viewers, themes, keyboard settings, bounded content search, split preview, version history, and recovery drafts.",
+        "description": "A tiny native Markdown notepad with fast file switching, responsive source viewers, themes, keyboard settings, current-file search, split preview, version history, and recovery drafts.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
@@ -88,7 +88,7 @@
         <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-4 animate-fade-up">Open-source by <a href="https://github.com/shreyam1008" class="underline decoration-accent/40 hover:decoration-accent">shreyam1008</a></p>
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-6 animate-fade-up delay-1">A tiny notepad<br/>that gets out of the way.</h1>
         <p class="text-lg text-muted leading-relaxed mb-8 animate-fade-up delay-2">
-          Quillpane (formerly Markpad) opens a file or a whole folder. Edit Markdown with live preview, jump to any note with Ctrl+P, and search local content with Ctrl+Shift+F. No Electron, cloud, or telemetry.
+          Quillpane (formerly Markpad) opens your individual files. Edit Markdown with synchronized split preview, jump to an open note with Ctrl+P, and search the current file with Ctrl+F. No Electron, cloud, or telemetry.
         </p>
         <div class="flex justify-center gap-3 mb-6 animate-fade-up delay-3">
           <a href="#downloads" class="px-6 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-light transition-colors shadow-lg shadow-accent/20">Download</a>
@@ -105,7 +105,7 @@
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">About 16 MiB</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Workspace Search</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Guided Tour</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Version History + Diffs</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Responsive Source Views</span>
@@ -165,8 +165,8 @@
             <p class="text-sm text-muted">Markdown, text, JSON, YAML, Python, Go, shell scripts, HTML, CSS, and any text file. Native OS file dialogs.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
-            <h3 class="font-bold mb-2">Workspace Lite</h3>
-            <p class="text-sm text-muted">Open one ordinary local folder. Jump and search without an index, then file an instant draft into it with Ctrl+Shift+Enter.</p>
+            <h3 class="font-bold mb-2">Files made simple</h3>
+            <p class="text-sm text-muted">Open individual files, recognize their symbols and colors, and follow the detailed tour from Help. Save drafts wherever you choose.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Session Restore</h3>
@@ -262,25 +262,25 @@
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
           <h2 class="text-3xl font-bold">Get Quillpane for your platform.</h2>
-          <p class="text-muted mt-2">Use the GitHub installer above for Linux, or choose a download below. v0.13.5 is the current release.</p>
+          <p class="text-muted mt-2">Use the GitHub installer above for Linux, or choose a download below. v0.13.6 is the current release.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.5/Markpad.AppImage" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.6/Markpad.AppImage" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128039;</div>
             <strong class="block group-hover:text-accent transition-colors">Linux AppImage</strong>
             <span class="text-xs text-muted">Portable, no install</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.5/markpad_0.13.5_amd64.deb" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.6/markpad_0.13.6_amd64.deb" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128230;</div>
             <strong class="block group-hover:text-accent transition-colors">Linux .deb</strong>
             <span class="text-xs text-muted">Debian, Ubuntu</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.5/markpad-setup.exe" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.6/markpad-setup.exe" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127466;</div>
             <strong class="block group-hover:text-accent transition-colors">Windows .exe</strong>
             <span class="text-xs text-muted">NSIS installer</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.5/Markpad.dmg" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.6/Markpad.dmg" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127822;</div>
             <strong class="block group-hover:text-accent transition-colors">macOS .dmg</strong>
             <span class="text-xs text-muted">App bundle</span>
@@ -318,7 +318,7 @@
     <footer class="border-t border-line py-8 text-center text-sm text-muted">
       <p><a href="https://shreyam1008.com.np/projects/#distribution-markpad" class="text-accent hover:underline">Install channels and store status</a> &middot; <a href="/privacy.html" class="text-accent hover:underline">Privacy</a></p>
       <p>Built with care by <a href="https://github.com/shreyam1008" class="text-accent hover:underline">Shreyam Adhikari</a></p>
-      <p class="mt-1">v0.13.5 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
+      <p class="mt-1">v0.13.6 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
     </footer>
   </body>
 </html>

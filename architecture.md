@@ -16,11 +16,9 @@ Platform-specific operations belong at this boundary. Session persistence must n
 
 Session and draft writes are atomic. Dirty drafts survive ordinary application exit. Explicitly discarding an unsaved document may remove its draft. Normal saves stream-hash the current source and stop on an external modification, deletion, replacement, or unverifiable legacy baseline. Explicit conflict reload preserves the Quillpane draft in history first. Saved-version history is local and is not a version-control or synchronization system.
 
-## Workspace domain
+## File safety
 
-`internal/workspace` owns local-folder path validation, deterministic scanning, exact content search, collision-safe file reservation, and deletion-target validation. Filing a recovery draft reserves a safe workspace path, then reuses the ordinary session save lifecycle. It uses the standard library and no database or persistent index.
-
-The selected workspace root is persisted with session state. Scan and search results are derived, bounded data: at most 10,000 included files, 100,000 visited entries, 32 levels, 2 MiB per file, 64 MiB searched per query, and 200 returned matches. Hidden paths, symlinks, and generated/dependency folders are excluded.
+`delete_path.go` validates permanent deletion targets. Only already-open saved documents may be deleted after confirmation; directories, unsafe paths, and symlinks are rejected. No folder scanner, index, or persisted workspace root remains. Old session roots are ignored without discarding documents.
 
 ## Frontend
 
@@ -36,7 +34,6 @@ Bun bundles all production dependencies into `frontend/dist`, and Go embeds only
 4. Explicit save writes the selected file and records a bounded history snapshot.
 5. Go returns authoritative note, path, dirty, history, and persistence state to the frontend.
 6. Native menus emit the same commands used by visible application controls.
-7. Workspace refresh replaces the bounded derived inventory; opening a result rejoins the normal document/session flow.
 
 ## Design constraints
 
@@ -44,4 +41,4 @@ Bun bundles all production dependencies into `frontend/dist`, and Go embeds only
 - Linux is the primary platform while desktop-boundary code remains portable.
 - No account, telemetry, cloud synchronization, component suite, or runtime CDN.
 - Prefer explicit functions and narrow interfaces over service or repository layers.
-- Preserve compatibility with existing v0.9 sessions and drafts while adding optional v0.10 workspace state.
+- Preserve existing sessions and recovery drafts, including sessions with obsolete folder metadata.
