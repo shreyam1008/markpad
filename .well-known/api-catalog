@@ -1,0 +1,10 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://quillpane.shreyam1008.com.np/",
+      "service-desc": [{ "href": "https://quillpane.shreyam1008.com.np/openapi.json", "type": "application/openapi+json", "title": "Quillpane public documentation resources" }],
+      "service-doc": [{ "href": "https://quillpane.shreyam1008.com.np/llms.txt", "type": "text/markdown", "title": "Quillpane agent-readable guide" }],
+      "status": [{ "href": "https://quillpane.shreyam1008.com.np/.well-known/status.json", "type": "application/json", "title": "Quillpane site status" }]
+    }
+  ]
+}

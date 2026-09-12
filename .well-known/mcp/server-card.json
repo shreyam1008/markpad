@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "2026-06-11",
+  "serverInfo": {
+    "name": "quillpane-public-discovery",
+    "title": "Quillpane public documentation",
+    "version": "0.13.4",
+    "description": "Static public resources describing the local-first Quillpane desktop application. No hosted MCP transport is available."
+  },
+  "publisher": { "name": "Shreyam Adhikari", "url": "https://shreyam1008.com.np/" },
+  "transports": [],
+  "capabilities": {
+    "resources": [
+      { "name": "llms.txt", "uri": "https://quillpane.shreyam1008.com.np/llms.txt", "mimeType": "text/markdown" },
+      { "name": "architecture.md", "uri": "https://quillpane.shreyam1008.com.np/architecture.md", "mimeType": "text/markdown" }
+    ],
+    "tools": []
+  },
+  "documentation": "https://quillpane.shreyam1008.com.np/llms.txt"
+}

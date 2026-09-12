@@ -1,0 +1,7 @@
+{
+  "service": "Quillpane public documentation",
+  "status": "operational",
+  "version": "0.13.4",
+  "updated": "2026-09-12",
+  "scope": "static discovery resources; documents and notes remain local to the desktop application"
+}

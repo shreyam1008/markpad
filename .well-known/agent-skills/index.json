@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agentskills.io/schemas/agent-skills-discovery-0.2.0.json",
+  "name": "Quillpane agent skills",
+  "description": "Public agent-readable documentation for the local-first Quillpane desktop application.",
+  "publisher": {
+    "name": "Shreyam Adhikari",
+    "url": "https://shreyam1008.com.np/"
+  },
+  "skills": [
+    {
+      "name": "quillpane-docs",
+      "type": "documentation",
+      "description": "Read Quillpane product, release, installation, architecture, and local-file safety documentation.",
+      "url": "https://quillpane.shreyam1008.com.np/.well-known/agent-skills/quillpane-docs.md",
+      "sha256": "618aa1ad456c44237bb9aa55caa1aa44f1afc6b1dcdaf8bbd6429799a56c9a77"
+    }
+  ]
+}

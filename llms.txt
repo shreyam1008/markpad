@@ -1,0 +1,24 @@
+# Quillpane
+
+> Quillpane (formerly Markpad) is a tiny native Go/Wails Markdown notepad and
+> local folder workspace for Linux, Windows, and macOS.
+
+Canonical site: https://quillpane.shreyam1008.com.np/
+Repository: https://github.com/shreyam1008/markpad
+Current stable release: v0.13.4
+Maintainer: Shreyam Adhikari — https://shreyam1008.com.np/
+
+## Public documentation
+
+- [Architecture](https://quillpane.shreyam1008.com.np/architecture.md): native shell, embedded frontend, and local storage boundaries.
+- [Behavior](https://quillpane.shreyam1008.com.np/behavior.md): file handling, editing, previews, search, history, and safety behavior.
+- [Launch guide](https://quillpane.shreyam1008.com.np/launch.md): installation and first-run guidance.
+- [Packaging](https://quillpane.shreyam1008.com.np/packaging.md): release artifacts and distribution status.
+- [Agent Skills index](https://quillpane.shreyam1008.com.np/.well-known/agent-skills/index.json): machine-readable documentation skill metadata.
+- [API catalog](https://quillpane.shreyam1008.com.np/.well-known/api-catalog): RFC 9727-style linkset for the public documentation surface.
+
+## Boundaries
+
+Quillpane is local-first. Notes, workspace paths, drafts, favorites, and history
+stay on the user's device. The public site exposes documentation only; it has no
+hosted editor API, account system, OAuth service, or remote MCP transport.
