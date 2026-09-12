@@ -5,10 +5,10 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: APT repository for markpad
-Date: Sat, 12 Sep 2026 10:38:52 +0000
+Date: Sat, 12 Sep 2026 10:48:30 +0000
 MD5Sum:
  5900001eff40752af449e0c2e45cbe55              467 main/binary-amd64/Packages
- b1029ebd57b5fa27652ad1662cf1eb80              366 main/binary-amd64/Packages.gz
+ 569707ab1aba8536fe6cca144df3146d              366 main/binary-amd64/Packages.gz
 SHA256:
  443a065c35f4abd77f974e5482ce3037fd1f38295d27bf87bb20575186a01068              467 main/binary-amd64/Packages
- 6d4a597c6a9684077fe41fc033d74f91092e0971eafac861013c0090f2b41ecf              366 main/binary-amd64/Packages.gz
+ c79ed649473ab93d46d6b375e05c3967da261c56c75d521b3d1712036e0cbdda              366 main/binary-amd64/Packages.gz
