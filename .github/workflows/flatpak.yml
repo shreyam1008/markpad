@@ -11,18 +11,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Flatpak tooling
         run: |
+          sudo install -d -o "$(id -u)" -g "$(id -g)" -m 700 "/run/user/$(id -u)"
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk openbox
           sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install --system --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
           sudo flatpak install --system --noninteractive flathub org.flatpak.Builder
       - name: Verify runtime ABI
-        run: flatpak run --command=sh org.gnome.Sdk//50 -c 'pkg-config --modversion gtk+-3.0 webkit2gtk-4.1'
+        run: dbus-run-session -- flatpak run --command=sh org.gnome.Sdk//50 -c 'pkg-config --modversion gtk+-3.0 webkit2gtk-4.1'
       - name: Download pinned sources then compile without network
         run: |
-          flatpak run org.flatpak.Builder --version
-          flatpak run org.flatpak.Builder --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak run org.flatpak.Builder --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          dbus-run-session -- flatpak run org.flatpak.Builder --version
+          dbus-run-session -- flatpak run org.flatpak.Builder --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          dbus-run-session -- flatpak run org.flatpak.Builder --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
         id: metadata
         run: |
@@ -33,12 +34,14 @@ jobs:
       - name: Install and launch packaged app
         run: |
           flatpak install --user --noninteractive ./quillpane.flatpak
-          # A private bus must also have a private runtime directory: the runner
-          # may already have a document-portal FUSE mount on its normal bus.
-          export XDG_RUNTIME_DIR
-          XDG_RUNTIME_DIR=$(mktemp -d /tmp/quillpane-runtime.XXXXXX)
-          chmod 700 "$XDG_RUNTIME_DIR"
-          XDG_CURRENT_DESKTOP=GNOME xvfb-run -a -s '-screen 0 1280x800x24' dbus-run-session -- bash .github/scripts/flatpak-ui-smoke.sh
+          # Only on the disposable runner: remove a portal left by build buses.
+          # Keep the canonical runtime path, which Flatpak mounts in its sandbox.
+          pkill -u "$(id -u)" -f '^/usr/libexec/xdg-document-portal$' || true
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          if mountpoint -q "$XDG_RUNTIME_DIR/doc"; then
+            fusermount3 -u "$XDG_RUNTIME_DIR/doc"
+          fi
+          XDG_CURRENT_DESKTOP=XFCE xvfb-run -a -s '-screen 0 1280x800x24' dbus-run-session -- bash .github/scripts/flatpak-ui-smoke.sh
       - name: Upload window evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,5 +57,5 @@ jobs:
       - name: Run official Flathub manifest and repository lints
         if: always() && steps.metadata.outcome == 'success'
         run: |
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak-repo
+          dbus-run-session -- flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/io.github.shreyam1008.markpad.yml
+          dbus-run-session -- flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak-repo
