@@ -41,7 +41,8 @@ jobs:
           set -euo pipefail
           version="${TAG#v}"
           asset="quillpane_${version}_amd64.snap"
-          cp "${{ steps.snapcraft.outputs.snap }}" "$asset"
+          snap_path="${{ steps.snapcraft.outputs.snap }}"
+          if [[ "$snap_path" != "$asset" ]]; then cp "$snap_path" "$asset"; fi
           sha256sum "$asset" > "${asset}.sha256"
           gh release upload "$TAG" "$asset" "${asset}.sha256" --repo "$GITHUB_REPOSITORY" --clobber
 
