@@ -16,6 +16,11 @@ Keep `/apt/`, public signing keys, package hashes, canonical metadata and the
 explicit HTTP 404 page intact.
 `docs/_headers` makes APT metadata revalidate instead of reusing stale metadata.
 
+`docs/_worker.js` runs in Cloudflare Pages advanced mode. It forwards ordinary
+requests to the static asset binding and serves the existing `llms.txt` as
+`text/markdown` when an agent requests the root with `Accept: text/markdown`;
+`Vary: Accept` keeps the HTML and Markdown responses separate in caches.
+
 Migration verification: the Pages artifact passed GPG verification for both
 InRelease and the detached Release signature, metadata SHA256 checks, and the
 referenced 0.13.3 Debian package SHA256/size check. The publishing workflow also
