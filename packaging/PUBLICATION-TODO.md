@@ -2,6 +2,41 @@
 
 Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
+## Current release: 0.13.5
+
+- **GitHub: published.** [v0.13.5](https://github.com/shreyam1008/markpad/releases/tag/v0.13.5)
+  contains matching Linux binary, Debian package, AppImage, Windows EXE/setup,
+  MSIX 0.13.5.0, macOS DMG/ZIP, and Snap 0.13.5 plus its checksum.
+  [Release run 34684856423](https://github.com/shreyam1008/markpad/actions/runs/34684856423)
+  passed all platform checks and signed APT installation verification.
+- **Website and signed APT: published 0.13.5.** Anonymous public Packages metadata
+  and website download links verified on 12 September. The initial public APT
+  check ran before Cloudflare propagation; its rerun passed. Future workflows
+  now wait for the requested version before testing installation.
+- **Microsoft Store: 0.13.5.0 submitted, awaiting certification.** Used the
+  signed-in Partner Center browser because submission API access is not configured.
+  Submission `1152921505701875897` (Submission 2) showed **In certification**,
+  pre-processing in progress, on 12 September. Automatic publishing after approval
+  is enabled. The previously published version remains 0.13.3.0 until approval.
+  Release notes were updated; existing screenshots, original package icon, pricing,
+  availability, and ratings were preserved. [Dashboard](https://partner.microsoft.com/en-us/dashboard/products/9MZDJLQ6V8L3/overview).
+  Verified uploaded MSIX manifest version and GitHub SHA256:
+  `7b36cf2a40fd640e430aff01fc9a492db32633022d29d4c43451bd6684e197e3`.
+  Installed-MSIX functional testing remains pending.
+- **Snap Store: blocked on owner credential setup, not published.** The owner is
+  configuring this on Ubuntu separately; do not interfere. Once configured, run
+  `Publish verified Snap artifact` with tag `v0.13.5`, test candidate installation
+  and upgrade, then promote the tested revision to stable. The manual workflow no
+  longer defaults to an obsolete release tag. GitHub Snap SHA256:
+  `448aac9c7b02cb4c51c0d877073da97dd357d754bd59049f356871ff3b121a63`.
+- **Flathub: not published.** Separate preparation is in progress; retain the
+  human-submission requirement below. No claim of a public Flathub release.
+
+The local standalone Windows installation was verified as 0.13.3 during this
+release work. A Linux machine reporting 0.13.4 does not update that separate
+Windows installation. Install the 0.13.5 Windows setup to receive visible Help,
+About/version, and updates. Do not close unsaved user notes to force an upgrade.
+
 ## Snap: registered; build and publish workflow prepared
 
 - [x] Register `quillpane` in the owner's global Snap Store account.
@@ -25,8 +60,8 @@ registered-but-unpublished name. Registration is not publication.
 
 ## APT: signed repository live
 
-The Pages workflow now assembles signed APT metadata from the checksum-pinned
-v0.13.3 Debian artifact on every deployment, so docs updates preserve the lane.
+The Pages workflow assembles signed APT metadata from the checksum-pinned
+stable Debian release on every deployment, so docs updates preserve the lane.
 Package name remains `markpad`; only the public brand is Quillpane.
 
 Signing fingerprint: `35B80DDD8D3781FD3781FE188EEFA506FAF81409`.

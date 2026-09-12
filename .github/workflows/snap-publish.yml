@@ -6,7 +6,6 @@ on:
       tag:
         description: Stable release tag containing the Snap artifact
         required: true
-        default: v0.13.4
 
 permissions:
   contents: read
