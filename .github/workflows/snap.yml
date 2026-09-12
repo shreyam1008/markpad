@@ -4,7 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: Git ref to build
+        description: Git ref containing the Snap packaging
+        required: true
+        default: main
+      release_tag:
+        description: Existing GitHub release tag to receive the artifact
         required: true
         default: v0.13.4
   push:
@@ -27,14 +31,12 @@ jobs:
       - name: Build Snap
         id: snapcraft
         uses: snapcore/action-build@v1
-        with:
-          snapcraft-args: --destructive-mode
 
       - name: Attach Snap and checksum to tagged release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ inputs.release_tag != '' || startsWith(github.ref, 'refs/tags/v') }}
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           set -euo pipefail
           version="${TAG#v}"
