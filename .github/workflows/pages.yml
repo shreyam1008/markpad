@@ -18,6 +18,7 @@ on:
       - "docs/**"
       - "packaging/linux/build-apt-repo.sh"
       - ".github/workflows/pages.yml"
+      - ".github/scripts/indexnow.py"
 
 permissions:
   contents: write
@@ -106,6 +107,7 @@ jobs:
           else
             git -C "$PAGES_DIR" checkout --orphan cf-pages
           fi
+          python3 .github/scripts/indexnow.py prepare "$RUNNER_TEMP/indexnow.json" --previous "$PAGES_DIR"
           rsync -a --delete --exclude '.git/' docs/ "$PAGES_DIR/"
           touch "$PAGES_DIR/.nojekyll"
           git -C "$PAGES_DIR" config user.name 'github-actions[bot]'
@@ -150,3 +152,5 @@ jobs:
           sudo apt-get install -y "markpad=$stable_version"
           dpkg-query -W markpad
           sudo apt-get remove -y markpad
+      - name: Notify search engines of deployed page changes
+        run: python3 .github/scripts/indexnow.py submit "$RUNNER_TEMP/indexnow.json"
