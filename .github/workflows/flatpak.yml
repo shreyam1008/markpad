@@ -15,14 +15,14 @@ jobs:
           sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk openbox
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
+          flatpak install --user --noninteractive flathub org.flatpak.Builder
       - name: Verify runtime ABI
         run: flatpak run --command=sh org.gnome.Sdk//50 -c 'pkg-config --modversion gtk+-3.0 webkit2gtk-4.1'
       - name: Download pinned sources then compile without network
         run: |
-          flatpak-builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak-builder --user --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          # Ubuntu's builder predates automatic screenshot-ref export (1.4.5).
-          ostree commit --repo=flatpak-repo --canonical-permissions --branch=screenshots/x86_64 build-flatpak/files/share/app-info/media
+          flatpak run --command=flatpak-builder org.flatpak.Builder --version
+          flatpak run --command=flatpak-builder org.flatpak.Builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run --command=flatpak-builder org.flatpak.Builder --user --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
         id: metadata
         run: |
@@ -54,6 +54,5 @@ jobs:
       - name: Run official Flathub manifest and repository lints
         if: always() && steps.metadata.outcome == 'success'
         run: |
-          flatpak install --user --noninteractive flathub org.flatpak.Builder
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/io.github.shreyam1008.markpad.yml
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo flatpak-repo
