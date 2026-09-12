@@ -12,27 +12,32 @@ HOST = "quillpane.shreyam1008.com.np"
 BASE = f"https://{HOST}/"
 KEY = "78d46b02e1f9476d8653e824a0a51c29"
 PAGES = {"index.html": BASE, "privacy.html": BASE + "privacy.html"}
+MARKER = ".well-known/indexnow-deployment.json"
 
 
 def prepare(previous, output):
-    initial = not (previous / f"{KEY}.txt").exists()
+    notifier = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    marker = previous / MARKER
+    initial = not marker.exists() or json.loads(marker.read_text())["notifier"] != notifier
     changed = {}
     for filename, url in PAGES.items():
         content = (Path("docs") / filename).read_bytes()
         old = previous / filename
         if initial or not old.exists() or old.read_bytes() != content:
             changed[url] = hashlib.sha256(content).hexdigest()
-    output.write_text(json.dumps(changed), encoding="utf-8")
+    output.write_text(json.dumps({"notifier": notifier, "pages": changed}), encoding="utf-8")
     print(f"IndexNow: {len(changed)} changed public pages queued")
 
 
 def fetch(url):
-    with urlopen(url, timeout=15) as response:
+    request = Request(url, headers={"User-Agent": "Quillpane-Deployment-Verification/1.0"})
+    with urlopen(request, timeout=15) as response:
         return response.read()
 
 
 def submit(queue):
-    changed = json.loads(queue.read_text(encoding="utf-8"))
+    deployment = json.loads(queue.read_text(encoding="utf-8"))
+    changed = deployment["pages"]
     if not changed:
         print("IndexNow: no public page changes; no notification sent")
         return
@@ -42,10 +47,11 @@ def submit(queue):
     for attempt in range(18):
         try:
             ready = fetch(BASE + KEY + ".txt").decode().strip() == KEY
-            ready = ready and all(
-                hashlib.sha256(fetch(url)).hexdigest() == digest
-                for url, digest in changed.items()
-            )
+            # Cloudflare rewrites email addresses and injects scripts into HTML.
+            # An atomic deployment marker identifies source bytes without
+            # mistaking these edge transformations for stale content.
+            ready = ready and json.loads(fetch(BASE + MARKER)) == deployment
+            ready = ready and all(url.encode() in fetch(url) for url in changed)
             if ready:
                 break
         except (HTTPError, URLError, TimeoutError):
@@ -60,7 +66,8 @@ def submit(queue):
         "urlList": list(changed),
     }).encode()
     request = Request("https://api.indexnow.org/indexnow", data=payload,
-                      headers={"Content-Type": "application/json; charset=utf-8"})
+                      headers={"Content-Type": "application/json; charset=utf-8",
+                               "User-Agent": "Quillpane-Deployment-Verification/1.0"})
     with urlopen(request, timeout=30) as response:
         if response.status not in (200, 202):
             raise RuntimeError(f"Unexpected IndexNow status: {response.status}")

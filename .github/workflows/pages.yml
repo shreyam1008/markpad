@@ -109,6 +109,8 @@ jobs:
           fi
           python3 .github/scripts/indexnow.py prepare "$RUNNER_TEMP/indexnow.json" --previous "$PAGES_DIR"
           rsync -a --delete --exclude '.git/' docs/ "$PAGES_DIR/"
+          mkdir -p "$PAGES_DIR/.well-known"
+          cp "$RUNNER_TEMP/indexnow.json" "$PAGES_DIR/.well-known/indexnow-deployment.json"
           touch "$PAGES_DIR/.nojekyll"
           git -C "$PAGES_DIR" config user.name 'github-actions[bot]'
           git -C "$PAGES_DIR" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
