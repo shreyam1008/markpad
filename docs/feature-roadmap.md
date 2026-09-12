@@ -1,6 +1,6 @@
 # Quillpane feature roadmap
 
-Updated for v0.13.4 on 2026-09-11. Preview copy now uses the native clipboard; Help offers release checks and guided downloads. In-app automatic installation remains future work. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.13.5 on 2026-09-12. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
 
 ## Stable baseline — v0.13.3
 

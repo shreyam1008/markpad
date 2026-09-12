@@ -7,6 +7,7 @@ import {
   Clock3,
   Ellipsis,
   Files,
+  Info,
   Search,
   Settings,
   WindowClose,
@@ -22,6 +23,7 @@ interface Props {
   onHistory?(): void;
   onSettings?(): void;
   onMore?(): void;
+  onHelp?(): void;
 }
 
 export function AppTitlebar({
@@ -31,6 +33,7 @@ export function AppTitlebar({
   onHistory,
   onSettings,
   onMore,
+  onHelp,
 }: Props) {
   const [maximised, setMaximised] = useState(false);
 
@@ -117,6 +120,17 @@ export function AppTitlebar({
             >
               <Settings />
               <span>Settings</span>
+            </button>
+          ) : null}
+          {onHelp ? (
+            <button
+              type="button"
+              data-titlebar-interactive
+              onClick={onHelp}
+              title="Help, version and updates"
+            >
+              <Info />
+              <span>Help</span>
             </button>
           ) : null}
           {onMore ? (

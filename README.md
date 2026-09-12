@@ -113,6 +113,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.13.5 | Help & updates | Visible Help and Settings updates, verified installer downloads, synchronized release packages, original icon everywhere |
 | 0.13.4 | Preview clipboard hotfix | Native preview copying; Help update checks and guided downloads |
 | 0.13.3 | Quillpane (formerly Markpad) | Public-name migration with the verified Quillpane domain canonical; Markpad executable, storage, package IDs, release URLs, and logo preserved |
 | 0.13.2 | Quillpane (formerly Markpad) | Clean native Linux chrome without the duplicate GTK menu, with a subtle window edge and sharper controls |

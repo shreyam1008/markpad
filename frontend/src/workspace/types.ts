@@ -105,6 +105,7 @@ export interface WorkspaceSearchResult {
 
 export interface MarkpadAPI {
   CheckForUpdates(): Promise<UpdateInfo>;
+  DownloadAndOpenUpdate(): Promise<string>;
   GetSession(): Promise<SessionState>;
   GetActiveContent(): Promise<string>;
   GetNoteContent(id: string): Promise<string>;
@@ -168,6 +169,10 @@ export interface UpdateInfo {
   latest: string;
   available: boolean;
   url: string;
+  asset: string;
+  digest: string;
+  size: number;
+  managed: string;
 }
 
 declare global {

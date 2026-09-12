@@ -115,11 +115,15 @@ function ModalLayer({
   onClose,
   onRename,
   onOpenFolder,
+  onAbout,
+  onChangelog,
 }: {
   modal?: Modal;
   onClose(): void;
   onRename(note: NoteInfo, name: string): void;
   onOpenFolder(path: string): void;
+  onAbout(): void;
+  onChangelog(): void;
 }) {
   const [name, setName] = useState(modal?.kind === "rename" ? modal.note.title : "");
   useEffect(() => setName(modal?.kind === "rename" ? modal.note.title : ""), [modal]);
@@ -189,10 +193,18 @@ function ModalLayer({
       </>
     );
   } else if (modal.kind === "help") {
-    title = "Help";
+    title = "Help & updates";
     body = (
       <div className="space-y-2">
         <UpdateCheck />
+        <div className="flex gap-2">
+          <button className="confirm-btn" onClick={onAbout}>
+            About Quillpane
+          </button>
+          <button className="confirm-btn" onClick={onChangelog}>
+            What's new
+          </button>
+        </div>
         <p>
           <strong>{PRODUCT_NAME}</strong> is a native Markdown notepad.
         </p>
@@ -224,6 +236,14 @@ function ModalLayer({
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.13.5 · Help & updates</h3>
+          <p>
+            Help is visible in the title bar and Settings. Check installed/latest versions and
+            download verified updates with progress. All release packages share one version; the
+            website and app use the original product icon.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.13.4</h3>
           <p>
@@ -1074,6 +1094,24 @@ function App() {
         shortcut: shortcutLabel("general.preferences"),
         run: showPreferences,
       },
+      {
+        id: "app.help",
+        title: "Help & updates",
+        category: "App",
+        run: () => showModal({ kind: "help" }),
+      },
+      {
+        id: "app.about",
+        title: "About Quillpane · version",
+        category: "App",
+        run: () => showModal({ kind: "about" }),
+      },
+      {
+        id: "app.changelog",
+        title: "What's new · version history",
+        category: "App",
+        run: () => showModal({ kind: "changelog" }),
+      },
     ],
     [
       active,
@@ -1344,6 +1382,7 @@ function App() {
         onHistory={toggleHistory}
         onSettings={() => void showPreferences()}
         onMore={() => showPalette("actions")}
+        onHelp={() => showModal({ kind: "help" })}
       />
       <div className="markpad-body flex min-h-0 flex-1">
         <Sidebar
@@ -1511,6 +1550,8 @@ function App() {
                 storagePath={storagePath}
                 onChange={updatePreferences}
                 onClose={() => setSettingsOpen(false)}
+                onAbout={() => showModal({ kind: "about" })}
+                onChangelog={() => showModal({ kind: "changelog" })}
               />
             ) : null}
           </div>
@@ -1550,6 +1591,8 @@ function App() {
         onClose={() => setModal(undefined)}
         onRename={(note, name) => void rename(note, name)}
         onOpenFolder={(path) => void client.openFolder(path)}
+        onAbout={() => showModal({ kind: "about" })}
+        onChangelog={() => showModal({ kind: "changelog" })}
       />
 
       {contextMenu && (

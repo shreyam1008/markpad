@@ -1,54 +1,47 @@
 name: Build Snap
-
 on:
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        required: true
   workflow_dispatch:
     inputs:
-      source_ref:
-        description: Git ref containing the Snap packaging
-        required: true
-        default: main
       release_tag:
-        description: Existing GitHub release tag to receive the artifact
+        description: Exact release tag to build
         required: true
-        default: v0.13.4
-  push:
-    tags:
-      - 'v*'
-
 permissions:
-  contents: write
-
+  contents: read
 jobs:
   snap:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Check out release source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || github.ref }}
-
+          ref: ${{ inputs.release_tag }}
+      - name: Verify source version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: python3 packaging/check-release-version.py
       - name: Build Snap
         id: snapcraft
         uses: snapcore/action-build@v1
-
-      - name: Attach Snap and checksum to tagged release
-        if: ${{ inputs.release_tag != '' || startsWith(github.ref, 'refs/tags/v') }}
+      - name: Verify packaged version and checksum
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.release_tag || github.ref_name }}
+          TAG: ${{ inputs.release_tag }}
+          SNAP_PATH: ${{ steps.snapcraft.outputs.snap }}
         run: |
           set -euo pipefail
           version="${TAG#v}"
-          asset="quillpane_${version}_amd64.snap"
-          snap_path="${{ steps.snapcraft.outputs.snap }}"
-          if [[ "$snap_path" != "$asset" ]]; then cp "$snap_path" "$asset"; fi
-          sha256sum "$asset" > "${asset}.sha256"
-          gh release upload "$TAG" "$asset" "${asset}.sha256" --repo "$GITHUB_REPOSITORY" --clobber
-
-      - name: Upload Snap artifact
-        uses: actions/upload-artifact@v4
+          actual="$(unsquashfs -cat "$SNAP_PATH" meta/snap.yaml | sed -n "s/^version: *['\"]*\([^'\"]*\)['\"]*$/\1/p")"
+          test "$actual" = "$version"
+          mkdir -p snap-dist
+          cp "$SNAP_PATH" "snap-dist/quillpane_${version}_amd64.snap"
+          cd snap-dist
+          sha256sum *.snap > "quillpane_${version}_amd64.snap.sha256"
+      - uses: actions/upload-artifact@v4
         with:
-          name: quillpane-snap
-          path: ${{ steps.snapcraft.outputs.snap }}
+          name: snap
+          path: snap-dist/*
           if-no-files-found: error

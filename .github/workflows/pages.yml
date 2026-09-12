@@ -1,6 +1,11 @@
 name: Publish Cloudflare site
 
 on:
+  workflow_call:
+    inputs:
+      stable_tag:
+        type: string
+        required: true
   workflow_dispatch:
     inputs:
       stable_tag:
@@ -22,7 +27,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ready:
+    runs-on: ubuntu-24.04
+    outputs:
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.stable_tag }}
+        run: |
+          set -euo pipefail
+          source_version="$(sed -n 's/^const Version = "\(.*\)"/\1/p' main.go)"
+          tag="${REQUESTED_TAG:-$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)}"
+          if [[ "$tag" == "v$source_version" ]]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo 'Website/APT publication deferred until matching release packages exist.' >> "$GITHUB_STEP_SUMMARY"
+          fi
   deploy:
+    needs: ready
+    if: needs.ready.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7

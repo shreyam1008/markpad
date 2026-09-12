@@ -9,7 +9,21 @@ permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject version mismatches
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 packaging/check-release-version.py
+  snap:
+    needs: version
+    uses: ./.github/workflows/snap.yml
+    with:
+      release_tag: ${{ github.ref_name }}
   linux:
+    needs: version
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -86,6 +100,7 @@ jobs:
             dist/*.AppImage
 
   windows:
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -129,6 +144,12 @@ jobs:
       - name: Install NSIS
         shell: pwsh
         run: choco install -y nsis
+      - name: Build matching Microsoft Store package
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          ./packaging/windows/store/build-store.ps1 -ReleaseExe dist/markpad.exe -Version $version
+          Copy-Item dist/store/*.msix dist/
       - name: Build installer
         shell: pwsh
         run: |
@@ -138,9 +159,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: dist/*
+          path: |
+            dist/markpad.exe
+            dist/markpad-setup.exe
+            dist/*.msix
 
   macos:
+    needs: version
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -187,7 +212,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-24.04
-    needs: [linux, windows, macos]
+    needs: [linux, windows, macos, snap]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -198,11 +223,13 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            ## What's new in v${{ github.ref_name }}
+            ## What's new in ${{ github.ref_name }}
 
-            - Fixed preview copying with an explicit native clipboard path for Ctrl/Cmd+C; preview Cut preserves document content.
-            - Added Help release checks, download actions, busy/error feedback, and installation guidance.
-            - Added a real Linux preview clipboard smoke test to CI and release validation.
+            - Visible Help button and Settings Help & updates, with About and installed/latest versions.
+            - Verified update downloads with progress and OS installer handoff.
+            - Original Markpad icon shared by the website, favicon and platform packages.
+            - All packages, including MSIX and Snap, built from this tag before publication; signed APT follows automatically.
+            - Store-ready packages are included; Microsoft Store and Snap Store publishing require their separate configured credentials and review.
 
             ## Install
 
@@ -219,3 +246,10 @@ jobs:
             **Windows:** `markpad-setup.exe` — installer with Start Menu + Desktop shortcuts
 
             **macOS:** `Markpad.dmg` — drag to Applications; `Markpad-macOS.zip` is also provided. The app displays as Quillpane; legacy artifact names remain upgrade-compatible.
+
+  apt-and-site:
+    needs: publish
+    uses: ./.github/workflows/pages.yml
+    with:
+      stable_tag: ${{ github.ref_name }}
+    secrets: inherit

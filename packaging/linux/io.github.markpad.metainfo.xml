@@ -47,6 +47,7 @@
   </keywords>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.13.5" date="2026-09-12"><description><p>Visible Help and verified updates; synchronized platform packages and original product icon.</p></description></release>
     <release version="0.13.4" date="2026-09-11">
       <description><p>Native preview clipboard copying and Help release checks with guided update downloads.</p></description>
     </release>

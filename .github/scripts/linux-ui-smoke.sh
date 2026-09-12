@@ -107,3 +107,11 @@ if [[ "${copied// /}" != "sentinel" ]] || [[ "$(cat dist/clipboard-smoke.md)" !=
   exit 1
 fi
 echo "Linux native preview clipboard smoke passed."
+
+xdotool key --clearmodifiers F1
+sleep 1
+import -display "$DISPLAY" -window "$window_id" dist/linux-ui-help.png
+tesseract dist/linux-ui-help.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-help.txt
+grep -Eqi 'Installed version' dist/linux-ui-help.txt
+grep -Eqi 'Check for updates' dist/linux-ui-help.txt
+echo "Linux Help and update controls are reachable with F1."

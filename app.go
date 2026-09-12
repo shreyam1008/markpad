@@ -30,6 +30,7 @@ type App struct {
 	pendingFiles  []string
 	contentMu     sync.Mutex
 	quitConfirmed atomic.Bool
+	updateMu      sync.Mutex
 
 	workspaceMu           sync.Mutex
 	workspaceState        workspace.State

@@ -1,6 +1,10 @@
 # TODO
 
-## Completed (v0.1–v0.13.4)
+## Completed (v0.1–v0.13.5)
+
+- [x] Visible Help button, F1, Settings Help & updates, and About/version actions
+- [x] Checksum-verified installer downloads with progress
+- [x] Same-tag release builds for GitHub, MSIX, Snap, and automatic signed APT publication
 
 - [x] Native preview clipboard copy and non-destructive preview Cut
 - [x] Help release checks and guided update downloads

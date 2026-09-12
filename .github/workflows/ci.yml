@@ -50,4 +50,6 @@ jobs:
             dist/linux-ui-smoke.txt
             dist/linux-ui-smoke.png
             dist/linux-ui-clipboard.png
+            dist/linux-ui-help.png
+            dist/linux-ui-help.txt
           if-no-files-found: ignore

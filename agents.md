@@ -14,7 +14,7 @@ Plain files remain the source of truth. Quillpane has no account, cloud service,
 |---|---|
 | No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
 | Production binary must remain below its platform ceiling | `make check-size` gates Linux at 16 MiB; the release workflow gates Windows at 16.1 MiB. |
-| No cloud client, telemetry, or account; only explicit Help release checks may contact GitHub | User content stays local and private. |
+| No cloud client, telemetry, or account; only explicit Help release checks and verified update downloads may contact GitHub | User content stays local and private. |
 | No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
 | No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
 | Avoid new Go dependencies | Prefer the standard library; Wails is the only direct Go dependency. |
@@ -169,9 +169,9 @@ Before committing:
 2. Ensure every CI/release job installs Bun 1.3.14, runs `bun install --frozen-lockfile`, and builds `frontend/dist` before any Go command that compiles `frontend_assets.go`.
 3. Run `make setup`, `make check`, `git diff --check`, and relevant native smoke tests from clean state.
 4. Confirm Windows `.ico` resources/installer icon and macOS `.icns` bundle icon are present.
-5. Commit and push `main`; wait for CI to pass.
-6. Create an annotated tag and push only that tag: `git push origin vX.Y.Z`. Never use `git push --tags`; historical local and remote tags may differ.
-7. Verify the GitHub release contains the Linux binary, `.deb`, AppImage, Windows installer, macOS DMG, and macOS ZIP.
+5. Complete local checks and `python packaging/check-release-version.py`, then commit the exact release source.
+6. For the user's single-push release flow, create an annotated tag and push `main` and only that tag atomically: `git push --atomic origin main vX.Y.Z`. The release workflow gates publication on matching versions and all platform checks. Never use `git push --tags`.
+7. Verify the GitHub release contains the Linux binary, `.deb`, AppImage, Windows installer, matching MSIX, macOS DMG/ZIP, and Snap. The release calls signed APT/site publication afterward. Store-ready artifacts do not prove Store publication; credentials and external review remain separate.
 8. Generate Scoop/WinGet hashes and Flatpak commit references only after release artifacts exist. Do not commit placeholder store manifests as if they were publishable.
 
 ## Version history

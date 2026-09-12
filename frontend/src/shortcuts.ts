@@ -9,6 +9,7 @@ import { PRODUCT_NAME } from "./brand";
 export type ShortcutGroup = "General" | "File" | "Navigation" | "Edit" | "View" | "Appearance";
 
 export type ShortcutAction =
+  | "help"
   | "palette"
   | "dismiss"
   | "new"
@@ -88,6 +89,15 @@ const shortcut = (
 });
 
 export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
+  shortcut(
+    "general.help",
+    "F1",
+    "help",
+    "General",
+    "Help & updates",
+    "Open Help, version details and updates.",
+    { commandId: "app.help" },
+  ),
   shortcut(
     "general.palette",
     "Mod+P",

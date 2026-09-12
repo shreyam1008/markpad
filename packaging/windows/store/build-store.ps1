@@ -1,17 +1,20 @@
-param([Parameter(Mandatory=$true)][string]$ReleaseExe)
+param([Parameter(Mandatory=$true)][string]$ReleaseExe, [Parameter(Mandatory=$true)][string]$Version)
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 $releasePath = (Resolve-Path -LiteralPath $ReleaseExe).Path
-$expected = '79333aa1ee52db7b85c6e269211660c28030f4886ad80cfd96f26b4e8f8e7088'
-if ((Get-FileHash -LiteralPath $releasePath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
-    throw 'Expected the unchanged v0.13.3 markpad.exe release artifact.'
-}
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'A stable X.Y.Z release version is required.' }
+$binaryVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($releasePath).ProductVersion
+if ($binaryVersion -ne $Version -and $binaryVersion -ne "$Version.0") { throw "Executable version $binaryVersion does not match $Version." }
 $outputDir = Join-Path $repoRoot 'dist/store'
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 $stage = Join-Path $outputDir ('stage-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path (Join-Path $stage 'Assets') -Force | Out-Null
 Copy-Item -LiteralPath $releasePath -Destination (Join-Path $stage 'markpad.exe')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'AppxManifest.xml') -Destination $stage
+$manifestPath = Join-Path $stage 'AppxManifest.xml'
+[xml]$manifest = Get-Content -LiteralPath $manifestPath
+$manifest.Package.Identity.Version = "$Version.0"
+$manifest.Save($manifestPath)
 Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination $stage
 
 # Export only resized copies of the existing icon. Never redraw or overwrite it.
@@ -33,9 +36,10 @@ try {
     }
 } finally { $bitmap.Dispose(); $icon.Dispose() }
 if ((Get-FileHash -LiteralPath $iconPath).Hash -ne $iconHash) { throw 'Original icon changed unexpectedly.' }
-$makeAppx = 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.26100.0/x64/makeappx.exe'
-if (-not (Test-Path -LiteralPath $makeAppx)) { throw 'Windows SDK 10.0.26100.0 x64 MakeAppx required.' }
-$package = Join-Path $outputDir 'Quillpane_0.13.3.0_x64.msix'
+$sdkRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+$makeAppx = Get-ChildItem -LiteralPath $sdkRoot -Directory | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'x64/makeappx.exe' } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $makeAppx) { throw 'Windows SDK x64 MakeAppx is required.' }
+$package = Join-Path $outputDir "Quillpane_${Version}.0_x64.msix"
 if (Test-Path -LiteralPath $package) { throw 'Output exists; retain it or choose a new version before rebuilding.' }
 & $makeAppx pack /d $stage /p $package
 if ($LASTEXITCODE -ne 0) { throw 'MakeAppx validation/pack failed.' }

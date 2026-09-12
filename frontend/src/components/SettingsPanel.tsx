@@ -16,6 +16,7 @@ import { shortcutDisplay, type ShortcutGroup } from "../shortcuts";
 import {
   Check,
   HardDrive,
+  Info,
   Keyboard,
   Minus,
   Monitor,
@@ -27,14 +28,17 @@ import {
   Type,
   X,
 } from "./icons";
+import { UpdateCheck } from "./UpdateCheck";
 
-type SettingsCategory = "appearance" | "writing" | "keyboard" | "files";
+type SettingsCategory = "appearance" | "writing" | "keyboard" | "files" | "help";
 
 interface Props {
   preferences: Preferences;
   storagePath: string;
   onChange(next: Preferences): void;
   onClose(): void;
+  onAbout(): void;
+  onChangelog(): void;
 }
 
 const categories = [
@@ -42,6 +46,7 @@ const categories = [
   { id: "writing", label: "Writing", icon: Type },
   { id: "keyboard", label: "Keyboard", icon: Keyboard },
   { id: "files", label: "Files", icon: HardDrive },
+  { id: "help", label: "Help & updates", icon: Info },
 ] as const;
 
 const shortcutGroupOrder: ShortcutGroup[] = [
@@ -80,7 +85,14 @@ const readingWidthOptions: Array<{ id: ReadingWidth; label: string; description:
   { id: "full", label: "Full", description: "Use the available pane" },
 ];
 
-export function SettingsPanel({ preferences, storagePath, onChange, onClose }: Props) {
+export function SettingsPanel({
+  preferences,
+  storagePath,
+  onChange,
+  onClose,
+  onAbout,
+  onChangelog,
+}: Props) {
   const [category, setCategory] = useState<SettingsCategory>("appearance");
   const hotkeys = useMemo(() => Array.from(getHotkeyManager().registrations.state.values()), []);
   const shortcutGroups = useMemo(
@@ -136,6 +148,27 @@ export function SettingsPanel({ preferences, storagePath, onChange, onClose }: P
         </nav>
 
         <div className="settings-content">
+          {category === "help" ? (
+            <section className="settings-category" aria-label="Help and updates">
+              <div className="settings-section-heading">
+                <h2>Help & updates</h2>
+                <p>About the app, installed version, and updates.</p>
+              </div>
+              <UpdateCheck />
+              <div className="flex gap-2">
+                <button className="confirm-btn" onClick={onAbout}>
+                  About Quillpane
+                </button>
+                <button className="confirm-btn" onClick={onChangelog}>
+                  What's new
+                </button>
+              </div>
+              <p className="settings-footnote">
+                Select text in Preview and press Ctrl+C (Command+C on macOS) to copy. Your notes and
+                settings stay on this computer.
+              </p>
+            </section>
+          ) : null}
           {category === "appearance" ? (
             <section aria-labelledby="settings-appearance-title">
               <div className="settings-section-heading">
