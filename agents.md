@@ -174,6 +174,26 @@ Before committing:
 7. Verify the GitHub release contains the Linux binary, `.deb`, AppImage, Windows installer, matching MSIX, macOS DMG/ZIP, and Snap. The release calls signed APT/site publication afterward. Store-ready artifacts do not prove Store publication; credentials and external review remain separate.
 8. Generate Scoop/WinGet hashes and Flatpak commit references only after release artifacts exist. Do not commit placeholder store manifests as if they were publishable.
 
+### Required store follow-through (maintainer instruction)
+
+For every application release, GitHub/APT publication alone is not completion.
+Update every existing distribution/store listing to the same tested version.
+Use the configured publishing workflow when available; otherwise use the signed-in
+browser/Computer Use flow or coordinate a manual submission. Microsoft Store API
+access is not a prerequisite: use Partner Center manually when that API is not set up.
+Do not overwrite another in-progress store submission without inspecting it first.
+Snap Store credentials are being configured separately; do not interfere with that
+setup or invent publication success while the credentials are unavailable.
+
+Before uploading, compare the artifact's actual version and checksum against the
+release tag. After submission, verify and record each channel's exact state:
+published version, submitted version awaiting review, or blocked with the concrete
+next action. Update `packaging/PUBLICATION-TODO.md` with evidence. Never report all
+stores as updated merely because matching MSIX/Snap files were built. Keep the
+original Markpad icon on website, favicon, installed apps, and store artwork.
+Store review can delay public availability; disclose the delay instead of claiming
+simultaneous publication or silently leaving an old store release behind.
+
 ## Version history
 
 | Version | Highlights |
