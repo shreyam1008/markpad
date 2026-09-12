@@ -8,24 +8,24 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: APT repository for markpad
-Date: Sat, 12 Sep 2026 08:45:38 +0000
+Date: Sat, 12 Sep 2026 09:11:25 +0000
 MD5Sum:
- b8d24ee5666320d80b9ef315d3f6ae23              467 main/binary-amd64/Packages
- fd20e850fe1e5c2f182c9f4f22938579              366 main/binary-amd64/Packages.gz
+ 9c55ab1137ab2d872ac31b0f2a817a74              467 main/binary-amd64/Packages
+ b4c3e080715fbdcdb4d817048f184a69              369 main/binary-amd64/Packages.gz
 SHA256:
- 62cd19144c26f9f959440db726689ecf2d45e29c1e170d3d19aeb60c2881bc8d              467 main/binary-amd64/Packages
- 97877689e85eddd75f7e29788e262a0374ab8d78aa662ff13c64d46a1bb1969f              366 main/binary-amd64/Packages.gz
+ baa6880b1309319ee3013d4744d3429a039e67b3b436e2a39fbb072bf0b0e57c              467 main/binary-amd64/Packages
+ b3634226aec04431606ab5851e2c76d13571ae91f809e9a2c09963285b3b5384              369 main/binary-amd64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqlETIACgkQju+lBvr4
-FAmrywv9FIDMkYfckuH8Vy32vccs3I1R5ByXP5imIQL5oSBR7shfhqpG17rawbCP
-B+MwGEcToEaQs8sTjOU/RMrzVNkKKI2J73Cyn1lJo2tPI3/vofznJHRXcUeH46hy
-N61SmZ9DDQMaiJ/Fpew0Qk7MKubD9fs+xy9W7SC43u4XjoYXMA1Z7BYQvVJG3JUF
-Q5d7/LS7cSxiLImjGpz4WD6ONqKS714juE0P82V4LG+oWQ0xcmIjOouunPfGrJya
-E/pQMvv/6gI75ApUA4uPdmkU9c2Ck6aAZq9RKjWJdLbgyzpPmGD/Jw89UhL1k2rb
-h1JBnTs24R38MIWzfj+E5rALJ6DQh+eX18XT3cbPZcub1RNhrPD3xUjcgG/uNXoA
-vBgldnOkanax2hnW64Ft6v71Azk1DgSSrPQRLa7b+6GSX3gYTiF2dudw0anXWTbU
-M94Yv7sGLRTJCVWeY0deoVLjrdli9ERSkQnj8LK/dBvjAetHe0pXZUDGJ04V5iqM
-PT39sStQ
-=o/1j
+iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqlFz0ACgkQju+lBvr4
+FAlKYgv/QDWOP/VbRkFZhUqjURQwMWkF43UEQJ1ktPVp1tX0Z781QAOdRxmA7Da3
+F2Q3ONo7RDlsVqKTVBeqFF44kkbap8EE0wQnS2l2T70ZlIz9hmvfXXZyAONqzDez
+Z1C32mqhnoituyG6u71oyWWjM8biLydK5j+Oxmy7ITv/ewH6FjifGf4yIqgYUquz
+S2YjtmnrMrK5KO+12pk21t+TPQvdzo0oAHAe18AQXI4fJqjeKhnH4SqZ2wsZd3G/
+LkstO1bAQub+7YqY83dQ06IDSogqCcLvwdl21vCPu9/7ftigZ+QIeZtTQHVi/Lot
++Je1uMQA8ZxfEsYeiPB+N5VgooMfZ23GiyzImXdc6rJVd0F5nTiri9I7nBpqv5yq
+ug5VhXsGRsqd+vHKqOre27n3NnqD8a0bKgsfuSuARPDJihA5vEToY3KbZ3pF/KQw
+J7BRwQGPC9TK7vX/WmmrOae9ZCKjAZbO5Cze2AhmZozr56TzcX2bksaafn1yVRTD
+Nuvb3yzC
+=LEYB
 -----END PGP SIGNATURE-----
