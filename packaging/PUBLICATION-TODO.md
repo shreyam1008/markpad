@@ -4,9 +4,15 @@ Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
 ## Current release: 0.13.6
 
-Candidate prepared with one matching package version. GitHub/platform builds, website/APT publication, and Store submission will be recorded after verification. Snap publication remains dependent on owner credential setup. The original icon is preserved.
+- **GitHub: published.** [v0.13.6](https://github.com/shreyam1008/markpad/releases/tag/v0.13.6), source `0f7b3df43106ffa53b34d3566af1b2481964e012`, contains matching Linux binary/deb/AppImage, Windows EXE/setup/MSIX, macOS DMG/ZIP, and Snap. [Release run 34686714762](https://github.com/shreyam1008/markpad/actions/runs/34686714762) and [CI 34686714940](https://github.com/shreyam1008/markpad/actions/runs/34686714940) passed. Native Linux clipboard, Help, and Driver.js tour smoke passed; browser QA covered all 16 steps, restart/exit, narrow layout, bidirectional Split sync, and sync-off behavior.
+- **Website and signed APT: published 0.13.6.** Anonymous public website schema/download version and Packages metadata verified on 12 September. Public signed APT installation passed in the release workflow. Debian SHA256: `74abbc84f901f029df8f153f34003a21f06ed3b9e920e7f2ae81ac25fe7cec6b`.
+- **Microsoft Store: 0.13.6.0 submitted, awaiting certification.** Inspected and cancelled our pending 0.13.5 certification, replaced its package in Submission 2 (`1152921505701875897`), updated the description/features/release notes to remove folder-workspace claims, and submitted again. Partner Center shows **In certification**, pre-processing, with automatic publishing after approval. Previously live 0.13.3.0 remains until approval. Package validation passed. Its embedded version and SHA256 match the published GitHub asset: `30422e550a1bfc50a4d03bca181a4a04ad33c4226ff40e738686d88342417666`. Existing screenshots, original icon, pricing, ratings and availability preserved. Installed-MSIX functional testing remains pending. [Dashboard](https://partner.microsoft.com/en-us/dashboard/products/9MZDJLQ6V8L3/overview).
+- **Snap Store: blocked on owner credential setup.** Only `APT_SIGNING_PRIVATE_KEY` is configured in GitHub; no Snap publishing credential as of this release. The owner is configuring Snap on Ubuntu separately. Matching package is available with SHA256 `1ac79fd8d63e6f35fbf539f0342a4462e2d9b9a34e7a1a5c7200fd8f0e79e7df`. Once credentials are ready, dispatch `Publish verified Snap artifact` with `v0.13.6`, smoke-test candidate install/upgrade, then promote to stable. Do not publish the superseded 0.13.5 package.
+- **Flathub: not published.** Separate preparation and human-authored submission remain pending. No all-stores-live claim.
 
-## Previous release: 0.13.5
+The original Markpad icon is preserved. Update the standalone Windows installation with the 0.13.6 setup, then reopen after saving notes. A Linux update does not replace a separate Windows installation.
+
+## Previous release: 0.13.5 (historical status; superseded by the record above)
 
 - **GitHub: published.** [v0.13.5](https://github.com/shreyam1008/markpad/releases/tag/v0.13.5)
   contains matching Linux binary, Debian package, AppImage, Windows EXE/setup,
