@@ -33,10 +33,10 @@ snapcraft
 snap install --dangerous ./quillpane_0.13.4_amd64.snap
 ```
 
-When the tag workflow completes, it attaches
-`quillpane_0.13.4_amd64.snap` and its CI-generated SHA-256 to the matching
-GitHub release. Verify the asset and checksum before treating the candidate as
-available.
+The v0.13.4 workflow run [34676727667](https://github.com/shreyam1008/markpad/actions/runs/34676727667)
+attached `quillpane_0.13.4_amd64.snap` and its CI-generated SHA-256 to the
+matching GitHub release. Verify the asset and checksum before smoke testing the
+candidate.
 
 After smoke testing:
 

@@ -5,8 +5,9 @@ Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 ## Snap: registered; build and publish workflow prepared
 
 - [x] Register `quillpane` in the owner's global Snap Store account.
-- [ ] Run the tag workflow for v0.13.4 and verify the snap plus checksum on the
-  GitHub release.
+- [x] Run the tag workflow for v0.13.4 and verify the snap plus checksum on the
+  [GitHub release](https://github.com/shreyam1008/markpad/releases/tag/v0.13.4)
+  ([workflow 34676727667](https://github.com/shreyam1008/markpad/actions/runs/34676727667)).
 - [x] Prepare `Publish verified Snap artifact` workflow with release checksum verification.
 - [ ] Owner authenticates Snapcraft on a trusted Linux machine and configures a
   snap-scoped `SNAPCRAFT_STORE_CREDENTIALS` GitHub Actions secret. Do not paste

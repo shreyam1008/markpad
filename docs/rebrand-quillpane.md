@@ -139,10 +139,9 @@ Rollback is one display constant change; no user data needs to move.
 - Keep old install commands working for at least two stable releases.
 - WinGet PR #430348 is open with the updated display metadata; the personal
   Scoop bucket is live after PR #7 passed install/upgrade/uninstall CI.
-  The tag workflow is prepared to build and attach the reproducible
-  `quillpane_0.13.4_amd64.snap`; run and verify that workflow before claiming a
-  release asset. Snap Store publication still needs the authenticated
-  `quillpane` namespace.
+  The reproducible `quillpane_0.13.4_amd64.snap` is attached to the v0.13.4
+  GitHub release by [workflow 34676727667](https://github.com/shreyam1008/markpad/actions/runs/34676727667).
+  Snap Store publication still needs the authenticated `quillpane` namespace.
 
 ### Phase 3 — optional namespace transition
 
