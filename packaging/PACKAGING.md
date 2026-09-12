@@ -2,7 +2,7 @@
 
 Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
-Release target: v0.13.3
+Release target: v0.13.4
 
 Current execution state and human gates: [publication checklist](PUBLICATION-TODO.md).
 
@@ -10,7 +10,7 @@ Current execution state and human gates: [publication checklist](PUBLICATION-TOD
 
 Push `main`, wait for CI, then push only the annotated release tag. `.github/workflows/release.yml` builds:
 
-- `markpad`, `markpad_0.13.3_amd64.deb`, and `Markpad.AppImage` for Linux. These legacy artifact names remain stable while the app displays as Quillpane.
+- `markpad`, `markpad_0.13.4_amd64.deb`, and `Markpad.AppImage` for Linux. These legacy artifact names remain stable while the app displays as Quillpane.
 - `markpad-setup.exe` for Windows, with the unchanged Markpad ICO embedded into both application and installer.
 - `Markpad.dmg` and `Markpad-macOS.zip`, with the unchanged Markpad ICNS in the app bundle.
 
@@ -22,7 +22,7 @@ Verify all artifacts before submitting to a store. Do not publish a Scoop, WinGe
 
 ## Snap Store
 
-`snap/snapcraft.yaml` builds the frozen Bun frontend before Go. The repository
+`snap/snapcraft.yaml` derives its version from `main.go` and builds the frozen Bun frontend before Go. The repository
 also has a `Build Snap` workflow that produces a downloadable `.snap` artifact
 from a selected immutable ref. Build and inspect locally when Linux tooling is
 available:
@@ -30,18 +30,19 @@ available:
 ```sh
 sudo snap install snapcraft --classic
 snapcraft
-snap install --dangerous ./quillpane_0.13.3_amd64.snap
+snap install --dangerous ./quillpane_0.13.4_amd64.snap
 ```
 
-The workflow-built `quillpane_0.13.3_amd64.snap` is attached to the `v0.13.3`
-GitHub release with SHA-256
-`26bb3252ea582b870c1aa25e65d77b249383b819cf6d87c19dad5296f7a63faf`.
+When the tag workflow completes, it attaches
+`quillpane_0.13.4_amd64.snap` and its CI-generated SHA-256 to the matching
+GitHub release. Verify the asset and checksum before treating the candidate as
+available.
 
 After smoke testing:
 
 ```sh
 snapcraft login
-snapcraft upload quillpane_0.13.3_amd64.snap --release=stable
+snapcraft upload quillpane_0.13.4_amd64.snap --release=stable
 ```
 
 The `Publish verified Snap artifact` workflow can upload this exact artifact to
@@ -50,7 +51,7 @@ stable promotion. The name is registered, but no store release is claimed yet.
 
 ## Signed APT
 
-Pages now generates a signed repository from the checksum-pinned v0.13.3 `.deb`
+Pages now generates a signed repository from the checksum-pinned stable `.deb`
 and tests installation/removal before deployment. A second check verifies the
 anonymous HTTPS repository after deployment. Package name remains `markpad`.
 See [the checklist](PUBLICATION-TODO.md#apt-signed-repository-live)
@@ -68,7 +69,9 @@ sudo apt-get install markpad
 
 ## Flatpak
 
-The manifest is pinned to the published `v0.13.3` source commit, but it is not Flathub-ready yet. The remaining release work is to provide the frontend's Bun dependencies and Go vendor sources as offline Flatpak sources, add the frontend build step, run `flatpak-builder` on Linux, and complete the Flathub review. Do not submit the current draft while those sources are missing.
+The manifest is pinned to the `v0.13.4` source commit and the offline Bun/Go
+sources are present. Run the manual Flatpak workflow on Linux before submitting
+to Flathub; the public listing remains pending review.
 
 ## WinGet
 

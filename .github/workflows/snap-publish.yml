@@ -2,6 +2,11 @@ name: Publish verified Snap artifact
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable release tag containing the Snap artifact
+        required: true
+        default: v0.13.4
 
 permissions:
   contents: read
@@ -14,18 +19,23 @@ jobs:
   publish:
     runs-on: ubuntu-24.04
     steps:
-      - name: Download pinned release artifact
+      - name: Download and verify release artifact
+        id: meta
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          gh release download v0.13.3 --pattern quillpane_0.13.3_amd64.snap
-          echo '26bb3252ea582b870c1aa25e65d77b249383b819cf6d87c19dad5296f7a63faf  quillpane_0.13.3_amd64.snap' | sha256sum --strict --check -
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version="${TAG#v}"
+          asset="quillpane_${version}_amd64.snap"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --pattern "${asset}.sha256"
+          sha256sum --strict --check "${asset}.sha256"
+          echo "asset=$asset" >> "$GITHUB_OUTPUT"
       - name: Upload to candidate for installation testing
         uses: snapcore/action-publish@v1
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
-          snap: quillpane_0.13.3_amd64.snap
+          snap: ${{ steps.meta.outputs.asset }}
           release: candidate

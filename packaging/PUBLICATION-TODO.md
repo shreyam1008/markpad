@@ -1,12 +1,13 @@
 # Publication execution checklist
 
-Updated: 2026-09-06. Existing logo and compatibility identifiers stay unchanged.
+Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
-## Snap: registered and built, not published
+## Snap: registered; build and publish workflow prepared
 
 - [x] Register `quillpane` in the owner's global Snap Store account.
-- [x] Build v0.13.3 and attach the snap to the GitHub release.
-- [x] Prepare `Publish verified Snap artifact` workflow with pinned checksum.
+- [ ] Run the tag workflow for v0.13.4 and verify the snap plus checksum on the
+  GitHub release.
+- [x] Prepare `Publish verified Snap artifact` workflow with release checksum verification.
 - [ ] Owner authenticates Snapcraft on a trusted Linux machine and configures a
   snap-scoped `SNAPCRAFT_STORE_CREDENTIALS` GitHub Actions secret. Do not paste
   credentials into a chat or commit them.
@@ -42,14 +43,14 @@ Back up securely and rotate before expiry; never publish that directory.
 
 ## Flathub: not ready for a submission yet
 
-- [ ] Resolve the unpublished Flatpak ID: `io.github.markpad` lacks the required
+- [x] Resolve the unpublished Flatpak ID: `io.github.markpad` lacked the required
   GitHub owner component. Candidate: `io.github.shreyam1008.markpad`, matching
   the repository. Keep existing non-Flatpak compatibility IDs unchanged.
-- [ ] Align desktop filename, icon reference, and metainfo with that Flatpak ID.
-- [ ] Select a supported GNOME runtime and verify the WebKitGTK ABI.
-- [ ] Supply source-pinned offline Bun/npm and Go dependencies; build frontend
+- [x] Align desktop filename, icon reference, and metainfo with that Flatpak ID.
+- [x] Select a supported GNOME runtime and add a WebKitGTK ABI verification step.
+- [x] Supply source-pinned offline Bun/npm and Go dependencies; build frontend
   before Go embeds it. Verify with networking disabled during compilation.
-- [ ] Reduce filesystem permissions to what actual open/save behavior needs.
+- [x] Reduce filesystem permissions to what actual open/save behavior needs.
 - [ ] Run flatpak-builder, AppStream validation, lints, and desktop smoke tests.
 - [ ] Human reviews included AI-generated material and its approximate extent.
 - [ ] **Human authors and opens the Flathub PR, including its commit message,

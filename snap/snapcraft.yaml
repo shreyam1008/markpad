@@ -1,6 +1,6 @@
 name: quillpane
 base: core24
-version: '0.13.4'
+adopt-info: quillpane
 summary: Quillpane - small native Markdown notepad
 description: |
   Quillpane (formerly Markpad) is a tiny native Markdown notepad built with Go and the system webview.
@@ -54,6 +54,9 @@ parts:
     build-environment:
       - CGO_ENABLED: "1"
     override-build: |
+      version="$(sed -n 's/^const Version = \"\(.*\)\"/\1/p' main.go | head -n 1)"
+      test -n "$version"
+      craftctl set version="$version"
       BUN_VERSION="1.3.14"
       BUN_ARCHIVE="$CRAFT_PART_BUILD/bun-linux-x64.zip"
       curl --fail --location --retry 3 --output "$BUN_ARCHIVE" \

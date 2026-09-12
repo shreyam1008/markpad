@@ -1,0 +1,16 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Quillpane public documentation resources",
+    "version": "0.13.4",
+    "description": "Read-only documentation and discovery resources for Quillpane. The desktop application is local-first and does not expose a hosted API."
+  },
+  "servers": [{ "url": "https://quillpane.shreyam1008.com.np" }],
+  "paths": {
+    "/llms.txt": { "get": { "operationId": "getLlmsIndex", "summary": "Get the agent-readable Quillpane guide", "responses": { "200": { "description": "Markdown guide", "content": { "text/markdown": { "schema": { "type": "string" } } } } } } },
+    "/architecture.md": { "get": { "operationId": "getArchitecture", "summary": "Get Quillpane architecture notes", "responses": { "200": { "description": "Markdown architecture document", "content": { "text/markdown": { "schema": { "type": "string" } } } } } } },
+    "/launch.md": { "get": { "operationId": "getLaunchGuide", "summary": "Get installation and launch guidance", "responses": { "200": { "description": "Markdown launch guide", "content": { "text/markdown": { "schema": { "type": "string" } } } } } } },
+    "/.well-known/agent-skills/index.json": { "get": { "operationId": "getAgentSkills", "summary": "Get the Quillpane Agent Skills index", "responses": { "200": { "description": "Agent Skills index", "content": { "application/json": { "schema": { "type": "object" } } } } } } },
+    "/.well-known/mcp/server-card.json": { "get": { "operationId": "getMcpServerCard", "summary": "Get the static Quillpane MCP discovery card", "responses": { "200": { "description": "MCP discovery card", "content": { "application/json": { "schema": { "type": "object" } } } } } } }
+  }
+}

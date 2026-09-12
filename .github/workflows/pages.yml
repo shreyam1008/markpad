@@ -2,6 +2,11 @@ name: Publish Cloudflare site
 
 on:
   workflow_dispatch:
+    inputs:
+      stable_tag:
+        description: Stable release tag whose Debian artifact should be published
+        required: false
+        default: ''
   push:
     branches: [main]
     paths:
@@ -26,16 +31,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           APT_SIGNING_PRIVATE_KEY: ${{ secrets.APT_SIGNING_PRIVATE_KEY }}
           APT_SIGNING_KEY_ID: ${{ vars.APT_SIGNING_KEY_ID }}
+          REQUESTED_STABLE_TAG: ${{ inputs.stable_tag }}
         run: |
           set -euo pipefail
           test -n "$APT_SIGNING_PRIVATE_KEY"
           export GNUPGHOME="$RUNNER_TEMP/apt-gnupg"
           install -d -m 700 "$GNUPGHOME"
           printf '%s' "$APT_SIGNING_PRIVATE_KEY" | gpg --batch --import
+          if [[ -n "$REQUESTED_STABLE_TAG" ]]; then
+            stable_tag="$REQUESTED_STABLE_TAG"
+          else
+            stable_tag="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft,isPrerelease --jq '[.[] | select(.isDraft == false and .isPrerelease == false)][0].tagName')"
+          fi
+          [[ "$stable_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version="${stable_tag#v}"
+          asset="markpad_${version}_amd64.deb"
+          digest="$(gh release view "$stable_tag" --repo "$GITHUB_REPOSITORY" --json assets --jq ".assets[] | select(.name == \"$asset\") | .digest")"
+          [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
           mkdir -p apt-dist
-          gh release download v0.13.3 --pattern markpad_0.13.3_amd64.deb --dir apt-dist
-          echo 'cf7e050f802cd98516c045a617a3eecf1e06352fce1cef3f08fa073572f35409  apt-dist/markpad_0.13.3_amd64.deb' | sha256sum --strict --check -
-          test "$(dpkg-deb -f apt-dist/markpad_0.13.3_amd64.deb Package)" = markpad
+          gh release download "$stable_tag" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --dir apt-dist
+          printf '%s  %s\n' "${digest#sha256:}" "apt-dist/$asset" | sha256sum --strict --check -
+          test "$(dpkg-deb -f "apt-dist/$asset" Package)" = markpad
+          test "$(dpkg-deb -f "apt-dist/$asset" Version)" = "$version"
           bash packaging/linux/build-apt-repo.sh docs/apt apt-dist
           sudo install -m 644 docs/apt/key.gpg /usr/share/keyrings/quillpane-test.gpg
           printf 'deb [signed-by=/usr/share/keyrings/quillpane-test.gpg] file:%s/docs/apt stable main\n' "$GITHUB_WORKSPACE" | sudo tee /etc/apt/sources.list.d/quillpane-test.list
@@ -80,6 +97,8 @@ jobs:
           sudo rm /etc/apt/sources.list.d/quillpane-test.list
           echo 'deb [signed-by=/usr/share/keyrings/quillpane.asc] https://quillpane.shreyam1008.com.np/apt stable main' | sudo tee /etc/apt/sources.list.d/quillpane.list
           sudo apt-get -o APT::Update::Error-Mode=any update
-          sudo apt-get install -y markpad=0.13.3
+          stable_version="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft,isPrerelease --jq '[.[] | select(.isDraft == false and .isPrerelease == false)][0].tagName' | sed 's/^v//')"
+          test -n "$stable_version"
+          sudo apt-get install -y "markpad=$stable_version"
           dpkg-query -W markpad
           sudo apt-get remove -y markpad

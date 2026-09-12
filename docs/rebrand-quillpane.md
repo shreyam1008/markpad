@@ -1,6 +1,7 @@
 # Quillpane migration from Markpad
 
-Status: Quillpane selected; display migration and v0.13.3 compatibility release complete; store publication pending
+Status: Quillpane selected; display migration complete; v0.13.4 is the current
+source release and store publication remains pending
 Audit date: 2026-09-06
 Legal status: naming decision by the maintainer; not trademark, domain, or store-namespace clearance
 
@@ -138,9 +139,10 @@ Rollback is one display constant change; no user data needs to move.
 - Keep old install commands working for at least two stable releases.
 - WinGet PR #430348 is open with the updated display metadata; the personal
   Scoop bucket is live after PR #7 passed install/upgrade/uninstall CI.
-  The reproducible `quillpane_0.13.3_amd64.snap` is attached to the GitHub
-  release; Snap Store publication still needs the authenticated `quillpane`
-  namespace.
+  The tag workflow is prepared to build and attach the reproducible
+  `quillpane_0.13.4_amd64.snap`; run and verify that workflow before claiming a
+  release asset. Snap Store publication still needs the authenticated
+  `quillpane` namespace.
 
 ### Phase 3 — optional namespace transition
 

@@ -55,11 +55,10 @@ modules:
     sources:
       - type: git
         url: https://github.com/shreyam1008/markpad.git
-        tag: v0.13.3
-        commit: 4d0667fc2239956d3c49f680907028c93bb58ba9
+        tag: v0.13.4
+        commit: 0c5469a1b079103e92a43110fbbc8ca7f2d916f3
       - type: file
-        url: https://raw.githubusercontent.com/shreyam1008/markpad/aeb908085bad46597c6b0eb184fbfa65e9e17d05/packaging/flatpak/io.github.shreyam1008.markpad.metainfo.xml
-        sha256: 11848b317111b1d991656c97cf3fee0db17a24cf917757f56c5b9ee480143023
+        path: io.github.shreyam1008.markpad.metainfo.xml
       - type: file
         path: wails-file-portal.patch
       - node-sources.json

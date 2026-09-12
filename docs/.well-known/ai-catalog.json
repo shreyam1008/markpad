@@ -1,0 +1,30 @@
+{
+  "specVersion": "1.0",
+  "host": { "displayName": "Quillpane", "identifier": "https://quillpane.shreyam1008.com.np/" },
+  "entries": [
+    {
+      "identifier": "urn:air:quillpane.shreyam1008.com.np:skill:quillpane-docs",
+      "displayName": "Quillpane documentation skill",
+      "type": "application/ai-skill",
+      "url": "https://quillpane.shreyam1008.com.np/.well-known/agent-skills/quillpane-docs.md",
+      "description": "Public product, local-file safety, release, and installation guidance for Quillpane.",
+      "representativeQueries": ["what is Quillpane", "install Quillpane on Linux", "understand Quillpane's local-only storage"]
+    },
+    {
+      "identifier": "urn:air:quillpane.shreyam1008.com.np:api:public-discovery",
+      "displayName": "Quillpane public documentation resources",
+      "type": "application/openapi+json",
+      "url": "https://quillpane.shreyam1008.com.np/openapi.json",
+      "description": "OpenAPI description for the public static documentation surface; no hosted editor API is exposed.",
+      "representativeQueries": ["find Quillpane's machine-readable docs", "read the Quillpane architecture guide"]
+    },
+    {
+      "identifier": "urn:air:quillpane.shreyam1008.com.np:mcp:public-card",
+      "displayName": "Quillpane static MCP discovery card",
+      "type": "application/mcp-server-card+json",
+      "url": "https://quillpane.shreyam1008.com.np/.well-known/mcp/server-card.json",
+      "description": "Static discovery card for public docs; Quillpane has no hosted MCP transport.",
+      "representativeQueries": ["discover Quillpane public resources", "does Quillpane expose a remote MCP server"]
+    }
+  ]
+}
