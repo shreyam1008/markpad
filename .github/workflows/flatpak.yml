@@ -20,9 +20,9 @@ jobs:
         run: flatpak run --command=sh org.gnome.Sdk//50 -c 'pkg-config --modversion gtk+-3.0 webkit2gtk-4.1'
       - name: Download pinned sources then compile without network
         run: |
-          flatpak run --command=flatpak-builder org.flatpak.Builder --version
-          flatpak run --command=flatpak-builder org.flatpak.Builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak run --command=flatpak-builder org.flatpak.Builder --user --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run org.flatpak.Builder --version
+          flatpak run org.flatpak.Builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run org.flatpak.Builder --user --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
         id: metadata
         run: |
