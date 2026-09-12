@@ -186,17 +186,3 @@ export function imageMime(path: string): string {
   if (extension === "ico") return "image/x-icon";
   return `image/${extension || "png"}`;
 }
-
-export function openFileDirty(
-  path: string,
-  notes: NoteInfo[],
-  activeId: string,
-  activeDirty: boolean,
-): { dirty: boolean; noteId?: string } {
-  const note = notes.find((item) => item.path === path);
-  if (!note) return { dirty: false };
-  return {
-    dirty: note.id === activeId ? activeDirty : note.dirty,
-    noteId: note.id,
-  };
-}

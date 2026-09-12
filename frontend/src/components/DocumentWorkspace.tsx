@@ -14,6 +14,7 @@ import { PRODUCT_NAME } from "../brand";
 import { shouldCoalesceLargeEdit } from "../history/edit";
 import { previewSelection, writeClipboard } from "../preview/clipboard";
 import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
+import { pairedScrollTop } from "../preview/scroll";
 import { client } from "../workspace/client";
 import {
   editorStats,
@@ -24,7 +25,6 @@ import {
   outlineFromMarkdown,
   typeLabel,
 } from "../workspace/documents";
-import { matchSelectionOffset } from "../workspace/search";
 import type {
   NoteInfo,
   OutlineItem,
@@ -93,7 +93,6 @@ export interface DocumentWorkspaceHandle {
   format(action: string): void;
   findNext(query: string): { index: number; count: number };
   goToLine(line: number): void;
-  revealMatch(line: number, column: number, length: number): void;
   getContent(): string;
 }
 
@@ -107,7 +106,6 @@ interface Props {
   onCloseFind(): void;
   onSession(session: SessionState): void;
   onDocument(session: SessionState, status: string): void | Promise<void>;
-  onWorkspaceChange(): void | Promise<void>;
   onDirty(dirty: boolean): void;
   onStatus(status: string): void;
   onStats(stats: string): void;
@@ -378,7 +376,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       onCloseFind,
       onSession,
       onDocument,
-      onWorkspaceChange,
       onDirty,
       onStatus,
       onStats,
@@ -394,6 +391,8 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     const [findQuery, setFindQuery] = useState("");
     const [findInfo, setFindInfo] = useState("");
     const [split, setSplit] = useState(50);
+    const [syncScroll, setSyncScroll] = useState(true);
+    const expectedScroll = useRef<Partial<Record<"editor" | "viewer", number>>>({});
     const [saveConflict, setSaveConflict] = useState<SaveConflictInfo>();
     const [saveConflictBusy, setSaveConflictBusy] = useState<"" | "copy" | "reload" | "overwrite">(
       "",
@@ -551,6 +550,23 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         );
       }, 180);
     }, [note?.id]);
+
+    const scrollPane = useCallback(
+      (side: "editor" | "viewer") => {
+        savePosition();
+        const source = side === "editor" ? editor.current : viewer.current;
+        const target = side === "editor" ? viewer.current : editor.current;
+        if (!source || !target || viewMode !== "split" || !syncScroll) return;
+        const expected = expectedScroll.current[side];
+        delete expectedScroll.current[side];
+        if (expected !== undefined && Math.abs(source.scrollTop - expected) < 2) return;
+        const next = pairedScrollTop(source, target);
+        if (Math.abs(target.scrollTop - next) < 1) return;
+        expectedScroll.current[side === "editor" ? "viewer" : "editor"] = next;
+        target.scrollTop = next;
+      },
+      [savePosition, syncScroll, viewMode],
+    );
 
     const flush = useCallback(async () => {
       clearTimeout(draftTimer.current);
@@ -757,29 +773,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       return { index: selected, count: matches.length };
     }, []);
 
-    const revealMatch = useCallback(
-      (line: number, column: number, length: number) => {
-        const input = editor.current;
-        if (!input) return;
-        const targetLine = Math.max(1, Math.trunc(line));
-        const start = matchSelectionOffset(contentRef.current, targetLine, column);
-        const end = Math.max(
-          start,
-          Math.min(contentRef.current.length, start + Math.max(0, length)),
-        );
-        input.focus();
-        input.setSelectionRange(start, end);
-        if (input instanceof HTMLTextAreaElement) {
-          revealWrappedTextareaPosition(input, start);
-        } else {
-          const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
-          input.scrollTop = Math.max(0, (targetLine - 1) * lineHeight - input.clientHeight / 3);
-        }
-        savePosition();
-      },
-      [savePosition, textSize],
-    );
-
     const acceptSavedSession = useCallback(
       (session: SessionState, status = "Saved") => {
         const active = session.notes.find((item) => item.id === session.activeId);
@@ -811,14 +804,13 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             return false;
           }
           const saved = acceptSavedSession(result.session);
-          if (saved && overwrite) await onWorkspaceChange();
           return saved;
         } catch (error) {
           onStatus(`Save failed: ${String(error)}`);
           return false;
         }
       },
-      [acceptSavedSession, onSession, onStatus, onWorkspaceChange, readOnly],
+      [acceptSavedSession, onSession, onStatus, readOnly],
     );
 
     const saveAsCurrent = useCallback(async () => {
@@ -861,7 +853,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
               session,
               `Reloaded disk version · ${PRODUCT_NAME} draft kept in history`,
             );
-            await onWorkspaceChange();
             return;
           }
           const result = await client.save(contentRef.current, true);
@@ -870,9 +861,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             onSession(result.session);
             return;
           }
-          if (acceptSavedSession(result.session, "Disk version overwritten")) {
-            await onWorkspaceChange();
-          }
+          acceptSavedSession(result.session, "Disk version overwritten");
         } catch (error) {
           setSaveConflictError(error instanceof Error ? error.message : String(error));
           onStatus(`Conflict resolution failed: ${String(error)}`);
@@ -880,15 +869,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           setSaveConflictBusy("");
         }
       },
-      [
-        acceptSavedSession,
-        onDocument,
-        onSession,
-        onStatus,
-        onWorkspaceChange,
-        saveConflict,
-        saveConflictBusy,
-      ],
+      [acceptSavedSession, onDocument, onSession, onStatus, saveConflict, saveConflictBusy],
     );
 
     useImperativeHandle(
@@ -910,7 +891,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         redo: () => stepHistory(1),
         format,
         findNext,
-        revealMatch,
         goToLine(line: number) {
           const input = editor.current;
           if (!input) return;
@@ -936,7 +916,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         onDirty,
         onSession,
         onStatus,
-        revealMatch,
         saveAsCurrent,
         saveCurrent,
         stepHistory,
@@ -950,6 +929,21 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     return (
       <>
         <div className="document-workspace flex-1 flex flex-col overflow-hidden">
+          {viewMode === "split" && (
+            <div className="split-scroll-rail">
+              <button
+                className="confirm-btn"
+                aria-pressed={syncScroll}
+                onClick={() => {
+                  expectedScroll.current = {};
+                  setSyncScroll((current) => !current);
+                }}
+              >
+                Sync scroll: {syncScroll ? "On" : "Off"}
+              </button>
+              <span>Scroll either pane to follow the same reading progress.</span>
+            </div>
+          )}
           {findOpen && (
             <div
               id="find-bar"
@@ -1007,7 +1001,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                     initialCursor={initialDocument.current.cursor}
                     initialScrollTop={initialDocument.current.scrollTop}
                     onChange={changeContent}
-                    onScroll={savePosition}
+                    onScroll={() => scrollPane("editor")}
                     onSelectionChange={savePosition}
                     onHistoryAvailability={onHistoryAvailability}
                   />
@@ -1024,7 +1018,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                     spellCheck={false}
                     className={`editor-surface ${type === "md" ? "markdown-editor-surface" : ""} w-full h-full border-none outline-none resize-none bg-editor text-ink font-mono leading-7 p-5 rounded-lg select-text`}
                     style={{ tabSize: 4, fontSize: textSize }}
-                    onScroll={savePosition}
+                    onScroll={() => scrollPane("editor")}
                     onKeyUp={savePosition}
                     onChange={(event) =>
                       changeContent(
@@ -1102,7 +1096,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 aria-label="Document preview"
                 className="preview-pane flex-1 overflow-auto overscroll-contain p-3"
                 style={viewMode === "split" ? { flex: `0 0 ${100 - split}%` } : undefined}
-                onScroll={savePosition}
+                onScroll={() => scrollPane("viewer")}
               >
                 <Viewer key={themeKey} note={note} content={previewContent} textSize={textSize} />
               </section>

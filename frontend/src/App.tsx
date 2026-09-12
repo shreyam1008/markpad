@@ -16,7 +16,6 @@ import { CloseDialog } from "./components/CloseDialog";
 import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
 import { DeleteDialog, type DeleteTarget } from "./components/DeleteDialog";
 import { DocumentWorkspace, type DocumentWorkspaceHandle } from "./components/DocumentWorkspace";
-import { FileDraftDialog, type FileDraftTarget } from "./components/FileDraftDialog";
 import { HistoryPanel } from "./components/HistoryPanel";
 import {
   Bold,
@@ -24,7 +23,6 @@ import {
   Columns2,
   Copy,
   Eye,
-  FilePlus2,
   FolderOpen,
   ImageIcon,
   Info,
@@ -46,11 +44,11 @@ import {
   Undo2,
   X,
 } from "./components/icons";
+import { ProductTour } from "./components/ProductTour";
 import { QuitDialog } from "./components/QuitDialog";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Sidebar } from "./components/Sidebar";
 import { UpdateCheck } from "./components/UpdateCheck";
-import { WorkspaceSearch } from "./components/WorkspaceSearch";
 import {
   applyPreferencesToDocument,
   initialPreferences,
@@ -72,10 +70,8 @@ import {
   fileType,
   formatBytes,
   isReadOnly,
-  openFileDirty,
   viewLabel,
 } from "./workspace/documents";
-import { suggestWorkspaceDraftPath } from "./workspace/filing";
 import { initialWorkspaceState, workspaceReducer } from "./workspace/state";
 import type {
   DraftFormat,
@@ -84,17 +80,7 @@ import type {
   OutlineItem,
   SessionState,
   ViewMode,
-  WorkspaceFile,
-  WorkspaceSearchResult,
-  WorkspaceState,
 } from "./workspace/types";
-
-const EMPTY_WORKSPACE: WorkspaceState = {
-  root: "",
-  name: "",
-  files: [],
-  truncated: false,
-};
 
 type Modal =
   | { kind: "rename"; note: NoteInfo }
@@ -117,6 +103,7 @@ function ModalLayer({
   onOpenFolder,
   onAbout,
   onChangelog,
+  onTour,
 }: {
   modal?: Modal;
   onClose(): void;
@@ -124,6 +111,7 @@ function ModalLayer({
   onOpenFolder(path: string): void;
   onAbout(): void;
   onChangelog(): void;
+  onTour(): void;
 }) {
   const [name, setName] = useState(modal?.kind === "rename" ? modal.note.title : "");
   useEffect(() => setName(modal?.kind === "rename" ? modal.note.title : ""), [modal]);
@@ -196,6 +184,13 @@ function ModalLayer({
     title = "Help & updates";
     body = (
       <div className="space-y-2">
+        <section className="help-tour">
+          <h3>Tour</h3>
+          <p>A detailed walkthrough of the page, file controls, editing, and updates.</p>
+          <button className="confirm-btn" onClick={onTour}>
+            Start guided tour
+          </button>
+        </section>
         <UpdateCheck />
         <div className="flex gap-2">
           <button className="confirm-btn" onClick={onAbout}>
@@ -218,12 +213,7 @@ function ModalLayer({
           <kbd>{shortcutLabel("file.new")}</kbd> New · <kbd>{shortcutLabel("file.open")}</kbd> Open
         </p>
         <p>
-          <kbd>{shortcutLabel("navigation.find")}</kbd> Find in file ·{" "}
-          <kbd>{shortcutLabel("navigation.workspace-search")}</kbd> Find in folder ·{" "}
-          <kbd>{shortcutLabel("file.open-folder")}</kbd> Open folder
-        </p>
-        <p>
-          <kbd>{shortcutLabel("file.file-draft")}</kbd> File an unsaved draft in the workspace
+          <kbd>{shortcutLabel("navigation.find")}</kbd> Find in file
         </p>
         <p>
           <kbd>{shortcutLabel("view.editor")}</kbd> / <kbd>{shortcutLabel("view.split")}</kbd> /{" "}
@@ -236,6 +226,15 @@ function ModalLayer({
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.13.6 · Everyday refinements</h3>
+          <p>
+            Help now includes a detailed guided tour. Split panes scroll together with an off
+            switch. File symbols and colors make types easier to identify. Syntax support is
+            improved. Folder workspaces and their commands have been removed; open and save
+            individual files as usual.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.13.5 · Help & updates</h3>
           <p>
@@ -381,13 +380,14 @@ function App() {
   const [redoAvailable, setRedoAvailable] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const tourActive = useRef(false);
+  tourActive.current = tourOpen;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storagePath, setStoragePath] = useState("Available in the desktop app");
   const [findOpen, setFindOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteScope, setPaletteScope] = useState<PaletteScope>("all");
-  const [workspaceSearchOpen, setWorkspaceSearchOpen] = useState(false);
-  const [folderWorkspace, setFolderWorkspace] = useState<WorkspaceState>(EMPTY_WORKSPACE);
   const [modal, setModal] = useState<Modal>();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [closeCandidate, setCloseCandidate] = useState<NoteInfo>();
@@ -395,14 +395,10 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>();
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [fileDraftTarget, setFileDraftTarget] = useState<FileDraftTarget>();
-  const [fileDraftBusy, setFileDraftBusy] = useState(false);
-  const [fileDraftError, setFileDraftError] = useState("");
   const [preferences, setPreferences] = useState<Preferences>(initialPreferences);
   const prefersDark = useSyncExternalStore(subscribeSystemTheme, systemPrefersDark, () => false);
   const workspace = useRef<DocumentWorkspaceHandle>(null);
   const contextMenuElement = useRef<HTMLDivElement>(null);
-  const pendingReveal = useRef<WorkspaceSearchResult | undefined>(undefined);
   const actionsRef = useRef<Record<string, () => void | Promise<void>>>({});
   const sessionRef = useRef(state.session);
   sessionRef.current = state.session;
@@ -422,12 +418,6 @@ function App() {
   const activeType = fileType(active?.path, active?.kind);
   const modes = availableViews(activeType);
   const readOnly = isReadOnly(activeType);
-  const canFileDraft =
-    !!folderWorkspace.root &&
-    !!active &&
-    !active.path &&
-    (activeType === "md" || activeType === "text");
-
   const displaySession = useMemo<SessionState>(
     () => ({
       ...state.session,
@@ -445,7 +435,6 @@ function App() {
   }, []);
   const showFind = useCallback(() => {
     setPaletteOpen(false);
-    setWorkspaceSearchOpen(false);
     setHistoryOpen(false);
     setSettingsOpen(false);
     setModal(undefined);
@@ -476,14 +465,9 @@ function App() {
     let timer: ReturnType<typeof setTimeout>;
     const boot = async () => {
       try {
-        const [session, content, folder] = await Promise.all([
-          client.session(),
-          client.activeContent(),
-          client.workspace(),
-        ]);
+        const [session, content] = await Promise.all([client.session(), client.activeContent()]);
         if (!cancelled) {
           dispatch({ type: "loaded", session, content });
-          setFolderWorkspace(folder);
           setActiveDirty(
             session.notes.find((note) => note.id === session.activeId)?.dirty ?? false,
           );
@@ -500,18 +484,6 @@ function App() {
       clearTimeout(timer);
     };
   }, []);
-
-  useEffect(() => {
-    const match = pendingReveal.current;
-    if (!match || (state.viewMode !== "markdown" && state.viewMode !== "split")) return;
-    const frame = requestAnimationFrame(() => {
-      const handle = workspace.current;
-      if (!handle) return;
-      handle.revealMatch(match.line, match.column, match.matchEnd - match.matchStart);
-      pendingReveal.current = undefined;
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [state.contentVersion, state.viewMode]);
 
   const activate = useCallback(
     async (id: string) => {
@@ -552,54 +524,18 @@ function App() {
     [loadDocument, setStatus],
   );
 
-  const syncFolderWorkspace = useCallback(async () => {
-    setFolderWorkspace(await client.workspace());
+  const startTour = useCallback(() => {
+    setModal(undefined);
+    setSettingsOpen(false);
+    setHistoryOpen(false);
+    setPaletteOpen(false);
+    setFindOpen(false);
+    setContextMenu(undefined);
+    setTourOpen(true);
   }, []);
-
-  const chooseWorkspace = useCallback(async () => {
-    await workspace.current?.flush();
-    try {
-      const next = await client.chooseWorkspace();
-      setFolderWorkspace(next);
-      setStatus(
-        next.root === folderWorkspace.root
-          ? next.root
-            ? "Folder unchanged"
-            : "Folder selection cancelled"
-          : next.root
-            ? `Folder opened: ${next.name}`
-            : "Folder selection cancelled",
-      );
-    } catch (error) {
-      setStatus(`Open folder failed: ${String(error)}`);
-    }
-  }, [folderWorkspace.root, setStatus]);
-
-  const refreshFolderWorkspace = useCallback(async () => {
-    if (!folderWorkspace.root) return;
-    setStatus("Refreshing folder…");
-    try {
-      const next = await client.refreshWorkspace();
-      setFolderWorkspace(next);
-      setStatus(`Folder refreshed · ${next.files.length}${next.truncated ? "+" : ""} files`);
-    } catch (error) {
-      setStatus(`Refresh failed: ${String(error)}`);
-    }
-  }, [folderWorkspace.root, setStatus]);
-
-  const clearFolderWorkspace = useCallback(async () => {
-    try {
-      setFolderWorkspace(await client.clearWorkspace());
-      setWorkspaceSearchOpen(false);
-      setStatus("Folder closed");
-    } catch (error) {
-      setStatus(`Close folder failed: ${String(error)}`);
-    }
-  }, [setStatus]);
 
   const showPalette = useCallback((scope: PaletteScope) => {
     setFindOpen(false);
-    setWorkspaceSearchOpen(false);
     setHistoryOpen(false);
     setSettingsOpen(false);
     setModal(undefined);
@@ -607,20 +543,9 @@ function App() {
     setPaletteOpen(true);
   }, []);
 
-  const showWorkspaceSearch = useCallback(async () => {
-    await workspace.current?.flush();
-    setFindOpen(false);
-    setPaletteOpen(false);
-    setHistoryOpen(false);
-    setSettingsOpen(false);
-    setModal(undefined);
-    setWorkspaceSearchOpen(true);
-  }, []);
-
   const toggleHistory = useCallback(() => {
     setFindOpen(false);
     setPaletteOpen(false);
-    setWorkspaceSearchOpen(false);
     setModal(undefined);
     setSettingsOpen(false);
     setHistoryOpen((value) => !value);
@@ -629,7 +554,6 @@ function App() {
   const showQuitDialog = useCallback((dirtyCount: number) => {
     setFindOpen(false);
     setPaletteOpen(false);
-    setWorkspaceSearchOpen(false);
     setSettingsOpen(false);
     setModal(undefined);
     setContextMenu(undefined);
@@ -640,7 +564,6 @@ function App() {
   const showPreferences = useCallback(async () => {
     setFindOpen(false);
     setPaletteOpen(false);
-    setWorkspaceSearchOpen(false);
     setHistoryOpen(false);
     setModal(undefined);
     setSettingsOpen((open) => !open);
@@ -651,82 +574,6 @@ function App() {
       // The browser preview intentionally runs without the Wails desktop API.
     }
   }, [storagePath]);
-
-  const createWorkspaceFile = useCallback(
-    async (relativePath: string) => {
-      await workspace.current?.flush();
-      try {
-        const session = await client.createWorkspaceFile(relativePath);
-        await loadDocument(session, `Created ${relativePath}`);
-        await syncFolderWorkspace();
-      } catch (error) {
-        setStatus(`Create failed: ${String(error)}`);
-      }
-    },
-    [loadDocument, setStatus, syncFolderWorkspace],
-  );
-
-  const showFileDraft = useCallback(() => {
-    if (!folderWorkspace.root) {
-      setStatus("Open a workspace folder before filing a draft");
-      return;
-    }
-    if (!active || active.path || (activeType !== "md" && activeType !== "text")) {
-      setStatus("Only an unsaved Markdown or text draft can be filed in the workspace");
-      return;
-    }
-    const content = workspace.current?.getContent() ?? state.content;
-    setFileDraftError("");
-    setFileDraftTarget({
-      suggestion: suggestWorkspaceDraftPath(
-        content,
-        activeType === "text" ? "txt" : "md",
-        folderWorkspace.files.map((file) => file.relative),
-      ),
-      workspaceName: folderWorkspace.name,
-      workspaceRoot: folderWorkspace.root,
-    });
-  }, [active, activeType, folderWorkspace, setStatus, state.content]);
-
-  const fileDraftInWorkspace = useCallback(
-    async (relativePath: string) => {
-      if (fileDraftBusy) return;
-      setFileDraftBusy(true);
-      setFileDraftError("");
-      try {
-        await workspace.current?.flush();
-        const content = workspace.current?.getContent() ?? state.content;
-        const session = await client.fileDraftInWorkspace(relativePath, content);
-        await loadDocument(session, `Filed in ${folderWorkspace.name}: ${relativePath}`);
-        await syncFolderWorkspace();
-        setFileDraftTarget(undefined);
-      } catch (error) {
-        setFileDraftError(error instanceof Error ? error.message : String(error));
-      } finally {
-        setFileDraftBusy(false);
-      }
-    },
-    [fileDraftBusy, folderWorkspace.name, loadDocument, state.content, syncFolderWorkspace],
-  );
-
-  const openWorkspaceSearchResult = useCallback(
-    async (result: WorkspaceSearchResult) => {
-      await workspace.current?.flush();
-      try {
-        pendingReveal.current = result;
-        const session = await client.openPath(result.path);
-        await loadDocument(session, `${result.relative} · line ${result.line}`);
-        dispatch({ type: "view", mode: "markdown" });
-        const activeID = session.activeId;
-        if (activeID) await client.setView(activeID, "markdown");
-        setWorkspaceSearchOpen(false);
-      } catch (error) {
-        pendingReveal.current = undefined;
-        setStatus(`Open match failed: ${String(error)}`);
-      }
-    },
-    [loadDocument, setStatus],
-  );
 
   const chooseView = useCallback(
     (mode: ViewMode) => {
@@ -778,26 +625,6 @@ function App() {
     [activeDirty, state.session.activeId],
   );
 
-  const requestDeleteWorkspaceFile = useCallback(
-    (file: WorkspaceFile) => {
-      const openState = openFileDirty(
-        file.path,
-        state.session.notes,
-        state.session.activeId,
-        activeDirty,
-      );
-      setDeleteError("");
-      setDeleteTarget({
-        kind: "file",
-        name: file.name,
-        path: file.path,
-        dirty: openState.dirty,
-        noteId: openState.noteId,
-      });
-    },
-    [activeDirty, state.session.activeId, state.session.notes],
-  );
-
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget || deleteBusy) return;
     setDeleteBusy(true);
@@ -809,14 +636,13 @@ function App() {
           ? await client.deleteFile(deleteTarget.path)
           : await client.deleteDraft(deleteTarget.noteId ?? "");
       await loadDocument(session, `${deleteTarget.name} deleted`);
-      await syncFolderWorkspace();
       setDeleteTarget(undefined);
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : String(error));
     } finally {
       setDeleteBusy(false);
     }
-  }, [deleteBusy, deleteTarget, loadDocument, syncFolderWorkspace]);
+  }, [deleteBusy, deleteTarget, loadDocument]);
 
   const rename = useCallback(
     async (note: NoteInfo, name: string) => {
@@ -824,12 +650,11 @@ function App() {
         acceptSession(await client.rename(note.id, name));
         setModal(undefined);
         setStatus(`Renamed to ${name}`);
-        await syncFolderWorkspace();
       } catch (error) {
         setStatus(`Rename failed: ${String(error)}`);
       }
     },
-    [acceptSession, setStatus, syncFolderWorkspace],
+    [acceptSession, setStatus],
   );
 
   const showInfo = useCallback(
@@ -904,29 +729,6 @@ function App() {
         run: open,
       },
       {
-        id: "file.open-folder",
-        title: folderWorkspace.root ? "Change workspace folder" : "Open workspace folder",
-        category: "File",
-        shortcut: shortcutLabel("file.open-folder"),
-        keywords: ["choose", "directory", "vault"],
-        run: chooseWorkspace,
-      },
-      {
-        id: "file.refresh-folder",
-        title: "Refresh workspace folder",
-        category: "File",
-        shortcut: shortcutLabel("file.refresh"),
-        enabled: !!folderWorkspace.root,
-        run: refreshFolderWorkspace,
-      },
-      {
-        id: "file.close-folder",
-        title: "Close workspace folder",
-        category: "File",
-        enabled: !!folderWorkspace.root,
-        run: clearFolderWorkspace,
-      },
-      {
         id: "file.save",
         title: "Save",
         category: "File",
@@ -941,15 +743,6 @@ function App() {
         shortcut: shortcutLabel("file.save-as"),
         enabled: !readOnly,
         run: () => workspace.current?.saveAs(),
-      },
-      {
-        id: "file.file-draft",
-        title: `File draft in ${folderWorkspace.name || "workspace"}`,
-        category: "File",
-        shortcut: shortcutLabel("file.file-draft"),
-        keywords: ["promote", "organize", "folder", "note"],
-        enabled: canFileDraft,
-        run: showFileDraft,
       },
       {
         id: "file.rename",
@@ -1020,14 +813,6 @@ function App() {
         shortcut: shortcutLabel("navigation.find"),
         enabled: !readOnly,
         run: showFind,
-      },
-      {
-        id: "edit.find-folder",
-        title: "Find in workspace folder",
-        category: "Edit",
-        shortcut: shortcutLabel("navigation.workspace-search"),
-        keywords: ["search", "grep", "all files", "content"],
-        run: showWorkspaceSearch,
       },
       {
         id: "edit.undo",
@@ -1117,26 +902,18 @@ function App() {
       active,
       adjustTextZoom,
       adjustUiZoom,
-      canFileDraft,
-      chooseWorkspace,
       chooseView,
-      clearFolderWorkspace,
       create,
-      folderWorkspace.name,
-      folderWorkspace.root,
       modes,
       open,
       readOnly,
       redoAvailable,
-      refreshFolderWorkspace,
       requestClose,
       requestDeleteNote,
-      showFileDraft,
       showFind,
       showModal,
       showPreferences,
       toggleHistory,
-      showWorkspaceSearch,
       undoAvailable,
     ],
   );
@@ -1145,7 +922,6 @@ function App() {
     palette: () => showPalette("all"),
     dismiss: () => {
       setPaletteOpen(false);
-      setWorkspaceSearchOpen(false);
       setSettingsOpen(false);
       setModal(undefined);
       setContextMenu(undefined);
@@ -1155,24 +931,16 @@ function App() {
         setDeleteTarget(undefined);
         setDeleteError("");
       }
-      if (!fileDraftBusy) {
-        setFileDraftTarget(undefined);
-        setFileDraftError("");
-      }
       setFindOpen(false);
     },
     new: () => create("md"),
     open,
-    openfolder: chooseWorkspace,
-    searchworkspace: showWorkspaceSearch,
-    refreshworkspace: refreshFolderWorkspace,
     save: async () => {
       await workspace.current?.save();
     },
     saveas: async () => {
       await workspace.current?.saveAs();
     },
-    filedraft: showFileDraft,
     close: () => requestClose(active),
     undo: () => workspace.current?.undo(),
     redo: () => workspace.current?.redo(),
@@ -1210,7 +978,7 @@ function App() {
   const hotkeyDefinitions = useMemo(
     () =>
       createHotkeyDefinitions((action) => {
-        void actionsRef.current[action]?.();
+        if (!tourActive.current) void actionsRef.current[action]?.();
       }),
     [],
   );
@@ -1229,10 +997,8 @@ function App() {
     const names = [
       "new",
       "open",
-      "openfolder",
       "save",
       "saveas",
-      "filedraft",
       "close",
       "undo",
       "redo",
@@ -1244,8 +1010,6 @@ function App() {
       "viewpreview",
       "togglesidebar",
       "find",
-      "searchworkspace",
-      "refreshworkspace",
       "history",
       "zoomin",
       "zoomout",
@@ -1266,7 +1030,6 @@ function App() {
       runtime.EventsOn("secondInstance", async () => {
         await workspace.current?.flush();
         await loadDocument(await client.session(), "File opened from second instance");
-        await syncFolderWorkspace();
       }),
     );
     cancel.push(
@@ -1284,11 +1047,10 @@ function App() {
           session,
           paths.length === 1 ? "File opened" : `Opened ${paths.length} files`,
         );
-        await syncFolderWorkspace();
       })();
     }, true);
     return () => cancel.forEach((off) => off?.());
-  }, [loadDocument, showQuitDialog, syncFolderWorkspace]);
+  }, [loadDocument, showQuitDialog]);
 
   useEffect(() => {
     const close = () => setContextMenu(undefined);
@@ -1369,7 +1131,7 @@ function App() {
               : paletteScope === "actions"
                 ? "more"
                 : undefined
-            : workspaceSearchOpen
+            : findOpen
               ? "search"
               : historyOpen
                 ? "history"
@@ -1378,7 +1140,7 @@ function App() {
                   : undefined
         }
         onFiles={() => showPalette("files")}
-        onSearch={() => void showWorkspaceSearch()}
+        onSearch={showFind}
         onHistory={toggleHistory}
         onSettings={() => void showPreferences()}
         onMore={() => showPalette("actions")}
@@ -1387,10 +1149,10 @@ function App() {
       <div className="markpad-body flex min-h-0 flex-1">
         <Sidebar
           session={displaySession}
-          workspace={folderWorkspace}
           collapsed={sidebarCollapsed}
           outline={outline}
           onCollapse={() => setSidebarCollapsed((value) => !value)}
+          onOpen={() => void open()}
           onNew={(format) => void create(format)}
           onActivate={(id) => void activate(id)}
           onOpenPath={(path) => void openPath(path)}
@@ -1400,12 +1162,6 @@ function App() {
           onReorder={(ids) => void client.reorder(ids).then(acceptSession)}
           onContext={(note, x, y) => setContextMenu({ note, x, y, placed: false })}
           onOutline={(line) => workspace.current?.goToLine(line)}
-          onChooseWorkspace={() => void chooseWorkspace()}
-          onRefreshWorkspace={() => void refreshFolderWorkspace()}
-          onClearWorkspace={() => void clearFolderWorkspace()}
-          onSearchWorkspace={() => void showWorkspaceSearch()}
-          onCreateWorkspaceFile={(relativePath) => void createWorkspaceFile(relativePath)}
-          onDeleteWorkspaceFile={requestDeleteWorkspaceFile}
         />
         <main className="markpad-main flex-1 min-w-0 flex flex-col overflow-hidden bg-surface">
           <div className="document-rail flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
@@ -1468,16 +1224,6 @@ function App() {
               >
                 <Redo2 />
               </button>
-              {canFileDraft ? (
-                <button
-                  className="file-draft-quick"
-                  title={`File this draft in the workspace (${shortcutLabel("file.file-draft")})`}
-                  onClick={showFileDraft}
-                >
-                  <FilePlus2 />
-                  <span>File in folder</span>
-                </button>
-              ) : null}
               {!readOnly && (
                 <button
                   className="document-action document-action-secondary px-3 py-1.5 rounded-lg text-xs font-semibold bg-hover text-muted hover:bg-border"
@@ -1528,7 +1274,6 @@ function App() {
               onCloseFind={() => setFindOpen(false)}
               onSession={acceptSession}
               onDocument={loadDocument}
-              onWorkspaceChange={syncFolderWorkspace}
               onDirty={setActiveDirty}
               onStatus={setStatus}
               onStats={setStats}
@@ -1551,18 +1296,13 @@ function App() {
                 onChange={updatePreferences}
                 onClose={() => setSettingsOpen(false)}
                 onAbout={() => showModal({ kind: "about" })}
+                onTour={startTour}
                 onChangelog={() => showModal({ kind: "changelog" })}
               />
             ) : null}
           </div>
           <div className="status-bar flex justify-between items-center px-4 py-1 text-[11px] text-muted border-t border-border-soft min-h-[26px]">
             <span>{state.status}</span>
-            {folderWorkspace.root ? (
-              <span className="status-workspace" title={folderWorkspace.root}>
-                {folderWorkspace.name} · {folderWorkspace.files.length}
-                {folderWorkspace.truncated ? "+" : ""} files
-              </span>
-            ) : null}
             <span>{stats}</span>
           </div>
         </main>
@@ -1574,24 +1314,17 @@ function App() {
         notes={state.session.notes}
         activeId={state.session.activeId}
         actions={paletteActions}
-        workspaceFiles={folderWorkspace.files}
         onClose={() => setPaletteOpen(false)}
         onActivate={(id) => void activate(id)}
-        onOpenPath={(path) => void openPath(path)}
       />
-      <WorkspaceSearch
-        open={workspaceSearchOpen}
-        workspace={folderWorkspace}
-        onClose={() => setWorkspaceSearchOpen(false)}
-        onChooseWorkspace={() => void chooseWorkspace()}
-        onOpen={(result) => openWorkspaceSearchResult(result)}
-      />
+      {tourOpen && <ProductTour onClose={() => setTourOpen(false)} />}
       <ModalLayer
         modal={modal}
         onClose={() => setModal(undefined)}
         onRename={(note, name) => void rename(note, name)}
         onOpenFolder={(path) => void client.openFolder(path)}
         onAbout={() => showModal({ kind: "about" })}
+        onTour={startTour}
         onChangelog={() => showModal({ kind: "changelog" })}
       />
 
@@ -1701,17 +1434,6 @@ function App() {
           setDeleteError("");
         }}
         onConfirm={() => void confirmDelete()}
-      />
-      <FileDraftDialog
-        target={fileDraftTarget}
-        busy={fileDraftBusy}
-        error={fileDraftError}
-        onCancel={() => {
-          if (fileDraftBusy) return;
-          setFileDraftTarget(undefined);
-          setFileDraftError("");
-        }}
-        onConfirm={(relativePath) => void fileDraftInWorkspace(relativePath)}
       />
 
       {closeCandidate && (

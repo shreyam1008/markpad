@@ -19,7 +19,7 @@ export interface PaletteFileMatch {
   category: string;
   score: number;
   indices: number[];
-  noteId?: string;
+  noteId: string;
   path?: string;
 }
 
@@ -61,12 +61,10 @@ export function fuzzyMatch(query: string, value: string): FuzzyMatch | null {
 export function rankPaletteFiles(
   query: string,
   notes: NoteInfo[],
-  workspaceFiles: WorkspaceFile[],
   activeId: string,
   limit = 60,
 ): PaletteFileMatch[] {
   const matches: PaletteFileMatch[] = [];
-  const openPaths = new Set<string>();
 
   if (!query.trim()) {
     const orderedNotes = [...notes].sort((left, right) => {
@@ -76,7 +74,6 @@ export function rankPaletteFiles(
     });
     for (const note of orderedNotes) {
       if (matches.length >= limit) return matches;
-      if (note.path) openPaths.add(note.path);
       matches.push({
         id: `document.${note.id}`,
         title: note.title || "Untitled",
@@ -84,25 +81,13 @@ export function rankPaletteFiles(
         score: note.id === activeId ? 2 : 1,
         indices: [],
         noteId: note.id,
-      });
-    }
-    for (const file of workspaceFiles) {
-      if (matches.length >= limit) break;
-      if (openPaths.has(file.path)) continue;
-      matches.push({
-        id: `workspace.${file.path}`,
-        title: file.name,
-        category: file.relative,
-        score: 0,
-        indices: [],
-        path: file.path,
+        path: note.path || note.title,
       });
     }
     return matches;
   }
 
   for (const note of notes) {
-    if (note.path) openPaths.add(note.path);
     const title = note.title || "Untitled";
     const category = note.id === activeId ? "Current file" : note.path || "Unsaved draft";
     const titleMatch = fuzzyMatch(query, title);
@@ -118,21 +103,7 @@ export function rankPaletteFiles(
       score: fullMatch.score + (titleMatch ? 40 : 0) + (note.id === activeId ? 4 : 12),
       indices: titleMatch?.indices ?? [],
       noteId: note.id,
-    });
-  }
-
-  for (const file of workspaceFiles) {
-    if (openPaths.has(file.path)) continue;
-    const titleMatch = fuzzyMatch(query, file.name);
-    const fullMatch = titleMatch ?? fuzzyMatch(query, file.relative);
-    if (!fullMatch) continue;
-    matches.push({
-      id: `workspace.${file.path}`,
-      title: file.name,
-      category: file.relative,
-      score: fullMatch.score + (titleMatch ? 30 : 0),
-      indices: titleMatch?.indices ?? [],
-      path: file.path,
+      path: note.path || note.title,
     });
   }
 
@@ -170,4 +141,4 @@ export class CommandRegistry {
     return true;
   }
 }
-import type { NoteInfo, WorkspaceFile } from "./workspace/types";
+import type { NoteInfo } from "./workspace/types";

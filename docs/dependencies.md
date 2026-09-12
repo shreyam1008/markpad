@@ -2,11 +2,11 @@
 
 Production browser dependencies are locked through `frontend/bun.lock`, bundled by Bun 1.3.14, and embedded into the application. `node_modules` and build tools are never embedded.
 
-The checked-in dependency set is pinned for the current development build (the
-the v0.13.3 migration release is prepared from the v0.13.2 published baseline):
+The checked-in dependency set is pinned for v0.13.6:
 
 | Package | Version | Purpose |
 |---|---:|---|
+| Driver.js | 1.8.0 | Offline, keyboard-accessible guided Help tour |
 | React / ReactDOM | 19.2.8 | Interface rendering |
 | Marked | 18.0.9 | Markdown parsing |
 | DOMPurify | 3.4.13 | Rendered-HTML sanitization |
@@ -21,7 +21,7 @@ the v0.13.3 migration release is prepared from the v0.13.2 published baseline):
 | Lucide | 1.31.0 | Tree-shaken interface icon nodes |
 | TanStack React Hotkeys | 0.10.0 | Cross-platform global shortcut lifecycle, metadata, and display |
 
-TanStack Hotkeys is the only app-wide interaction helper. It replaces Markpad's manual app-wide key map, prevents stale React closures, and exposes the registered bindings to the Keyboard settings screen. CodeMirror is scoped to the editable code surface; its language modules are split and loaded only after a matching file opens. The adapters and their small core dependencies are bundled into the offline frontend, are MIT licensed, and make no runtime network calls. Neither package is used as general application state management. TanStack Highlight was evaluated and rejected for editing because it produces static HTML rather than an editor model.
+TanStack Hotkeys owns app-wide shortcuts. It replaces Markpad's manual app-wide key map, prevents stale React closures, and exposes the registered bindings to the Keyboard settings screen. CodeMirror is scoped to the editable code surface; its language parsers initialize when a matching file opens; production code remains in one WebKit-safe bundle. The adapters and their small core dependencies are bundled into the offline frontend, are MIT licensed, and make no runtime network calls. Neither package is used as general application state management. TanStack Highlight was evaluated and rejected for editing because it produces static HTML rather than an editor model.
 
 Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-time dependencies only. Markpad intentionally has no bundled PDF renderer, component suite, or secondary frontend bundler.
 
@@ -33,7 +33,7 @@ Tailwind CSS, TypeScript, Oxlint, Oxfmt, and the Bun Tailwind plugin are build-t
 4. Confirm there are no HTTP production asset references.
 5. Build the stripped Linux executable and record its size.
 6. Exercise Markdown, fenced code, links, images, and PDF external handoff without network access.
-7. Exercise folder navigation and workspace search against a representative bounded fixture.
+7. Exercise the complete Help tour, restart/exit, narrow layout, and Split scrolling in both directions.
 
 Do not substitute an unpinned `latest` URL or add a package manager to the production runtime.
 
@@ -44,3 +44,5 @@ The hard release ceilings are 16 MiB on Linux and 16.1 MiB on Windows. Source ma
 ## Licensing
 
 When dependency versions change, review their licenses and release notes. Markpad documentation must name or lock embedded versions rather than claiming whichever version a remote registry currently serves.
+
+Driver.js is MIT licensed and includes its CSS locally. Its anchored popovers and keyboard/focus lifecycle avoid a bespoke positioning framework. Version 1.8.0 was reviewed against upstream configuration/API documentation. Installed package files remain development inputs; only used code/styles enter the binary. The complete refinement adds about 31 KB raw JavaScript while removing about 7 KB CSS, and the stripped Windows binary is 16,790,016 bytes. See BUNDLE_BUDGET.md for final release measurements.

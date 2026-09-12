@@ -6,8 +6,8 @@ description: |
   Quillpane (formerly Markpad) is a tiny native Markdown notepad built with Go and the system webview.
   No Electron, no cloud, and a small release binary.
 
-  Features: folder workspaces, fast file switching, bounded workspace search,
-  split view, version history, session restore, formatting toolbar, find in
+  Features: individual files, fast file switching, a detailed guided tour,
+  synchronized split view, version history, session restore, formatting toolbar, find in
   editor, favorites, word count, reading time, and keyboard shortcuts.
 
   Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML,

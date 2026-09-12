@@ -39,6 +39,7 @@ interface Props {
   onClose(): void;
   onAbout(): void;
   onChangelog(): void;
+  onTour(): void;
 }
 
 const categories = [
@@ -92,6 +93,7 @@ export function SettingsPanel({
   onClose,
   onAbout,
   onChangelog,
+  onTour,
 }: Props) {
   const [category, setCategory] = useState<SettingsCategory>("appearance");
   const hotkeys = useMemo(() => Array.from(getHotkeyManager().registrations.state.values()), []);
@@ -154,6 +156,13 @@ export function SettingsPanel({
                 <h2>Help & updates</h2>
                 <p>About the app, installed version, and updates.</p>
               </div>
+              <section className="help-tour">
+                <h3>Tour</h3>
+                <p>Explore file controls, editing, preview, settings, and updates.</p>
+                <button className="confirm-btn" onClick={onTour}>
+                  Start guided tour
+                </button>
+              </section>
               <UpdateCheck />
               <div className="flex gap-2">
                 <button className="confirm-btn" onClick={onAbout}>

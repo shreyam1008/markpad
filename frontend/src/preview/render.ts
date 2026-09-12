@@ -107,10 +107,14 @@ renderer.code = function (token: Tokens.Code) {
     return `<pre class="mermaid" data-mermaid-diagram="true">${escapeHTML(token.text)}</pre>\n`;
   }
   const value =
-    token.text.length <= 200_000 && hljs.getLanguage(language)
+    token.text.length <= 200_000 &&
+    token.text.split("\n").length <= 2_000 &&
+    hljs.getLanguage(language)
       ? hljs.highlight(token.text, { language }).value
       : escapeHTML(token.text);
-  const languageClass = language ? ` class="hljs language-${language}"` : ' class="hljs"';
+  const languageClass = language
+    ? ` class="hljs language-${escapeHTML(language)}"`
+    : ' class="hljs"';
   const languageLabel = language
     ? ` data-language="${escapeHTML(language.toLocaleUpperCase())}"`
     : "";

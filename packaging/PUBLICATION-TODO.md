@@ -2,7 +2,11 @@
 
 Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.13.5
+## Current release: 0.13.6
+
+Candidate prepared with one matching package version. GitHub/platform builds, website/APT publication, and Store submission will be recorded after verification. Snap publication remains dependent on owner credential setup. The original icon is preserved.
+
+## Previous release: 0.13.5
 
 - **GitHub: published.** [v0.13.5](https://github.com/shreyam1008/markpad/releases/tag/v0.13.5)
   contains matching Linux binary, Debian package, AppImage, Windows EXE/setup,

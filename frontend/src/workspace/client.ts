@@ -7,8 +7,6 @@ import type {
   SaveResult,
   SessionState,
   ViewMode,
-  WorkspaceSearchResult,
-  WorkspaceState,
 } from "./types";
 
 function api(): MarkpadAPI {
@@ -61,16 +59,6 @@ export const client = {
   openURL: (url: string): Promise<void> => api().OpenURL(url),
   openExternal: (path: string): Promise<void> => api().OpenExternalPath(path),
   reorder: (ids: string[]): Promise<SessionState> => api().ReorderNotes(ids),
-  workspace: (): Promise<WorkspaceState> => api().GetWorkspace(),
-  chooseWorkspace: (): Promise<WorkspaceState> => api().ChooseWorkspace(),
-  refreshWorkspace: (): Promise<WorkspaceState> => api().RefreshWorkspace(),
-  clearWorkspace: (): Promise<WorkspaceState> => api().ClearWorkspace(),
-  searchWorkspace: (query: string): Promise<WorkspaceSearchResult[]> =>
-    api().SearchWorkspace(query),
-  createWorkspaceFile: (relativePath: string): Promise<SessionState> =>
-    api().CreateWorkspaceFile(relativePath),
-  fileDraftInWorkspace: (relativePath: string, content: string): Promise<SessionState> =>
-    api().FileDraftInWorkspace(relativePath, content),
   deleteFile: (path: string): Promise<SessionState> => api().DeleteFile(path),
   quitWithoutSaving: (): Promise<void> => api().QuitWithoutSaving(),
 };

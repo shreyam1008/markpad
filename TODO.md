@@ -2,6 +2,10 @@
 
 ## Completed (v0.1–v0.13.5)
 
+- [x] Driver.js detailed Help tour with restart, keyboard exit, and narrow-window behavior
+- [x] Bidirectional Split scroll synchronization with visible off switch
+- [x] File-family symbols and semantic colors; corrected missing editor language modes
+- [x] Removed entire folder workspace feature and obsolete code; legacy drafts preserved
 - [x] Visible Help button, F1, Settings Help & updates, and About/version actions
 - [x] Checksum-verified installer downloads with progress
 - [x] Same-tag release builds for GitHub, MSIX, Snap, and automatic signed APT publication

@@ -22,25 +22,26 @@ The active view, selection, and scroll position should remain stable while switc
 
 Save writes to the current path. Save As chooses a new path. Failed writes must leave editor content intact and produce a visible error. Quillpane records the disk content it opened or last saved; if that source changes, is replaced, disappears, or cannot be verified after a legacy-session restore, a normal save pauses before writing. The user must explicitly choose to keep editing, save a copy, reload the disk version, overwrite it, or recreate a deleted file.
 
-Conflict reload first records the current Quillpane draft in Version History, then makes the verified disk content the clean recovery copy. Overwrite and recreate are explicit destructive choices. Resolving a conflict refreshes the Workspace Lite inventory when a folder is open.
+Conflict reload first records the current Quillpane draft in Version History, then makes the verified disk content the clean recovery copy. Overwrite and recreate are explicit destructive choices.
 
 Saved files can be renamed from the command palette, with `F2`, or from the file context menu. Rename stays within the current directory and updates the open document, favorites, recents, and session metadata.
 
-A saved file can be permanently deleted only after a clear frontend confirmation. If it has unsaved edits, the warning states that those edits and local recovery history will also be removed. The backend refuses directories, symlinks, unsafe paths, and files that are neither supported workspace members nor already-open saved files. Deleting an unsaved draft remains a separate local-recovery action.
+A saved file can be permanently deleted only after a clear frontend confirmation. If it has unsaved edits, the warning states that those edits and local recovery history will also be removed. The backend refuses directories, symlinks, unsafe paths, and files that are not already-open saved files. Deleting an unsaved draft remains a separate local-recovery action.
 
-## Workspace Lite
+## Individual-file contract
 
-The user may select one local folder. Quillpane persists that choice, scans supported regular text files (including visible extensionless text such as `README` and `Makefile`) within fixed limits, and displays relative paths without importing or copying content. Hidden paths, symlinks, and common generated/dependency directories are excluded. Change, clear, and refresh (`F5`) are explicit actions; there is no filesystem watcher.
+Quillpane opens individual files and recovery drafts. The folder workspace feature was removed in 0.13.6 at the product owner's request, including scanning, folder search, draft filing, persisted roots, and their commands. Legacy session roots are ignored; documents and recovery drafts remain compatible.
 
-`Ctrl+P` fuzzy-searches open documents, workspace filenames/relative paths, and existing application actions. A selected workspace file opens through the normal document lifecycle.
-
-`Ctrl+Shift+F` runs case-insensitive exact search across the cached bounded inventory. Results show relative path, one-based line, and a short snippet. Opening a result focuses the file and selects the exact occurrence using the returned zero-based UTF-16 column and preview offsets. Rapid queries must not surface stale results. Search is disposable and does not create a database or persistent index.
-
-New workspace files may be Markdown or text, never overwrite an existing path, and cannot escape the root. An unsaved Markdown or text recovery draft can be filed directly into the workspace: Quillpane suggests a collision-free path from its first useful line, allows an editable nested relative path, and promotes the same open document to the new plain file. Manual refresh makes other external additions, removals, and content edits visible.
+- `Ctrl+O` opens files and `Ctrl+P` searches open documents and actions.
+- `Ctrl+F` searches the active document. Favorites and recents reopen individual files.
+- File badges combine a symbol, extension, and semantic color; color is never the sole identifier.
+- Split scroll sync follows normalized reading progress in either direction and can be turned off.
+- Help exposes About, installed/latest versions, updates, and the offline Driver.js tour. Starting or leaving the tour must not change or save documents.
+- Do not restore folder scanning, indexing, watchers, or workspace commands without separate approval.
 
 ## Keyboard workflow
 
-`Ctrl+P` opens the command palette, which searches visibly separated Files and Actions; prefixing a query with `>` limits it to actions. `Ctrl+Shift+F` opens workspace content search. `Ctrl+Shift+Enter` files the active unsaved Markdown/text draft in the open workspace. Arrow keys select results and Enter opens or runs them. `Ctrl+Tab` and `Ctrl+Shift+Tab` move between open documents. `Ctrl+1`, `Ctrl+2`, and `Ctrl+3` select Editor, Split, and Preview/Code View when supported. Holding Ctrl or Command reveals shortcut badges on primary controls.
+`Ctrl+P` opens the command palette, which searches visibly separated Files and Actions; prefixing a query with `>` limits it to actions. `Ctrl+F` searches the active file. Arrow keys select results and Enter opens or runs them. `Ctrl+Tab` and `Ctrl+Shift+Tab` move between open documents. `Ctrl+1`, `Ctrl+2`, and `Ctrl+3` select Editor, Split, and Preview/Code View when supported. Holding Ctrl or Command reveals shortcut badges on primary controls.
 
 The session file, drafts, and history are stored below the user configuration directory. Writes use replacement through a temporary file so interrupted writes do not partially overwrite the previous state.
 

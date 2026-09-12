@@ -225,8 +225,10 @@ jobs:
           body: |
             ## What's new in ${{ github.ref_name }}
 
-            - Visible Help button and Settings Help & updates, with About and installed/latest versions.
-            - Verified update downloads with progress and OS installer handoff.
+            - Detailed 16-step Driver.js tour in Help, alongside About, versions, and updates.
+            - Bidirectional Split scroll synchronization with an off switch.
+            - File-type symbols and colors, improved editor language support, and bounded fenced highlighting.
+            - Removed folder workspaces, folder search, and draft-filing commands; individual files and recovery drafts remain.
             - Original Markpad icon shared by the website, favicon and platform packages.
             - All packages, including MSIX and Snap, built from this tag before publication; signed APT follows automatically.
             - Store-ready packages are included; Microsoft Store and Snap Store publishing require their separate configured credentials and review.

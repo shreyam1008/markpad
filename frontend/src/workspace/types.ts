@@ -77,32 +77,6 @@ export interface EditorStats {
   readMinutes: number;
 }
 
-export interface WorkspaceFile {
-  path: string;
-  relative: string;
-  name: string;
-  kind: string;
-  size: number;
-  modified: string;
-}
-
-export interface WorkspaceState {
-  root: string;
-  name: string;
-  files: WorkspaceFile[];
-  truncated: boolean;
-}
-
-export interface WorkspaceSearchResult {
-  path: string;
-  relative: string;
-  line: number;
-  column: number;
-  text: string;
-  matchStart: number;
-  matchEnd: number;
-}
-
 export interface MarkpadAPI {
   CheckForUpdates(): Promise<UpdateInfo>;
   DownloadAndOpenUpdate(): Promise<string>;
@@ -139,13 +113,6 @@ export interface MarkpadAPI {
   OpenURL(url: string): Promise<void>;
   OpenExternalPath(path: string): Promise<void>;
   ReorderNotes(ids: string[]): Promise<SessionState>;
-  GetWorkspace(): Promise<WorkspaceState>;
-  ChooseWorkspace(): Promise<WorkspaceState>;
-  RefreshWorkspace(): Promise<WorkspaceState>;
-  ClearWorkspace(): Promise<WorkspaceState>;
-  SearchWorkspace(query: string): Promise<WorkspaceSearchResult[]>;
-  CreateWorkspaceFile(relativePath: string): Promise<SessionState>;
-  FileDraftInWorkspace(relativePath: string, content: string): Promise<SessionState>;
   DeleteFile(path: string): Promise<SessionState>;
   QuitWithoutSaving(): Promise<void>;
 }

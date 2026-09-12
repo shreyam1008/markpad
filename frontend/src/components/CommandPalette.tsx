@@ -2,8 +2,9 @@
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import { fuzzyMatch, rankPaletteFiles } from "../commands";
-import type { NoteInfo, WorkspaceFile } from "../workspace/types";
-import { FileText, Search, SquarePen } from "./icons";
+import type { NoteInfo } from "../workspace/types";
+import { FileBadge } from "./FileBadge";
+import { Search, SquarePen } from "./icons";
 
 export interface PaletteAction {
   id: string;
@@ -23,6 +24,7 @@ interface Result {
   category: string;
   shortcut: string;
   kind: "file" | "action";
+  path?: string;
   score: number;
   indices: number[];
   run(): void | Promise<unknown>;
@@ -34,10 +36,8 @@ interface Props {
   notes: NoteInfo[];
   activeId: string;
   actions: PaletteAction[];
-  workspaceFiles: WorkspaceFile[];
   onClose(): void;
   onActivate(id: string): void;
-  onOpenPath(path: string): void;
 }
 
 function Highlight({ value, indices }: { value: string; indices: number[] }) {
@@ -63,10 +63,8 @@ export function CommandPalette({
   notes,
   activeId,
   actions,
-  workspaceFiles,
   onClose,
   onActivate,
-  onOpenPath,
 }: Props) {
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState(0);
@@ -81,12 +79,11 @@ export function CommandPalette({
     const term = (commandPrefix ? deferredQuery.trimStart().slice(1) : deferredQuery).trim();
     const files: Result[] = actionsOnly
       ? []
-      : rankPaletteFiles(term, notes, workspaceFiles, activeId).map((file) => ({
+      : rankPaletteFiles(term, notes, activeId).map((file) => ({
           ...file,
           shortcut: "",
           kind: "file",
-          run: () =>
-            file.noteId ? onActivate(file.noteId) : file.path ? onOpenPath(file.path) : undefined,
+          run: () => onActivate(file.noteId),
         }));
     const commands: Result[] = filesOnly
       ? []
@@ -114,17 +111,7 @@ export function CommandPalette({
           })
           .sort((a, b) => b.score - a.score);
     return [...files.slice(0, 60), ...commands.slice(0, 20)];
-  }, [
-    actions,
-    activeId,
-    deferredQuery,
-    notes,
-    onActivate,
-    onOpenPath,
-    open,
-    scope,
-    workspaceFiles,
-  ]);
+  }, [actions, activeId, deferredQuery, notes, onActivate, open, scope]);
 
   useEffect(() => {
     if (!open) return;
@@ -166,7 +153,7 @@ export function CommandPalette({
             className="command-input"
             placeholder={
               scope === "files"
-                ? "Search open files and workspace"
+                ? "Search open files"
                 : scope === "actions"
                   ? "Search actions"
                   : "Search files and actions"
@@ -232,7 +219,11 @@ export function CommandPalette({
                   onClick={() => void run(result)}
                 >
                   <span className={`command-icon ${result.kind}`} aria-hidden="true">
-                    {result.kind === "file" ? <FileText /> : <SquarePen />}
+                    {result.kind === "file" ? (
+                      <FileBadge path={result.path || result.title} />
+                    ) : (
+                      <SquarePen />
+                    )}
                   </span>
                   <span className="command-item-copy">
                     <span className="command-item-title">

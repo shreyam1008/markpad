@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,35 @@ import (
 	"testing"
 	"time"
 )
+
+func TestLegacyFolderMetadataPreservesDrafts(t *testing.T) {
+	store, err := NewStoreAt(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := NewDocument("", "Legacy note")
+	if err := store.WriteDraft(doc, "Unsaved work"); err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(map[string]any{"active_id": doc.ID, "documents": []*Document{doc}, "workspace_root": "/obsolete/folder"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(store.root, sessionFile), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Active() == nil || loaded.Active().ID != doc.ID {
+		t.Fatal("legacy document lost")
+	}
+	content, err := store.ReadDraft(loaded.Active())
+	if err != nil || content != "Unsaved work" {
+		t.Fatalf("draft = %q, err = %v", content, err)
+	}
+}
 
 func TestStorePersistsDraftsAndSession(t *testing.T) {
 	store, err := NewStoreAt(t.TempDir())

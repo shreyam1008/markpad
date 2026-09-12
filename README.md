@@ -65,13 +65,13 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 
 ## What It Does
 
+- **Guided tour** — Help → Tour walks through 16 steps using bundled Driver.js
+- **Synchronized Split** — Editor and preview follow the same reading progress, with an off switch
+- **File symbols and colors** — Distinct icons, extensions, and theme-aware colors identify file families
 - **Single instance** — Only one window. Opening another file adds it to the existing window
-- **Workspace Lite** — Open one local folder, browse ordinary text/Markdown/code files, and refresh on demand
-- **Fast file switching** — `Ctrl+P` fuzzy-searches open files, workspace paths, and actions
-- **Workspace search** — `Ctrl+Shift+F` searches bounded local file content and opens the exact matching line
-- **Explicit file actions** — Create notes inside the workspace; permanent saved-file deletion warns before removing the file and any unsaved edits
+- **Fast file switching** — `Ctrl+P` fuzzy-searches open files and actions
+- **Explicit file actions** — Open and save individual notes; permanent saved-file deletion warns before removing the file and any unsaved edits
 - **Safe shared-file editing** — Saving pauses if another app changed, replaced, or deleted the source; reload preserves the Quillpane draft in history
-- **File a draft** — Turn an instant recovery draft into a title-named workspace file with `Ctrl+Shift+Enter`; existing files are never overwritten
 - **Open anything** — Markdown, text, code, config, logs, PDFs, images, ebooks, office docs, archives
 - **PDF handoff** — PDFs open in the operating system's default viewer without bundling a PDF engine
 - **Image preview** — Inline image display for PNG, JPG, GIF, WebP, BMP, etc.
@@ -113,6 +113,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.13.6 | Refinements | Detailed tour, synchronized Split scroll, file-type symbols, syntax fixes, and removal of folder workspaces |
 | 0.13.5 | Help & updates | Visible Help and Settings updates, verified installer downloads, synchronized release packages, original icon everywhere |
 | 0.13.4 | Preview clipboard hotfix | Native preview copying; Help update checks and guided downloads |
 | 0.13.3 | Quillpane (formerly Markpad) | Public-name migration with the verified Quillpane domain canonical; Markpad executable, storage, package IDs, release URLs, and logo preserved |
@@ -134,7 +135,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 ## Roadmap
 
-The [public feature roadmap](docs/feature-roadmap.md) is organized as Now / Next / Explore, with each active card backed by a GitHub issue. The v0.14 milestone focuses on distraction-free writing, bounded Split-view scroll sync, and recovering meaningful bundle headroom. After that: a plain-file workspace task list, daily-note quick open, and a carefully measured pinned-reference experiment.
+The [public feature roadmap](docs/feature-roadmap.md) is organized as Now / Next / Explore, with each active card backed by a GitHub issue. The v0.14 milestone focuses on distraction-free writing and recovering meaningful bundle headroom. Split scroll sync shipped in 0.13.6. Folder-based roadmap ideas need reconsideration following removal of that feature.
 
 See the live cards in [GitHub Issues](https://github.com/shreyam1008/markpad/issues) or the compact checklist in [TODO.md](TODO.md).
 
@@ -148,7 +149,6 @@ Quillpane exists because many "lightweight" editors ship a browser engine. This 
 |----------|--------|
 | `Ctrl+N` | New note |
 | `Ctrl+O` | Open file |
-| `Ctrl+Shift+O` | Open or change workspace folder |
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Save As |
 | `Ctrl+Shift+E` | Cycle view |
@@ -158,9 +158,6 @@ Quillpane exists because many "lightweight" editors ship a browser engine. This 
 | `Ctrl+H` | Version history |
 | `Ctrl+F` | Find |
 | `Ctrl+P` | Find files and actions |
-| `Ctrl+Shift+F` | Search workspace content |
-| `Ctrl+Shift+Enter` | File the active draft in the workspace |
-| `F5` | Refresh workspace folder |
 | `Ctrl+B/I/K` | Bold / Italic / Link |
 | `Ctrl+Del` | Delete current file or draft (with confirmation) |
 | `Esc` | Close panel |

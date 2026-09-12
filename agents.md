@@ -4,7 +4,7 @@
 
 ## Product identity
 
-Quillpane (formerly Markpad) is a small, native, local-first Markdown notepad and folder workspace built with Go, Wails v2, and the operating-system webview. It should feel immediate like a traditional notepad while providing live Markdown preview, recovery drafts, saved-version history, fast file navigation, and bounded folder search.
+Quillpane (formerly Markpad) is a small, native, local-first Markdown notepad built with Go, Wails v2, and the operating-system webview. It should feel immediate like a traditional notepad while providing live Markdown preview, recovery drafts, saved-version history, fast file navigation, and synchronized split reading.
 
 Plain files remain the source of truth. Quillpane has no account, cloud service, telemetry, sync engine, or runtime network dependency.
 
@@ -47,7 +47,6 @@ app.go                          Main desktop API and document lifecycle
 backend_safety.go               Filesystem/URL safety helpers
 frontend_assets.go              Embeds frontend/dist
 internal/session/               Session, draft, history, and atomic file persistence
-internal/workspace/             Bounded folder scan, search, creation, and path safety
 frontend/
   index.html                    Bun HTML entry point
   build.ts                      Typed, minified production bundle
@@ -67,7 +66,7 @@ Read `DESIGN.md` before any visual or interaction change. It is the source of tr
 
 - Keep TypeScript strict; do not add `any` to bypass API modeling.
 - `App.tsx` coordinates desktop commands and application-level state. Put cohesive UI in `components/` and pure document logic in `workspace/` or `preview/`.
-- `workspace/state.ts` is the reducer-owned browser state. Go session state remains authoritative for persisted document and workspace metadata.
+- `workspace/state.ts` is the reducer-owned browser state. Go session state remains authoritative for persisted document metadata.
 - Use hooks at component scope with complete, stable dependency lists. Clean up timers and runtime subscriptions.
 - Keep keyboard actions and native-menu events routed through the same callbacks as visible UI controls.
 - Use semantic controls, labels, focus restoration, and keyboard navigation. Do not add clickable non-interactive elements.
@@ -80,28 +79,24 @@ Read `DESIGN.md` before any visual or interaction change. It is the source of tr
 ## Desktop and Go conventions
 
 - Keep platform dialogs, Wails events, external launching, and session conversion at the desktop boundary.
-- Keep session and workspace algorithms independent from Wails so they can be tested directly.
+- Keep session and document algorithms independent from Wails so they can be tested directly.
 - Normalize and validate filesystem paths before reads, writes, renames, creation, or deletion.
 - Use atomic replacement for persisted session, draft, history, and user-file writes.
 - Return descriptive errors; never panic for user input or ordinary filesystem failure.
 - Read-only families (PDF, image, ebook, office, archive) never expose edit/save actions. PDFs use the OS viewer rather than a bundled renderer.
-- Never follow a workspace symlink or allow a create/delete path to escape the selected root.
-- Saved-file deletion is permanent and requires frontend confirmation. That warning must state when unsaved edits will also be lost. The backend refuses directories, unsafe paths, symlinks, and files that are neither supported workspace members nor already-open saved files.
+- Never follow a symlink when permanently deleting a saved file.
+- Saved-file deletion is permanent and requires frontend confirmation. That warning must state when unsaved edits will also be lost. The backend refuses directories, unsafe paths, symlinks, and files that are not already-open saved files.
 
-## Workspace Lite contract
+## Individual-file contract
 
-Quillpane may persist one selected folder. It does not import files or create a database/index.
+Quillpane opens individual files and recovery drafts. The folder workspace feature was removed in 0.13.6 at the product owner's request, including scanning, folder search, draft filing, persisted roots, and their commands. Legacy session roots are ignored; documents and recovery drafts remain compatible.
 
-- The inventory contains supported regular text files plus visible extensionless text files such as `README` and `Makefile`, ordered deterministically by relative path.
-- `Ctrl+P` searches open documents, workspace filenames/paths, and actions with the existing lightweight fuzzy matcher.
-- `Ctrl+Shift+F` runs case-insensitive exact content search and returns relative path, line, snippet, and match offsets. Opening a result selects and reveals the exact occurrence.
-- Refresh, change, and clear are explicit. External changes become visible after refresh; there is no watcher.
-- New workspace files may use `.md`, `.markdown`, `.mdx`, or `.txt`; a missing extension becomes `.md`; existing files are never overwritten.
-- Unsaved Markdown/text drafts may be filed into the selected folder through the same document lifecycle; the suggested relative path is title-derived and collision-aware, while the backend remains the no-overwrite authority.
-- Hidden paths and the directories `build`, `coverage`, `dist`, `node_modules`, `obj`, `out`, `target`, and `vendor` are excluded.
-- Scan caps: 10,000 included files, 100,000 visited entries, 2 MiB per file, and depth 32.
-- Search caps: 64 MiB per query, 200 results, 256 query runes, and 400 preview runes.
-- Do not add persistent indexing, filesystem watchers, multiple workspaces, backlinks, a graph, Git integration, or a legacy Markpad metadata folder unless separately approved.
+- `Ctrl+O` opens files and `Ctrl+P` searches open documents and actions.
+- `Ctrl+F` searches the active document. Favorites and recents reopen individual files.
+- File badges combine a symbol, extension, and semantic color; color is never the sole identifier.
+- Split scroll sync follows normalized reading progress in either direction and can be turned off.
+- Help exposes About, installed/latest versions, updates, and the offline Driver.js tour. Starting or leaving the tour must not change or save documents.
+- Do not restore folder scanning, indexing, watchers, or workspace commands without separate approval.
 
 ## File behavior
 
@@ -146,7 +141,7 @@ The canonical Go suite is:
 go test -tags production,webkit2_41 . ./internal/... ./tests
 ```
 
-This intentionally excludes ignored local experiments such as `ports/` while covering the root backend, session/workspace packages, and integration tests.
+This intentionally excludes ignored local experiments such as `ports/` while covering the root backend, session packages, and integration tests.
 
 Before committing:
 

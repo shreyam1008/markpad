@@ -76,6 +76,7 @@ export function AppTitlebar({
               data-titlebar-interactive
               className={activeSurface === "files" ? "active" : undefined}
               aria-pressed={activeSurface === "files"}
+              data-tour="files"
               onClick={onFiles}
               title={`Find files (${shortcutLabel("general.palette")})`}
             >
@@ -89,8 +90,9 @@ export function AppTitlebar({
               data-titlebar-interactive
               className={activeSurface === "search" ? "active" : undefined}
               aria-pressed={activeSurface === "search"}
+              data-tour="search"
               onClick={onSearch}
-              title={`Search workspace (${shortcutLabel("navigation.workspace-search")})`}
+              title={`Find in file (${shortcutLabel("navigation.find")})`}
             >
               <Search />
               <span>Search</span>
@@ -102,6 +104,7 @@ export function AppTitlebar({
               data-titlebar-interactive
               className={activeSurface === "history" ? "active" : undefined}
               aria-pressed={activeSurface === "history"}
+              data-tour="history"
               onClick={onHistory}
               title={`Version history (${shortcutLabel("navigation.history")})`}
             >
@@ -115,6 +118,7 @@ export function AppTitlebar({
               data-titlebar-interactive
               className={activeSurface === "settings" ? "active" : undefined}
               aria-pressed={activeSurface === "settings"}
+              data-tour="settings"
               onClick={onSettings}
               title="Settings"
             >
@@ -126,6 +130,7 @@ export function AppTitlebar({
             <button
               type="button"
               data-titlebar-interactive
+              data-tour="help"
               onClick={onHelp}
               title="Help, version and updates"
             >

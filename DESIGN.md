@@ -127,7 +127,7 @@ Static Highlight.js rendering remains capped at 200,000 characters and 2,000
 lines. CodeMirror editing stays incremental and virtualized for larger source
 files. For source documents at or above 256,000 characters, rapid app-history
 snapshots are coalesced so typing cannot retain a full-document copy for every
-keystroke; the workspace boundary separately caps readable files at 2 MiB.
+keystroke; the desktop boundary separately caps editable text reads.
 Styling work must not weaken escaping, DOM sanitization, or the static rendering
 limits.
 
@@ -179,3 +179,5 @@ For every visible change:
 4. Exercise minimize, maximize/restore, title-bar double-click, close, and unsaved-close protection in Wails.
 5. Check code, Markdown, plain text, a large-file fallback, split resizing, and reduced motion.
 6. Build the production binary and verify its platform budget and offline asset scan.
+
+The Help tour uses Driver.js 1.8.0, bundled locally, with semantic popover colors and no motion. It highlights available controls and explains hidden controls without changing the active document. File badges include symbols and extensions as well as color. Split synchronization maps normalized scroll progress, suppresses feedback events, and has a visible off switch.

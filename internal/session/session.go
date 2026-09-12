@@ -68,13 +68,12 @@ type RecentFile struct {
 }
 
 type Session struct {
-	ActiveID      string            `json:"active_id"`
-	Documents     []*Document       `json:"documents"`
-	Bookmarks     []*Bookmark       `json:"bookmarks,omitempty"`
-	RecentFiles   []*RecentFile     `json:"recent_files,omitempty"`
-	ViewModes     map[string]string `json:"view_modes,omitempty"`
-	WorkspaceRoot string            `json:"workspace_root,omitempty"`
-	Preferences   Preferences       `json:"preferences"`
+	ActiveID    string            `json:"active_id"`
+	Documents   []*Document       `json:"documents"`
+	Bookmarks   []*Bookmark       `json:"bookmarks,omitempty"`
+	RecentFiles []*RecentFile     `json:"recent_files,omitempty"`
+	ViewModes   map[string]string `json:"view_modes,omitempty"`
+	Preferences Preferences       `json:"preferences"`
 }
 
 type Store struct {
@@ -136,11 +135,6 @@ func (s *Store) Load() (*Session, error) {
 	}
 	for _, doc := range sess.Documents {
 		s.migrateSourceState(doc)
-	}
-	if sess.WorkspaceRoot != "" {
-		if abs, err := filepath.Abs(sess.WorkspaceRoot); err == nil {
-			sess.WorkspaceRoot = filepath.Clean(abs)
-		}
 	}
 	if sess.ActiveID == "" || sess.Find(sess.ActiveID) == nil {
 		sess.ActiveID = sess.Documents[0].ID

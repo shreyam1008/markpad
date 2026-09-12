@@ -67,7 +67,7 @@ sleep 3
 import -display "$DISPLAY" -window "$window_id" dist/linux-ui-smoke.png
 tesseract dist/linux-ui-smoke.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-smoke.txt
 
-if ! grep -Eqi 'Open a folder|Untitled|New' dist/linux-ui-smoke.txt; then
+if ! grep -Eqi 'Untitled|New' dist/linux-ui-smoke.txt; then
   cat dist/linux-ui-smoke.log
   cat dist/linux-ui-smoke.txt
   echo "Quillpane opened a window, but its application UI did not render" >&2
@@ -115,3 +115,21 @@ tesseract dist/linux-ui-help.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist
 grep -Eqi 'Installed version' dist/linux-ui-help.txt
 grep -Eqi 'Check for updates' dist/linux-ui-help.txt
 echo "Linux Help and update controls are reachable with F1."
+
+# Open the locally bundled Driver.js tour using the visible Help control.
+tesseract dist/linux-ui-help.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-help.tsv
+read -r tour_x tour_y < <(awk -F '\t' '$12 == "guided" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-help.tsv)
+[[ -n "${tour_x:-}" && -n "${tour_y:-}" ]]
+xdotool mousemove --window "$window_id" "$tour_x" "$tour_y" click 1
+sleep 1
+import -display "$DISPLAY" -window "$window_id" dist/linux-ui-tour.png
+tesseract dist/linux-ui-tour.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-tour.txt
+grep -Eqi 'Welcome to Quillpane' dist/linux-ui-tour.txt
+xdotool key --clearmodifiers Escape
+sleep 0.5
+xdotool key --clearmodifiers F1
+sleep 0.5
+import -display "$DISPLAY" -window "$window_id" dist/linux-ui-tour-return.png
+tesseract dist/linux-ui-tour-return.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-tour-return.txt
+grep -Eqi 'Installed version' dist/linux-ui-tour-return.txt
+echo "Linux Driver.js tour opens and returns safely to Help."

@@ -39,6 +39,7 @@ export interface EditorHandle {
   readonly selectionStart: number;
   readonly selectionEnd: number;
   readonly clientHeight: number;
+  readonly scrollHeight: number;
   readonly lineHeight?: number;
   focus(): void;
   setSelectionRange(start: number, end: number): void;
@@ -113,7 +114,15 @@ const languageLoaders: Record<string, LanguageLoader> = {
     import("@codemirror/legacy-modes/mode/shell").then(({ shell }) => shell),
   ),
   powershell: streamLanguage(() =>
-    import("@codemirror/legacy-modes/mode/shell").then(({ shell }) => shell),
+    import("@codemirror/legacy-modes/mode/powershell").then(({ powerShell }) => powerShell),
+  ),
+  ruby: streamLanguage(() => import("@codemirror/legacy-modes/mode/ruby").then(({ ruby }) => ruby)),
+  toml: streamLanguage(() => import("@codemirror/legacy-modes/mode/toml").then(({ toml }) => toml)),
+  kotlin: streamLanguage(() =>
+    import("@codemirror/legacy-modes/mode/clike").then(({ kotlin }) => kotlin),
+  ),
+  csharp: streamLanguage(() =>
+    import("@codemirror/legacy-modes/mode/clike").then(({ csharp }) => csharp),
   ),
   properties: streamLanguage(() =>
     import("@codemirror/legacy-modes/mode/properties").then(({ properties }) => properties),
@@ -411,6 +420,9 @@ export const CodeEditor = forwardRef<EditorHandle, Props>(function CodeEditor(
       },
       get clientHeight() {
         return view.current?.scrollDOM.clientHeight ?? 0;
+      },
+      get scrollHeight() {
+        return view.current?.scrollDOM.scrollHeight ?? 0;
       },
       get lineHeight() {
         return view.current?.defaultLineHeight;

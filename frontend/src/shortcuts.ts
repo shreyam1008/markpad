@@ -14,16 +14,12 @@ export type ShortcutAction =
   | "dismiss"
   | "new"
   | "open"
-  | "openfolder"
-  | "filedraft"
-  | "refreshworkspace"
   | "save"
   | "saveas"
   | "close"
   | "rename"
   | "delete"
   | "find"
-  | "searchworkspace"
   | "undo"
   | "redo"
   | "formatbold"
@@ -133,30 +129,6 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "Open file",
     "Open a file from the operating system.",
   ),
-  shortcut(
-    "file.open-folder",
-    "Mod+Shift+O",
-    "openfolder",
-    "File",
-    "Open workspace folder",
-    "Choose or change the workspace folder.",
-  ),
-  shortcut(
-    "file.file-draft",
-    "Mod+Shift+Enter",
-    "filedraft",
-    "File",
-    "File draft in workspace",
-    "Save the current draft into the open workspace.",
-  ),
-  shortcut(
-    "file.refresh",
-    "F5",
-    "refreshworkspace",
-    "File",
-    "Refresh workspace",
-    "Rescan the current workspace folder.",
-  ),
   shortcut("file.save", "Mod+S", "save", "File", "Save", "Save the current file."),
   shortcut(
     "file.save-as",
@@ -200,14 +172,6 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "Navigation",
     "Find in file",
     "Search inside the current editable file.",
-  ),
-  shortcut(
-    "navigation.workspace-search",
-    "Mod+Shift+F",
-    "searchworkspace",
-    "Navigation",
-    "Find in workspace",
-    "Search text across the current workspace.",
   ),
   shortcut(
     "navigation.history",

@@ -1,39 +1,32 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { shortcutLabel } from "../shortcuts";
-import { fileBadge, fileType, typeLabel } from "../workspace/documents";
+import { fileType, typeLabel } from "../workspace/documents";
 import type {
   DraftFormat,
   NoteInfo,
   OutlineItem,
   RecentInfo,
   SessionState,
-  WorkspaceFile,
-  WorkspaceState,
 } from "../workspace/types";
+import { FileBadge } from "./FileBadge";
 import {
+  FileText,
   ChevronDown,
   ChevronRight,
-  FilePlus2,
-  FolderOpen,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  RefreshCw,
-  Search,
   Star,
-  Trash2,
   X,
 } from "./icons";
 
-const SIDEBAR_WORKSPACE_LIMIT = 300;
-
 interface SidebarProps {
   session: SessionState;
-  workspace: WorkspaceState;
   collapsed: boolean;
   outline: OutlineItem[];
   onCollapse(): void;
+  onOpen(): void;
   onNew(format: DraftFormat): void;
   onActivate(id: string): void;
   onOpenPath(path: string): void;
@@ -43,20 +36,13 @@ interface SidebarProps {
   onReorder(ids: string[]): void;
   onContext(note: NoteInfo, x: number, y: number): void;
   onOutline(line: number): void;
-  onChooseWorkspace(): void;
-  onRefreshWorkspace(): void;
-  onClearWorkspace(): void;
-  onSearchWorkspace(): void;
-  onCreateWorkspaceFile(relativePath: string): void;
-  onDeleteWorkspaceFile(file: WorkspaceFile): void;
 }
 
-type Section = "workspace" | "favorites" | "open" | "outline" | "recent";
+type Section = "favorites" | "open" | "outline" | "recent";
 
 function initialSections(): Record<Section, boolean> {
   try {
     return {
-      workspace: false,
       favorites: false,
       open: false,
       outline: false,
@@ -64,13 +50,8 @@ function initialSections(): Record<Section, boolean> {
       ...JSON.parse(localStorage.getItem("markpad-sections") ?? "{}"),
     };
   } catch {
-    return { workspace: false, favorites: false, open: false, outline: false, recent: false };
+    return { favorites: false, open: false, outline: false, recent: false };
   }
-}
-
-function Badge({ path, kind }: { path: string; kind: string }) {
-  const type = fileType(path, kind);
-  return <span className={`file-badge file-badge-${type}`}>{fileBadge(path, kind)}</span>;
 }
 
 function SectionHead({
@@ -94,10 +75,10 @@ function SectionHead({
 
 function SidebarView({
   session,
-  workspace,
   collapsed,
   outline,
   onCollapse,
+  onOpen,
   onNew,
   onActivate,
   onOpenPath,
@@ -107,18 +88,9 @@ function SidebarView({
   onReorder,
   onContext,
   onOutline,
-  onChooseWorkspace,
-  onRefreshWorkspace,
-  onClearWorkspace,
-  onSearchWorkspace,
-  onCreateWorkspaceFile,
-  onDeleteWorkspaceFile,
 }: SidebarProps) {
   const [sections, setSections] = useState(initialSections);
   const [newMenuOpen, setNewMenuOpen] = useState(false);
-  const [workspaceCreateOpen, setWorkspaceCreateOpen] = useState(false);
-  const [workspaceFileName, setWorkspaceFileName] = useState("");
-  const workspaceCreateInput = useRef<HTMLInputElement>(null);
   const newMenu = useRef<HTMLDivElement>(null);
   const dragged = useRef("");
   const openPaths = useMemo(
@@ -129,12 +101,6 @@ function SidebarView({
     () => session.recents.filter((recent) => !openPaths.has(recent.path)),
     [openPaths, session.recents],
   );
-
-  useEffect(() => {
-    if (!workspaceCreateOpen) return;
-    const frame = requestAnimationFrame(() => workspaceCreateInput.current?.focus());
-    return () => cancelAnimationFrame(frame);
-  }, [workspaceCreateOpen]);
 
   useEffect(() => {
     if (!newMenuOpen) return;
@@ -183,15 +149,8 @@ function SidebarView({
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
-        <button
-          className="icon-btn"
-          title={workspace.root ? workspace.name : "Choose folder"}
-          aria-label={
-            workspace.root ? `Open workspace ${workspace.name}` : "Choose workspace folder"
-          }
-          onClick={workspace.root ? onSearchWorkspace : onChooseWorkspace}
-        >
-          <FolderOpen />
+        <button className="icon-btn" title="Open file" aria-label="Open file" onClick={onOpen}>
+          <FileText />
         </button>
       </aside>
     );
@@ -249,6 +208,9 @@ function SidebarView({
             </div>
           )}
         </div>
+        <button className="icon-btn" title="Open file" aria-label="Open file" onClick={onOpen}>
+          <FileText />
+        </button>
         <button
           className="icon-btn"
           title="Collapse sidebar"
@@ -259,163 +221,6 @@ function SidebarView({
         </button>
       </div>
       <div className="sidebar-scroll flex-1 overflow-y-auto px-2 pb-2">
-        <section className="workspace-cabinet">
-          {workspace.root ? (
-            <>
-              <div className="workspace-section-head">
-                <button
-                  type="button"
-                  className="workspace-title"
-                  title={workspace.root}
-                  onClick={() => toggle("workspace")}
-                >
-                  {sections.workspace ? (
-                    <ChevronRight className="h-3 w-3" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3" />
-                  )}
-                  <span>
-                    <strong>{workspace.name}</strong>
-                    <small>{workspace.files.length} files</small>
-                  </span>
-                </button>
-                <div className="workspace-actions">
-                  <button
-                    type="button"
-                    title={`Search folder (${shortcutLabel("navigation.workspace-search")})`}
-                    aria-label="Search folder"
-                    onClick={onSearchWorkspace}
-                  >
-                    <Search />
-                  </button>
-                  <button
-                    type="button"
-                    title="New file in folder"
-                    aria-label="New file in folder"
-                    onClick={() => setWorkspaceCreateOpen((value) => !value)}
-                  >
-                    <FilePlus2 />
-                  </button>
-                  <button
-                    type="button"
-                    title="Refresh folder"
-                    aria-label="Refresh folder"
-                    onClick={onRefreshWorkspace}
-                  >
-                    <RefreshCw />
-                  </button>
-                  <button
-                    type="button"
-                    title="Choose another folder"
-                    aria-label="Choose another folder"
-                    onClick={onChooseWorkspace}
-                  >
-                    <FolderOpen />
-                  </button>
-                  <button
-                    type="button"
-                    title="Close folder"
-                    aria-label="Close folder"
-                    onClick={onClearWorkspace}
-                  >
-                    <X />
-                  </button>
-                </div>
-              </div>
-              {!sections.workspace ? (
-                <>
-                  <div className="workspace-root" title={workspace.root}>
-                    {workspace.root}
-                  </div>
-                  {workspaceCreateOpen ? (
-                    <form
-                      className="workspace-create"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        const relative = workspaceFileName.trim();
-                        if (!relative) return;
-                        onCreateWorkspaceFile(relative);
-                        setWorkspaceFileName("");
-                        setWorkspaceCreateOpen(false);
-                      }}
-                    >
-                      <label htmlFor="workspace-new-file">New local file</label>
-                      <div>
-                        <input
-                          ref={workspaceCreateInput}
-                          id="workspace-new-file"
-                          value={workspaceFileName}
-                          placeholder="notes/idea.md"
-                          onChange={(event) => setWorkspaceFileName(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Escape") setWorkspaceCreateOpen(false);
-                          }}
-                        />
-                        <button type="submit">Create</button>
-                      </div>
-                      <small>Relative to {workspace.name}; .md is added when omitted.</small>
-                    </form>
-                  ) : null}
-                  <div className="workspace-file-list">
-                    {workspace.files.length === 0 ? (
-                      <div className="workspace-files-empty">No supported text files yet.</div>
-                    ) : null}
-                    {workspace.files.slice(0, SIDEBAR_WORKSPACE_LIMIT).map((file) => {
-                      const splitAt = Math.max(
-                        file.relative.lastIndexOf("/"),
-                        file.relative.lastIndexOf("\\"),
-                      );
-                      const parent =
-                        splitAt >= 0 ? file.relative.slice(0, splitAt) : "Workspace root";
-                      return (
-                        <div className="workspace-file-row" key={file.path} title={file.relative}>
-                          <button
-                            type="button"
-                            className="workspace-file-open"
-                            onClick={() => onOpenPath(file.path)}
-                          >
-                            <Badge path={file.path} kind={file.kind} />
-                            <span>
-                              <strong>{file.name}</strong>
-                              <small>{parent}</small>
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            className="workspace-file-delete"
-                            aria-label={`Delete ${file.name}`}
-                            title={`Delete ${file.relative}`}
-                            onClick={() => onDeleteWorkspaceFile(file)}
-                          >
-                            <Trash2 />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {workspace.files.length > SIDEBAR_WORKSPACE_LIMIT ? (
-                    <button type="button" className="workspace-more" onClick={onSearchWorkspace}>
-                      {workspace.files.length - SIDEBAR_WORKSPACE_LIMIT} more files · use{" "}
-                      {shortcutLabel("general.palette")}
-                    </button>
-                  ) : null}
-                  {workspace.truncated ? (
-                    <div className="workspace-truncated">Folder scan reached its safety limit.</div>
-                  ) : null}
-                </>
-              ) : null}
-            </>
-          ) : (
-            <button type="button" className="workspace-choose" onClick={onChooseWorkspace}>
-              <FolderOpen />
-              <span>
-                <strong>Open a folder</strong>
-                <small>Browse and search local notes</small>
-              </span>
-            </button>
-          )}
-        </section>
-
         {session.favorites.length > 0 && (
           <section>
             <SectionHead
@@ -491,7 +296,7 @@ function SidebarView({
                     aria-current={active ? "page" : undefined}
                     onClick={() => onActivate(note.id)}
                   >
-                    <Badge path={note.path} kind={note.kind} />
+                    <FileBadge path={note.path} kind={note.kind} />
                     <span className="flex-1 min-w-0">
                       <span className="note-title block text-[13px] font-medium truncate">
                         {note.path ? note.title : "Untitled"}
@@ -562,7 +367,7 @@ function SidebarView({
                     disabled={recent.missing}
                     onClick={() => onOpenPath(recent.path)}
                   >
-                    <Badge path={recent.path} kind={recent.kind} />
+                    <FileBadge path={recent.path} kind={recent.kind} />
                     <span className="flex-1 min-w-0">
                       <span className="block text-[12px] truncate">{recent.title}</span>
                       <span className="block text-[10px] truncate text-muted">

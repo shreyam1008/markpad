@@ -7,44 +7,7 @@ import (
 	"testing"
 
 	"markpad/internal/session"
-	workspacepkg "markpad/internal/workspace"
 )
-
-func TestSearchWorkspaceUsesDirtyDraft(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-	path := filepath.Join(root, "note.md")
-	if err := os.WriteFile(path, []byte("only on disk"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	app := newWorkspaceTestApp(t)
-	doc := app.sess.AddFile(path, "only on disk")
-	doc.Dirty = true
-	if err := app.store.WriteDraft(doc, "only in dirty draft"); err != nil {
-		t.Fatal(err)
-	}
-	state, err := workspacepkg.Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = state
-	path = state.Files[0].Path
-
-	results, err := app.SearchWorkspace("dirty draft")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 1 || results[0].Path != path {
-		t.Fatalf("SearchWorkspace() = %#v", results)
-	}
-	results, err = app.SearchWorkspace("only on disk")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 0 {
-		t.Fatalf("SearchWorkspace() exposed stale disk content: %#v", results)
-	}
-}
 
 func TestSaveActiveProtectsExternalEditAndPersistsRecoveryDraft(t *testing.T) {
 	t.Parallel()
@@ -52,7 +15,7 @@ func TestSaveActiveProtectsExternalEditAndPersistsRecoveryDraft(t *testing.T) {
 	if err := os.WriteFile(path, []byte("opened content"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	app := newWorkspaceTestApp(t)
+	app := newDocumentTestApp(t)
 	doc := app.sess.AddFile(path, "opened content")
 	app.sess.ActiveID = doc.ID
 	doc.Dirty = true
@@ -111,7 +74,7 @@ func TestReloadActiveFromDiskPreservesMarkpadDraftInHistory(t *testing.T) {
 	if err := os.WriteFile(path, []byte("opened content"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	app := newWorkspaceTestApp(t)
+	app := newDocumentTestApp(t)
 	doc := app.sess.AddFile(path, "opened content")
 	app.sess.ActiveID = doc.ID
 	doc.Dirty = true
@@ -162,89 +125,6 @@ func TestReloadActiveFromDiskPreservesMarkpadDraftInHistory(t *testing.T) {
 	}
 }
 
-func TestFileDraftInWorkspacePromotesTheActiveDraftWithoutOpeningADuplicate(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-	app := newWorkspaceTestApp(t)
-	workspaceState, err := workspacepkg.Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = workspaceState
-	app.sess.WorkspaceRoot = root
-	doc := app.sess.Active()
-	doc.Dirty = true
-	if err := app.store.WriteDraft(doc, "# Launch plan\n\nShip it."); err != nil {
-		t.Fatal(err)
-	}
-
-	state, err := app.FileDraftInWorkspace("plans/launch-plan.md", "# Launch plan\n\nShip it.")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(workspaceState.Root, "plans", "launch-plan.md")
-	data, err := os.ReadFile(path)
-	if err != nil || string(data) != "# Launch plan\n\nShip it." {
-		t.Fatalf("filed workspace note = %q, %v", data, err)
-	}
-	if len(state.Notes) != 1 || state.ActiveID != doc.ID || state.Notes[0].Path != path {
-		t.Fatalf("filed session = %#v", state)
-	}
-	if state.Notes[0].Dirty {
-		t.Fatal("filed workspace note stayed dirty")
-	}
-	if app.sess.Find(doc.ID).SourceState == nil {
-		t.Fatal("filed workspace note has no source baseline")
-	}
-	workspaceView := app.GetWorkspace()
-	if len(workspaceView.Files) != 1 || workspaceView.Files[0].Path != path {
-		t.Fatalf("refreshed workspace = %#v", workspaceView)
-	}
-	reloaded, err := app.store.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if reopened := reloaded.Find(doc.ID); reopened == nil || reopened.Path != path || reopened.Dirty {
-		t.Fatalf("reopened filed note = %#v", reopened)
-	}
-}
-
-func TestFileDraftInWorkspaceNeverOverwritesAndKeepsTheDraft(t *testing.T) {
-	t.Parallel()
-	root := t.TempDir()
-	path := filepath.Join(root, "existing.md")
-	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	app := newWorkspaceTestApp(t)
-	workspaceState, err := workspacepkg.Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = workspaceState
-	app.sess.WorkspaceRoot = root
-	doc := app.sess.Active()
-	doc.Dirty = true
-	if err := app.store.WriteDraft(doc, "valuable draft"); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := app.FileDraftInWorkspace("existing.md", "valuable draft"); err == nil {
-		t.Fatal("expected an existing workspace file to be rejected")
-	}
-	data, err := os.ReadFile(path)
-	if err != nil || string(data) != "keep me" {
-		t.Fatalf("existing file = %q, %v", data, err)
-	}
-	if doc.Path != "" || !doc.Dirty {
-		t.Fatalf("draft state after collision = %#v", doc)
-	}
-	draft, err := app.store.ReadDraft(doc)
-	if err != nil || draft != "valuable draft" {
-		t.Fatalf("draft after collision = %q, %v", draft, err)
-	}
-}
-
 func TestDeleteFileCleansOpenDocumentState(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
@@ -253,7 +133,7 @@ func TestDeleteFileCleansOpenDocumentState(t *testing.T) {
 		t.Fatal(err)
 	}
 	path = canonicalPath(path)
-	app := newWorkspaceTestApp(t)
+	app := newDocumentTestApp(t)
 	doc := app.sess.AddFile(path, "saved content")
 	doc.Dirty = true
 	app.sess.BookmarkFile(path, "saved content")
@@ -265,11 +145,6 @@ func TestDeleteFileCleansOpenDocumentState(t *testing.T) {
 	if err := app.store.SaveSnapshot(doc.ID, "saved content", "open"); err != nil {
 		t.Fatal(err)
 	}
-	workspaceState, err := workspacepkg.Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = workspaceState
 
 	state, err := app.DeleteFile(path)
 	if err != nil {
@@ -319,12 +194,7 @@ func TestDeleteFileAuthorizationAndPathSafety(t *testing.T) {
 	}
 	inside = canonicalPath(inside)
 	outside = canonicalPath(outside)
-	app := newWorkspaceTestApp(t)
-	state, err := workspacepkg.Scan(workspaceRoot)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = state
+	app := newDocumentTestApp(t)
 
 	if _, err := app.DeleteFile(outside); err == nil {
 		t.Fatal("expected an unopened outside file to be rejected")
@@ -356,7 +226,7 @@ func TestDeleteFileAuthorizationAndPathSafety(t *testing.T) {
 	}
 }
 
-func TestDeleteFileRejectsWorkspaceSymlink(t *testing.T) {
+func TestDeleteFileRejectsOpenSymlink(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	outsideRoot := t.TempDir()
@@ -368,12 +238,8 @@ func TestDeleteFileRejectsWorkspaceSymlink(t *testing.T) {
 	if err := os.Symlink(outside, link); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
 	}
-	app := newWorkspaceTestApp(t)
-	state, err := workspacepkg.Scan(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	app.workspaceState = state
+	app := newDocumentTestApp(t)
+	app.sess.AddFile(link, "content")
 	if _, err := app.DeleteFile(link); err == nil {
 		t.Fatal("expected symlink deletion to be rejected")
 	}
@@ -385,7 +251,7 @@ func TestDeleteFileRejectsWorkspaceSymlink(t *testing.T) {
 func TestDiscardNoteCleanup(t *testing.T) {
 	t.Parallel()
 	t.Run("unsaved note", func(t *testing.T) {
-		app := newWorkspaceTestApp(t)
+		app := newDocumentTestApp(t)
 		doc := session.NewDocument("", "unsaved")
 		app.sess.Add(doc)
 		if err := app.store.WriteDraft(doc, "unsaved"); err != nil {
@@ -413,7 +279,7 @@ func TestDiscardNoteCleanup(t *testing.T) {
 		if err := os.WriteFile(path, []byte("disk version"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		app := newWorkspaceTestApp(t)
+		app := newDocumentTestApp(t)
 		doc := app.sess.AddFile(path, "disk version")
 		doc.Dirty = true
 		if err := app.store.WriteDraft(doc, "dirty version"); err != nil {
@@ -436,7 +302,7 @@ func TestDiscardNoteCleanup(t *testing.T) {
 
 func TestDeleteNoteRemovesConfirmedDirtyDraft(t *testing.T) {
 	t.Parallel()
-	app := newWorkspaceTestApp(t)
+	app := newDocumentTestApp(t)
 	doc := session.NewDocument("", "dirty draft")
 	app.sess.Add(doc)
 	if err := app.store.WriteDraft(doc, "dirty draft"); err != nil {
@@ -452,7 +318,7 @@ func TestDeleteNoteRemovesConfirmedDirtyDraft(t *testing.T) {
 	}
 }
 
-func newWorkspaceTestApp(t *testing.T) *App {
+func newDocumentTestApp(t *testing.T) *App {
 	t.Helper()
 	store, err := session.NewStoreAt(t.TempDir())
 	if err != nil {

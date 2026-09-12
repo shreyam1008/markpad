@@ -102,6 +102,15 @@ const value = 1;
     expect(html).toContain("hljs-keyword");
   });
 
+  test("escapes fence language attributes and bounds long fenced highlighting", () => {
+    const unsafe = parseMarkdown('```foo"onclick="alert(1)\n<script>unsafe</script>\n```');
+    expect(unsafe).not.toContain('"onclick="');
+    expect(unsafe).toContain("&lt;script&gt;");
+    const large = parseMarkdown("```typescript\n" + "const x = 1;\n".repeat(2001) + "```");
+    expect(large).toContain("const x = 1;");
+    expect(large).not.toContain("hljs-keyword");
+  });
+
   test("marks Mermaid fences for safe lazy rendering", () => {
     const html = parseMarkdown("```mermaid\nflowchart LR\nA --> B\n```");
     expect(html).toContain('class="mermaid"');

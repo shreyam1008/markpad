@@ -6,7 +6,6 @@ import {
   fileBadge,
   fileType,
   isReadOnly,
-  openFileDirty,
   outlineFromMarkdown,
 } from "../src/workspace/documents";
 import type { NoteInfo } from "../src/workspace/types";
@@ -81,22 +80,5 @@ describe("document rules", () => {
       { level: 1, text: "One", line: 0 },
       { level: 2, text: "Two", line: 2 },
     ]);
-  });
-
-  test("uses live active dirty state for deletion warnings", () => {
-    const active = note({ id: "active", path: "/notes/live.md", dirty: false });
-    const background = note({ id: "background", path: "/notes/other.md", dirty: true });
-
-    expect(openFileDirty(active.path, [active, background], active.id, true)).toEqual({
-      dirty: true,
-      noteId: "active",
-    });
-    expect(openFileDirty(background.path, [active, background], active.id, false)).toEqual({
-      dirty: true,
-      noteId: "background",
-    });
-    expect(openFileDirty("/notes/closed.md", [active], active.id, true)).toEqual({
-      dirty: false,
-    });
   });
 });

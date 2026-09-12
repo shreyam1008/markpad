@@ -17,10 +17,10 @@
       <li>Session restore: all notes, drafts, and favorites survive app close</li>
       <li>Formatting toolbar with bold, italic, headings, code, tables, lists, links, and more</li>
       <li>Find in editor with wrap-around search</li>
-      <li>Open one local folder and switch files quickly with the command palette</li>
-      <li>Bounded workspace search with file, line, and matching snippet</li>
+      <li>Open individual files and switch quickly with the command palette</li>
+      <li>Current-file search and synchronized Markdown split scrolling</li>
       <li>External-change protection before overwriting files edited by another application</li>
-      <li>One-step filing of recovery drafts into the selected workspace folder</li>
+      <li>Detailed guided tour from Help and recognizable file-type symbols</li>
       <li>Auto-list continuation for bullets, numbered lists, and task lists</li>
       <li>Open any text file: Markdown, plain text, JSON, YAML, Python, Go, JS, HTML, CSS, and more</li>
       <li>Favorites, drag-and-drop reorder, file type icons, word count, reading time</li>
@@ -53,6 +53,7 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.13.6" date="2026-09-12"><description><p>Detailed Help tour, synchronized Split scrolling, file-type symbols and colors, improved syntax coverage, and removal of folder workspaces.</p></description></release>
     <release version="0.13.5" date="2026-09-12"><description><p>Visible Help and verified updates; synchronized platform packages and original product icon.</p></description></release>
     <release version="0.13.4" date="2026-09-11">
       <description>

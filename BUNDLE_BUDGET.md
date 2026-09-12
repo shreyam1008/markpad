@@ -40,8 +40,6 @@ The operating-system webview is the dominant memory cost. Keep document-specific
 - Edit history is capped by state count and total text.
 - Saved history is capped at 50 snapshots per document.
 - PDF data is not loaded into Quillpane.
-- Workspace scans include at most 10,000 files, visit at most 100,000 entries, descend at most 32 levels, and accept files no larger than 2 MiB.
-- Each workspace search reads at most 64 MiB and returns at most 200 results; it has no persistent index.
 - Pre-save source verification stream-hashes at most 10 MiB and stores one SHA-256 digest plus filesystem identity per open saved document.
 
 ### Windows measurement note
@@ -67,4 +65,10 @@ For reference, DBX on that machine measured 424.0 MiB summed working set / 176.3
 4. Confirm `dist/markpad` is no larger than 16 MiB and the Windows release is no larger than 16.1 MiB.
 5. Confirm no production asset references an HTTP URL.
 6. Exercise Markdown, code, text, image, and PDF handoff offline.
-7. Exercise folder open, `Ctrl+P`, `Ctrl+Shift+F`, match selection, file creation, refresh, and confirmed deletion.
+7. Exercise individual-file open, `Ctrl+P`, `Ctrl+F`, Split sync, Help tour restart/exit, and confirmed deletion.
+
+## 0.13.6 refinement measurement
+
+Driver.js 1.8.0 is an exact, locally bundled dependency requested for the detailed Help tour. It provides focus/keyboard handling and anchored steps without a component suite or runtime CDN; hand-written overlay positioning was rejected because it would duplicate that behavior. CodeMirror and Highlight.js remain the existing syntax stack.
+
+With release-pinned Bun 1.3.14, the refinement candidate measures 4,622,944 bytes of JavaScript and 120,951 bytes of CSS (approximately +30.6 KB JS and -6.9 KB CSS from the prior local build). The stripped Windows candidate is 16,790,016 bytes, below 16.1 MiB. Final release binaries are checked again by CI. The removed folder scanner/search no longer allocates inventories or search buffers.
