@@ -2,7 +2,11 @@
 
 Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.13.6
+## Current release: 0.13.7
+
+Help refinement candidate prepared. Publication and Store certification results will be recorded after verification.
+
+## Previous release: 0.13.6
 
 - **GitHub: published.** [v0.13.6](https://github.com/shreyam1008/markpad/releases/tag/v0.13.6), source `0f7b3df43106ffa53b34d3566af1b2481964e012`, contains matching Linux binary/deb/AppImage, Windows EXE/setup/MSIX, macOS DMG/ZIP, and Snap. [Release run 34686714762](https://github.com/shreyam1008/markpad/actions/runs/34686714762) and [CI 34686714940](https://github.com/shreyam1008/markpad/actions/runs/34686714940) passed. Native Linux clipboard, Help, and Driver.js tour smoke passed; browser QA covered all 16 steps, restart/exit, narrow layout, bidirectional Split sync, and sync-off behavior.
 - **Website and signed APT: published 0.13.6.** Anonymous public website schema/download version and Packages metadata verified on 12 September. Public signed APT installation passed in the release workflow. Debian SHA256: `74abbc84f901f029df8f153f34003a21f06ed3b9e920e7f2ae81ac25fe7cec6b`.

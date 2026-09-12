@@ -13,6 +13,7 @@ import {
   type ThemePalette,
 } from "../preferences";
 import { shortcutDisplay, type ShortcutGroup } from "../shortcuts";
+import { HelpContent } from "./HelpContent";
 import {
   Check,
   HardDrive,
@@ -28,7 +29,6 @@ import {
   Type,
   X,
 } from "./icons";
-import { UpdateCheck } from "./UpdateCheck";
 
 type SettingsCategory = "appearance" | "writing" | "keyboard" | "files" | "help";
 
@@ -156,26 +156,7 @@ export function SettingsPanel({
                 <h2>Help & updates</h2>
                 <p>About the app, installed version, and updates.</p>
               </div>
-              <section className="help-tour">
-                <h3>Tour</h3>
-                <p>Explore file controls, editing, preview, settings, and updates.</p>
-                <button className="confirm-btn" onClick={onTour}>
-                  Start guided tour
-                </button>
-              </section>
-              <UpdateCheck />
-              <div className="flex gap-2">
-                <button className="confirm-btn" onClick={onAbout}>
-                  About Quillpane
-                </button>
-                <button className="confirm-btn" onClick={onChangelog}>
-                  What's new
-                </button>
-              </div>
-              <p className="settings-footnote">
-                Select text in Preview and press Ctrl+C (Command+C on macOS) to copy. Your notes and
-                settings stay on this computer.
-              </p>
+              <HelpContent onAbout={onAbout} onChangelog={onChangelog} onTour={onTour} />
             </section>
           ) : null}
           {category === "appearance" ? (

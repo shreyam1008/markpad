@@ -3988,3 +3988,125 @@ textarea {
     display: none;
   }
 }
+
+/* Help shares one layout in the dialog and Settings inspector. */
+.help-content {
+  display: grid;
+  gap: 20px;
+}
+.update-panel {
+  display: grid;
+  gap: 12px;
+}
+.update-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.update-brand h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--mp-ink);
+}
+.update-brand p,
+.help-content p {
+  color: var(--mp-muted);
+  line-height: 1.6;
+}
+.update-versions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 14px;
+  background: var(--mp-chrome);
+  border: 1px solid var(--mp-border);
+  border-radius: 6px;
+}
+.update-versions > div {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+.update-versions span,
+.update-versions small {
+  font-size: 11px;
+  color: var(--mp-muted);
+}
+.version-badge {
+  color: var(--mp-accent);
+  background: var(--mp-selected);
+  padding: 3px 8px;
+  border: 1px solid var(--mp-selected-border);
+  border-radius: 4px;
+  font-size: 17px;
+}
+.version-latest {
+  font-size: 17px;
+  color: var(--mp-ink);
+  padding-block: 4px;
+}
+.update-status {
+  min-height: 22px;
+  overflow-wrap: anywhere;
+  color: var(--mp-ink);
+}
+.help-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--mp-border-soft);
+  padding-top: 18px;
+}
+.help-section h3 {
+  font-weight: 700;
+  color: var(--mp-ink);
+}
+.help-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.help-shortcuts {
+  display: grid;
+  gap: 7px;
+}
+.help-shortcuts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.help-storage {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  background: var(--mp-chrome);
+  border: 1px solid var(--mp-border-soft);
+  border-radius: 4px;
+  font-size: 11px;
+}
+.help-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.help-links a {
+  color: var(--mp-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.help-footer h3:not(:first-child) {
+  margin-top: 8px;
+}
+@media (max-width: 480px) {
+  .update-versions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-card[data-modal-kind="help"] {
+  width: min(600px, calc(100vw - 32px));
+}
+.update-panel > .confirm-btn {
+  justify-self: start;
+}

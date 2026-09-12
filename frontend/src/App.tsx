@@ -16,6 +16,7 @@ import { CloseDialog } from "./components/CloseDialog";
 import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
 import { DeleteDialog, type DeleteTarget } from "./components/DeleteDialog";
 import { DocumentWorkspace, type DocumentWorkspaceHandle } from "./components/DocumentWorkspace";
+import { HelpContent } from "./components/HelpContent";
 import { HistoryPanel } from "./components/HistoryPanel";
 import {
   Bold,
@@ -48,7 +49,6 @@ import { ProductTour } from "./components/ProductTour";
 import { QuitDialog } from "./components/QuitDialog";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Sidebar } from "./components/Sidebar";
-import { UpdateCheck } from "./components/UpdateCheck";
 import {
   applyPreferencesToDocument,
   initialPreferences,
@@ -182,50 +182,18 @@ function ModalLayer({
     );
   } else if (modal.kind === "help") {
     title = "Help & updates";
-    body = (
-      <div className="space-y-2">
-        <section className="help-tour">
-          <h3>Tour</h3>
-          <p>A detailed walkthrough of the page, file controls, editing, and updates.</p>
-          <button className="confirm-btn" onClick={onTour}>
-            Start guided tour
-          </button>
-        </section>
-        <UpdateCheck />
-        <div className="flex gap-2">
-          <button className="confirm-btn" onClick={onAbout}>
-            About Quillpane
-          </button>
-          <button className="confirm-btn" onClick={onChangelog}>
-            What's new
-          </button>
-        </div>
-        <p>
-          <strong>{PRODUCT_NAME}</strong> is a native Markdown notepad.
-        </p>
-        <p>Open Markdown, text, code, config, logs, PDFs, images, ebooks, and office documents.</p>
-        <p>
-          Star notes to pin them. Drag open files to reorder them. Lists auto-continue on Enter.
-        </p>
-        <h3 className="font-bold pt-2">Shortcuts</h3>
-        <p>
-          <kbd>{shortcutLabel("general.palette")}</kbd> Files and commands ·{" "}
-          <kbd>{shortcutLabel("file.new")}</kbd> New · <kbd>{shortcutLabel("file.open")}</kbd> Open
-        </p>
-        <p>
-          <kbd>{shortcutLabel("navigation.find")}</kbd> Find in file
-        </p>
-        <p>
-          <kbd>{shortcutLabel("view.editor")}</kbd> / <kbd>{shortcutLabel("view.split")}</kbd> /{" "}
-          <kbd>{shortcutLabel("view.preview")}</kbd> Editor / Split / Preview ·{" "}
-          <kbd>{shortcutLabel("appearance.interface-reset")}</kbd> Reset interface scale
-        </p>
-      </div>
-    );
+    body = <HelpContent onAbout={onAbout} onChangelog={onChangelog} onTour={onTour} />;
   } else if (modal.kind === "changelog") {
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.13.7 · A clearer home</h3>
+          <p>
+            Help now starts with installed and latest versions, with a named release badge, update
+            controls, guided tour, local data location, and project and creator links.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.13.6 · Everyday refinements</h3>
           <p>

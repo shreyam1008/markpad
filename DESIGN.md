@@ -181,3 +181,5 @@ For every visible change:
 6. Build the production binary and verify its platform budget and offline asset scan.
 
 The Help tour uses Driver.js 1.8.0, bundled locally, with semantic popover colors and no motion. It highlights available controls and explains hidden controls without changing the active document. File badges include symbols and extensions as well as color. Split synchronization maps normalized scroll progress, suppresses feedback events, and has a visible off switch.
+
+Help uses a shared component in the modal and Settings: product/version badges and updates first, tour and everyday shortcuts next, local storage and project/creator links last. The Help modal may use a 600 px content width while preserving the shared modal geometry and internal scrolling.

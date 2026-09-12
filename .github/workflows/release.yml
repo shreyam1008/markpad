@@ -225,7 +225,8 @@ jobs:
           body: |
             ## What's new in ${{ github.ref_name }}
 
-            - Detailed 16-step Driver.js tour in Help, alongside About, versions, and updates.
+            - Redesigned Help with installed/latest version badges, named releases, updates, and the detailed guided tour.
+            - Local data location and direct project, issue tracker, GitHub profile, and creator website links.
             - Bidirectional Split scroll synchronization with an off switch.
             - File-type symbols and colors, improved editor language support, and bounded fenced highlighting.
             - Removed folder workspaces, folder search, and draft-filing commands; individual files and recovery drafts remain.
