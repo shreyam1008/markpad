@@ -1,5 +1,9 @@
 # Quillpane
 
+Migration: Quillpane and Markpad are one application. Use **Quillpane (formerly
+Markpad)** publicly; the `markpad` APT package, executable, repository and data
+paths remain compatible. Maintain one Store listing and one update stream.
+
 Quillpane (formerly Markpad) is a tiny native Markdown notepad and local file viewer. Opens fast, saves your work, gets out of the way.
 
 No Electron. No cloud. One small binary, pure local and offline.
