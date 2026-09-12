@@ -22,6 +22,21 @@ func TestProductMarkIsConsistentAcrossFrontendAndPackaging(t *testing.T) {
 		t.Fatal("frontend mark must match packaging/linux/markpad.svg; run packaging/icons/generate_icons.py")
 	}
 
+	website, err := os.ReadFile("docs/favicon.svg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if normalize(canonical) != normalize(website) {
+		t.Fatal("website favicon must match the installed app's original product mark")
+	}
+	websiteIndex, err := os.ReadFile("docs/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(websiteIndex), `<img src="./favicon.svg?v=original-mark"`) {
+		t.Fatal("website header must use the shared product mark")
+	}
+
 	index, err := os.ReadFile("frontend/index.html")
 	if err != nil {
 		t.Fatal(err)

@@ -9,6 +9,7 @@ WINDOWS_ICON = ROOT / "packaging" / "windows" / "markpad.ico"
 MACOS_ICON = ROOT / "packaging" / "macos" / "markpad.icns"
 CANONICAL_SVG = ROOT / "packaging" / "linux" / "markpad.svg"
 FRONTEND_SVG = ROOT / "frontend" / "src" / "assets" / "markpad-mark.svg"
+WEBSITE_SVG = ROOT / "docs" / "favicon.svg"
 
 GREEN = "#2f6f61"
 PAPER = "#fffffb"
@@ -75,10 +76,12 @@ def main():
 
     FRONTEND_SVG.parent.mkdir(parents=True, exist_ok=True)
     FRONTEND_SVG.write_bytes(CANONICAL_SVG.read_bytes())
+    WEBSITE_SVG.write_bytes(CANONICAL_SVG.read_bytes())
 
     print(f"Wrote {WINDOWS_ICON.relative_to(ROOT)}")
     print(f"Wrote {MACOS_ICON.relative_to(ROOT)}")
     print(f"Synced {FRONTEND_SVG.relative_to(ROOT)}")
+    print(f"Synced {WEBSITE_SVG.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
