@@ -6,7 +6,7 @@ No Electron. No cloud. One small binary, pure local and offline.
 
 Project site: <https://quillpane.shreyam1008.com.np/>
 
-All install links and store status: [Quillpane distribution tracker](https://shreyam1008.com.np/projects/#distribution-markpad). Microsoft Store, Snap and Flathub are not live yet; use the verified release, Scoop or APT channels listed there.
+All install links and store status: [Quillpane distribution tracker](https://shreyam1008.com.np/projects/#distribution-markpad). The GitHub installer is the default Linux path; signed APT, Scoop and [Microsoft Store](https://apps.microsoft.com/detail/9MZDJLQ6V8L3) are also available. Snap candidates are attached to GitHub releases; Snap Store and Flathub are not published yet.
 
 ![Quillpane split workspace](photo/markpad-split.png)
 

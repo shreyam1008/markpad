@@ -97,9 +97,9 @@
         <div class="max-w-lg mx-auto mb-8 bg-slate-900 text-slate-200 p-3.5 rounded-xl font-mono text-[11px] text-left border border-slate-800 shadow-xl flex items-center justify-between gap-4 animate-fade-up delay-3">
           <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none">
             <span class="text-accent select-none">$</span>
-            <code class="select-all">curl -sL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh</code>
+            <code class="select-all">curl -fsSL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh</code>
           </div>
-          <button class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0" onclick="navigator.clipboard.writeText('curl -sL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh'); alert('Command copied!')">Copy</button>
+          <button class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0" onclick="navigator.clipboard.writeText('curl -fsSL https://raw.githubusercontent.com/shreyam1008/markpad/main/install.sh | sh'); alert('Command copied!')">Copy</button>
         </div>
         <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
@@ -262,25 +262,25 @@
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Downloads</p>
           <h2 class="text-3xl font-bold">Get Quillpane for your platform.</h2>
-          <p class="text-muted mt-2">v0.13.4 · Built and native-window smoke-tested by GitHub Actions on every tagged release.</p>
+          <p class="text-muted mt-2">Use the GitHub installer above for Linux, or choose a download below. v0.13.4 is the current release.</p>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.4/Markpad.AppImage" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128039;</div>
             <strong class="block group-hover:text-accent transition-colors">Linux AppImage</strong>
             <span class="text-xs text-muted">Portable, no install</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.4/markpad_0.13.4_amd64.deb" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#128230;</div>
             <strong class="block group-hover:text-accent transition-colors">Linux .deb</strong>
             <span class="text-xs text-muted">Debian, Ubuntu</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.4/markpad-setup.exe" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127466;</div>
             <strong class="block group-hover:text-accent transition-colors">Windows .exe</strong>
             <span class="text-xs text-muted">NSIS installer</span>
           </a>
-          <a href="https://github.com/shreyam1008/markpad/releases" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
+          <a href="https://github.com/shreyam1008/markpad/releases/download/v0.13.4/Markpad.dmg" class="group p-5 bg-paper rounded-2xl border border-line hover:border-accent hover:shadow-lg transition-all text-center">
             <div class="text-2xl mb-2">&#127822;</div>
             <strong class="block group-hover:text-accent transition-colors">macOS .dmg</strong>
             <span class="text-xs text-muted">App bundle</span>
@@ -291,6 +291,12 @@
             <span class="text-xs text-muted">Build from Go</span>
           </a>
         </div>
+      </section>
+
+      <section class="max-w-4xl mx-auto px-6 pb-16" aria-label="Package managers and stores">
+        <h2 class="text-2xl font-bold">Package managers and stores</h2>
+        <p class="mt-4"><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/blob/main/packaging/PACKAGING.md#signed-apt">Signed APT setup for Debian / Ubuntu</a> · <a class="text-accent underline" href="https://apps.microsoft.com/detail/9MZDJLQ6V8L3">Microsoft Store for Windows</a></p>
+        <details class="mt-5"><summary class="cursor-pointer font-semibold">Snap and Flatpak availability</summary><p class="text-muted mt-3">A Snap candidate is available in the GitHub release. Snap Store and Flathub are not published yet. Use the GitHub download or signed APT for Linux today.</p><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/releases/latest">View release packages</a></details>
       </section>
 
       <!-- Tech -->
