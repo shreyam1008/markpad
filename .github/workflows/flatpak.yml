@@ -13,16 +13,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk openbox
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
-          flatpak install --user --noninteractive flathub org.flatpak.Builder
+          sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install --system --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
+          sudo flatpak install --system --noninteractive flathub org.flatpak.Builder
       - name: Verify runtime ABI
         run: flatpak run --command=sh org.gnome.Sdk//50 -c 'pkg-config --modversion gtk+-3.0 webkit2gtk-4.1'
       - name: Download pinned sources then compile without network
         run: |
           flatpak run org.flatpak.Builder --version
-          flatpak run org.flatpak.Builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
-          flatpak run org.flatpak.Builder --user --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run org.flatpak.Builder --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
+          flatpak run org.flatpak.Builder --disable-download --compose-url-policy=full --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
         id: metadata
         run: |
