@@ -188,7 +188,7 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
-          <h3 className="font-bold">0.13.7 · A clearer home</h3>
+          <h3 className="font-bold">0.13.8 · A clearer home</h3>
           <p>
             Help now starts with installed and latest versions, with a named release badge, update
             controls, guided tour, local data location, and project and creator links.

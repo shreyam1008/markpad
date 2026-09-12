@@ -118,7 +118,12 @@ echo "Linux Help and update controls are reachable with F1."
 
 # Open the locally bundled Driver.js tour using the visible Help control.
 tesseract dist/linux-ui-help.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-help.tsv
-read -r tour_x tour_y < <(awk -F '\t' '$12 == "guided" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-help.tsv)
+read -r tour_x tour_y < <(awk -F '\t' '$12 == "guided" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-help.tsv) || true
+# Colored primary-button text can be missed by OCR. Anchor to the visible
+# section's left edge and the adjacent About button on the same action row.
+if [[ -z "${tour_x:-}" || -z "${tour_y:-}" ]]; then
+  read -r tour_x tour_y < <(awk -F '\t' '$12 == "Make" { x=$7+18 } $12 == "About" { y=int($8+$10/2) } END { if (x && y) print x,y }' dist/linux-ui-help.tsv) || true
+fi
 [[ -n "${tour_x:-}" && -n "${tour_y:-}" ]]
 xdotool mousemove --window "$window_id" "$tour_x" "$tour_y" click 1
 sleep 1

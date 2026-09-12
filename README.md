@@ -113,7 +113,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
-| 0.13.7 | A clearer home | Unified Help with version badges, updates, local data location, and project/creator links |
+| 0.13.8 | A clearer home | Unified Help with version badges, updates, local data location, and project/creator links |
 | 0.13.6 | Refinements | Detailed tour, synchronized Split scroll, file-type symbols, syntax fixes, and removal of folder workspaces |
 | 0.13.5 | Help & updates | Visible Help and Settings updates, verified installer downloads, synchronized release packages, original icon everywhere |
 | 0.13.4 | Preview clipboard hotfix | Native preview copying; Help update checks and guided downloads |

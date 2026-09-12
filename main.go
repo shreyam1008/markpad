@@ -17,7 +17,7 @@ import (
 	"markpad/internal/brand"
 )
 
-const Version = "0.13.7"
+const Version = "0.13.8"
 
 // Linker-overridable for isolated QA builds; releases always use the brand contract default.
 var singleInstanceID = brand.SingleInstanceID

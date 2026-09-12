@@ -1,7 +1,7 @@
 export const PRODUCT_NAME = "Quillpane";
 export const PREVIEW_PRODUCT_NAME = "Quillpane";
 export const LEGACY_PRODUCT_NAME = "Markpad";
-export const VERSION = "0.13.7";
+export const VERSION = "0.13.8";
 export const VERSION_NAME = "A clearer home";
 
 // The custom domain is the canonical public site now that DNS, Pages, HTTPS,

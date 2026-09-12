@@ -2,9 +2,9 @@
 
 Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.13.7
+## Current release: 0.13.8
 
-Help refinement candidate prepared. Publication and Store certification results will be recorded after verification.
+The 0.13.7 candidate was not published: native screenshot OCR misread the tour button. Its release run was cancelled. 0.13.8 corrects test targeting without changing tour behavior. Help refinement candidate prepared. Publication and Store certification results will be recorded after verification.
 
 ## Previous release: 0.13.6
 
