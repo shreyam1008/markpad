@@ -43,10 +43,23 @@ done
 import -window root flatpak-evidence/portal-dialog.png
 test -n "$chooser_id"
 xdotool windowactivate --sync "$chooser_id"
+xdotool windowfocus --sync "$chooser_id"
+# GTK can map the chooser before realizing its location-entry widget.
+sleep 1
 xdotool key --clearmodifiers ctrl+l
+sleep 1
 xdotool type --clearmodifiers --delay 10 "$fixture"
+import -window root flatpak-evidence/portal-location.png
 xdotool key Return
-sleep 3
+for attempt in $(seq 1 80); do
+  visible=$(xdotool search --onlyvisible --class 'Xdg-desktop-portal-gtk' 2>/dev/null || true)
+  if [[ -z "$visible" ]]; then break; fi
+  sleep 0.25
+done
+import -window root flatpak-evidence/portal-result.png
+test -z "$visible"
+xdotool windowactivate --sync "$window_id"
+sleep 1
 import -window "$window_id" flatpak-evidence/portal-open.png
 tesseract flatpak-evidence/portal-open.png flatpak-evidence/portal-open --psm 6
 grep -Eqi 'Quillpane portal check|disposable note' flatpak-evidence/portal-open.txt
