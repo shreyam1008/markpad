@@ -12,7 +12,7 @@ jobs:
       - name: Install Flatpak tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk
+          sudo apt-get install -y flatpak flatpak-builder elfutils appstream desktop-file-utils xvfb xauth xdotool imagemagick tesseract-ocr xdg-desktop-portal-gtk openbox
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50 org.freedesktop.Sdk.Extension.golang//25.08
       - name: Verify runtime ABI
@@ -22,6 +22,7 @@ jobs:
           flatpak-builder --user --download-only build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
           flatpak-builder --user --disable-download --mirror-screenshots-url=https://dl.flathub.org/media --repo=flatpak-repo build-flatpak packaging/flatpak/io.github.shreyam1008.markpad.yml
       - name: Validate exported metadata
+        id: metadata
         run: |
           appstreamcli validate --no-net build-flatpak/files/share/metainfo/io.github.shreyam1008.markpad.metainfo.xml
           desktop-file-validate build-flatpak/files/share/applications/io.github.shreyam1008.markpad.desktop
@@ -30,6 +31,11 @@ jobs:
       - name: Install and launch packaged app
         run: |
           flatpak install --user --noninteractive ./quillpane.flatpak
+          # A private bus must also have a private runtime directory: the runner
+          # may already have a document-portal FUSE mount on its normal bus.
+          export XDG_RUNTIME_DIR
+          XDG_RUNTIME_DIR=$(mktemp -d /tmp/quillpane-runtime.XXXXXX)
+          chmod 700 "$XDG_RUNTIME_DIR"
           XDG_CURRENT_DESKTOP=GNOME xvfb-run -a -s '-screen 0 1280x800x24' dbus-run-session -- bash .github/scripts/flatpak-ui-smoke.sh
       - name: Upload window evidence
         if: always()
@@ -38,11 +44,13 @@ jobs:
           name: quillpane-flatpak-evidence
           path: flatpak-evidence/
       - uses: actions/upload-artifact@v4
+        if: always() && steps.metadata.outcome == 'success'
         with:
           name: quillpane-flatpak-test
           path: quillpane.flatpak
           if-no-files-found: error
       - name: Run official Flathub manifest and repository lints
+        if: always() && steps.metadata.outcome == 'success'
         run: |
           flatpak install --user --noninteractive flathub org.flatpak.Builder
           flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/io.github.shreyam1008.markpad.yml
