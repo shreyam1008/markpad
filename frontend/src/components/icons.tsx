@@ -1,11 +1,15 @@
 import {
   ArrowLeft as ArrowLeftNode,
+  CalendarDays as CalendarDaysNode,
   Bold as BoldNode,
   ChevronDown as ChevronDownNode,
   ChevronRight as ChevronRightNode,
   Clock3 as Clock3Node,
   Code2 as Code2Node,
   Columns2 as Columns2Node,
+  SquareKanban as KanbanNode,
+  Tags as TagsNode,
+  GripVertical as GripVerticalNode,
   Copy as CopyNode,
   Eye as EyeNode,
   Ellipsis as EllipsisNode,
@@ -83,11 +87,15 @@ function icon(nodes: IconNode) {
 
 export const Bold = icon(BoldNode);
 export const ArrowLeft = icon(ArrowLeftNode);
+export const CalendarDays = icon(CalendarDaysNode);
 export const ChevronDown = icon(ChevronDownNode);
 export const ChevronRight = icon(ChevronRightNode);
 export const Clock3 = icon(Clock3Node);
 export const Code2 = icon(Code2Node);
 export const Columns2 = icon(Columns2Node);
+export const Kanban = icon(KanbanNode);
+export const Tags = icon(TagsNode);
+export const GripVertical = icon(GripVerticalNode);
 export const Copy = icon(CopyNode);
 export const Eye = icon(EyeNode);
 export const Ellipsis = icon(EllipsisNode);

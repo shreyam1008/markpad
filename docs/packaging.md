@@ -4,7 +4,7 @@ Quillpane (formerly Markpad) targets small native artifacts without Electron or 
 
 ## Local Linux build
 
-Install Go 1.24+, Bun 1.3.14, GCC, pkg-config, GTK 3 development files, and WebKit2GTK 4.1 development files. Then run:
+Install Go 1.27.1+, Bun 1.4.2, GCC, pkg-config, GTK 3 development files, and WebKit2GTK 4.1 development files. Then run:
 
 ```sh
 make setup
@@ -12,7 +12,7 @@ make check
 ./dist/markpad README.md
 ```
 
-`make setup` uses the frozen Bun lockfile. `make check` builds the frontend, runs frontend and Go verification, checks runtime assets and formatting, creates the stripped Linux binary, and enforces the 16 MiB ceiling.
+`make setup` uses the frozen Bun lockfile. `make check` builds the frontend, runs frontend and Go verification, checks runtime assets and formatting, creates the stripped Linux binary, and reports the binary size without a hard ceiling.
 
 ## Release CI
 

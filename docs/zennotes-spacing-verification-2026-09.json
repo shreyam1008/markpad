@@ -1,0 +1,1167 @@
+{
+  "checks": [
+    "New Task board opens its task view",
+    "New task file contains the Markdown marker",
+    "New task file has a distinct icon and useful title",
+    "Task identity reaches native session metadata",
+    "Saved task file reopens as tasks",
+    "Creates tagged and untagged tasks",
+    "Completion keeps the category",
+    "Checkbox focus still allows document undo",
+    "Completion can be redone after keyboard undo",
+    "Board shows Untagged and each category",
+    "Category picker moves a card to its column",
+    "Drag and drop changes category",
+    "Trash displays removed tasks",
+    "Restore returns the task",
+    "Cancel empty Trash preserves tasks",
+    "Confirmed empty Trash clears removed tasks",
+    "Document undo recovers emptied Trash",
+    "Undo also updates the recovery draft",
+    "Redo clears Trash again",
+    "Undo remains usable after redo",
+    "Edit focuses the task title",
+    "Edit changes the task title",
+    "Rename changes the category column",
+    "Removing a category keeps its tasks in Untagged",
+    "Keyboard alternative reorders a task",
+    "Appearance settings apply to the task view",
+    "Reduced motion removes task control transitions",
+    "Theme changes preserve the task composer",
+    "Input undo stays local to the task composer",
+    "Input undo preserves committed task changes",
+    "Native Save writes task changes as ordinary Markdown",
+    "Editor shows the same Markdown source",
+    "Preview returns to the same tasks",
+    "Three board columns fit the desktop pane",
+    "Column quick-add selects its category and focuses the composer",
+    "Rendered category tags have readable text and soft borders across all twelve theme modes",
+    "Narrow board does not widen the app",
+    "Narrow list does not widen the app",
+    "All 500 tasks are available",
+    "Large task list filtering works",
+    "Board handles 500 tasks",
+    "Oversized task files show an explicit bounded fallback",
+    "The full oversized file stays available in Editor",
+    "Window maximizes through its titlebar",
+    "Window restores through its titlebar",
+    "Titlebar double-click maximizes",
+    "Titlebar double-click restores",
+    "Content remains available after minimize and restore",
+    "Close protects unsaved task drafts",
+    "Cancel close keeps the complete active document"
+  ],
+  "readyMs": 622.1143,
+  "paintFromLaunch": 628.300048828125,
+  "largeReadyMs": 176.70130000000063,
+  "samples": [
+    {
+      "label": "six-tasks-gc",
+      "metrics": {
+        "Timestamp": 276410.963212,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 239,
+        "LayoutObjects": 459,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 655,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 140,
+        "RecalcStyleCount": 341,
+        "LayoutDuration": 0.095866,
+        "RecalcStyleDuration": 0.860017,
+        "DevToolsCommandDuration": 0.048682,
+        "ScriptDuration": 0.315686,
+        "V8CompileDuration": 0.0001,
+        "TaskDuration": 2.049683,
+        "TaskOtherDuration": 0.729332,
+        "ThreadTime": 2.136034,
+        "ProcessTime": 3.151527,
+        "JSHeapUsedSize": 4591900,
+        "JSHeapTotalSize": 5505024,
+        "FirstMeaningfulPaint": 276396.597066,
+        "DomContentLoaded": 276396.551368,
+        "NavigationStart": 276396.386276
+      },
+      "processes": [
+        {
+          "Id": 2668,
+          "WorkingSet64": 44072960,
+          "PrivateMemorySize64": 12390400,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 11788,
+          "WorkingSet64": 23703552,
+          "PrivateMemorySize64": 8732672,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 15568,
+          "WorkingSet64": 61009920,
+          "PrivateMemorySize64": 17072128,
+          "type": "GPU"
+        },
+        {
+          "Id": 17288,
+          "WorkingSet64": 165953536,
+          "PrivateMemorySize64": 99618816,
+          "type": "renderer"
+        },
+        {
+          "Id": 19908,
+          "WorkingSet64": 128118784,
+          "PrivateMemorySize64": 39714816,
+          "type": "browser"
+        },
+        {
+          "Id": 22092,
+          "WorkingSet64": 31592448,
+          "PrivateMemorySize64": 54611968,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 232140800,
+      "workingSetBytes": 454451200,
+      "page": {
+        "nodes": 385,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 212
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 212
+          }
+        ],
+        "text": "A little more organized5 open \u00c2\u00b7 1 completedListBoardCategoriesTrash0UntaggedWorkPersonalAdd taskAll tasksOpenCompletedKeep categories simpleUntaggedWo"
+      }
+    },
+    {
+      "label": "500-tasks-gc",
+      "metrics": {
+        "Timestamp": 276411.503274,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 2250,
+        "LayoutObjects": 10338,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 25814,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 144,
+        "RecalcStyleCount": 347,
+        "LayoutDuration": 0.11866,
+        "RecalcStyleDuration": 0.905862,
+        "DevToolsCommandDuration": 0.052756,
+        "ScriptDuration": 0.380252,
+        "V8CompileDuration": 0.0001,
+        "TaskDuration": 2.280493,
+        "TaskOtherDuration": 0.822863,
+        "ThreadTime": 2.363509,
+        "ProcessTime": 3.508728,
+        "JSHeapUsedSize": 11221336,
+        "JSHeapTotalSize": 12320768,
+        "FirstMeaningfulPaint": 276396.597066,
+        "DomContentLoaded": 276396.551368,
+        "NavigationStart": 276396.386276
+      },
+      "processes": [
+        {
+          "Id": 2668,
+          "WorkingSet64": 44072960,
+          "PrivateMemorySize64": 12390400,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 11788,
+          "WorkingSet64": 23703552,
+          "PrivateMemorySize64": 8732672,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 15568,
+          "WorkingSet64": 60502016,
+          "PrivateMemorySize64": 17076224,
+          "type": "GPU"
+        },
+        {
+          "Id": 17288,
+          "WorkingSet64": 186638336,
+          "PrivateMemorySize64": 119844864,
+          "type": "renderer"
+        },
+        {
+          "Id": 19908,
+          "WorkingSet64": 127094784,
+          "PrivateMemorySize64": 38658048,
+          "type": "browser"
+        },
+        {
+          "Id": 22092,
+          "WorkingSet64": 32083968,
+          "PrivateMemorySize64": 54992896,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 251695104,
+      "workingSetBytes": 474095616,
+      "page": {
+        "nodes": 10783,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 212
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 212
+          }
+        ],
+        "text": "A full task list400 open \u00c2\u00b7 100 completedListBoardCategoriesTrash0UntaggedWorkPersonalIdeasAdd taskAll tasksOpenCompletedTask 1: Keep the list comforta"
+      }
+    },
+    {
+      "label": "500-task-board-gc",
+      "metrics": {
+        "Timestamp": 276412.326612,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 2221,
+        "LayoutObjects": 10409,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 25476,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 154,
+        "RecalcStyleCount": 361,
+        "LayoutDuration": 0.16689,
+        "RecalcStyleDuration": 1.000292,
+        "DevToolsCommandDuration": 0.058361,
+        "ScriptDuration": 0.474902,
+        "V8CompileDuration": 0.0001,
+        "TaskDuration": 2.715851,
+        "TaskOtherDuration": 1.015306,
+        "ThreadTime": 2.79492,
+        "ProcessTime": 4.127213,
+        "JSHeapUsedSize": 8358380,
+        "JSHeapTotalSize": 9175040,
+        "FirstMeaningfulPaint": 276396.597066,
+        "DomContentLoaded": 276396.551368,
+        "NavigationStart": 276396.386276
+      },
+      "processes": [
+        {
+          "Id": 2668,
+          "WorkingSet64": 44072960,
+          "PrivateMemorySize64": 12390400,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 11788,
+          "WorkingSet64": 23703552,
+          "PrivateMemorySize64": 8732672,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 15568,
+          "WorkingSet64": 60579840,
+          "PrivateMemorySize64": 17076224,
+          "type": "GPU"
+        },
+        {
+          "Id": 17288,
+          "WorkingSet64": 204279808,
+          "PrivateMemorySize64": 138551296,
+          "type": "renderer"
+        },
+        {
+          "Id": 19908,
+          "WorkingSet64": 125812736,
+          "PrivateMemorySize64": 37376000,
+          "type": "browser"
+        },
+        {
+          "Id": 22092,
+          "WorkingSet64": 32083968,
+          "PrivateMemorySize64": 54992896,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 269119488,
+      "workingSetBytes": 490532864,
+      "page": {
+        "nodes": 10830,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 212
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 212
+          }
+        ],
+        "text": "A full task list400 open \u00c2\u00b7 100 completedListBoardCategoriesTrash0UntaggedWorkPersonalIdeasAdd taskAll tasksOpenCompletedUntagged125Task 1: Keep the li"
+      }
+    }
+  ],
+  "paletteContrast": [
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        244,
+        238,
+        238
+      ],
+      "ratio": 5.398056256573669,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        244,
+        238,
+        238
+      ],
+      "ratio": 5.398056256573669,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        241,
+        238,
+        243
+      ],
+      "ratio": 6.073569967086308,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        241,
+        238,
+        243
+      ],
+      "ratio": 6.073569967086308,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        41,
+        44,
+        42
+      ],
+      "ratio": 7.702295629426657,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        41,
+        44,
+        42
+      ],
+      "ratio": 7.702295629426657,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        39,
+        44,
+        45
+      ],
+      "ratio": 7.2515941250101665,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        39,
+        44,
+        45
+      ],
+      "ratio": 7.2515941250101665,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        244,
+        238,
+        238
+      ],
+      "ratio": 5.398056256573669,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        244,
+        238,
+        238
+      ],
+      "ratio": 5.398056256573669,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        241,
+        238,
+        243
+      ],
+      "ratio": 6.073569967086308,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        241,
+        238,
+        243
+      ],
+      "ratio": 6.073569967086308,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        44,
+        43,
+        49
+      ],
+      "ratio": 7.655958977012842,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        44,
+        43,
+        49
+      ],
+      "ratio": 7.655958977012842,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        42,
+        43,
+        52
+      ],
+      "ratio": 7.207152755833264,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        42,
+        43,
+        52
+      ],
+      "ratio": 7.207152755833264,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        239,
+        234,
+        238
+      ],
+      "ratio": 5.210222357762829,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        239,
+        234,
+        238
+      ],
+      "ratio": 5.210222357762829,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        236,
+        234,
+        243
+      ],
+      "ratio": 5.862650564427795,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        236,
+        234,
+        243
+      ],
+      "ratio": 5.862650564427795,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        64,
+        66,
+        79
+      ],
+      "ratio": 5.431243927561653,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        64,
+        66,
+        79
+      ],
+      "ratio": 5.431243927561653,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        62,
+        66,
+        82
+      ],
+      "ratio": 5.111465397194012,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        62,
+        66,
+        82
+      ],
+      "ratio": 5.111465397194012,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        245,
+        231,
+        216
+      ],
+      "ratio": 5.101310289214671,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        245,
+        231,
+        216
+      ],
+      "ratio": 5.101310289214671,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        242,
+        231,
+        221
+      ],
+      "ratio": 5.736282888752008,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        242,
+        231,
+        221
+      ],
+      "ratio": 5.736282888752008,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        24,
+        59,
+        70
+      ],
+      "ratio": 6.538408923438444,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        24,
+        59,
+        70
+      ],
+      "ratio": 6.538408923438444,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        22,
+        59,
+        73
+      ],
+      "ratio": 6.130444943949904,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        22,
+        59,
+        73
+      ],
+      "ratio": 6.130444943949904,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        247,
+        234,
+        240
+      ],
+      "ratio": 5.301117880682304,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        247,
+        234,
+        240
+      ],
+      "ratio": 5.301117880682304,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        244,
+        234,
+        245
+      ],
+      "ratio": 5.963858239695263,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        244,
+        234,
+        245
+      ],
+      "ratio": 5.963858239695263,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        53,
+        41,
+        53
+      ],
+      "ratio": 7.540286390133312,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        53,
+        41,
+        53
+      ],
+      "ratio": 7.540286390133312,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        51,
+        41,
+        56
+      ],
+      "ratio": 7.105085566133936,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        51,
+        41,
+        56
+      ],
+      "ratio": 7.105085566133936,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        247,
+        240,
+        242
+      ],
+      "ratio": 5.513022916969497,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "rose",
+      "fg": [
+        153,
+        70,
+        94
+      ],
+      "bg": [
+        247,
+        240,
+        242
+      ],
+      "ratio": 5.513022916969497,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        244,
+        240,
+        247
+      ],
+      "ratio": 6.203111907617373,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "violet",
+      "fg": [
+        118,
+        67,
+        149
+      ],
+      "bg": [
+        244,
+        240,
+        247
+      ],
+      "ratio": 6.203111907617373,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        37,
+        36,
+        36
+      ],
+      "ratio": 8.448974535467679,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "rose",
+      "fg": [
+        234,
+        176,
+        191
+      ],
+      "bg": [
+        37,
+        36,
+        36
+      ],
+      "ratio": 8.448974535467679,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        35,
+        36,
+        39
+      ],
+      "ratio": 7.955363668200652,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "violet",
+      "fg": [
+        200,
+        175,
+        233
+      ],
+      "bg": [
+        35,
+        36,
+        39
+      ],
+      "ratio": 7.955363668200652,
+      "softBorder": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg"
+  ]
+}

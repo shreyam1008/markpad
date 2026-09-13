@@ -1,0 +1,1040 @@
+{
+  "checks": [
+    "New Task board opens its task view",
+    "New task file contains the Markdown marker",
+    "New task file has a distinct icon and useful title",
+    "Task identity reaches native session metadata",
+    "Saved task file reopens as tasks",
+    "Creates tagged and untagged tasks",
+    "Completion keeps the category",
+    "Checkbox focus still allows document undo",
+    "Completion can be redone after keyboard undo",
+    "Board shows Untagged and each category",
+    "Category picker moves a card to its column",
+    "Drag and drop changes category",
+    "Trash displays removed tasks",
+    "Restore returns the task",
+    "Cancel empty Trash preserves tasks",
+    "Confirmed empty Trash clears removed tasks",
+    "Document undo recovers emptied Trash",
+    "Undo also updates the recovery draft",
+    "Redo clears Trash again",
+    "Undo remains usable after redo",
+    "Edit focuses the task title",
+    "Edit changes the task title",
+    "Rename changes the category column",
+    "Removing a category keeps its tasks in Untagged",
+    "Keyboard alternative reorders a task",
+    "Appearance settings apply to the task view",
+    "Reduced motion removes task control transitions",
+    "Theme changes preserve the task composer",
+    "Input undo stays local to the task composer",
+    "Input undo preserves committed task changes",
+    "Native Save writes task changes as ordinary Markdown",
+    "Editor shows the same Markdown source",
+    "Preview returns to the same tasks",
+    "Selected view keeps its paint and geometry under pointer hover",
+    "Edit and Trash actions are hidden while cards are idle",
+    "Hover reveals usable Edit and Trash actions",
+    "Keyboard focus reveals card actions without pointer hover",
+    "Disabled composer action retains a readable label",
+    "Three board columns fit the desktop pane",
+    "Column quick-add selects its category and focuses the composer",
+    "Rendered category tags have readable text and soft borders across all twelve theme modes",
+    "Narrow board does not widen the app",
+    "Narrow list does not widen the app",
+    "All 500 tasks are available",
+    "Large task list filtering works",
+    "Board handles 500 tasks",
+    "Oversized task files show an explicit bounded fallback",
+    "The full oversized file stays available in Editor",
+    "Window maximizes through its titlebar",
+    "Window restores through its titlebar",
+    "Titlebar double-click maximizes",
+    "Titlebar double-click restores",
+    "Content remains available after minimize and restore",
+    "Close protects unsaved task drafts",
+    "Cancel close keeps the complete active document",
+    "List reordering follows visible rows without changing categories",
+    "Search includes attached notes",
+    "Category order updates the board",
+    "Bulk cleanup clearly includes filtered-out completed tasks",
+    "Cancel cleanup keeps completed tasks",
+    "Completed tasks move into recoverable Trash",
+    "Cleanup preserves existing Trash",
+    "Restore all empties task Trash without deletion",
+    "Bulk restore keeps completion, category and attached notes",
+    "New tasks remain visible after adding through filters",
+    "Edit notes opens the full Editor at the exact task line",
+    "Returning from source restores task view",
+    "Leaving a title edit retains valid text in the recovery pipeline",
+    "Escape cancels an inline title edit",
+    "Board title action targets its Markdown heading",
+    "Finished workflow saves cleanly",
+    "Category order, task notes and additions persist to Markdown",
+    "Workflow boards have four stages without a permanent composer",
+    "Collapsed columns reclaim width and unmount their cards",
+    "Add task opens a focused inline card in its column",
+    "Multiple tags render as small named pills",
+    "Moving workflow stage preserves independent tags",
+    "Tag search finds tasks across workflow stages",
+    "Cancel discards only the unsubmitted inline card",
+    "Escape from the tag field cancels the unsubmitted card",
+    "Leaving a valid inline card retains it in the recovery draft",
+    "Workflow metadata saves as ordinary Markdown",
+    "Column collapse survives switching documents",
+    "Inline add controls stay below cards and attached notes without overlap",
+    "Expanding restores the column's tasks",
+    "Workflow board stays contained in narrow windows",
+    "Existing board categories upgrade to independent tags",
+    "Upgrade undo restores exact original Markdown",
+    "Dragging a whole column persists its new position",
+    "Custom category menu stays inside the window",
+    "Custom menu moves a task to its chosen stage",
+    "Existing tag pills can be selected without typing",
+    "Task card shows its chosen due time",
+    "Descriptions are readable and editable without a Notes disclosure",
+    "Calendar has a stable six-week month grid",
+    "Calendar agenda shows tasks on their local due date",
+    "Unscheduled tasks remain accessible in the calendar",
+    "Calendar creation assigns the selected date",
+    "Scheduled tasks save cleanly",
+    "Due date, local time and description persist in Markdown",
+    "Calendar fits a narrow window at increased scale",
+    "Adding the first tag keeps the pill chooser open",
+    "Removing the last tag keeps the pill chooser open",
+    "Escape closes a picker and restores its keyboard anchor",
+    "New list cards do not inherit a previous calendar date",
+    "Board removes repeated category controls and the redundant count row",
+    "Task layout tabs are centered below the document controls",
+    "Board dates stay left and tag controls stay right",
+    "Right-click opens task actions",
+    "Context menu moves a card without a redundant board selector",
+    "Global Search opens task search while viewing a task file",
+    "Sidebar search finds and highlights attached task descriptions",
+    "Categories and tags open in a focused native dialog",
+    "Category OKLCH choice persists in the Markdown color record",
+    "Chosen category color reaches the board column",
+    "Tag pills use their own shared colors",
+    "Calendar agenda sits to the right of the month grid",
+    "Calendar layout stays inside the task pane without moving the page header",
+    "Side-by-side calendar remains contained at narrow widths",
+    "Custom colors and task changes save through the normal recovery path"
+  ],
+  "readyMs": 713.1368,
+  "paintFromLaunch": 651,
+  "largeReadyMs": 241.63210000000072,
+  "samples": [
+    {
+      "label": "six-tasks-gc",
+      "metrics": {
+        "Timestamp": 283128.087962,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 399,
+        "LayoutObjects": 613,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 689,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 1,
+        "LayoutCount": 121,
+        "RecalcStyleCount": 563,
+        "LayoutDuration": 0.095373,
+        "RecalcStyleDuration": 1.094985,
+        "DevToolsCommandDuration": 0.051642,
+        "ScriptDuration": 0.414123,
+        "V8CompileDuration": 0.000099,
+        "TaskDuration": 2.77451,
+        "TaskOtherDuration": 1.118288,
+        "ThreadTime": 2.844013,
+        "ProcessTime": 4.212295,
+        "JSHeapUsedSize": 5042340,
+        "JSHeapTotalSize": 6029312,
+        "FirstMeaningfulPaint": 283112.833693,
+        "DomContentLoaded": 283112.789801,
+        "NavigationStart": 283112.57995
+      },
+      "processes": [
+        {
+          "Id": 7312,
+          "WorkingSet64": 174735360,
+          "PrivateMemorySize64": 100708352,
+          "type": "renderer"
+        },
+        {
+          "Id": 7636,
+          "WorkingSet64": 23683072,
+          "PrivateMemorySize64": 9777152,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 11008,
+          "WorkingSet64": 125947904,
+          "PrivateMemorySize64": 37974016,
+          "type": "browser"
+        },
+        {
+          "Id": 13640,
+          "WorkingSet64": 44134400,
+          "PrivateMemorySize64": 12455936,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 19244,
+          "WorkingSet64": 66863104,
+          "PrivateMemorySize64": 17006592,
+          "type": "GPU"
+        },
+        {
+          "Id": 16028,
+          "WorkingSet64": 35352576,
+          "PrivateMemorySize64": 58126336,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 236048384,
+      "workingSetBytes": 470716416,
+      "page": {
+        "nodes": 538,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 256
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 256
+          }
+        ],
+        "text": " ListBoardCalendarA little more organized5 open · 1 completedCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate c"
+      }
+    },
+    {
+      "label": "500-tasks-gc",
+      "metrics": {
+        "Timestamp": 283128.729605,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 3414,
+        "LayoutObjects": 20866,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 23376,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 125,
+        "RecalcStyleCount": 570,
+        "LayoutDuration": 0.119504,
+        "RecalcStyleDuration": 1.157986,
+        "DevToolsCommandDuration": 0.056286,
+        "ScriptDuration": 0.508457,
+        "V8CompileDuration": 0.000099,
+        "TaskDuration": 3.108567,
+        "TaskOtherDuration": 1.266235,
+        "ThreadTime": 3.173768,
+        "ProcessTime": 4.761507,
+        "JSHeapUsedSize": 19683532,
+        "JSHeapTotalSize": 20709376,
+        "FirstMeaningfulPaint": 283112.833693,
+        "DomContentLoaded": 283112.789801,
+        "NavigationStart": 283112.57995
+      },
+      "processes": [
+        {
+          "Id": 7312,
+          "WorkingSet64": 205635584,
+          "PrivateMemorySize64": 131194880,
+          "type": "renderer"
+        },
+        {
+          "Id": 7636,
+          "WorkingSet64": 23683072,
+          "PrivateMemorySize64": 9777152,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 11008,
+          "WorkingSet64": 124657664,
+          "PrivateMemorySize64": 36655104,
+          "type": "browser"
+        },
+        {
+          "Id": 13640,
+          "WorkingSet64": 44134400,
+          "PrivateMemorySize64": 12455936,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 19244,
+          "WorkingSet64": 66727936,
+          "PrivateMemorySize64": 16842752,
+          "type": "GPU"
+        },
+        {
+          "Id": 16028,
+          "WorkingSet64": 35225600,
+          "PrivateMemorySize64": 58155008,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 265080832,
+      "workingSetBytes": 500064256,
+      "page": {
+        "nodes": 20810,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 256
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 256
+          }
+        ],
+        "text": " ListBoardCalendarA full task list400 open · 100 completedCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate colu"
+      }
+    },
+    {
+      "label": "500-task-board-gc",
+      "metrics": {
+        "Timestamp": 283129.7837,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 3375,
+        "LayoutObjects": 20363,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 22434,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 130,
+        "RecalcStyleCount": 582,
+        "LayoutDuration": 0.202424,
+        "RecalcStyleDuration": 1.281954,
+        "DevToolsCommandDuration": 0.066272,
+        "ScriptDuration": 0.667164,
+        "V8CompileDuration": 0.000099,
+        "TaskDuration": 3.76412,
+        "TaskOtherDuration": 1.546207,
+        "ThreadTime": 3.825616,
+        "ProcessTime": 5.675041,
+        "JSHeapUsedSize": 13412388,
+        "JSHeapTotalSize": 14680064,
+        "FirstMeaningfulPaint": 283112.833693,
+        "DomContentLoaded": 283112.789801,
+        "NavigationStart": 283112.57995
+      },
+      "processes": [
+        {
+          "Id": 7312,
+          "WorkingSet64": 252637184,
+          "PrivateMemorySize64": 179216384,
+          "type": "renderer"
+        },
+        {
+          "Id": 7636,
+          "WorkingSet64": 23609344,
+          "PrivateMemorySize64": 9777152,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 11008,
+          "WorkingSet64": 123899904,
+          "PrivateMemorySize64": 36659200,
+          "type": "browser"
+        },
+        {
+          "Id": 13640,
+          "WorkingSet64": 44032000,
+          "PrivateMemorySize64": 12455936,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 19244,
+          "WorkingSet64": 67112960,
+          "PrivateMemorySize64": 17108992,
+          "type": "GPU"
+        },
+        {
+          "Id": 16028,
+          "WorkingSet64": 33439744,
+          "PrivateMemorySize64": 58155008,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 313372672,
+      "workingSetBytes": 544731136,
+      "page": {
+        "nodes": 19906,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 256
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 256
+          }
+        ],
+        "text": " ListBoardCalendarA full task list400 open · 100 completedCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate colu"
+      }
+    }
+  ],
+  "paletteContrast": [
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        16,
+        63,
+        53
+      ],
+      "bg": [
+        220,
+        239,
+        232
+      ],
+      "ratio": 9.837787086587285,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        252,
+        253,
+        251
+      ],
+      "ratio": 4.967289740662718,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        217,
+        255,
+        242
+      ],
+      "bg": [
+        32,
+        60,
+        52
+      ],
+      "ratio": 11.117054181654764,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        26,
+        33,
+        30
+      ],
+      "ratio": 6.631476788456725,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        24,
+        59,
+        130
+      ],
+      "bg": [
+        228,
+        235,
+        251
+      ],
+      "ratio": 8.846106570554712,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        252,
+        253,
+        251
+      ],
+      "ratio": 4.967289740662718,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        229,
+        237,
+        255
+      ],
+      "bg": [
+        38,
+        55,
+        86
+      ],
+      "ratio": 10.145533702256971,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        29,
+        32,
+        37
+      ],
+      "ratio": 6.603885852316907,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        41,
+        75,
+        87
+      ],
+      "bg": [
+        214,
+        232,
+        237
+      ],
+      "ratio": 7.42727739876694,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        247,
+        249,
+        251
+      ],
+      "ratio": 5.302253505147976,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        229,
+        247,
+        250
+      ],
+      "bg": [
+        51,
+        78,
+        91
+      ],
+      "ratio": 7.984744179774795,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        50,
+        57,
+        70
+      ],
+      "ratio": 5.343318351748846,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        28,
+        87,
+        85
+      ],
+      "bg": [
+        216,
+        232,
+        228
+      ],
+      "ratio": 6.518803064254212,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        253,
+        246,
+        227
+      ],
+      "ratio": 5.965304889235318,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        217,
+        255,
+        244
+      ],
+      "bg": [
+        23,
+        72,
+        77
+      ],
+      "ratio": 9.447127159297452,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        7,
+        49,
+        60
+      ],
+      "ratio": 5.678535985641159,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        105,
+        45,
+        77
+      ],
+      "bg": [
+        239,
+        220,
+        232
+      ],
+      "ratio": 7.715482031595869,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        255,
+        249,
+        253
+      ],
+      "ratio": 5.792384434270386,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        255,
+        230,
+        243
+      ],
+      "bg": [
+        74,
+        48,
+        65
+      ],
+      "ratio": 9.978846650415209,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        38,
+        30,
+        42
+      ],
+      "ratio": 6.232886122057956,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        0,
+        45,
+        98
+      ],
+      "bg": [
+        207,
+        227,
+        255
+      ],
+      "ratio": 10.365713087171644,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "ratio": 8.120164010441654,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        23,
+        61,
+        104
+      ],
+      "ratio": 11.030429546625085,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        21,
+        24,
+        23
+      ],
+      "ratio": 10.521488148535218,
+      "softBorder": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "http://wails.localhost/wails/ipc.js",
+    "http://wails.localhost/wails/runtime.js",
+    "http://wails.localhost/chunk-wvpfng26.css",
+    "http://wails.localhost/chunk-3yvvdezg.js",
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTUgOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNNiAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTggOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNOSAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTExIDlhMSAxIDAgMTAwLTIgMSAxIDAgMDAwIDJ6IiBmaWxsPSIjZmZmIi8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNSAzLjVBMi41IDIuNSAwIDAwMTIuNSAxaC05QTIuNSAyLjUgMCAwMDEgMy41djlBMi41IDIuNSAwIDAwMy41IDE1aDlhMi41IDIuNSAwIDAwMi41LTIuNXYtOXpNMiA1aDEydjcuNWMwIC44My0uNjcgMS41LTEuNSAxLjVoLTlBMS41IDEuNSAwIDAxMiAxMi41VjV6bTEuNS0zaDljLjgzIDAgMS41LjY3IDEuNSAxLjVWNEgydi0uNUMyIDIuNjcgMi42NyAyIDMuNSAyeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==",
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTggMGE4IDggMCAxMTAgMTZBOCA4IDAgMDE4IDB6bTAgMWE3IDcgMCAxMDAgMTRBNyA3IDAgMDA4IDF6bS0uNSAyYS41LjUgMCAwMS41LjQxVjhoMi41YS41LjUgMCAwMS4wOSAxSDcuNWEuNS41IDAgMDEtLjUtLjQxVjMuNWMwLS4yOC4yMi0uNS41LS41eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg=="
+  ],
+  "profile": "C:\\Users\\shreyam\\AppData\\Local\\Temp\\quillpane-native-perf-P2L7Kg"
+}

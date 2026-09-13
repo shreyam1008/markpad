@@ -24,9 +24,16 @@ Session and draft writes are atomic. Dirty drafts survive ordinary application e
 
 `frontend/index.html` is the Bun HTML entry point. React and TypeScript components under `frontend/src` own the browser-side controller. CodeMirror 6 owns incremental source editing and source undo/redo, while `DocumentWorkspace` keeps drafts and persistence authoritative and retains bounded snapshot history for textarea documents. Tailwind provides layout and component styling; handwritten CSS is limited to the editor, rendered Markdown, code blocks, split geometry, and accessibility behavior.
 
-Bun bundles all production dependencies into `frontend/dist`, and Go embeds only that generated directory. Quillpane must not fetch executable code, stylesheets, fonts, or document-rendering resources at runtime.
+Bun bundles all production dependencies into `frontend/dist`, and Go embeds only that generated directory. All executable code, stylesheets, fonts, and document-rendering resources remain local. Windows defers the embedded classic Mermaid script until a diagram opens. Linux/macOS retain the single-module build for WebKit compatibility. Large plain-text and unhighlighted code previews use newline-aligned blocks with offscreen layout containment; the entire text remains available to selection. Highlight grammars initialize on first use; syntax-limit checks stop without splitting all lines. Word counts, line navigation, and find avoid allocating a string or match array for every line or hit.
 
 ## Data flow
+
+Opt-in Markdown task files use pure source-offset transforms in `workspace/tasks.ts`
+and a focused `TaskDocument` view. Categories, completion and Trash persist in the
+Markdown source. All mutations pass through the existing document history and
+draft/save boundary; there is no task database or backend format change. Grouping
+and ordering lookups are linear in the bounded task count. Input undo stays local
+to text fields, while committed task changes use document undo and recovery drafts.
 
 1. Wails starts the Go application and loads or creates the session.
 2. The frontend requests session state through the bound application API.

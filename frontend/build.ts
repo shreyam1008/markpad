@@ -1,8 +1,29 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
+import { basename } from "node:path";
 
 import tailwind from "bun-plugin-tailwind";
 
 await rm(new URL("./dist", import.meta.url), { force: true, recursive: true });
+
+// WebView2 supports local classic scripts. Keep WebKitGTK's proven single-entry
+// path until the separate renderer has also passed a native Linux window test.
+let diagramScript = "";
+const targetPlatform = process.env.QUILLPANE_BUILD_PLATFORM ?? process.platform;
+if (targetPlatform === "win32") {
+  const diagrams = await Bun.build({
+    entrypoints: ["./src/preview/mermaid-runtime.ts"],
+    outdir: "./dist",
+    naming: "diagrams-[hash].js",
+    format: "iife",
+    target: "browser",
+    splitting: false,
+    minify: true,
+    drop: ["console", "debugger"],
+    define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  });
+  if (!diagrams.success) throw new AggregateError(diagrams.logs, "Diagram build failed");
+  diagramScript = `./${basename(diagrams.outputs[0].path)}`;
+}
 
 const result = await Bun.build({
   entrypoints: ["./index.html"],
@@ -15,7 +36,10 @@ const result = await Bun.build({
   target: "browser",
   plugins: [tailwind],
   // Compile-time React replacement only. Node is not used at runtime.
-  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+    __QUILLPANE_DIAGRAM_SCRIPT__: JSON.stringify(diagramScript),
+  },
 });
 
 if (!result.success) {

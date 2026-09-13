@@ -160,9 +160,10 @@ describe("design contract", () => {
   });
 
   test("owns syntax styling instead of importing a stock theme", async () => {
-    const [styles, renderer] = await Promise.all([
+    const [styles, renderer, limits] = await Promise.all([
       source("../src/styles.css"),
       source("../src/preview/render.ts"),
+      source("../src/preview/text-blocks.ts"),
     ]);
     expect(renderer).not.toContain("highlight.js/styles/");
     expect(renderer).toContain('from "highlight.js/lib/core"');
@@ -170,8 +171,9 @@ describe("design contract", () => {
     expect(renderer).toContain("hljs.registerLanguage");
     expect(styles).toContain(".hljs-keyword");
     expect(styles).toContain("var(--mp-syntax-keyword)");
-    expect(renderer).toContain("200_000");
-    expect(renderer).toContain("2_000");
+    expect(renderer).toContain("exceedsHighlightLimit");
+    expect(limits).toContain("200_000");
+    expect(limits).toContain("2_000");
   });
 
   test("contains long source lines inside responsive text and code viewers", async () => {
@@ -181,7 +183,8 @@ describe("design contract", () => {
     ]);
     const workbench = styles.slice(styles.indexOf("/* Markpad Workbench"));
     expect(workspace).toContain("viewer-${type}");
-    expect(workspace).toContain("viewer-text");
+    expect(workspace).toContain('plainCode ? "code" : "text"');
+    expect(workspace).toContain("<TextViewer content={content} />");
     expect(styles).toMatch(/#viewer pre \{[\s\S]*?overflow-x: auto !important;/);
     expect(styles).toMatch(/\.plain-text-view \{[\s\S]*?white-space: pre-wrap;/);
     expect(workbench).toContain("overflow-x: hidden !important");
@@ -191,16 +194,23 @@ describe("design contract", () => {
   });
 
   test("keeps derived document props stable and diagrams off the startup path", async () => {
-    const [app, workspace, mermaid] = await Promise.all([
+    const [app, workspace, mermaid, loader, build] = await Promise.all([
       source("../src/App.tsx"),
       source("../src/components/DocumentWorkspace.tsx"),
       source("../src/preview/mermaid.ts"),
+      source("../src/preview/mermaid-loader.ts"),
+      source("../build.ts"),
     ]);
     expect(app).toContain("const activeDocument = useMemo(");
     expect(app).toContain("note={activeDocument}");
     expect(workspace).toContain('import("../preview/mermaid")');
     expect(workspace).toContain('node.getAttribute("aria-busy") !== "true"');
-    expect(mermaid).toContain('await import("mermaid")');
+    expect(mermaid).toContain("await loadMermaid()");
+    expect(loader).toContain('import("mermaid")');
+    expect(loader).toContain("document.baseURI");
+    expect(build).toContain('targetPlatform === "win32"');
+    expect(build).toContain('format: "iife"');
+    expect(build).toContain("splitting: false");
     expect(mermaid).toContain('securityLevel: "strict"');
   });
 

@@ -32,6 +32,7 @@ func IsDefaultDraftContent(content string) bool {
 }
 
 type Document struct {
+	TaskBoard   bool         `json:"task_board,omitempty"`
 	ID          string       `json:"id"`
 	Title       string       `json:"title"`
 	Path        string       `json:"path,omitempty"`
@@ -135,6 +136,7 @@ func (s *Store) Load() (*Session, error) {
 	}
 	for _, doc := range sess.Documents {
 		s.migrateSourceState(doc)
+		s.refreshTaskIdentity(doc)
 	}
 	if sess.ActiveID == "" || sess.Find(sess.ActiveID) == nil {
 		sess.ActiveID = sess.Documents[0].ID
@@ -229,7 +231,48 @@ func (s *Store) WriteDraft(doc *Document, content string) error {
 	if err := os.MkdirAll(s.draft, 0o755); err != nil {
 		return err
 	}
-	return atomicWrite(s.DraftPath(doc), []byte(content), 0o644)
+	if err := atomicWrite(s.DraftPath(doc), []byte(content), 0o644); err != nil {
+		return err
+	}
+	doc.TaskBoard = isMarkdownDocument(doc) && isTaskContent(content)
+	return nil
+}
+
+const taskMarker = "<!-- quillpane:tasks -->"
+
+func isTaskContent(content string) bool {
+	return strings.HasPrefix(content, taskMarker+"\n") || strings.HasPrefix(content, taskMarker+"\r\n")
+}
+
+func isMarkdownDocument(doc *Document) bool {
+	format := doc.Format
+	if doc.Path != "" {
+		format = formatFromPath(doc.Path)
+	}
+	return format == "md" || format == "markdown" || format == "mdx"
+}
+
+// Hydrate cached display identity once on startup, reading only the marker.
+// Task content remains authoritative; GetSession never scans document bodies.
+func (s *Store) refreshTaskIdentity(doc *Document) {
+	doc.TaskBoard = false
+	if !isMarkdownDocument(doc) {
+		return
+	}
+	file, err := os.Open(s.DraftPath(doc))
+	if errors.Is(err, os.ErrNotExist) && doc.Path != "" {
+		file, err = os.Open(doc.Path)
+	}
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	var header [32]byte
+	n, _ := file.Read(header[:])
+	doc.TaskBoard = isTaskContent(string(header[:n]))
+	if doc.TaskBoard && doc.Path == "" && strings.HasPrefix(doc.Title, "<!-- quillpane:") {
+		doc.Title = "Tasks"
+	}
 }
 
 func (s *Store) RemoveDraft(doc *Document) error {
@@ -488,6 +531,7 @@ func NewDocument(path string, content string) *Document {
 		Dirty:     path == "" && strings.TrimSpace(content) != "",
 		UpdatedAt: now,
 	}
+	doc.TaskBoard = isMarkdownDocument(doc) && isTaskContent(content)
 	if info := sourceInfo(path); info != nil {
 		doc.SourceState = sourceStateForPath(path, []byte(content))
 	}
@@ -508,6 +552,9 @@ func TitleFromContent(content string, path string) string {
 	}
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
+		if isTaskContent(content) && strings.HasPrefix(line, "<!-- quillpane:") {
+			continue
+		}
 		if line == "" {
 			continue
 		}

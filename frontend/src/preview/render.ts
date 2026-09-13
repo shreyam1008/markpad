@@ -41,48 +41,54 @@ import yaml from "highlight.js/lib/languages/yaml";
 import { marked, type Tokens } from "marked";
 
 import { fileExtension } from "../workspace/documents";
+import { exceedsHighlightLimit } from "./text-blocks";
 
-for (const [name, grammar] of [
-  ["bash", bash],
-  ["c", c],
-  ["cmake", cmake],
-  ["cpp", cpp],
-  ["csharp", csharp],
-  ["css", css],
-  ["dart", dart],
-  ["dockerfile", dockerfile],
-  ["dos", dos],
-  ["diff", diff],
-  ["elixir", elixir],
-  ["go", go],
-  ["gradle", gradle],
-  ["groovy", groovy],
-  ["ini", ini],
-  ["java", java],
-  ["javascript", javascript],
-  ["json", json],
-  ["kotlin", kotlin],
-  ["less", less],
-  ["lua", lua],
-  ["markdown", markdown],
-  ["nim", nim],
-  ["perl", perl],
-  ["php", php],
-  ["plaintext", plaintext],
-  ["powershell", powershell],
-  ["properties", properties],
-  ["python", python],
-  ["r", r],
-  ["ruby", ruby],
-  ["rust", rust],
-  ["scss", scss],
-  ["sql", sql],
-  ["swift", swift],
-  ["typescript", typescript],
-  ["xml", xml],
-  ["yaml", yaml],
-] as const) {
-  hljs.registerLanguage(name, grammar);
+let languagesReady = false;
+function ensureHighlightLanguages() {
+  if (languagesReady) return;
+  for (const [name, grammar] of [
+    ["bash", bash],
+    ["c", c],
+    ["cmake", cmake],
+    ["cpp", cpp],
+    ["csharp", csharp],
+    ["css", css],
+    ["dart", dart],
+    ["dockerfile", dockerfile],
+    ["dos", dos],
+    ["diff", diff],
+    ["elixir", elixir],
+    ["go", go],
+    ["gradle", gradle],
+    ["groovy", groovy],
+    ["ini", ini],
+    ["java", java],
+    ["javascript", javascript],
+    ["json", json],
+    ["kotlin", kotlin],
+    ["less", less],
+    ["lua", lua],
+    ["markdown", markdown],
+    ["nim", nim],
+    ["perl", perl],
+    ["php", php],
+    ["plaintext", plaintext],
+    ["powershell", powershell],
+    ["properties", properties],
+    ["python", python],
+    ["r", r],
+    ["ruby", ruby],
+    ["rust", rust],
+    ["scss", scss],
+    ["sql", sql],
+    ["swift", swift],
+    ["typescript", typescript],
+    ["xml", xml],
+    ["yaml", yaml],
+  ] as const) {
+    hljs.registerLanguage(name, grammar);
+  }
+  languagesReady = true;
 }
 
 const renderer = new marked.Renderer();
@@ -106,10 +112,10 @@ renderer.code = function (token: Tokens.Code) {
     }
     return `<pre class="mermaid" data-mermaid-diagram="true">${escapeHTML(token.text)}</pre>\n`;
   }
+  const withinBudget = !exceedsHighlightLimit(token.text);
+  if (withinBudget && language) ensureHighlightLanguages();
   const value =
-    token.text.length <= 200_000 &&
-    token.text.split("\n").length <= 2_000 &&
-    hljs.getLanguage(language)
+    withinBudget && hljs.getLanguage(language)
       ? hljs.highlight(token.text, { language }).value
       : escapeHTML(token.text);
   const languageClass = language
@@ -153,10 +159,11 @@ export function isRelativeMarkdownAsset(source: string): boolean {
 
 export function renderCode(content: string, path: string): string {
   const language = languageForPath(path);
-  if (content.length > 200_000 || content.split("\n").length > 2_000) {
+  if (exceedsHighlightLimit(content)) {
     return `<pre class="plain-text-view">${escapeHTML(content)}</pre>`;
   }
   try {
+    ensureHighlightLanguages();
     const value = hljs.getLanguage(language)
       ? hljs.highlight(content, { language }).value
       : escapeHTML(content);

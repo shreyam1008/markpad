@@ -22,6 +22,7 @@ import {
   Bold,
   Code2,
   Columns2,
+  Kanban,
   Copy,
   Eye,
   FolderOpen,
@@ -73,6 +74,7 @@ import {
   viewLabel,
 } from "./workspace/documents";
 import { initialWorkspaceState, workspaceReducer } from "./workspace/state";
+import { TASK_BOARD_TEMPLATE } from "./workspace/tasks";
 import type {
   DraftFormat,
   FileInfo,
@@ -187,6 +189,15 @@ function ModalLayer({
     title = "Changelog";
     body = (
       <div className="space-y-3">
+        <section>
+          <h3 className="font-bold">0.14.0 · A place for your tasks</h3>
+          <p>
+            Plan in a Markdown file with List, Board and Calendar. Move and collapse columns, choose
+            tags, set dates and times, customize category and tag colors, search with highlights,
+            and use right-click actions. Updated build tools and bounded large-file rendering keep
+            the app local and responsive.
+          </p>
+        </section>
         <section>
           <h3 className="font-bold">0.13.8 · A clearer home</h3>
           <p>
@@ -464,11 +475,22 @@ function App() {
   );
 
   const create = useCallback(
-    async (format: DraftFormat = "md") => {
+    async (format: DraftFormat | "tasks" = "md") => {
       await workspace.current?.flush();
-      await loadDocument(await client.create(format), `New ${format.toUpperCase()} file`);
+      try {
+        if (format === "tasks") {
+          const session = await client.create("md");
+          await client.updateDraft(session.activeId, TASK_BOARD_TEMPLATE, true);
+          await client.setView(session.activeId, "viewer");
+          await loadDocument(await client.session(), "New task board");
+        } else {
+          await loadDocument(await client.create(format), `New ${format.toUpperCase()} file`);
+        }
+      } catch (error) {
+        setStatus(`Could not create file: ${String(error)}`);
+      }
     },
-    [loadDocument],
+    [loadDocument, setStatus],
   );
 
   const open = useCallback(async () => {
@@ -1135,7 +1157,7 @@ function App() {
           <div className="document-rail flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
             <div className="document-tab flex items-center gap-2 min-w-0">
               <span className="document-title font-semibold text-sm truncate max-w-[220px]">
-                {active?.path ? active.title : "Untitled"}
+                {active?.path || active?.taskBoard ? active.title : "Untitled"}
               </span>
               <button
                 className="document-info w-6 h-6 rounded-full border border-border text-muted hover:text-accent hover:border-accent flex-shrink-0 flex items-center justify-center"
@@ -1162,7 +1184,14 @@ function App() {
             </div>
             <div className="view-switcher flex gap-0.5 bg-hover rounded-lg p-0.5 flex-shrink-0">
               {modes.map((mode) => {
-                const Icon = mode === "markdown" ? SquarePen : mode === "split" ? Columns2 : Eye;
+                const Icon =
+                  mode === "markdown"
+                    ? SquarePen
+                    : mode === "split"
+                      ? Columns2
+                      : active?.taskBoard
+                        ? Kanban
+                        : Eye;
                 return (
                   <button
                     key={mode}
@@ -1170,7 +1199,11 @@ function App() {
                     onClick={() => chooseView(mode)}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    <span>{viewLabel(activeType, mode)}</span>
+                    <span>
+                      {active?.taskBoard && mode === "viewer"
+                        ? "Tasks"
+                        : viewLabel(activeType, mode)}
+                    </span>
                   </button>
                 );
               })}
@@ -1248,6 +1281,12 @@ function App() {
               onOutline={setOutline}
               onHistoryAvailability={updateHistoryAvailability}
               onTextZoom={adjustTextZoom}
+              onEditTaskSource={(offset) => {
+                const source = workspace.current?.getContent() ?? state.content;
+                const line = source.slice(0, offset).split("\n").length - 1;
+                chooseView("markdown");
+                requestAnimationFrame(() => workspace.current?.goToLine(line));
+              }}
             />
             <HistoryPanel
               open={historyOpen}

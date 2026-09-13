@@ -24,7 +24,9 @@ export const client = {
   activate: (id: string): Promise<void> => api().SetActive(id),
   setView: (id: string, mode: ViewMode): Promise<void> => api().SetViewMode(id, mode),
   updateReadPosition: (id: string, editor: number, viewer: number, cursor: number): Promise<void> =>
-    api().UpdateReadPosition(id, editor, viewer, cursor),
+    // WebViews report fractional scroll pixels at non-default display scales;
+    // the Go boundary stores integer positions.
+    api().UpdateReadPosition(id, Math.round(editor), Math.round(viewer), Math.round(cursor)),
   create: (format: DraftFormat): Promise<SessionState> => api().NewNoteOfType(format),
   updateDraft: (id: string, content: string, dirty: boolean): Promise<void> =>
     api().UpdateContent(id, content, dirty),

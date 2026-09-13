@@ -1,10 +1,12 @@
+import { loadMermaid } from "./mermaid-loader";
+
 function designToken(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
 export async function renderMermaidDiagrams(nodes: HTMLElement[], isCurrent: () => boolean) {
   if (!nodes.length || !isCurrent()) return;
-  const { default: mermaid } = await import("mermaid");
+  const mermaid = await loadMermaid();
   if (!isCurrent()) return;
 
   mermaid.initialize({

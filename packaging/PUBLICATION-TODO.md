@@ -1,8 +1,24 @@
 # Publication execution checklist
 
-Updated: 2026-09-12. Existing logo and compatibility identifiers stay unchanged.
+Updated: 2026-09-13. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.13.8
+## Current candidate: 0.14.0
+
+- Local implementation complete: 120 Windows native checks, 93 frontend tests,
+  Go tests/vet, both frontend builds and metadata alignment pass.
+- GitHub/platform artifacts: release workflow pending.
+- Website/signed APT: follows the verified release workflow.
+- Microsoft Store: live package **0.13.8.0** verified in Partner Center on
+  13 September; no pending submission. Prepare 0.14.0.0 from the release asset.
+- Scoop: update the existing personal bucket with the verified installer hash.
+- WinGet: generate new manifests from the release installer and inspect submission status.
+- Snap Store: `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets.
+  Owner setup is required before the existing candidate publishing workflow can run.
+- Flathub: not published; separate preparation/human-authored submission remains pending.
+
+See [the feature and visual verification](../docs/tasks-release-design-2026-09.md).
+
+## Previous release: 0.13.8
 
 The 0.13.7 candidate was not published: native screenshot OCR misread the tour button. Its release run was cancelled. 0.13.8 corrects test targeting without changing tour behavior.
 

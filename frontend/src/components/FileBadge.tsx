@@ -1,30 +1,33 @@
 import { fileBadge, fileType, typeLabel } from "../workspace/documents";
-import { Code2, FileText, ImageIcon, Pencil, Table2, Files, HardDrive } from "./icons";
+import { Kanban } from "./icons";
 
-export function FileBadge({ path = "", kind = "" }: { path?: string; kind?: string }) {
+export function FileBadge({
+  path = "",
+  kind = "",
+  taskBoard = false,
+}: {
+  path?: string;
+  kind?: string;
+  taskBoard?: boolean;
+}) {
   const type = fileType(path, kind);
-  const Icon =
-    type === "md"
-      ? Pencil
-      : type === "code"
-        ? Code2
-        : type === "image"
-          ? ImageIcon
-          : type === "office"
-            ? Table2
-            : type === "ebook"
-              ? Files
-              : type === "archive"
-                ? HardDrive
-                : FileText;
+  if (taskBoard && type === "md")
+    return (
+      <span
+        className="file-kind file-kind-tasks"
+        title="Task board · Markdown"
+        aria-label="Task board"
+      >
+        <Kanban />
+      </span>
+    );
   return (
     <span
       className={`file-kind file-kind-${type}`}
       title={typeLabel(type)}
       aria-label={typeLabel(type)}
     >
-      <Icon />
-      <small>{fileBadge(path, kind)}</small>
+      {fileBadge(path, kind)}
     </span>
   );
 }

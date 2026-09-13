@@ -14,6 +14,13 @@ All install links and store status: [Quillpane distribution tracker](https://shr
 
 ![Quillpane split workspace](photo/markpad-split.png)
 
+## Task planning
+
+**New → Task board** creates a normal Markdown file. Choose List, Board or Calendar;
+drag and collapse workflow columns, select tag pills, set due dates/times, and edit
+category/tag colors. Search highlights task titles and descriptions. Right-click a
+card for actions; Trash stays recoverable inside the file. [Task guide](docs/tasks.md).
+
 ## Install
 
 ### Linux (one command)
@@ -51,7 +58,7 @@ Download `Markpad.dmg` from [Releases](https://github.com/shreyam1008/markpad/re
 ### Build from source
 
 ```sh
-# Prerequisites: Go 1.24+ and Bun
+# Prerequisites: Go 1.27.1+ and Bun
 
 # Linux: also install WebKit2GTK
 sudo apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev
@@ -65,6 +72,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 
 ## What It Does
 
+- **Task lists and boards** — New → Task board creates one Markdown file. Categories become list tags or board columns, with Untagged, completion checkboxes and recoverable task Trash. [Task guide](docs/tasks.md).
 - **Guided tour** — Help → Tour walks through 16 steps using bundled Driver.js
 - **Synchronized Split** — Editor and preview follow the same reading progress, with an off switch
 - **File symbols and colors** — Distinct icons, extensions, and theme-aware colors identify file families
@@ -113,6 +121,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.14.0 | Tasks, your way | Markdown task boards, workflow columns, tags, calendar agenda, OKLCH colors, highlighted search and context actions; updated toolchain and bounded rendering |
 | 0.13.8 | A clearer home | Unified Help with version badges, updates, local data location, and project/creator links |
 | 0.13.6 | Refinements | Detailed tour, synchronized Split scroll, file-type symbols, syntax fixes, and removal of folder workspaces |
 | 0.13.5 | Help & updates | Visible Help and Settings updates, verified installer downloads, synchronized release packages, original icon everywhere |
@@ -142,7 +151,7 @@ See the live cards in [GitHub Issues](https://github.com/shreyam1008/markpad/iss
 
 ## Philosophy
 
-Quillpane exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and keeps release binaries around 16 MiB or less. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
+Quillpane exists because many "lightweight" editors ship a browser engine. This one uses your OS's built-in webview and embeds only compiled frontend assets in the Go executable. There's no telemetry, account, sync service, or runtime dependency download. Just local files and a notepad.
 
 ## Keyboard Shortcuts
 

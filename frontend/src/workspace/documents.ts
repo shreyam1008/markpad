@@ -1,3 +1,4 @@
+import { countText } from "../preview/text-blocks";
 import type { FileType, NoteInfo, OutlineItem, ViewMode } from "./types";
 
 const markdown = new Set(["md", "markdown", "mdx"]);
@@ -154,19 +155,27 @@ export function fileBadge(path = "", kind = ""): string {
 
 export function outlineFromMarkdown(content: string): OutlineItem[] {
   const result: OutlineItem[] = [];
-  content.split("\n").forEach((line, index) => {
-    const match = /^(#{1,6})\s+(.+?)\s*#*$/.exec(line);
-    if (match) result.push({ level: match[1].length, text: match[2], line: index });
-  });
+  let start = 0;
+  let line = 0;
+  while (start < content.length) {
+    const newline = content.indexOf("\n", start);
+    const end = newline < 0 ? content.length : newline;
+    if (content.charCodeAt(start) === 35) {
+      const match = /^(#{1,6})\s+(.+?)\s*#*$/.exec(content.slice(start, end).replace(/\r$/, ""));
+      if (match) result.push({ level: match[1].length, text: match[2], line });
+    }
+    start = end + 1;
+    line++;
+  }
   return result;
 }
 
 export function editorStats(content: string, note?: NoteInfo) {
-  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const { lines, words } = countText(content);
   const extension = fileExtension(note?.path);
   return {
     label: extension ? extension.toUpperCase() : typeLabel(fileType(note?.path, note?.kind)),
-    lines: content ? content.split("\n").length : 0,
+    lines,
     words,
     characters: content.length,
     readMinutes: Math.max(1, Math.ceil(words / 200)),

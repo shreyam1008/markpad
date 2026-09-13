@@ -55,6 +55,18 @@
   --mp-accent-soft: rgb(22 112 92 / 16%);
 
   /* Status */
+  /* Categorical colors identify task groups, independently of status. */
+  --mp-category-jade: #17634c;
+  --mp-category-jade-rgb: 23 99 76;
+  --mp-category-blue: #255e93;
+  --mp-category-blue-rgb: 37 94 147;
+  --mp-category-violet: #764395;
+  --mp-category-violet-rgb: 118 67 149;
+  --mp-category-amber: #795714;
+  --mp-category-amber-rgb: 121 87 20;
+  --mp-category-rose: #99465e;
+  --mp-category-rose-rgb: 153 70 94;
+
   --mp-success: #16705c;
   --mp-warning: #9a5a20;
   --mp-danger: #b84a38;
@@ -131,6 +143,16 @@
 
 /* Appearance is an explicit resolved value so System mode can change without a reload. */
 :root[data-appearance="dark"] {
+  --mp-category-jade: #8cd7bb;
+  --mp-category-jade-rgb: 140 215 187;
+  --mp-category-blue: #9bc7f0;
+  --mp-category-blue-rgb: 155 199 240;
+  --mp-category-violet: #c8afe9;
+  --mp-category-violet-rgb: 200 175 233;
+  --mp-category-amber: #e4c487;
+  --mp-category-amber-rgb: 228 196 135;
+  --mp-category-rose: #eab0bf;
+  --mp-category-rose-rgb: 234 176 191;
   color-scheme: dark;
   --mp-ink: #eef4f1;
   --mp-text: #d4ddd8;

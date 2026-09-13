@@ -40,7 +40,7 @@ parts:
     plugin: go
     source: .
     build-snaps:
-      - go/1.26/stable
+      - go/1.27/stable
     build-packages:
       - gcc
       - pkg-config
@@ -57,11 +57,11 @@ parts:
       version="$(sed -n 's/^const Version = \"\(.*\)\"/\1/p' main.go | head -n 1)"
       test -n "$version"
       craftctl set version="$version"
-      BUN_VERSION="1.3.14"
+      BUN_VERSION="1.4.2"
       BUN_ARCHIVE="$CRAFT_PART_BUILD/bun-linux-x64.zip"
       curl --fail --location --retry 3 --output "$BUN_ARCHIVE" \
         "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-x64.zip"
-      echo "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f  $BUN_ARCHIVE" | sha256sum --check --strict
+      echo "36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913  $BUN_ARCHIVE" | sha256sum --check --strict
       unzip -q "$BUN_ARCHIVE" -d "$CRAFT_PART_BUILD"
       BUN="$CRAFT_PART_BUILD/bun-linux-x64/bun"
       (cd frontend && "$BUN" install --frozen-lockfile && "$BUN" run build)

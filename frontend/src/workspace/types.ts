@@ -3,6 +3,7 @@ export type DraftFormat = "md" | "txt" | "json" | "yaml";
 export type FileType = "md" | "text" | "code" | "pdf" | "image" | "ebook" | "office" | "archive";
 
 export interface NoteInfo {
+  taskBoard?: boolean;
   id: string;
   title: string;
   path: string;

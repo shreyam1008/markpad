@@ -12,6 +12,7 @@ import type {
 import { FileBadge } from "./FileBadge";
 import {
   FileText,
+  Kanban,
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
@@ -27,7 +28,7 @@ interface SidebarProps {
   outline: OutlineItem[];
   onCollapse(): void;
   onOpen(): void;
-  onNew(format: DraftFormat): void;
+  onNew(format: DraftFormat | "tasks"): void;
   onActivate(id: string): void;
   onOpenPath(path: string): void;
   onToggleStar(id: string): void;
@@ -187,6 +188,7 @@ function SidebarView({
               {(
                 [
                   ["md", "Markdown", ".md"],
+                  ["tasks", "Task board", ".md"],
                   ["txt", "Plain text", ".txt"],
                   ["json", "JSON", ".json"],
                   ["yaml", "YAML", ".yaml"],
@@ -201,7 +203,10 @@ function SidebarView({
                     setNewMenuOpen(false);
                   }}
                 >
-                  <span>{label}</span>
+                  <span className="new-type-label">
+                    {format === "tasks" && <Kanban />}
+                    {label}
+                  </span>
                   <kbd>{extension}</kbd>
                 </button>
               ))}
@@ -296,18 +301,20 @@ function SidebarView({
                     aria-current={active ? "page" : undefined}
                     onClick={() => onActivate(note.id)}
                   >
-                    <FileBadge path={note.path} kind={note.kind} />
+                    <FileBadge path={note.path} kind={note.kind} taskBoard={note.taskBoard} />
                     <span className="flex-1 min-w-0">
                       <span className="note-title block text-[13px] font-medium truncate">
-                        {note.path ? note.title : "Untitled"}
+                        {note.path || note.taskBoard ? note.title : "Untitled"}
                       </span>
                       <span
-                        className={`block text-[11px] ${note.dirty ? "text-unsaved font-semibold" : "text-muted"}`}
+                        className={`block truncate text-[11px] ${note.dirty ? "text-unsaved font-semibold" : "text-muted"}`}
                       >
                         {note.dirty
                           ? "NOT SAVED"
                           : note.path
-                            ? typeLabel(fileType(note.path, note.kind))
+                            ? note.taskBoard
+                              ? "Tasks"
+                              : typeLabel(fileType(note.path, note.kind))
                             : "draft"}
                       </span>
                     </span>

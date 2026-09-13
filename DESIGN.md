@@ -124,7 +124,9 @@ does not provide editor state or incremental tokenization.
 Reading width is a prose preference, not a universal source-view constraint. Markdown follows the selected reading measure. Code expands across the available pane and keeps any exceptionally long line inside its own horizontal scroller. Plain text uses a wider 110-character measure and wraps unbroken content instead of widening the application canvas.
 
 Static Highlight.js rendering remains capped at 200,000 characters and 2,000
-lines. CodeMirror editing stays incremental and virtualized for larger source
+lines. Grammars initialize on first bounded highlighting, on every platform. Large
+code previews use the same newline-aligned, selectable text blocks as large text
+previews, while retaining code width and text zoom. CodeMirror editing stays incremental and virtualized for larger source
 files. For source documents at or above 256,000 characters, rapid app-history
 snapshots are coalesced so typing cannot retain a full-document copy for every
 keystroke; the desktop boundary separately caps editable text reads.
@@ -139,7 +141,7 @@ Markdown source is prose-first: it soft-wraps inside its pane and never creates 
 
 Relative Markdown image paths resolve from the saved note's directory through the native boundary, never through `file://` URLs or a network request. Remote and embedded image URLs retain their sanitized browser behavior. Local images must remain proportionally contained inside the reading column and expose explicit loading and error states. Native reads, distinct-image count, sequential hydration, and the per-note data-URL cache are bounded; preview rerenders prune stale cached sources instead of multiplying requests.
 
-Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. The renderer is invoked only when a document contains a diagram. The production frontend remains one ES-module entry because split module graphs do not execute reliably from Wails' in-memory scheme on Linux WebKitGTK; do not re-enable `splitting` without a native Linux window test. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
+Fenced `mermaid` blocks render through the bundled Mermaid runtime in strict security mode. The renderer is invoked only when a document contains a diagram. Linux and macOS retain one ES-module entry; split module graphs do not execute reliably from Wails' in-memory scheme on Linux WebKitGTK. Windows loads a separate, embedded classic Mermaid script on the first diagram. Do not re-enable ES-module `splitting` without a native Linux window test. Diagram source is capped at 50,000 characters and 500 edges. Invalid or oversized diagrams keep their source visible inside a clear error surface. Diagram colors and typography come from semantic `--mp-*` tokens, never a separate theme or remote asset.
 
 Theme changes remount only the preview renderer, not the editor or the document workspace. Mermaid is reinitialized from current semantic tokens for the new preview; an appearance change must never discard unsaved text or reset the editor cursor.
 
@@ -161,7 +163,7 @@ Theme changes remount only the preview renderer, not the editor or the document 
 
 ## Performance and loading
 
-Quillpane is a Wails application targeting the operating system webview. Keep release binaries under the platform budgets in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
+Quillpane is a Wails application targeting the operating system webview. Report release binary sizes under the measurement policy in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
 
 - No runtime font downloads, preload splash art, or heavyweight asset decoding. Only the explicit Help update check may request public GitHub release metadata; document rendering remains offline.
 - Avoid backdrop filters and large blurred shadows.
@@ -178,8 +180,44 @@ For every visible change:
 3. Verify current desktop width and a narrow width; controls may simplify but must not jump.
 4. Exercise minimize, maximize/restore, title-bar double-click, close, and unsaved-close protection in Wails.
 5. Check code, Markdown, plain text, a large-file fallback, split resizing, and reduced motion.
-6. Build the production binary and verify its platform budget and offline asset scan.
+6. Build the production binary and record its size and offline asset scan.
 
-The Help tour uses Driver.js 1.8.0, bundled locally, with semantic popover colors and no motion. It highlights available controls and explains hidden controls without changing the active document. File badges include symbols and extensions as well as color. Split synchronization maps normalized scroll progress, suppresses feedback events, and has a visible off switch.
+The Help tour uses Driver.js 1.8.0, bundled locally, with semantic popover colors and no motion. It highlights available controls and explains hidden controls without changing the active document. File badges use a single 36 × 22 px extension chip, with a readable monospace label and subtle semantic border/background. Do not pair it with another tiny icon. File names, accessible family labels and dirty indicators remain intact. Split synchronization maps normalized scroll progress, suppresses feedback events, and has a visible off switch.
 
 Help uses a shared component in the modal and Settings: product/version badges and updates first, tour and everyday shortcuts next, local storage and project/creator links last. The Help modal may use a 600 px content width while preserving the shared modal geometry and internal scrolling.
+
+
+## Task documents
+
+Task lists and boards use shared semantic tokens and text/UI scale. Categories are workflow columns, while independent tags appear as small pills. No category is explicit when needed and completion is independent. Legacy files retain their previous behavior until an explicit undoable upgrade. Boards scroll inside their pane and narrow forms wrap. Keep keyboard category selection and ordering alongside native drag-and-drop. Task Trash offers restore and confirmation before clearing. Removing categories preserves their tasks. Theme changes must not remount task forms. Do not add layout animations or a drag-and-drop package.
+
+
+Task refinement: task files use one boxed board glyph in place of the extension label. Category names map deterministically to jade, blue, violet, amber or rose semantic roles, with paired light/dark colors and RGB channels for translucent fills. Keep labels visible. Use RGB alpha for category fills and borders; the current Bun CSS lowering drops some color-mix declarations in multi-property rules. Verify compiled styles. Quiet Edit/Trash card actions retain their space and appear on card hover or focus within; touch keeps them visible. Three ordinary columns fit the desktop pane; extra columns scroll inside it.
+
+Task spacing uses the shared 4/6/8/10/12/16 px tokens: a compact title with inline completion, quiet borderless list rows with hover/focus surfaces, 6 px card gaps and equal-height board columns. Retain full task titles, visible focus and native controls. This borrows upstream ZenNotes spacing principles without importing its runtime, metadata model or styles.
+
+Task v1: List moves follow visible neighbors without assigning the neighbor category; Board moves use column categories. Category order is explicit in Markdown. Bulk completed cleanup is recoverable and confirms inclusion of hidden tasks; Restore all preserves notes and completion. Search includes attached notes. Source links place the caret at the exact task or title line. Valid inline title edits enter the recovery pipeline on blur; Escape/Cancel cancel them.
+
+Task control polish: selected view and expanded category controls keep selection paint on hover. Disabled form actions use neutral surfaces and readable labels; card actions use the shared 28 px control geometry. Use one visible focus outline, and reserve danger surfaces for permanent Trash clearing.
+
+Workflow boards: start with Backlog, To do, Today and Done. Collapse a column to a narrow named rail with a count; unmount its cards but retain its drop target and keyboard expansion. Store collapse preferences locally per document, bounded to 64 documents. Create tasks in a focused inline card within the column, not a permanent toolbar form. Tags use the existing categorical tokens and small rounded pills; category moves preserve tags. Keep add controls below the full card content, including notes.
+
+
+### Task planning controls
+
+Task cards use compact stage buttons, selectable tag pills and optional local due
+dates/times. Shared custom pickers are tokenized, viewport-clamped and keyboard
+accessible; Escape restores focus without scrolling. Edit and Trash stay visible
+only on hover/focus, with a touch fallback. Column grips reorder whole categories.
+Calendar uses a stable six-week grid, a selected-day agenda and unscheduled tasks.
+Descriptions replace the Notes disclosure; full Markdown remains accessible.
+
+
+Task planning 0.14: Task layouts are centered under the document modes. Cards use
+a subtle full-surface category fill, no side stripe or repeated Board category
+selector. Fixed date-left/tag-right footers retain hover/focus Edit/Trash controls.
+Category/tag management is a native modal dialog. Numeric OKLCH colors are
+user-configurable through a functional wheel and keyboard sliders; derived text
+colors preserve light/dark contrast. This is the approved dynamic-color exception
+to the static-token palette. Search has a highlighted sidebar. The calendar
+month and selected-day agenda share a row; narrow panes scroll inside that region.

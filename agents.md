@@ -13,7 +13,7 @@ Plain files remain the source of truth. Quillpane has no account, cloud service,
 | Rule | Reason |
 |---|---|
 | No Electron, CEF, Tauri, or bundled browser engine | Use the OS webview and keep release artifacts small. |
-| Production binary must remain below its platform ceiling | `make check-size` gates Linux at 16 MiB; the release workflow gates Windows at 16.1 MiB. |
+| Report production binary and asset sizes | The owner removed hard size ceilings; prioritize measured runtime efficiency and preserve offline operation. |
 | No cloud client, telemetry, or account; only explicit Help release checks and verified update downloads may contact GitHub | User content stays local and private. |
 | No runtime CDN, remote script, stylesheet, font, or renderer | The installed app must work offline. |
 | No component suite or general state-management package | Prefer the existing React components, reducer, and narrow helpers. |
@@ -29,9 +29,9 @@ Read `BUNDLE_BUDGET.md` before adding a dependency or allocation-heavy feature.
 
 | Layer | Technology |
 |---|---|
-| Desktop | Go 1.24+, Wails v2, native menus/dialogs, OS webview |
+| Desktop | Go 1.27.1+, Wails v2, native menus/dialogs, OS webview |
 | Frontend | React 19, strict TypeScript, HTML entry point |
-| Build and tests | Bun 1.3.14, Bun bundler/test runner, TypeScript |
+| Build and tests | Bun 1.4.2, Bun bundler/test runner, TypeScript |
 | Styling | Tailwind CSS 4 plus focused CSS in `frontend/src/styles.css` |
 | Markdown | Marked, DOMPurify, highlight.js |
 | Icons | Statically imported Lucide icon nodes |
@@ -93,12 +93,14 @@ Quillpane opens individual files and recovery drafts. The folder workspace featu
 
 - `Ctrl+O` opens files and `Ctrl+P` searches open documents and actions.
 - `Ctrl+F` searches the active document. Favorites and recents reopen individual files.
-- File badges combine a symbol, extension, and semantic color; color is never the sole identifier.
+- File badges use one compact extension label with semantic color; do not add a second icon beside MD/JSON/etc. Task boards use a single boxed board glyph in place of the MD label, with an accessible task label. Color is never the sole identifier.
 - Split scroll sync follows normalized reading progress in either direction and can be turned off.
 - Help exposes About, installed/latest versions, updates, and the offline Driver.js tour. Starting or leaving the tour must not change or save documents.
 - Do not restore folder scanning, indexing, watchers, or workspace commands without separate approval.
 
 ## File behavior
+
+Task files opt in with `<!-- quillpane:tasks -->` on their first line. New → Task board creates a normal Markdown draft with workflow stages Backlog/To do/Today/Done. Categories are workflow columns; tags are independent small pills (up to eight per task). Completion stays independent. Missing categories use No category. Older files retain legacy behavior until an explicit undoable upgrade converts their old categories to tags. Collapsed columns unmount cards and retain device-local per-document preferences; inline card creation replaces the permanent composer in workflow boards. Column grips support dragging and Alt+Left/Right ordering. Task layouts are centered below document modes. Board cards omit category selectors; right-click/Shift+F10 offers task actions. Categories/tags are managed in a native dialog with separately persisted, bounded OKLCH colors. Search opens a highlighted task sidebar; Calendar places the agenda to the right. Custom category/tag/date controls share TaskControls; Escape restores anchor focus. Optional due metadata is a local date or date/time; Calendar shows the active file and unscheduled tasks without alarms. Descriptions remain indented Markdown and are rewritten only when edited explicitly. Task Trash is source within the file, not filesystem deletion. Keep source-line transforms in `workspace/tasks.ts`, route changes through `DocumentWorkspace`, and preserve notes/prose/line endings. Interactive limits are 500 tasks including Trash, 24 categories and 200,000 characters; larger files remain accessible in Editor. See `docs/tasks.md`.
 
 | Family | Behavior |
 |---|---|
@@ -152,7 +154,7 @@ Before committing:
 
 ## Performance and dependency rules
 
-- Production binary hard ceilings: 16 MiB on Linux and 16.1 MiB on Windows; keep ordinary startup work bounded.
+- Report production binary sizes without a hard ceiling; keep ordinary startup work bounded.
 - Markdown render debounce: 120 ms; draft persistence debounce: 350 ms.
 - Keep scans/search cancellable or bounded so rapid input cannot display stale results or block typing.
 - Prefer standard-library directory walking and streaming/bounded reads over a database or search daemon.
@@ -161,7 +163,7 @@ Before committing:
 ## Release process
 
 1. Synchronize `X.Y.Z` in `main.go`, `frontend/package.json`, `snap/snapcraft.yaml`, `packaging/macos/Info.plist`, AppStream metadata, the website schema, About/Changelog UI, README, and TODO/roadmap.
-2. Ensure every CI/release job installs Bun 1.3.14, runs `bun install --frozen-lockfile`, and builds `frontend/dist` before any Go command that compiles `frontend_assets.go`.
+2. Ensure every CI/release job installs Bun 1.4.2, runs `bun install --frozen-lockfile`, and builds `frontend/dist` before any Go command that compiles `frontend_assets.go`.
 3. Run `make setup`, `make check`, `git diff --check`, and relevant native smoke tests from clean state.
 4. Confirm Windows `.ico` resources/installer icon and macOS `.icns` bundle icon are present.
 5. Complete local checks and `python packaging/check-release-version.py`, then commit the exact release source.

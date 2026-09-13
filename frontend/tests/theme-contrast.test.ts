@@ -30,6 +30,22 @@ function contrast(foreground: string, background: string) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
+function tint(color: string, paper: string, amount: number) {
+  return (
+    "#" +
+    [1, 3, 5]
+      .map((start) =>
+        Math.round(
+          Number.parseInt(color.slice(start, start + 2), 16) * amount +
+            Number.parseInt(paper.slice(start, start + 2), 16) * (1 - amount),
+        )
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
+}
+
 describe("paired theme contrast", () => {
   test("keeps ordinary text, selection, and primary actions readable in every mode", async () => {
     const css = await readFile(new URL("../src/design/tokens.css", import.meta.url), "utf8");
@@ -48,6 +64,12 @@ describe("paired theme contrast", () => {
         ["light", { ...base, ...lightPalette }],
         ["dark", { ...base, ...dark, ...lightPalette, ...darkPalette }],
       ] as const) {
+        for (const name of ["jade", "blue", "violet", "amber", "rose"]) {
+          const color = tokens[`--mp-category-${name}`];
+          const ratio = contrast(color, tint(color, tokens["--mp-paper"], 0.08));
+          if (ratio < 4.5)
+            failures.push(`${palette} ${mode}: category ${name} = ${ratio.toFixed(2)}`);
+        }
         const surfacePairs = ["--mp-paper", "--mp-chrome", "--mp-sidebar", "--mp-raised"].flatMap(
           (background) =>
             ["--mp-ink", "--mp-text", "--mp-muted", "--mp-faint"].map(
@@ -58,6 +80,9 @@ describe("paired theme contrast", () => {
           ...surfacePairs,
           ["--mp-selected-text", "--mp-selected"] as const,
           ["--mp-on-accent", "--mp-accent"] as const,
+          ["--mp-on-accent", "--mp-accent-hover"] as const,
+          ["--mp-danger-hover", "--mp-danger-soft"] as const,
+          ["--mp-on-accent", "--mp-danger-hover"] as const,
         ]) {
           const ratio = contrast(tokens[foreground], tokens[background]);
           if (ratio < 4.5) {

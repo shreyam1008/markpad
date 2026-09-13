@@ -98,3 +98,8 @@ GitHub issues are the actionable cards; [the roadmap](docs/feature-roadmap.md) e
 - [ ] Benchmark cold/warm start, private memory/PSS, typing latency, and folder scan/search
 - [ ] Keep 1 MiB and 2 MiB fixture corpora outside release artifacts
 - [ ] Investigate a rope or piece table only if the existing 2 MiB editable-file boundary changes
+
+## 0.14.0
+
+- [x] Markdown task workflow, tags, calendar, colors, contextual actions and search.
+- [ ] Verify published artifacts and record each distribution channel in packaging/PUBLICATION-TODO.md.

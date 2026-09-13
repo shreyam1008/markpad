@@ -15,6 +15,7 @@ import { shouldCoalesceLargeEdit } from "../history/edit";
 import { previewSelection, writeClipboard } from "../preview/clipboard";
 import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
 import { pairedScrollTop } from "../preview/scroll";
+import { exceedsHighlightLimit, findText } from "../preview/text-blocks";
 import { client } from "../workspace/client";
 import {
   editorStats,
@@ -25,6 +26,7 @@ import {
   outlineFromMarkdown,
   typeLabel,
 } from "../workspace/documents";
+import { isTaskDocument } from "../workspace/tasks";
 import type {
   NoteInfo,
   OutlineItem,
@@ -34,6 +36,8 @@ import type {
 } from "../workspace/types";
 import { CodeEditor, type EditorHandle } from "./CodeEditor";
 import { SaveConflictDialog } from "./SaveConflictDialog";
+import { TaskDocument } from "./TaskDocument";
+import { TextViewer } from "./TextViewer";
 
 const DRAFT_DELAY = 350;
 const PREVIEW_DELAY = 120;
@@ -112,6 +116,7 @@ interface Props {
   onOutline(outline: OutlineItem[]): void;
   onHistoryAvailability(undo: boolean, redo: boolean): void;
   onTextZoom(direction: number): void;
+  onEditTaskSource(offset: number): void;
 }
 
 function Viewer({
@@ -124,6 +129,10 @@ function Viewer({
   textSize: number;
 }) {
   const type = fileType(note?.path, note?.kind);
+  const plainCode = useMemo(
+    () => type === "code" && exceedsHighlightLimit(content),
+    [content, type],
+  );
   const [image, setImage] = useState("");
   const rendered = useRef<HTMLDivElement>(null);
   const localAssetPath = useRef("");
@@ -132,9 +141,9 @@ function Viewer({
   const localAssetRejectedSize = useRef(new Map<string, number>());
   const html = useMemo(() => {
     if (type === "md") return renderMarkdown(content);
-    if (type === "code") return renderCode(content, note?.path ?? "");
+    if (type === "code" && !plainCode) return renderCode(content, note?.path ?? "");
     return "";
-  }, [content, note?.path, type]);
+  }, [content, note?.path, type, plainCode]);
   // React compares this prop by identity. Replacing it on a shortcut-hint render
   // rewrites innerHTML and destroys the selection as soon as Ctrl/Cmd is pressed.
   const renderedHTML = useMemo(() => ({ __html: html }), [html]);
@@ -292,7 +301,7 @@ function Viewer({
       });
   });
 
-  if (type === "md" || type === "code") {
+  if (type === "md" || (type === "code" && !plainCode)) {
     return (
       <div
         ref={rendered}
@@ -304,14 +313,15 @@ function Viewer({
       />
     );
   }
-  if (type === "text") {
+  if (type === "text" || plainCode) {
     return (
       <div
         id="viewer"
-        className="markdown-body viewer-document viewer-text bg-editor rounded-lg p-6 min-h-full select-text"
-        style={{ fontSize: textSize }}
+        role="document"
+        className={`markdown-body viewer-document viewer-${plainCode ? "code" : "text"} bg-editor rounded-lg p-6 min-h-full select-text`}
+        style={{ "--markpad-text-size": `${textSize}px` } as React.CSSProperties}
       >
-        <pre className="plain-text-view">{content}</pre>
+        <TextViewer content={content} />
       </div>
     );
   }
@@ -382,6 +392,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       onOutline,
       onHistoryAvailability,
       onTextZoom,
+      onEditTaskSource,
     },
     ref,
   ) {
@@ -508,6 +519,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
 
     useEffect(() => {
       const copy = (event: ClipboardEvent | KeyboardEvent) => {
+        if (
+          event.target instanceof Element &&
+          event.target.closest('input, textarea, select, [contenteditable="true"]')
+        )
+          return;
         const root = viewer.current;
         if (!root) return;
         const text = previewSelection(root, window.getSelection());
@@ -609,6 +625,16 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       [updateHistoryButtons],
     );
 
+    const scheduleDraft = useCallback(() => {
+      clearTimeout(draftTimer.current);
+      if (note) {
+        draftTimer.current = setTimeout(async () => {
+          await client.updateDraft(note.id, contentRef.current, dirtyRef.current);
+          onSession(await client.session());
+        }, DRAFT_DELAY);
+      }
+    }, [note, onSession]);
+
     const changeContent = useCallback(
       (value: string, start?: number, end?: number) => {
         if (readOnly) return;
@@ -625,15 +651,9 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           );
         }
         if (note && dirty && !note.dirty) void client.markDirty(note.id);
-        clearTimeout(draftTimer.current);
-        if (note) {
-          draftTimer.current = setTimeout(async () => {
-            await client.updateDraft(note.id, contentRef.current, dirtyRef.current);
-            onSession(await client.session());
-          }, DRAFT_DELAY);
-        }
+        scheduleDraft();
       },
-      [note, onDirty, onSession, readOnly, record, type],
+      [note, onDirty, readOnly, record, scheduleDraft, type],
     );
 
     const stepHistory = useCallback(
@@ -652,6 +672,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         const dirty = committedDirty.current || state.content !== committed.current;
         dirtyRef.current = dirty;
         onDirty(dirty);
+        scheduleDraft();
         requestAnimationFrame(() => {
           if (!editor.current) return;
           editor.current.setSelectionRange(state.start, state.end);
@@ -659,7 +680,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         });
         updateHistoryButtons();
       },
-      [onDirty, type, updateHistoryButtons],
+      [onDirty, scheduleDraft, type, updateHistoryButtons],
     );
 
     const format = useCallback(
@@ -753,24 +774,15 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         setFindInfo("");
         return { index: 0, count: 0 };
       }
-      const haystack = contentRef.current.toLowerCase();
-      const needle = query.toLowerCase();
-      const matches: number[] = [];
-      let offset = 0;
-      while ((offset = haystack.indexOf(needle, offset)) >= 0) {
-        matches.push(offset);
-        offset += Math.max(needle.length, 1);
-      }
-      if (!matches.length) {
+      const match = findText(contentRef.current, query, input.selectionEnd);
+      if (!match.count) {
         setFindInfo("No results");
         return { index: 0, count: 0 };
       }
-      const next = matches.findIndex((position) => position >= input.selectionEnd);
-      const selected = next >= 0 ? next : 0;
       input.focus();
-      input.setSelectionRange(matches[selected], matches[selected] + query.length);
-      setFindInfo(`${selected + 1} of ${matches.length}`);
-      return { index: selected, count: matches.length };
+      input.setSelectionRange(match.position, match.position + query.length);
+      setFindInfo(`${match.index + 1} of ${match.count}`);
+      return { index: match.index, count: match.count };
     }, []);
 
     const acceptSavedSession = useCallback(
@@ -895,8 +907,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           const input = editor.current;
           if (!input) return;
           let position = 0;
-          const lines = contentRef.current.split("\n");
-          for (let index = 0; index < line; index++) position += lines[index].length + 1;
+          for (let index = 0; index < line; index++) {
+            const newline = contentRef.current.indexOf("\n", position);
+            if (newline < 0) break;
+            position = newline + 1;
+          }
           input.focus();
           input.setSelectionRange(position, position);
           if (input instanceof HTMLTextAreaElement) {
@@ -944,7 +959,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
               <span>Scroll either pane to follow the same reading progress.</span>
             </div>
           )}
-          {findOpen && (
+          {findOpen && !(type === "md" && isTaskDocument(content) && viewMode !== "markdown") && (
             <div
               id="find-bar"
               className="find-rail flex items-center gap-2 px-3 py-1.5 border-b border-border-soft bg-hover"
@@ -1098,7 +1113,20 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
                 style={viewMode === "split" ? { flex: `0 0 ${100 - split}%` } : undefined}
                 onScroll={() => scrollPane("viewer")}
               >
-                <Viewer key={themeKey} note={note} content={previewContent} textSize={textSize} />
+                {type === "md" && isTaskDocument(content) ? (
+                  <TaskDocument
+                    findOpen={findOpen}
+                    onCloseFind={onCloseFind}
+                    key={note?.id}
+                    documentId={note?.id ?? "draft"}
+                    content={content}
+                    onChange={changeContent}
+                    textSize={textSize}
+                    onEditSource={onEditTaskSource}
+                  />
+                ) : (
+                  <Viewer key={themeKey} note={note} content={previewContent} textSize={textSize} />
+                )}
               </section>
             )}
           </div>

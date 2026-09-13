@@ -135,6 +135,7 @@ func (a *App) QuitWithoutSaving() {
 // ---------- Types returned to frontend ----------
 
 type NoteInfo struct {
+	TaskBoard bool   `json:"taskBoard"`
 	ID        string `json:"id"`
 	Title     string `json:"title"`
 	Path      string `json:"path"`
@@ -191,6 +192,7 @@ func (a *App) GetSession() SessionState {
 			kind = draftKind(doc.Format)
 		}
 		state.Notes = append(state.Notes, NoteInfo{
+			TaskBoard: doc.TaskBoard,
 			ID:        doc.ID,
 			Title:     doc.Title,
 			Path:      doc.Path,

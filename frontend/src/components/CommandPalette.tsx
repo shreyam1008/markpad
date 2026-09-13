@@ -19,6 +19,7 @@ export interface PaletteAction {
 export type PaletteScope = "all" | "files" | "actions";
 
 interface Result {
+  taskBoard?: boolean;
   id: string;
   title: string;
   category: string;
@@ -81,6 +82,7 @@ export function CommandPalette({
       ? []
       : rankPaletteFiles(term, notes, activeId).map((file) => ({
           ...file,
+          taskBoard: notes.find((note) => note.id === file.noteId)?.taskBoard,
           shortcut: "",
           kind: "file",
           run: () => onActivate(file.noteId),
@@ -220,7 +222,7 @@ export function CommandPalette({
                 >
                   <span className={`command-icon ${result.kind}`} aria-hidden="true">
                     {result.kind === "file" ? (
-                      <FileBadge path={result.path || result.title} />
+                      <FileBadge path={result.path || result.title} taskBoard={result.taskBoard} />
                     ) : (
                       <SquarePen />
                     )}

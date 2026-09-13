@@ -1,0 +1,338 @@
+{
+  "checks": [
+    "New Task board opens its task view",
+    "New task file contains the Markdown marker",
+    "Saved task file reopens as tasks",
+    "Creates tagged and untagged tasks",
+    "Completion keeps the category",
+    "Checkbox focus still allows document undo",
+    "Completion can be redone after keyboard undo",
+    "Board shows Untagged and each category",
+    "Category picker moves a card to its column",
+    "Drag and drop changes category",
+    "Trash displays removed tasks",
+    "Restore returns the task",
+    "Cancel empty Trash preserves tasks",
+    "Confirmed empty Trash clears removed tasks",
+    "Document undo recovers emptied Trash",
+    "Undo also updates the recovery draft",
+    "Redo clears Trash again",
+    "Undo remains usable after redo",
+    "Edit focuses the task title",
+    "Edit changes the task title",
+    "Rename changes the category column",
+    "Removing a category keeps its tasks in Untagged",
+    "Keyboard alternative reorders a task",
+    "Appearance settings apply to the task view",
+    "Reduced motion removes task control transitions",
+    "Theme changes preserve the task composer",
+    "Input undo stays local to the task composer",
+    "Input undo preserves committed task changes",
+    "Native Save writes task changes as ordinary Markdown",
+    "Editor shows the same Markdown source",
+    "Preview returns to the same tasks",
+    "Narrow board does not widen the app",
+    "Narrow list does not widen the app",
+    "All 500 tasks are available",
+    "Large task list filtering works",
+    "Board handles 500 tasks",
+    "Oversized task files show an explicit bounded fallback",
+    "The full oversized file stays available in Editor"
+  ],
+  "readyMs": 731.4703999999999,
+  "paintFromLaunch": 745.89990234375,
+  "largeReadyMs": 141.6374999999989,
+  "samples": [
+    {
+      "label": "six-tasks-gc",
+      "metrics": {
+        "Timestamp": 265478.19146,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 272,
+        "LayoutObjects": 405,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 989,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 1,
+        "LayoutCount": 134,
+        "RecalcStyleCount": 225,
+        "LayoutDuration": 0.092182,
+        "RecalcStyleDuration": 0.209641,
+        "DevToolsCommandDuration": 0.042963,
+        "ScriptDuration": 0.23989,
+        "V8CompileDuration": 0.000163,
+        "TaskDuration": 0.896221,
+        "TaskOtherDuration": 0.311382,
+        "ThreadTime": 0.878443,
+        "ProcessTime": 1.500312,
+        "JSHeapUsedSize": 4540176,
+        "JSHeapTotalSize": 5767168,
+        "FirstMeaningfulPaint": 265467.382211,
+        "DomContentLoaded": 265467.329902,
+        "NavigationStart": 265467.071862
+      },
+      "processes": [
+        {
+          "Id": 8200,
+          "WorkingSet64": 44163072,
+          "PrivateMemorySize64": 12468224,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 15000,
+          "WorkingSet64": 146173952,
+          "PrivateMemorySize64": 72089600,
+          "type": "renderer"
+        },
+        {
+          "Id": 16696,
+          "WorkingSet64": 23658496,
+          "PrivateMemorySize64": 8724480,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 17428,
+          "WorkingSet64": 128258048,
+          "PrivateMemorySize64": 38588416,
+          "type": "browser"
+        },
+        {
+          "Id": 20620,
+          "WorkingSet64": 68177920,
+          "PrivateMemorySize64": 17092608,
+          "type": "GPU"
+        },
+        {
+          "Id": 18860,
+          "WorkingSet64": 31748096,
+          "PrivateMemorySize64": 53911552,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 202874880,
+      "workingSetBytes": 442179584,
+      "page": {
+        "nodes": 333,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 312
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 312
+          }
+        ],
+        "text": "A little more organized5 open · 1 completedListBoardCategoriesTrash0UntaggedWorkPersonalAdd taskAll tasksOpenCompletedKeep categories simpleUntaggedWo"
+      }
+    },
+    {
+      "label": "500-tasks-gc",
+      "metrics": {
+        "Timestamp": 265478.691676,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 2250,
+        "LayoutObjects": 9312,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 24757,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 137,
+        "RecalcStyleCount": 230,
+        "LayoutDuration": 0.113332,
+        "RecalcStyleDuration": 0.249994,
+        "DevToolsCommandDuration": 0.045299,
+        "ScriptDuration": 0.280995,
+        "V8CompileDuration": 0.000163,
+        "TaskDuration": 1.0832,
+        "TaskOtherDuration": 0.393417,
+        "ThreadTime": 1.062385,
+        "ProcessTime": 1.790417,
+        "JSHeapUsedSize": 10168456,
+        "JSHeapTotalSize": 11272192,
+        "FirstMeaningfulPaint": 265467.382211,
+        "DomContentLoaded": 265467.329902,
+        "NavigationStart": 265467.071862
+      },
+      "processes": [
+        {
+          "Id": 8200,
+          "WorkingSet64": 44163072,
+          "PrivateMemorySize64": 12468224,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 15000,
+          "WorkingSet64": 168988672,
+          "PrivateMemorySize64": 94773248,
+          "type": "renderer"
+        },
+        {
+          "Id": 16696,
+          "WorkingSet64": 23658496,
+          "PrivateMemorySize64": 8724480,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 17428,
+          "WorkingSet64": 128774144,
+          "PrivateMemorySize64": 39092224,
+          "type": "browser"
+        },
+        {
+          "Id": 20620,
+          "WorkingSet64": 68177920,
+          "PrivateMemorySize64": 17092608,
+          "type": "GPU"
+        },
+        {
+          "Id": 18860,
+          "WorkingSet64": 32260096,
+          "PrivateMemorySize64": 54644736,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 226795520,
+      "workingSetBytes": 466022400,
+      "page": {
+        "nodes": 9244,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 312
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 312
+          }
+        ],
+        "text": "A full task list400 open · 100 completedListBoardCategoriesTrash0UntaggedWorkPersonalIdeasAdd taskAll tasksOpenCompletedTask 1: Keep the list comforta"
+      }
+    },
+    {
+      "label": "500-task-board-gc",
+      "metrics": {
+        "Timestamp": 265479.465401,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 2217,
+        "LayoutObjects": 9332,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 24405,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 147,
+        "RecalcStyleCount": 244,
+        "LayoutDuration": 0.149648,
+        "RecalcStyleDuration": 0.336689,
+        "DevToolsCommandDuration": 0.052363,
+        "ScriptDuration": 0.363588,
+        "V8CompileDuration": 0.000163,
+        "TaskDuration": 1.4535,
+        "TaskOtherDuration": 0.551049,
+        "ThreadTime": 1.428178,
+        "ProcessTime": 2.336941,
+        "JSHeapUsedSize": 7793948,
+        "JSHeapTotalSize": 8650752,
+        "FirstMeaningfulPaint": 265467.382211,
+        "DomContentLoaded": 265467.329902,
+        "NavigationStart": 265467.071862
+      },
+      "processes": [
+        {
+          "Id": 8200,
+          "WorkingSet64": 44126208,
+          "PrivateMemorySize64": 12435456,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 15000,
+          "WorkingSet64": 187502592,
+          "PrivateMemorySize64": 114036736,
+          "type": "renderer"
+        },
+        {
+          "Id": 16696,
+          "WorkingSet64": 23662592,
+          "PrivateMemorySize64": 8724480,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 17428,
+          "WorkingSet64": 127987712,
+          "PrivateMemorySize64": 38289408,
+          "type": "browser"
+        },
+        {
+          "Id": 20620,
+          "WorkingSet64": 67936256,
+          "PrivateMemorySize64": 16924672,
+          "type": "GPU"
+        },
+        {
+          "Id": 18860,
+          "WorkingSet64": 32260096,
+          "PrivateMemorySize64": 54644736,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 245055488,
+      "workingSetBytes": 483475456,
+      "page": {
+        "nodes": 9264,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 312
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 312
+          }
+        ],
+        "text": "A full task list400 open · 100 completedListBoardCategoriesTrash0UntaggedWorkPersonalIdeasAdd taskAll tasksOpenCompletedUntagged125Task 1: Keep the li"
+      }
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg"
+  ],
+  "engine": "Edg/152.0.4191.66"
+}
