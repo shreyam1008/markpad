@@ -1,12 +1,13 @@
 # Quillpane feature roadmap
 
-Updated for v0.13.6 on 2026-09-12. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.14.1 on 2026-09-13. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
 
-## Stable baseline — v0.13.3
+## Stable baseline — v0.14.1
 
 Quillpane (formerly Markpad) is a local Markdown notepad for individual files:
 
 - Plain local files plus autosaved recovery drafts and bounded saved-version history.
+- Markdown task files with List, Board, Calendar, movable/collapsible workflow columns, tags, due dates and times, editable OKLCH colors, highlighted search, context actions, and recoverable task Trash. See [task guide](tasks.md) and [visual verification](tasks-release-design-2026-09.md).
 - Editor, Split, Preview/Code View, incremental CodeMirror source editing, image preview, and operating-system PDF handoff.
 - Modern GFM, safe lazy Mermaid diagrams, and relative Markdown images resolved beside saved notes through a bounded native reader.
 - `Ctrl+P` fuzzy navigation, current-file search, synchronized Split scrolling, and a detailed Help tour.
@@ -21,11 +22,11 @@ Data remains plain files. Folder workspaces and their scanner/search/filing comm
 2. Typing, switching, preview, and search stay responsive under explicit bounds.
 3. Unsaved content is never silently discarded or overwritten.
 4. New capabilities reuse the normal document lifecycle instead of creating parallel storage.
-5. The app stays offline, account-free, and within the platform release ceilings.
+5. The app stays offline, account-free, with measured runtime and release sizes.
 6. Every feature ships with empty, failure, reopen, keyboard, and narrow-window behavior.
-7. Further runtime dependencies require measured bundle headroom. Driver.js 1.8.0 is the owner-requested tour exception measured in BUNDLE_BUDGET.md.
+7. Further runtime dependencies require a measured cost and clear purpose; the owner removed hard size ceilings. See BUNDLE_BUDGET.md.
 
-## Now — v0.14.0
+## Next — presentation and measured runtime improvements
 
 ### [#1 Focus mode: distraction-free writing](https://github.com/shreyam1008/markpad/issues/1)
 
@@ -37,13 +38,13 @@ Normalized reading-progress sync shipped in 0.13.6. A later enhancement may keep
 
 ### [#3 Performance baseline and bundle-headroom recovery](https://github.com/shreyam1008/markpad/issues/3)
 
-Restore at least 256 KiB below the Windows ceiling and publish repeatable cold/warm startup, private-memory/PSS, typing, preview, and current-file search measurements.
+Windows startup, private-memory, task scaling and rendering measurements are documented in BUNDLE_BUDGET.md and the release verification. Continue measuring ordinary-note idle RAM and native Linux PSS; task workflow measurements do not establish the runtime floor.
 
 ## Next — plain-file workflows
 
 ### [#4 Workspace task list](https://github.com/shreyam1008/markpad/issues/4)
 
-Derive unchecked tasks from ordinary Markdown checkbox lines on demand. Selecting or toggling a task routes through the exact file location and normal conflict-safe save path. This is a list, not a Kanban database.
+The owner-selected per-file task board shipped in 0.14.1. Tasks stay in ordinary Markdown and edits use the existing undo, recovery, conflict-safe save and history paths. Cross-folder aggregation from this older issue remains deferred because folder workspaces were removed.
 
 ### [#5 Daily note quick open](https://github.com/shreyam1008/markpad/issues/5)
 
@@ -70,7 +71,7 @@ ZenNotes also demonstrates math engines, a CLI, MCP, sync, cloud backup/publishi
 - Cloud sync, accounts, collaboration, publishing, or telemetry.
 - A persistent full-text index or proprietary database.
 - Background daemons or file watchers before on-focus refresh is justified.
-- TikZ/JSXGraph/function-plot runtimes, an MCP server, or a bundled CLI while the binary has effectively no headroom.
+- TikZ/JSXGraph/function-plot runtimes, an MCP server, or a bundled CLI without a separately approved use case and measured runtime cost.
 - Multiple simultaneous workspaces, graph views, databases, canvas, or automatic bulk deletion.
 
 ## Release policy

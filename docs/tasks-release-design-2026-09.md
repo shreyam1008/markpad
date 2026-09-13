@@ -1,4 +1,8 @@
-# Task planning 0.14.0: design and verification
+# Task planning 0.14.1: design and verification
+
+The visual captures and 120 native checks below used the 0.14.0 candidate.
+The shipped 0.14.1 changes only release metadata and the Snap compiler source;
+frontend/Go checks were repeated and all release platform jobs passed.
 
 A fresh native baseline and the running ZenNotes reference were inspected in
 this pass. The implementation extends Quillpane's existing components and

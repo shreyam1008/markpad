@@ -2,25 +2,59 @@
 
 Updated: 2026-09-13. Existing logo and compatibility identifiers stay unchanged.
 
-## Current candidate: 0.14.1
+## Current release: 0.14.1
 
 The 0.14.0 tag was not published: Snap could not install the unavailable Go 1.27
 Snap channel. 0.14.1 pins the official Go 1.27.1 archive and its published SHA256;
 application behavior is unchanged from the 120-check visual candidate.
 
-- Local implementation complete: 120 Windows native checks, 93 frontend tests,
-  Go tests/vet, both frontend builds and metadata alignment pass.
-- GitHub/platform artifacts: release workflow pending.
-- Website/signed APT: follows the verified release workflow.
-- Microsoft Store: live package **0.13.8.0** verified in Partner Center on
-  13 September; no pending submission. Prepare 0.14.1.0 from the release asset.
-- Scoop: update the existing personal bucket with the verified installer hash.
-- WinGet: generate new manifests from the release installer and inspect submission status.
-- Snap Store: `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets.
-  Owner setup is required before the existing candidate publishing workflow can run.
-- Flathub: not published; separate preparation/human-authored submission remains pending.
+| Channel | Verified state on 13 September 2026 |
+|---|---|
+| GitHub | **0.14.1 published**, source `a00635d42d6292829df9d528ffa5221173f56da3`; all ten assets present |
+| Website / signed APT | **0.14.1 published**; anonymous website schema and APT version/hash verified; signed HTTPS installation/removal passed |
+| Microsoft Store | **0.14.1.0 submitted, in certification**, Submission 3 `1152921505701880695`; 0.13.8.0 remains live until approval |
+| Scoop personal bucket | **0.14.1 published** with the verified installer URL/hash; commit `34fa290b4b33aafd5fcaf13e615c94b12fddcf75` |
+| WinGet | Existing **PR #430348 updated to 0.14.1**, local validation passes; upstream checks/review pending; not in the default source yet |
+| Snap Store | **0.13.4 candidate, revision 1** confirmed through the public Snap API; 0.14.1 update blocked on owner publishing credentials |
+| Flathub | **Not published**; separate portal acceptance and human-authored submission gates remain |
+| Portfolio distribution tracker | Updated to these versions and states in `shreyam1008/buggy` commit `17abfe1` |
 
-See [the feature and visual verification](../docs/tasks-release-design-2026-09.md).
+Evidence:
+- [GitHub release](https://github.com/shreyam1008/markpad/releases/tag/v0.14.1)
+- [Complete release workflow](https://github.com/shreyam1008/markpad/actions/runs/34766846468)
+- [Passing CI](https://github.com/shreyam1008/markpad/actions/runs/34766846558)
+- [Partner Center](https://partner.microsoft.com/en-us/dashboard/products/9MZDJLQ6V8L3/overview)
+- [Scoop manifest](https://github.com/shreyam1008/scoop-bucket/blob/main/bucket/quillpane.json)
+- [WinGet PR](https://github.com/microsoft/winget-pkgs/pull/430348), head `56eea7aa358aeddf7fb570f3c57f00f4a5c22b61`
+- [Portfolio tracker](https://shreyam1008.com.np/projects/#distribution-markpad)
+
+Verified SHA256 values:
+- Windows installer: `5b4dbf396a2af7a7ed1e42b138a685f45a76e2085e31619a399a95e4500108c0`
+- MSIX: `13ac7c787e9aef2ef104bf24badc0141a2db212a4749ab4db49374de3fb378c3`
+- Debian: `6f694598e00deb2bcb34209db5a6882a278e8bf35298226d5bbe14a9a73bd779`
+- Snap: `4615005fa606c98dea278bd5535a69ede0c44a4cf7c7669d8315ff7aa572f96a`
+
+The MSIX embedded version, architecture and publisher were checked before upload;
+Partner Center validated the package. Description, features, release notes and
+reviewer instructions now cover tasks and individual files. Existing screenshots,
+logo, pricing, ratings and availability are preserved. Publishing after certification
+is enabled. Installed-MSIX functional testing remains separate.
+
+Scoop's first CI run failed because its autoupdate check forced the obsolete 0.13.3
+version. Commit `a6e3e6a` reads Quillpane's manifest version for that check; see
+[passing verification run](https://github.com/shreyam1008/scoop-bucket/actions/runs/34767431699), including install, update, uninstall and autoupdate checks.
+No ProtoPeek application or package manifest was changed.
+
+Snap's `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets. Once the
+owner's separate setup is ready, dispatch `Publish verified Snap artifact` with
+`v0.14.1`, test candidate install/upgrade on Linux and promote the tested revision.
+Do not publish superseded versions from historical instructions below. The separate
+`publication/flatpak-portal-20260912` branch must be reconciled and its source pins
+refreshed before Flathub submission; it is not a live release channel.
+
+Local checks: 120 native Windows task checks, 93 frontend tests, Go tests/vet and
+both frontend builds. Release jobs also passed native Linux smoke and all platform
+package checks. See [feature and visual verification](../docs/tasks-release-design-2026-09.md).
 
 ## Previous release: 0.13.8
 
