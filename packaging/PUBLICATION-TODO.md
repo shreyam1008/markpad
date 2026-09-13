@@ -2,14 +2,18 @@
 
 Updated: 2026-09-13. Existing logo and compatibility identifiers stay unchanged.
 
-## Current candidate: 0.14.0
+## Current candidate: 0.14.1
+
+The 0.14.0 tag was not published: Snap could not install the unavailable Go 1.27
+Snap channel. 0.14.1 pins the official Go 1.27.1 archive and its published SHA256;
+application behavior is unchanged from the 120-check visual candidate.
 
 - Local implementation complete: 120 Windows native checks, 93 frontend tests,
   Go tests/vet, both frontend builds and metadata alignment pass.
 - GitHub/platform artifacts: release workflow pending.
 - Website/signed APT: follows the verified release workflow.
 - Microsoft Store: live package **0.13.8.0** verified in Partner Center on
-  13 September; no pending submission. Prepare 0.14.0.0 from the release asset.
+  13 September; no pending submission. Prepare 0.14.1.0 from the release asset.
 - Scoop: update the existing personal bucket with the verified installer hash.
 - WinGet: generate new manifests from the release installer and inspect submission status.
 - Snap Store: `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets.

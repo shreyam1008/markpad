@@ -121,7 +121,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
-| 0.14.0 | Tasks, your way | Markdown task boards, workflow columns, tags, calendar agenda, OKLCH colors, highlighted search and context actions; updated toolchain and bounded rendering |
+| 0.14.1 | Tasks, your way | Markdown task boards, workflow columns, tags, calendar agenda, OKLCH colors, highlighted search and context actions; updated toolchain and bounded rendering |
 | 0.13.8 | A clearer home | Unified Help with version badges, updates, local data location, and project/creator links |
 | 0.13.6 | Refinements | Detailed tour, synchronized Split scroll, file-type symbols, syntax fixes, and removal of folder workspaces |
 | 0.13.5 | Help & updates | Visible Help and Settings updates, verified installer downloads, synchronized release packages, original icon everywhere |

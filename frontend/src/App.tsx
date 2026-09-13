@@ -190,7 +190,7 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
-          <h3 className="font-bold">0.14.0 · A place for your tasks</h3>
+          <h3 className="font-bold">0.14.1 · A place for your tasks</h3>
           <p>
             Plan in a Markdown file with List, Board and Calendar. Move and collapse columns, choose
             tags, set dates and times, customize category and tag colors, search with highlights,

@@ -37,10 +37,8 @@ apps:
 
 parts:
   quillpane:
-    plugin: go
+    plugin: nil
     source: .
-    build-snaps:
-      - go/1.27/stable
     build-packages:
       - gcc
       - pkg-config
@@ -57,6 +55,18 @@ parts:
       version="$(sed -n 's/^const Version = \"\(.*\)\"/\1/p' main.go | head -n 1)"
       test -n "$version"
       craftctl set version="$version"
+      # The Go Snap channels can lag upstream. Pin the same verified compiler as CI.
+      GO_VERSION="1.27.1"
+      GO_ARCHIVE="$CRAFT_PART_BUILD/go-linux-amd64.tar.gz"
+      curl --fail --location --retry 3 --output "$GO_ARCHIVE" \
+        "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+      echo "63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445  $GO_ARCHIVE" | sha256sum --check --strict
+      mkdir -p "$CRAFT_PART_BUILD/toolchain"
+      tar -xzf "$GO_ARCHIVE" -C "$CRAFT_PART_BUILD/toolchain"
+      export GOROOT="$CRAFT_PART_BUILD/toolchain/go"
+      export PATH="$GOROOT/bin:$PATH"
+      export GOTOOLCHAIN=local
+      go version
       BUN_VERSION="1.4.2"
       BUN_ARCHIVE="$CRAFT_PART_BUILD/bun-linux-x64.zip"
       curl --fail --location --retry 3 --output "$BUN_ARCHIVE" \
@@ -65,7 +75,8 @@ parts:
       unzip -q "$BUN_ARCHIVE" -d "$CRAFT_PART_BUILD"
       BUN="$CRAFT_PART_BUILD/bun-linux-x64/bun"
       (cd frontend && "$BUN" install --frozen-lockfile && "$BUN" run build)
-      go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o $CRAFT_PART_INSTALL/bin/markpad .
+      mkdir -p "$CRAFT_PART_INSTALL/bin"
+      go build -tags "production,webkit2_41" -trimpath -ldflags="-s -w" -o "$CRAFT_PART_INSTALL/bin/markpad" .
 
   desktop-entry:
     plugin: dump
