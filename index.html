@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Quillpane — Native Markdown Notepad</title>
     <meta name="application-name" content="Quillpane" />
-    <meta name="description" content="Free, native Markdown notepad for Windows, Linux, and macOS. Write offline with split preview, recovery drafts, and version history. Your files stay local." />
+    <meta name="description" content="Free, native Markdown notepad for Windows, Linux, and macOS. Write offline with split preview, recovery drafts and history. Optional task boards keep plans in Markdown too." />
     <meta name="keywords" content="quillpane, markpad, markdown editor, markdown notepad, individual files, guided tour, native markdown, go markdown, wails, lightweight notepad, split view, version history, appimage, session restore, open source, shreyam1008" />
     <meta name="author" content="Shreyam Adhikari" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -57,7 +57,7 @@
         "url": "https://quillpane.shreyam1008.com.np/",
         "downloadUrl": "https://github.com/shreyam1008/markpad/releases",
         "sameAs": ["https://github.com/shreyam1008/markpad", "https://apps.microsoft.com/detail/9MZDJLQ6V8L3"],
-        "description": "A tiny native Markdown notepad with fast file switching, responsive source viewers, themes, keyboard settings, current-file search, split preview, version history, and recovery drafts.",
+        "description": "A tiny native Markdown notepad with fast file switching, responsive source viewers, themes, keyboard settings, current-file search, split preview, version history, recovery drafts, and optional Markdown task boards.",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
@@ -69,12 +69,12 @@
 
     <!-- Nav -->
     <header class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-bg/80 border-b border-line/40">
-      <div class="max-w-5xl mx-auto flex items-center justify-between px-6 py-3">
+      <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-6 py-3">
         <a href="#top" class="flex items-center gap-2 font-bold text-lg group">
           <img src="./favicon.svg?v=original-mark" width="32" height="32" alt="" class="w-8 h-8 group-hover:scale-110 transition-transform" />
           <span>Quillpane</span>
         </a>
-        <nav class="flex items-center gap-6 text-sm font-medium text-muted">
+        <nav aria-label="Main" class="flex flex-wrap justify-center items-center gap-x-4 sm:gap-x-6 gap-y-2 text-sm font-medium text-muted">
           <a href="#features" class="hover:text-accent transition-colors">Features</a>
           <a href="#screenshots" class="hover:text-accent transition-colors">Screenshots</a>
           <a href="#roadmap" class="hover:text-accent transition-colors">Roadmap</a>
@@ -105,7 +105,7 @@
         </div>
         <div class="flex flex-wrap justify-center gap-2 animate-fade-up delay-4">
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Go + Wails</span>
-          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">About 16 MiB</span>
+          <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">System WebView</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Single Instance</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Guided Tour</span>
           <span class="px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold">Syntax Highlighting</span>
@@ -118,36 +118,34 @@
         </div>
       </section>
 
-      <!-- Screenshots -->
-      <section id="screenshots" class="max-w-4xl mx-auto px-6 pb-24 space-y-8">
-        <div class="bg-paper rounded-2xl border border-line shadow-xl overflow-hidden animate-float">
-          <div class="flex items-center gap-2 px-4 py-3 bg-bg/60 border-b border-line/60">
-            <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-            <span class="text-xs text-muted ml-2">Quillpane - Split View</span>
-          </div>
-          <div class="bg-gradient-to-br from-accent-soft/30 to-paper">
-            <img src="./photo/markpad-split.png" alt="Quillpane split workspace" class="w-full h-auto block" />
-          </div>
+      <!-- A screenshot tour of the real native app; notes remain the first view. -->
+      <section id="screenshots" class="max-w-5xl mx-auto px-6 pb-24">
+        <div class="mb-6">
+          <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Inside Quillpane</p>
+          <h2 class="text-3xl font-bold">Start with a note.</h2>
+          <p class="text-muted mt-3">Write, read, and keep your place. When a note turns into a plan, a task file gives it a little structure.</p>
         </div>
-        <div class="grid grid-cols-2 gap-6">
-          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
-            <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
-              <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-              <span class="text-xs text-muted ml-2">Quillpane - Code View</span>
-            </div>
-            <div class="bg-gradient-to-br from-accent-soft/20 to-paper">
-              <img src="./photo/markpad-code.png" alt="Quillpane responsive code view" class="w-full h-auto block" />
-            </div>
-          </div>
-          <div class="bg-paper rounded-2xl border border-line shadow-lg overflow-hidden">
-            <div class="flex items-center gap-2 px-3 py-2 bg-bg/60 border-b border-line/60">
-              <div class="window-dots flex gap-1.5"><span></span><span></span><span></span></div>
-              <span class="text-xs text-muted ml-2">Quillpane - Themes & Settings</span>
-            </div>
-            <div class="bg-gradient-to-br from-accent-soft/10 to-paper">
-              <img src="./photo/markpad-settings.png" alt="Quillpane themes and keyboard settings" class="w-full h-auto block" />
-            </div>
-          </div>
+        <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Screenshot tour">
+          <button class="demo-choice" type="button" aria-pressed="false" data-demo="notes">Read a note</button>
+          <button class="demo-choice" type="button" aria-pressed="true" data-demo="split">Write in Split</button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-demo="board">Task board</button>
+          <button class="demo-choice" type="button" aria-pressed="false" data-demo="calendar">Calendar</button>
+        </div>
+        <figure>
+          <a id="demo-full" href="./photo/markpad-split.png" aria-label="Open full-size screenshot">
+            <img id="demo-image" src="./photo/markpad-split.png" alt="Quillpane 0.14.1 with a Markdown draft and its rendered preview side by side" width="1440" height="900" class="w-full h-auto block rounded-xl border border-line shadow-lg" />
+          </a>
+          <figcaption id="demo-caption" class="text-sm text-muted mt-3" aria-live="polite">Write in Split: your Markdown on the left, its preview on the right, with synchronized scrolling.</figcaption>
+        </figure>
+        <p class="text-xs text-muted mt-2">Real Windows app captures, v0.14.1. This is a screenshot tour; try the sample files in the desktop app.</p>
+        <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm mt-4">
+          <a class="text-accent underline" href="./examples/Reading-notes.md" download>Download the sample note</a>
+          <a class="text-accent underline" href="./examples/This-week.md" download>Download the sample task file</a>
+          <a class="text-accent underline" href="https://github.com/shreyam1008/markpad/blob/main/docs/demo.md">Two-minute walkthrough →</a>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6 mt-8">
+          <figure><a href="./photo/markpad-code.png"><img src="./photo/markpad-code.png" alt="Quillpane 0.14.1 showing a local TypeScript file with syntax highlighting" width="1440" height="900" loading="lazy" class="w-full h-auto rounded-xl border border-line" /></a><figcaption class="text-sm text-muted mt-2">Text, code and configuration files belong here too.</figcaption></figure>
+          <figure><a href="./photo/markpad-settings.png"><img src="./photo/markpad-settings.png" alt="Quillpane appearance settings beside a local Markdown note" width="1440" height="900" loading="lazy" class="w-full h-auto rounded-xl border border-line" /></a><figcaption class="text-sm text-muted mt-2">Make the reading space comfortable, in light or dark.</figcaption></figure>
         </div>
       </section>
 
@@ -176,7 +174,7 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">No Electron</h3>
-            <p class="text-sm text-muted">Go + Wails + system webview. One small binary around 16 MiB, without a bundled browser engine.</p>
+            <p class="text-sm text-muted">Go + Wails + the system WebView. A native binary without a bundled browser engine.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Safe File Actions</h3>
@@ -216,8 +214,17 @@
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line hover:shadow-lg hover:-translate-y-1 transition-all">
             <h3 class="font-bold mb-2">Find & Stats</h3>
-            <p class="text-sm text-muted">Ctrl+F searches the current file; Ctrl+Shift+F searches the bounded workspace. Word count and line stats stay in the status bar.</p>
+            <p class="text-sm text-muted">Ctrl+F searches the current file, including task titles, tags and descriptions. Word count and line stats stay in the status bar.</p>
           </div>
+        </div>
+      </section>
+
+      <section class="max-w-5xl mx-auto px-6 pb-24" aria-labelledby="task-feature-title">
+        <div class="p-6 sm:p-8 bg-paper rounded-2xl border border-line">
+          <p class="text-sm font-semibold text-accent mb-2">Also in your notepad</p>
+          <h2 id="task-feature-title" class="text-2xl font-bold">A small planner, when you need one.</h2>
+          <p class="text-muted mt-3 max-w-3xl">New → Task board creates an ordinary Markdown file. Categories organize the workflow; tags label things like Work or Personal. Switch between a list, a board and a calendar, set a date, or restore a task from Trash. Your notes stay notes.</p>
+          <a class="inline-block text-accent underline mt-4" href="https://github.com/shreyam1008/markpad/blob/main/docs/tasks.md">Explore task planning →</a>
         </div>
       </section>
 
@@ -226,25 +233,27 @@
         <div class="text-center mb-12">
           <p class="text-sm font-semibold text-accent tracking-wide uppercase mb-2">Public roadmap</p>
           <h2 class="text-3xl font-bold">Small steps. Visible tradeoffs.</h2>
-          <p class="text-muted mt-3 max-w-2xl mx-auto">The issue board is the source of truth. Features move forward only when they preserve plain files, offline use, stable interaction, and the platform size ceilings.</p>
+          <p class="text-muted mt-3 max-w-2xl mx-auto">The issue board is the source of truth. Features move forward only when they preserve plain files, offline use, stable interaction, and measured runtime efficiency.</p>
         </div>
         <div class="grid md:grid-cols-3 gap-5">
           <div class="p-6 bg-paper rounded-2xl border border-accent/40">
-            <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Now · v0.14</p>
-            <h3 class="font-bold mb-3">Focus and navigation</h3>
+            <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Available · v0.14.1</p>
+            <h3 class="font-bold mb-3">Notes, with room for a plan</h3>
             <ul class="space-y-3 text-sm text-muted">
-              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/1">Focus mode without document remounts →</a></li>
-              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/2">Bounded source/preview scroll sync →</a></li>
-              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/3">Performance baseline and bundle headroom →</a></li>
+              <li>Markdown, Split preview and recovery history</li>
+              <li>Optional task lists, boards, tags and calendar</li>
+              <li>Local files and the system WebView</li>
             </ul>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line">
             <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Next</p>
-            <h3 class="font-bold mb-3">Plain-file workflows</h3>
+            <h3 class="font-bold mb-3">Infinite canvas board</h3>
             <ul class="space-y-3 text-sm text-muted">
-              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/4">Workspace tasks derived from checkboxes →</a></li>
-              <li><a class="hover:text-accent" href="https://github.com/shreyam1008/markpad/issues/5">Daily-note quick open →</a></li>
+              <li>Arrange ideas and local note references spatially</li>
+              <li>Pan, zoom and keep the board in a portable file</li>
+              <li><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/issues/13">Follow the next feature →</a></li>
             </ul>
+            <p class="text-xs text-muted mt-4">Planned. Not included in the current release.</p>
           </div>
           <div class="p-6 bg-paper rounded-2xl border border-line">
             <p class="text-xs font-bold tracking-wider uppercase text-accent mb-3">Explore</p>
@@ -299,7 +308,7 @@
         <h2 class="text-2xl font-bold">Package managers and stores</h2>
         <p class="text-muted mt-3">Quillpane is the new name for Markpad. The APT package and executable remain markpad so existing installations keep working.</p>
         <p class="mt-4"><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/blob/main/packaging/PACKAGING.md#signed-apt">Signed APT setup for Debian / Ubuntu</a> · <a class="text-accent underline" href="https://apps.microsoft.com/detail/9MZDJLQ6V8L3">Microsoft Store for Windows</a></p>
-        <details class="mt-5"><summary class="cursor-pointer font-semibold">Snap and Flatpak availability</summary><p class="text-muted mt-3">A Snap candidate is available in the GitHub release. Snap Store and Flathub are not published yet. Use the GitHub download or signed APT for Linux today.</p><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/releases/latest">View release packages</a></details>
+        <details class="mt-5"><summary class="cursor-pointer font-semibold">Snap and Flatpak availability</summary><p class="text-muted mt-3">The matching Snap package is on GitHub. Snap Store candidate remains 0.13.4 while publishing credentials are configured; Flathub is not published. Use the current GitHub download or signed APT for Linux. See the distribution tracker for exact Store review status.</p><a class="text-accent underline" href="https://github.com/shreyam1008/markpad/releases/latest">View release packages</a></details>
       </section>
 
       <!-- Tech -->
@@ -322,5 +331,6 @@
       <p>Built with care by <a href="https://github.com/shreyam1008" class="text-accent hover:underline">Shreyam Adhikari</a></p>
       <p class="mt-1">v0.14.1 &middot; MIT License &middot; <a href="https://github.com/shreyam1008/markpad" class="hover:text-accent">GitHub</a></p>
     </footer>
+    <script src="./demo.js" defer></script>
   </body>
 </html>

@@ -41,8 +41,30 @@ html {
   scroll-behavior: smooth;
 }
 
+.demo-choice {
+  padding: 8px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+.demo-choice:hover, .demo-choice[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
 section[id] {
-  scroll-margin-top: 76px;
+  scroll-margin-top: 112px;
 }
 
 .delay-1 {
