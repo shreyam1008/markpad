@@ -36,8 +36,9 @@ Verified SHA256 values:
 
 The MSIX embedded version, architecture and publisher were checked before upload;
 Partner Center validated the package. Description, features, release notes and
-reviewer instructions now cover tasks and individual files. Existing screenshots,
-logo, pricing, ratings and availability are preserved. Publishing after certification
+reviewer instructions now cover tasks and individual files. Four fresh Windows
+screenshots show notes and Split first, followed by the optional board and calendar.
+The logo, pricing, ratings and availability are preserved. Publishing after certification
 is enabled. Installed-MSIX functional testing remains separate.
 
 Scoop's first CI run failed because its autoupdate check forced the obsolete 0.13.3
@@ -55,6 +56,14 @@ refreshed before Flathub submission; it is not a live release channel.
 Local checks: 120 native Windows task checks, 93 frontend tests, Go tests/vet and
 both frontend builds. Release jobs also passed native Linux smoke and all platform
 package checks. See [feature and visual verification](../docs/tasks-release-design-2026-09.md).
+
+The September 13 presentation refresh keeps notes as the main product: new native
+screenshots, a keyboard-accessible [screenshot tour](https://quillpane.shreyam1008.com.np/#screenshots),
+a [two-minute demo](../docs/demo.md), public sample files, README/release copy and
+discovery metadata. Portfolio commit `059834f` carries the same notes-first image
+and roadmap. [Infinite canvas board #13](https://github.com/shreyam1008/markpad/issues/13)
+is the next planned feature, not part of 0.14.1. This documentation/listing refresh
+does not change the release artifacts or require an application version bump.
 
 ## Previous release: 0.13.8
 

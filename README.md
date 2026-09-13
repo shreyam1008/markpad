@@ -10,16 +10,9 @@ No Electron. No cloud. One small binary, pure local and offline.
 
 Project site: <https://quillpane.shreyam1008.com.np/>
 
-All install links and store status: [Quillpane distribution tracker](https://shreyam1008.com.np/projects/#distribution-markpad). The GitHub installer is the default Linux path; signed APT, Scoop and [Microsoft Store](https://apps.microsoft.com/detail/9MZDJLQ6V8L3) are also available. Snap candidates are attached to GitHub releases; Snap Store and Flathub are not published yet.
+All install links and store status: [Quillpane distribution tracker](https://shreyam1008.com.np/projects/#distribution-markpad). The GitHub installer is the default Linux path; signed APT, Scoop and [Microsoft Store](https://apps.microsoft.com/detail/9MZDJLQ6V8L3) are also available. The matching Snap package is attached to GitHub releases; Snap Store candidate remains 0.13.4 and Flathub is not published. See the tracker for current review and publishing gates.
 
 ![Quillpane split workspace](photo/markpad-split.png)
-
-## Task planning
-
-**New → Task board** creates a normal Markdown file. Choose List, Board or Calendar;
-drag and collapse workflow columns, select tag pills, set due dates/times, and edit
-category/tag colors. Search highlights task titles and descriptions. Right-click a
-card for actions; Trash stays recoverable inside the file. [Task guide](docs/tasks.md).
 
 ## Install
 
@@ -72,7 +65,6 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 
 ## What It Does
 
-- **Task lists and boards** — New → Task board creates one Markdown file. Categories become list tags or board columns, with Untagged, completion checkboxes and recoverable task Trash. [Task guide](docs/tasks.md).
 - **Guided tour** — Help → Tour walks through 16 steps using bundled Driver.js
 - **Synchronized Split** — Editor and preview follow the same reading progress, with an off switch
 - **File symbols and colors** — Distinct icons, extensions, and theme-aware colors identify file families
@@ -101,6 +93,21 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **Status bar** — File type, line/word/char counts, reading time, encoding
 - **In-app changelog** — Help > Changelog shows version history
 - **Themes and settings** — Light, dark, system, five color themes, interface scale, reduced motion, and a single keyboard catalog
+
+## A small planner, when you need one
+
+Quillpane is a notepad first. **New → Task board** adds an optional Markdown file
+for the next steps: movable workflow categories, independent tag pills, due dates,
+List/Board/Calendar views, highlighted search and recoverable task Trash.
+[Task guide](docs/tasks.md) · [Try the two-minute demo](docs/demo.md)
+
+![A task board stored in one ordinary Markdown file](docs/photo/quillpane-tasks-board.png)
+
+## Next: infinite canvas board
+
+A local, portable canvas for arranging ideas and note references, with pan/zoom
+and bounded rendering. **Planned, not available in 0.14.1.**
+[Follow the canvas issue](https://github.com/shreyam1008/markpad/issues/13) · [Roadmap](docs/feature-roadmap.md)
 
 ## File Handling
 

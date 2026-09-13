@@ -1,15 +1,19 @@
 # Quillpane
 
 > Quillpane (formerly Markpad) is a tiny native Go/Wails Markdown notepad and
-> local folder workspace for Linux, Windows, and macOS.
+> local file viewer for Linux, Windows, and macOS. Optional task boards use Markdown files.
 
 Canonical site: https://quillpane.shreyam1008.com.np/
 Repository: https://github.com/shreyam1008/markpad
-Current stable release: v0.13.4
+Current stable release: v0.14.1
 Maintainer: Shreyam Adhikari — https://shreyam1008.com.np/
 
 ## Public documentation
 
+- [Screenshot tour](https://quillpane.shreyam1008.com.np/#screenshots): real notes, Split, task board and calendar captures.
+- [Demo](https://quillpane.shreyam1008.com.np/demo.md): a two-minute walkthrough with downloadable sample files.
+- [Tasks](https://quillpane.shreyam1008.com.np/tasks.md): optional planning in ordinary Markdown files.
+- [Roadmap](https://quillpane.shreyam1008.com.np/feature-roadmap.md): an infinite canvas board is next; not yet available.
 - [Architecture](https://quillpane.shreyam1008.com.np/architecture.md): native shell, embedded frontend, and local storage boundaries.
 - [Behavior](https://quillpane.shreyam1008.com.np/behavior.md): file handling, editing, previews, search, history, and safety behavior.
 - [Launch guide](https://quillpane.shreyam1008.com.np/launch.md): installation and first-run guidance.
@@ -19,6 +23,6 @@ Maintainer: Shreyam Adhikari — https://shreyam1008.com.np/
 
 ## Boundaries
 
-Quillpane is local-first. Notes, workspace paths, drafts, favorites, and history
+Quillpane is local-first. Notes, task files, drafts, favorites, and history
 stay on the user's device. The public site exposes documentation only; it has no
 hosted editor API, account system, OAuth service, or remote MCP transport.

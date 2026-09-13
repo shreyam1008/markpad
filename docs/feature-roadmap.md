@@ -26,7 +26,24 @@ Data remains plain files. Folder workspaces and their scanner/search/filing comm
 6. Every feature ships with empty, failure, reopen, keyboard, and narrow-window behavior.
 7. Further runtime dependencies require a measured cost and clear purpose; the owner removed hard size ceilings. See BUNDLE_BUDGET.md.
 
-## Next — presentation and measured runtime improvements
+## Next — infinite canvas board
+
+### [#13 Infinite canvas board for local notes and ideas](https://github.com/shreyam1008/markpad/issues/13)
+
+The owner-selected next feature is an optional spatial board. Quillpane stays a
+Markdown notepad first; tasks and canvas support the notes workflow.
+
+Start by proving pan/zoom, movable text cards and references to existing local
+notes. Choose an open, documented file format. Save/reopen, undo, recovery and
+external-change protection must use the existing document lifecycle. Render the
+visible region efficiently; an infinite navigation surface must not allocate an
+infinite document. Measure Windows and Linux memory and input latency before
+selecting a canvas dependency or promising a release date.
+
+This is roadmap work, **not a shipped feature in 0.14.1**. Cloud collaboration,
+web embeds and a drawing suite are outside the first version.
+
+## Later — presentation and measured runtime improvements
 
 ### [#1 Focus mode: distraction-free writing](https://github.com/shreyam1008/markpad/issues/1)
 
@@ -40,7 +57,7 @@ Normalized reading-progress sync shipped in 0.13.6. A later enhancement may keep
 
 Windows startup, private-memory, task scaling and rendering measurements are documented in BUNDLE_BUDGET.md and the release verification. Continue measuring ordinary-note idle RAM and native Linux PSS; task workflow measurements do not establish the runtime floor.
 
-## Next — plain-file workflows
+## Later — plain-file workflows
 
 ### [#4 Workspace task list](https://github.com/shreyam1008/markpad/issues/4)
 
@@ -72,7 +89,7 @@ ZenNotes also demonstrates math engines, a CLI, MCP, sync, cloud backup/publishi
 - A persistent full-text index or proprietary database.
 - Background daemons or file watchers before on-focus refresh is justified.
 - TikZ/JSXGraph/function-plot runtimes, an MCP server, or a bundled CLI without a separately approved use case and measured runtime cost.
-- Multiple simultaneous workspaces, graph views, databases, canvas, or automatic bulk deletion.
+- Multiple simultaneous workspaces, graph views, databases, or automatic bulk deletion. The optional local canvas above is the owner-approved exception to the earlier canvas deferral.
 
 ## Release policy
 
