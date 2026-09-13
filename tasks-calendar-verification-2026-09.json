@@ -1,0 +1,2245 @@
+{
+  "checks": [
+    "New Task board opens its task view",
+    "New task file contains the Markdown marker",
+    "New task file has a distinct icon and useful title",
+    "Task identity reaches native session metadata",
+    "Saved task file reopens as tasks",
+    "Creates tagged and untagged tasks",
+    "Completion keeps the category",
+    "Checkbox focus still allows document undo",
+    "Completion can be redone after keyboard undo",
+    "Board shows Untagged and each category",
+    "Category picker moves a card to its column",
+    "Drag and drop changes category",
+    "Trash displays removed tasks",
+    "Restore returns the task",
+    "Cancel empty Trash preserves tasks",
+    "Confirmed empty Trash clears removed tasks",
+    "Document undo recovers emptied Trash",
+    "Undo also updates the recovery draft",
+    "Redo clears Trash again",
+    "Undo remains usable after redo",
+    "Edit focuses the task title",
+    "Edit changes the task title",
+    "Rename changes the category column",
+    "Removing a category keeps its tasks in Untagged",
+    "Keyboard alternative reorders a task",
+    "Appearance settings apply to the task view",
+    "Reduced motion removes task control transitions",
+    "Theme changes preserve the task composer",
+    "Input undo stays local to the task composer",
+    "Input undo preserves committed task changes",
+    "Native Save writes task changes as ordinary Markdown",
+    "Editor shows the same Markdown source",
+    "Preview returns to the same tasks",
+    "Selected view keeps its paint and geometry under pointer hover",
+    "Edit and Trash actions are hidden while cards are idle",
+    "Hover reveals usable Edit and Trash actions",
+    "Keyboard focus reveals card actions without pointer hover",
+    "Disabled composer action retains a readable label",
+    "Three board columns fit the desktop pane",
+    "Column quick-add selects its category and focuses the composer",
+    "Rendered category tags have readable text and soft borders across all twelve theme modes",
+    "Narrow board does not widen the app",
+    "Narrow list does not widen the app",
+    "All 500 tasks are available",
+    "Large task list filtering works",
+    "Board handles 500 tasks",
+    "Oversized task files show an explicit bounded fallback",
+    "The full oversized file stays available in Editor",
+    "Window maximizes through its titlebar",
+    "Window restores through its titlebar",
+    "Titlebar double-click maximizes",
+    "Titlebar double-click restores",
+    "Content remains available after minimize and restore",
+    "Close protects unsaved task drafts",
+    "Cancel close keeps the complete active document",
+    "List reordering follows visible rows without changing categories",
+    "Search includes attached notes",
+    "Category order updates the board",
+    "Bulk cleanup clearly includes filtered-out completed tasks",
+    "Cancel cleanup keeps completed tasks",
+    "Completed tasks move into recoverable Trash",
+    "Cleanup preserves existing Trash",
+    "Restore all empties task Trash without deletion",
+    "Bulk restore keeps completion, category and attached notes",
+    "New tasks remain visible after adding through filters",
+    "Edit notes opens the full Editor at the exact task line",
+    "Returning from source restores task view",
+    "Leaving a title edit retains valid text in the recovery pipeline",
+    "Escape cancels an inline title edit",
+    "Board title action targets its Markdown heading",
+    "Finished workflow saves cleanly",
+    "Category order, task notes and additions persist to Markdown",
+    "Workflow boards have four stages without a permanent composer",
+    "Collapsed columns reclaim width and unmount their cards",
+    "Add task opens a focused inline card in its column",
+    "Multiple tags render as small named pills",
+    "Moving workflow stage preserves independent tags",
+    "Tag search finds tasks across workflow stages",
+    "Cancel discards only the unsubmitted inline card",
+    "Escape from the tag field cancels the unsubmitted card",
+    "Leaving a valid inline card retains it in the recovery draft",
+    "Workflow metadata saves as ordinary Markdown",
+    "Column collapse survives switching documents",
+    "Inline add controls stay below cards and attached notes without overlap",
+    "Expanding restores the column's tasks",
+    "Workflow board stays contained in narrow windows",
+    "Existing board categories upgrade to independent tags",
+    "Upgrade undo restores exact original Markdown",
+    "Dragging a whole column persists its new position",
+    "Custom category menu stays inside the window",
+    "Custom menu moves a task to its chosen stage",
+    "Existing tag pills can be selected without typing",
+    "Task card shows its chosen due time",
+    "Descriptions are readable and editable without a Notes disclosure",
+    "Calendar has a stable six-week month grid",
+    "Calendar agenda shows tasks on their local due date",
+    "Unscheduled tasks remain accessible in the calendar",
+    "Calendar creation assigns the selected date",
+    "Scheduled tasks save cleanly",
+    "Due date, local time and description persist in Markdown",
+    "Calendar fits a narrow window at increased scale",
+    "Adding the first tag keeps the pill chooser open",
+    "Removing the last tag keeps the pill chooser open",
+    "Escape closes a picker and restores its keyboard anchor",
+    "New list cards do not inherit a previous calendar date"
+  ],
+  "readyMs": 663.1537999999999,
+  "paintFromLaunch": 670.800048828125,
+  "largeReadyMs": 233.90120000000024,
+  "samples": [
+    {
+      "label": "six-tasks-gc",
+      "metrics": {
+        "Timestamp": 281323.116297,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 399,
+        "LayoutObjects": 619,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 692,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 132,
+        "RecalcStyleCount": 510,
+        "LayoutDuration": 0.099008,
+        "RecalcStyleDuration": 1.123818,
+        "DevToolsCommandDuration": 0.056765,
+        "ScriptDuration": 0.410247,
+        "V8CompileDuration": 0.000133,
+        "TaskDuration": 2.788882,
+        "TaskOtherDuration": 1.098911,
+        "ThreadTime": 2.793221,
+        "ProcessTime": 4.282228,
+        "JSHeapUsedSize": 4830556,
+        "JSHeapTotalSize": 6029312,
+        "FirstMeaningfulPaint": 281307.931548,
+        "DomContentLoaded": 281307.888059,
+        "NavigationStart": 281307.693729
+      },
+      "processes": [
+        {
+          "Id": 1584,
+          "WorkingSet64": 23638016,
+          "PrivateMemorySize64": 8695808,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 12308,
+          "WorkingSet64": 126205952,
+          "PrivateMemorySize64": 37847040,
+          "type": "browser"
+        },
+        {
+          "Id": 12484,
+          "WorkingSet64": 163250176,
+          "PrivateMemorySize64": 90894336,
+          "type": "renderer"
+        },
+        {
+          "Id": 20900,
+          "WorkingSet64": 43970560,
+          "PrivateMemorySize64": 12238848,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 22088,
+          "WorkingSet64": 64974848,
+          "PrivateMemorySize64": 17014784,
+          "type": "GPU"
+        },
+        {
+          "Id": 22112,
+          "WorkingSet64": 31985664,
+          "PrivateMemorySize64": 54648832,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 221339648,
+      "workingSetBytes": 454025216,
+      "page": {
+        "nodes": 534,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 240
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 240
+          }
+        ],
+        "text": "A little more organized5 open · 1 completedListBoardCalendarCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate co"
+      }
+    },
+    {
+      "label": "500-tasks-gc",
+      "metrics": {
+        "Timestamp": 281323.736614,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 3414,
+        "LayoutObjects": 20872,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 23382,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 136,
+        "RecalcStyleCount": 517,
+        "LayoutDuration": 0.121673,
+        "RecalcStyleDuration": 1.178642,
+        "DevToolsCommandDuration": 0.060763,
+        "ScriptDuration": 0.513519,
+        "V8CompileDuration": 0.000133,
+        "TaskDuration": 3.108191,
+        "TaskOtherDuration": 1.233461,
+        "ThreadTime": 3.109315,
+        "ProcessTime": 4.823476,
+        "JSHeapUsedSize": 18228648,
+        "JSHeapTotalSize": 19398656,
+        "FirstMeaningfulPaint": 281307.931548,
+        "DomContentLoaded": 281307.888059,
+        "NavigationStart": 281307.693729
+      },
+      "processes": [
+        {
+          "Id": 1584,
+          "WorkingSet64": 23638016,
+          "PrivateMemorySize64": 8695808,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 12308,
+          "WorkingSet64": 124260352,
+          "PrivateMemorySize64": 35868672,
+          "type": "browser"
+        },
+        {
+          "Id": 12484,
+          "WorkingSet64": 198733824,
+          "PrivateMemorySize64": 127111168,
+          "type": "renderer"
+        },
+        {
+          "Id": 20900,
+          "WorkingSet64": 43970560,
+          "PrivateMemorySize64": 12238848,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 22088,
+          "WorkingSet64": 64827392,
+          "PrivateMemorySize64": 16842752,
+          "type": "GPU"
+        },
+        {
+          "Id": 22112,
+          "WorkingSet64": 32030720,
+          "PrivateMemorySize64": 54571008,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 255328256,
+      "workingSetBytes": 487460864,
+      "page": {
+        "nodes": 20806,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 240
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 240
+          }
+        ],
+        "text": "A full task list400 open · 100 completedListBoardCalendarCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate colum"
+      }
+    },
+    {
+      "label": "500-task-board-gc",
+      "metrics": {
+        "Timestamp": 281324.680325,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 3,
+        "Frames": 2,
+        "JSEventListeners": 3373,
+        "LayoutObjects": 20979,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 23043,
+        "Resources": 3,
+        "ContextLifecycleStateObservers": 10,
+        "V8PerContextDatas": 1,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 3,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 0,
+        "ArrayBufferContents": 0,
+        "LayoutCount": 146,
+        "RecalcStyleCount": 532,
+        "LayoutDuration": 0.178772,
+        "RecalcStyleDuration": 1.282365,
+        "DevToolsCommandDuration": 0.074232,
+        "ScriptDuration": 0.645455,
+        "V8CompileDuration": 0.000133,
+        "TaskDuration": 3.690055,
+        "TaskOtherDuration": 1.509098,
+        "ThreadTime": 3.685775,
+        "ProcessTime": 5.663536,
+        "JSHeapUsedSize": 12352956,
+        "JSHeapTotalSize": 12845056,
+        "FirstMeaningfulPaint": 281307.931548,
+        "DomContentLoaded": 281307.888059,
+        "NavigationStart": 281307.693729
+      },
+      "processes": [
+        {
+          "Id": 1584,
+          "WorkingSet64": 23642112,
+          "PrivateMemorySize64": 8699904,
+          "type": "storage.mojom.StorageService"
+        },
+        {
+          "Id": 12308,
+          "WorkingSet64": 124264448,
+          "PrivateMemorySize64": 35872768,
+          "type": "browser"
+        },
+        {
+          "Id": 12484,
+          "WorkingSet64": 215879680,
+          "PrivateMemorySize64": 144863232,
+          "type": "renderer"
+        },
+        {
+          "Id": 20900,
+          "WorkingSet64": 43970560,
+          "PrivateMemorySize64": 12238848,
+          "type": "network.mojom.NetworkService"
+        },
+        {
+          "Id": 22088,
+          "WorkingSet64": 64929792,
+          "PrivateMemorySize64": 16965632,
+          "type": "GPU"
+        },
+        {
+          "Id": 22112,
+          "WorkingSet64": 32030720,
+          "PrivateMemorySize64": 54571008,
+          "type": "Go host"
+        }
+      ],
+      "privateBytes": 273211392,
+      "workingSetBytes": 504717312,
+      "page": {
+        "nodes": 20889,
+        "paints": [
+          {
+            "name": "first-paint",
+            "ms": 240
+          },
+          {
+            "name": "first-contentful-paint",
+            "ms": 240
+          }
+        ],
+        "text": "A full task list400 open · 100 completedListBoardCalendarCategoriesTrash0Use workflow columns and keep your existing categories as tags.Separate colum"
+      }
+    }
+  ],
+  "paletteContrast": [
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        16,
+        63,
+        53
+      ],
+      "bg": [
+        220,
+        239,
+        232
+      ],
+      "ratio": 9.837787086587285,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        217,
+        255,
+        242
+      ],
+      "bg": [
+        32,
+        60,
+        52
+      ],
+      "ratio": 11.117054181654764,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "markpad",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        18,
+        23,
+        21
+      ],
+      "ratio": 7.324346747539519,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        24,
+        59,
+        130
+      ],
+      "bg": [
+        228,
+        235,
+        251
+      ],
+      "ratio": 8.846106570554712,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        102,
+        113,
+        108
+      ],
+      "bg": [
+        246,
+        247,
+        244
+      ],
+      "ratio": 4.713158392265399,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        229,
+        237,
+        255
+      ],
+      "bg": [
+        38,
+        55,
+        86
+      ],
+      "ratio": 10.145533702256971,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "graphite",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        154,
+        168,
+        161
+      ],
+      "bg": [
+        17,
+        19,
+        21
+      ],
+      "ratio": 7.5275860762807705,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        41,
+        75,
+        87
+      ],
+      "bg": [
+        214,
+        232,
+        237
+      ],
+      "ratio": 7.42727739876694,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        89,
+        106,
+        119
+      ],
+      "bg": [
+        237,
+        241,
+        245
+      ],
+      "ratio": 4.930108476093167,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        229,
+        247,
+        250
+      ],
+      "bg": [
+        51,
+        78,
+        91
+      ],
+      "ratio": 7.984744179774795,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "nord",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        165,
+        177,
+        194
+      ],
+      "bg": [
+        37,
+        43,
+        53
+      ],
+      "ratio": 6.551631165283914,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        28,
+        87,
+        85
+      ],
+      "bg": [
+        216,
+        232,
+        228
+      ],
+      "ratio": 6.518803064254212,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        79,
+        98,
+        100
+      ],
+      "bg": [
+        238,
+        232,
+        213
+      ],
+      "ratio": 5.251616894810248,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        217,
+        255,
+        244
+      ],
+      "bg": [
+        23,
+        72,
+        77
+      ],
+      "ratio": 9.447127159297452,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "solarized",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        153,
+        169,
+        168
+      ],
+      "bg": [
+        0,
+        28,
+        38
+      ],
+      "ratio": 7.198017445391247,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        105,
+        45,
+        77
+      ],
+      "bg": [
+        239,
+        220,
+        232
+      ],
+      "ratio": 7.715482031595869,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        108,
+        94,
+        116
+      ],
+      "bg": [
+        244,
+        238,
+        243
+      ],
+      "ratio": 5.262436493173585,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        255,
+        230,
+        243
+      ],
+      "bg": [
+        74,
+        48,
+        65
+      ],
+      "ratio": 9.978846650415209,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "rose",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        170,
+        157,
+        170
+      ],
+      "bg": [
+        24,
+        19,
+        27
+      ],
+      "ratio": 7.067746558217478,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "Work",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": "Personal",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        0,
+        45,
+        98
+      ],
+      "bg": [
+        207,
+        227,
+        255
+      ],
+      "ratio": 10.365713087171644,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "light",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        75,
+        81,
+        78
+      ],
+      "bg": [
+        240,
+        242,
+        241
+      ],
+      "ratio": 7.2215634644918705,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "Work",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": "Personal",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-view-switch button[aria-pressed=true]",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        23,
+        61,
+        104
+      ],
+      "ratio": 11.030429546625085,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-add button:disabled",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    },
+    {
+      "palette": "contrast",
+      "mode": "dark",
+      "tone": ".task-card-actions > button",
+      "fg": [
+        194,
+        200,
+        197
+      ],
+      "bg": [
+        5,
+        6,
+        6
+      ],
+      "ratio": 11.942257867928834,
+      "softBorder": true
+    }
+  ],
+  "errors": [],
+  "requests": [
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTUgOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNNiAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTggOWExIDEgMCAxMDAtMiAxIDEgMCAwMDAgMnpNOSAxMWExIDEgMCAxMS0yIDAgMSAxIDAgMDEyIDB6TTExIDlhMSAxIDAgMTAwLTIgMSAxIDAgMDAwIDJ6IiBmaWxsPSIjZmZmIi8+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNSAzLjVBMi41IDIuNSAwIDAwMTIuNSAxaC05QTIuNSAyLjUgMCAwMDEgMy41djlBMi41IDIuNSAwIDAwMy41IDE1aDlhMi41IDIuNSAwIDAwMi41LTIuNXYtOXpNMiA1aDEydjcuNWMwIC44My0uNjcgMS41LTEuNSAxLjVoLTlBMS41IDEuNSAwIDAxMiAxMi41VjV6bTEuNS0zaDljLjgzIDAgMS41LjY3IDEuNSAxLjVWNEgydi0uNUMyIDIuNjcgMi42NyAyIDMuNSAyeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==",
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTggMGE4IDggMCAxMTAgMTZBOCA4IDAgMDE4IDB6bTAgMWE3IDcgMCAxMDAgMTRBNyA3IDAgMDA4IDF6bS0uNSAyYS41LjUgMCAwMS41LjQxVjhoMi41YS41LjUgMCAwMS4wOSAxSDcuNWEuNS41IDAgMDEtLjUtLjQxVjMuNWMwLS4yOC4yMi0uNS41LS41eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg=="
+  ],
+  "profile": "C:\\Users\\shreyam\\AppData\\Local\\Temp\\quillpane-native-perf-iHsF8M"
+}

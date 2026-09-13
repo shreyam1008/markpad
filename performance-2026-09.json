@@ -1,0 +1,281 @@
+{
+  "date": "2026-09-12",
+  "platform": "Windows amd64",
+  "webview": "Edg/152.0.4191.66",
+  "baselineCommit": "7c6fc82",
+  "metric": "Sum of Go host and dedicated WebView2 process private committed bytes; not private working set",
+  "instrumentation": "Production builds with localhost CDP in a private copy of go-webview2; fresh isolated app profiles; warm OS file cache",
+  "startupFirstContentfulPaintMs": {
+    "before": [
+      664.89990234375,
+      701.60009765625,
+      728,
+      684.300048828125,
+      684.300048828125
+    ],
+    "final": [
+      528.89990234375,
+      541.89990234375,
+      559.199951171875,
+      555.199951171875,
+      553.10009765625
+    ]
+  },
+  "before": {
+    "workloads": [
+      {
+        "name": "small.md",
+        "bytes": 63,
+        "observedReadyMs": 130.5904999999998
+      },
+      {
+        "name": "large.txt",
+        "bytes": 2097152,
+        "observedReadyMs": 280.10599999999977,
+        "scrollHeightChange": 0,
+        "selectionMatches": true
+      },
+      {
+        "name": "large.md",
+        "bytes": 1022000,
+        "observedReadyMs": 1062.0307000000003
+      },
+      {
+        "name": "diagram.md",
+        "bytes": 68,
+        "observedReadyMs": 214.5568999999996,
+        "diagramRendered": true
+      }
+    ],
+    "samples": [
+      {
+        "label": "blank",
+        "privateBytes": 192036864,
+        "workingSetBytes": 394747904,
+        "jsHeapUsedBytes": 6992828,
+        "domNodes": 248
+      },
+      {
+        "label": "small.md",
+        "privateBytes": 198471680,
+        "workingSetBytes": 411385856,
+        "jsHeapUsedBytes": 6765192,
+        "domNodes": 187
+      },
+      {
+        "label": "small.md-gc",
+        "privateBytes": 194957312,
+        "workingSetBytes": 409874432,
+        "jsHeapUsedBytes": 5298532,
+        "domNodes": 187
+      },
+      {
+        "label": "large.txt",
+        "privateBytes": 325074944,
+        "workingSetBytes": 538423296,
+        "jsHeapUsedBytes": 12144608,
+        "domNodes": 194
+      },
+      {
+        "label": "large.txt-gc",
+        "privateBytes": 262021120,
+        "workingSetBytes": 485715968,
+        "jsHeapUsedBytes": 7469916,
+        "domNodes": 194
+      },
+      {
+        "label": "large.md",
+        "privateBytes": 551415808,
+        "workingSetBytes": 778809344,
+        "jsHeapUsedBytes": 28464096,
+        "domNodes": 70221
+      },
+      {
+        "label": "large.md-gc",
+        "privateBytes": 393433088,
+        "workingSetBytes": 623751168,
+        "jsHeapUsedBytes": 26060684,
+        "domNodes": 70221
+      },
+      {
+        "label": "diagram.md",
+        "privateBytes": 416579584,
+        "workingSetBytes": 646680576,
+        "jsHeapUsedBytes": 22232828,
+        "domNodes": 306
+      },
+      {
+        "label": "diagram.md-gc",
+        "privateBytes": 212938752,
+        "workingSetBytes": 446517248,
+        "jsHeapUsedBytes": 13003524,
+        "domNodes": 306
+      }
+    ],
+    "smoke": {
+      "draftPersisted": true,
+      "undoRedo": true,
+      "savedExactly": true,
+      "externalConflictProtected": true
+    }
+  },
+  "after": {
+    "workloads": [
+      {
+        "name": "small.md",
+        "bytes": 63,
+        "observedReadyMs": 133.87990000000036
+      },
+      {
+        "name": "large.txt",
+        "bytes": 2097152,
+        "observedReadyMs": 155.24249999999938,
+        "scrollHeightChange": -0.00107809154537351,
+        "selectionMatches": true
+      },
+      {
+        "name": "large.md",
+        "bytes": 1022000,
+        "observedReadyMs": 1052.9532
+      },
+      {
+        "name": "diagram.md",
+        "bytes": 68,
+        "observedReadyMs": 426.83460000000014,
+        "diagramRendered": true
+      }
+    ],
+    "samples": [
+      {
+        "label": "blank",
+        "privateBytes": 173051904,
+        "workingSetBytes": 372535296,
+        "jsHeapUsedBytes": 5174900,
+        "domNodes": 250
+      },
+      {
+        "label": "small.md",
+        "privateBytes": 179810304,
+        "workingSetBytes": 388947968,
+        "jsHeapUsedBytes": 5014012,
+        "domNodes": 187
+      },
+      {
+        "label": "small.md-gc",
+        "privateBytes": 175677440,
+        "workingSetBytes": 387141632,
+        "jsHeapUsedBytes": 4190516,
+        "domNodes": 187
+      },
+      {
+        "label": "large.txt",
+        "privateBytes": 198230016,
+        "workingSetBytes": 416735232,
+        "jsHeapUsedBytes": 10884648,
+        "domNodes": 322
+      },
+      {
+        "label": "large.txt-gc",
+        "privateBytes": 191635456,
+        "workingSetBytes": 411701248,
+        "jsHeapUsedBytes": 6455292,
+        "domNodes": 322
+      },
+      {
+        "label": "large.md",
+        "privateBytes": 494809088,
+        "workingSetBytes": 719929344,
+        "jsHeapUsedBytes": 28664964,
+        "domNodes": 70221
+      },
+      {
+        "label": "large.md-gc",
+        "privateBytes": 391860224,
+        "workingSetBytes": 620494848,
+        "jsHeapUsedBytes": 25034444,
+        "domNodes": 70221
+      },
+      {
+        "label": "diagram.md",
+        "privateBytes": 422608896,
+        "workingSetBytes": 658128896,
+        "jsHeapUsedBytes": 21707300,
+        "domNodes": 301
+      },
+      {
+        "label": "diagram.md-gc",
+        "privateBytes": 235089920,
+        "workingSetBytes": 466612224,
+        "jsHeapUsedBytes": 18172372,
+        "domNodes": 301
+      }
+    ],
+    "smoke": {
+      "draftPersisted": true,
+      "undoRedo": true,
+      "savedExactly": true,
+      "externalConflictProtected": true
+    },
+    "runtimeErrors": [],
+    "networkRequests": [
+      "http://wails.localhost/wails/ipc.js",
+      "http://wails.localhost/wails/runtime.js",
+      "http://wails.localhost/chunk-299p501r.css",
+      "http://wails.localhost/chunk-2qbkh4qx.js",
+      "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+      "http://wails.localhost/markpad-mark-hzrxwmt6.svg",
+      "http://wails.localhost/diagrams-b72m7dvw.js"
+    ]
+  },
+  "build": {
+    "windowsAssets": [
+      {
+        "Name": "chunk-299p501r.css",
+        "Length": 122898
+      },
+      {
+        "Name": "chunk-2qbkh4qx.js",
+        "Length": 1191769
+      },
+      {
+        "Name": "diagrams-b72m7dvw.js",
+        "Length": 5365297
+      },
+      {
+        "Name": "index.html",
+        "Length": 1366
+      },
+      {
+        "Name": "markpad-mark-hzrxwmt6.svg",
+        "Length": 603
+      }
+    ],
+    "windowsBuildSeconds": 0.7777916,
+    "linuxAssets": [
+      {
+        "Name": "chunk-ms093sp1.js",
+        "Length": 6539724
+      },
+      {
+        "Name": "chunk-xcbgpj4j.css",
+        "Length": 124045
+      },
+      {
+        "Name": "index.html",
+        "Length": 1366
+      },
+      {
+        "Name": "markpad-mark-hzrxwmt6.svg",
+        "Length": 603
+      }
+    ],
+    "linuxBuildSeconds": 0.8731229
+  },
+  "productionWindowsBuild": {
+    "seconds": 1.3112186,
+    "go": "go version go1.27.1 windows/amd64",
+    "sha256": "EB8AEE5CC1AAF77472C84B114E3D3EBF1E4303C7463788EFD18BABFEC5DD649B",
+    "bytes": 18753536
+  },
+  "linuxNative": "Not tested: no local Linux runtime; remote host SSH connection timed out."
+}

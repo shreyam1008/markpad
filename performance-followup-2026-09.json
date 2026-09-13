@@ -1,0 +1,130 @@
+{
+  "date": "2026-09-12",
+  "baseline": "Previous performance pass, before badge/shared-code follow-up",
+  "workload": "1,350,011-byte JSON, following small Markdown, large text, rich Markdown and Mermaid in the same isolated app session",
+  "metric": "Go host plus dedicated WebView2 process-tree private committed bytes, after explicit JavaScript GC; snapshot, not peak RAM",
+  "before": {
+    "privateMiB": 257.9453125,
+    "jsHeapMiB": 15.864913940429688,
+    "domElements": 248
+  },
+  "after": {
+    "privateMiB": 216.73828125,
+    "jsHeapMiB": 13.540374755859375,
+    "domElements": 303
+  },
+  "webview": "Edg/152.0.4191.66",
+  "checks": [
+    {
+      "name": "large.json",
+      "bytes": 1350011,
+      "selectionMatches": true,
+      "exactDOM": true,
+      "textZoom": true,
+      "selectedBytes": 1350010
+    },
+    {
+      "name": "badge-layout",
+      "badges": [
+        {
+          "text": "YML",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "JSON",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "JSON",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "MD",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "MD",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "TXT",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "MD",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        },
+        {
+          "text": "MD",
+          "width": 36,
+          "overflow": false,
+          "icons": 0
+        }
+      ]
+    }
+  ],
+  "nativeRegressionChecks": {
+    "draftPersisted": true,
+    "undoRedo": true,
+    "savedExactly": true,
+    "externalConflictProtected": true
+  },
+  "runtimeErrors": [],
+  "linuxNative": "Unmeasured; shared code and Linux single-module frontend build checked",
+  "linuxAssets": [
+    {
+      "Name": "chunk-0bpamzn7.css",
+      "Length": 124093
+    },
+    {
+      "Name": "chunk-nmapm8zh.js",
+      "Length": 6539803
+    },
+    {
+      "Name": "index.html",
+      "Length": 1366
+    },
+    {
+      "Name": "markpad-mark-hzrxwmt6.svg",
+      "Length": 603
+    }
+  ],
+  "windowsAssets": [
+    {
+      "Name": "chunk-0shnw5bm.css",
+      "Length": 122946
+    },
+    {
+      "Name": "chunk-mh6r0etf.js",
+      "Length": 1191849
+    },
+    {
+      "Name": "diagrams-b72m7dvw.js",
+      "Length": 5365297
+    },
+    {
+      "Name": "index.html",
+      "Length": 1366
+    },
+    {
+      "Name": "markpad-mark-hzrxwmt6.svg",
+      "Length": 603
+    }
+  ],
+  "windowsBinaryBytes": 18753536,
+  "windowsBinarySHA256": "4fcbcf35a8b0ed2c95794f672de6267c2b53e8d961945b95558d2137bcb525e0"
+}
