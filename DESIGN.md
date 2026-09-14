@@ -219,5 +219,5 @@ selector. Fixed date-left/tag-right footers retain hover/focus Edit/Trash contro
 Category/tag management is a native modal dialog. Numeric OKLCH colors are
 user-configurable through a functional wheel and keyboard sliders; derived text
 colors preserve light/dark contrast. This is the approved dynamic-color exception
-to the static-token palette. Search has a highlighted sidebar. The calendar
+to the static-token palette. Search filters cards in place with highlighted matches and compact All/Open/Done pills. The calendar
 month and selected-day agenda share a row; narrow panes scroll inside that region.

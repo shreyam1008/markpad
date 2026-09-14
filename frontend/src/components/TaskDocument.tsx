@@ -663,14 +663,15 @@ export function TaskDocument({
   const [clearConfirmed, setClearConfirmed] = useState(false);
   const [tidyConfirmed, setTidyConfirmed] = useState(false);
   const [query, setQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
-  const searchVisible = searchOpen || findOpen;
   useEffect(() => {
-    if (searchVisible) requestAnimationFrame(() => searchInput.current?.focus());
-  }, [searchVisible]);
+    if (!findOpen) return;
+    searchInput.current?.focus();
+    searchInput.current?.select();
+    onCloseFind?.();
+  }, [findOpen, onCloseFind]);
   const [filter, setFilter] = useState("all");
   const [dragged, setDragged] = useState<TaskItem | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -1168,21 +1169,35 @@ export function TaskDocument({
             >
               <Ellipsis />
             </button>
-            <button
-              type="button"
-              className="task-quiet"
-              aria-label="Search tasks"
-              aria-pressed={searchVisible}
-              onClick={() => {
-                if (searchVisible) {
-                  setSearchOpen(false);
-                  onCloseFind?.();
-                } else setSearchOpen(true);
-                requestAnimationFrame(() => searchInput.current?.focus());
-              }}
-            >
-              <Search /> Search tasks
-            </button>
+            <div className="task-search">
+              <Search aria-hidden="true" />
+              <input
+                ref={searchInput}
+                aria-label="Filter tasks"
+                placeholder="Filter tasks…"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    setQuery("");
+                    onCloseFind?.();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="task-quiet task-search-clear"
+                aria-label="Clear task filter"
+                disabled={!query}
+                onClick={() => {
+                  setQuery("");
+                  searchInput.current?.focus();
+                }}
+              >
+                <X />
+              </button>
+            </div>
             {doc.workflow && !trashOpen && mode === "list" && (
               <button
                 className="task-quiet"
@@ -1196,28 +1211,24 @@ export function TaskDocument({
                 <Plus /> Add task
               </button>
             )}
-            {(query || (!trashOpen && filter !== "all")) && (
-              <button
-                type="button"
-                className="task-quiet"
-                onClick={() => {
-                  setQuery("");
-                  setFilter("all");
-                }}
-              >
-                Clear filters
-              </button>
-            )}
             {!trashOpen && (
-              <select
-                aria-label="Task completion filter"
-                value={filter}
-                onChange={(event) => setFilter(event.target.value)}
-              >
-                <option value="all">All tasks</option>
-                <option value="open">Open</option>
-                <option value="done">Completed</option>
-              </select>
+              <fieldset className="task-status-pills" aria-label="Task completion filter">
+                {[
+                  ["all", "All"],
+                  ["open", "Open"],
+                  ["done", "Done"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className="task-quiet"
+                    aria-pressed={filter === value}
+                    onClick={() => setFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </fieldset>
             )}
             {trashOpen && (
               <button
@@ -1313,78 +1324,7 @@ export function TaskDocument({
           <output className="task-announcement" aria-live="polite">
             {announcement}
           </output>
-          <div className={`task-workspace${searchVisible ? " has-search" : ""}`}>
-            {searchVisible && (
-              <aside className="task-search-panel" aria-label="Task search">
-                <header>
-                  <strong>Search tasks</strong>
-                  <button
-                    type="button"
-                    className="task-quiet"
-                    aria-label="Close task search"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setQuery("");
-                      onCloseFind?.();
-                    }}
-                  >
-                    <X />
-                  </button>
-                </header>
-                <label className="task-search">
-                  <Search />
-                  <input
-                    ref={searchInput}
-                    aria-label="Filter tasks"
-                    placeholder="Title, tag, category or description"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Escape") {
-                        setSearchOpen(false);
-                        setQuery("");
-                        onCloseFind?.();
-                      }
-                    }}
-                  />
-                </label>
-                <p>
-                  {visible.length} {visible.length === 1 ? "match" : "matches"}
-                </p>
-                {visible.map((task) => (
-                  <button
-                    type="button"
-                    className="task-search-result"
-                    key={task.start}
-                    onClick={() => {
-                      changeMode("list");
-                      requestAnimationFrame(() => {
-                        const cards =
-                          root.current?.querySelectorAll<HTMLElement>("[data-task-title]");
-                        [...(cards ?? [])]
-                          .find((el) => el.dataset.taskTitle === task.title)
-                          ?.scrollIntoView({ block: "nearest" });
-                      });
-                    }}
-                  >
-                    <strong>
-                      <TaskHighlight text={task.title} query={query} />
-                    </strong>
-                    <span>
-                      <TaskHighlight
-                        text={[task.category, ...task.tags].filter(Boolean).join(" · ")}
-                        query={query}
-                      />
-                    </span>
-                    {task.details && (
-                      <small>
-                        <TaskHighlight text={task.details} query={query} />
-                      </small>
-                    )}
-                  </button>
-                ))}
-              </aside>
-            )}
+          <div className="task-workspace">
             <div className="task-main">
               {mode === "calendar" && !trashOpen ? (
                 <section className="task-calendar" aria-label="Task calendar">
@@ -1638,7 +1578,7 @@ export function TaskDocument({
                       </h2>
                       <p>
                         {query || (!trashOpen && filter !== "all")
-                          ? "Try another search or clear the filters."
+                          ? "Try another search, or choose All and clear the text filter."
                           : trashOpen
                             ? "Removed tasks stay here until you restore them or empty Trash."
                             : "Add a task to get started. Tags are optional."}

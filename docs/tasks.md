@@ -36,12 +36,12 @@ show the same file; the last view you chose is remembered on this device.
 - Drag a column by its header grip to reorder it. Focus that grip and use
   Alt+Left/Right, or **Earlier / Later** in Categories, for keyboard ordering.
   No category stays first when needed. Empty categories and their order are saved in Markdown.
-- **Search tasks**, the top Search command, or Ctrl+F in task view opens a search sidebar.
-  It filters titles, categories, tags and descriptions and highlights text matches in
-  results and cards. Click a result to reveal it in List. Search is scoped to the active
-  task file; editor search remains available in Editor. Show only open/completed tasks
-  with the completion filter.
-  **Clear filters** resets the view. Adding a task resets filters so it is visible.
+- **Filter tasks** searches titles, categories, tags and descriptions directly in
+  the current List, Board or Calendar. Matches are highlighted in cards; no sidebar
+  opens or changes the layout. The top Search command and Ctrl+F focus this field.
+  Escape or its clear button clears the text. Compact **All / Open / Done** pills
+  filter completion independently of workflow categories. Choose All to reset
+  completion. Adding a task resets both filters so it is visible.
 - Right-click a card (or focus it and press Shift+F10) for Edit, Complete/Reopen,
   Move to category, Copy title and Move to Trash. Card buttons and drag/drop remain
   available. Dates stay left and the tag control stays right in Board card footers.
