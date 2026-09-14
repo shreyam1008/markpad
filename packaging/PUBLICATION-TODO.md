@@ -6,10 +6,25 @@ Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
 
 Prepared from `fix/ubuntu-task-board` commit `ae6f938` with Linux native dragging,
 collapsed-column layout and task-card readability fixes. Local checks passed;
-Windows desktop interaction testing remains blocked by desktop capture/access.
+Windows collapse and keyboard reordering passed after remote reconnection;
+manual native dragging and save/reopen remain unverified.
 See [patch verification](../docs/task-hotfix-0.14.2.md).
 
-Publication is pending the annotated tag and platform release gates. Existing
+Source `28334ce` and annotated tag `v0.14.2` are pushed. Release run
+[`34804710420`](https://github.com/shreyam1008/markpad/actions/runs/34804710420)
+was intentionally cancelled before publication after the automated native drag
+test failed to deliver a `dragover` event. Version/Linux/Windows/macOS jobs passed;
+Snap was cancelled. Linux CI `34804709729` passed. **0.14.2 is not published.**
+Complete manual Windows card/column dragging and save/reopen, then rerun the
+cancelled release if the exact tagged source passes. If a code fix is needed,
+use a fresh patch tag rather than moving `v0.14.2`.
+
+Microsoft Store Submission 4 (`1152921505701883603`) is an inspected draft with
+0.14.2 release notes saved. Its package is still the inherited 0.14.1.0 MSIX;
+do not submit it until the verified new package replaces that inherited package.
+The live Store release remains Submission 3, version 0.14.1.0.
+
+Existing
 0.14.1 package hashes below remain valid only for that previous release. Update
 Scoop, WinGet and Microsoft Store only from verified 0.14.2 release artifacts.
 Snap credentials and the independent Flathub portal/submission gates remain
