@@ -53,6 +53,7 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.14.3" date="2026-09-14"><description><p>Filter tasks directly in cards with highlighted text matches. Compact All, Open and Done pills replace the completion dropdown. Search stays in the current layout without a sidebar.</p></description></release>
     <release version="0.14.2" date="2026-09-14"><description><p>Restore task-card dragging and column ordering on Ubuntu. Fix drops over controls and empty columns, vertical collapsed headers, and wrapped-title spacing. Refine category headers and full-card tints.</p></description></release>
     <release version="0.14.1" date="2026-09-13"><description><p>Task boards in Markdown with workflow columns, tags, due dates, a calendar agenda, custom colors, search highlighting and context menus. Updated dependencies and bounded large-file rendering.</p></description></release>
     <release version="0.13.8" date="2026-09-12"><description><p>A clearer Help page with version badges, updates, local storage details, and project and creator links.</p></description></release>

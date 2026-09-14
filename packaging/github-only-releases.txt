@@ -1,0 +1,2 @@
+# Owner-requested GitHub-only releases; do not deploy their website/APT or submit stores.
+v0.14.3

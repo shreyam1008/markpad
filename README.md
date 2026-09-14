@@ -106,7 +106,7 @@ List/Board/Calendar views, highlighted search and recoverable task Trash.
 ## Next: infinite canvas board
 
 A local, portable canvas for arranging ideas and note references, with pan/zoom
-and bounded rendering. **Planned, not available in 0.14.2.**
+and bounded rendering. **Planned, not available in 0.14.3.**
 [Follow the canvas issue](https://github.com/shreyam1008/markpad/issues/13) · [Roadmap](docs/feature-roadmap.md)
 
 ## File Handling
@@ -128,6 +128,7 @@ Quillpane does not bundle or download a PDF engine. Images are read locally thro
 
 | Version | Name | Highlights |
 |---------|------|------------|
+| 0.14.3 | Simple task filters | Inline card search with highlighted matches and compact All/Open/Done pills; GitHub-only patch |
 | 0.14.2 | Smoother task boards | Ubuntu drag/drop and column ordering, contained vertical collapsed headers, clearer category colors and wrapped titles |
 | 0.14.1 | Tasks, your way | Markdown task boards, workflow columns, tags, calendar agenda, OKLCH colors, highlighted search and context actions; updated toolchain and bounded rendering |
 | 0.13.8 | A clearer home | Unified Help with version badges, updates, local data location, and project/creator links |

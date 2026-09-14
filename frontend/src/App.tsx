@@ -190,6 +190,11 @@ function ModalLayer({
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.14.3 · Simple task filters</h3>
+          <p>
+            Filter cards in place with highlighted matches and compact All, Open and Done pills. No
+            search sidebar or completion dropdown.
+          </p>
           <h3 className="font-bold">0.14.2 · Smoother task boards</h3>
           <p>
             Ubuntu task dragging and column reordering now work across controls and empty columns.

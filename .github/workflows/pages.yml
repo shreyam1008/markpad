@@ -42,7 +42,10 @@ jobs:
           set -euo pipefail
           source_version="$(sed -n 's/^const Version = "\(.*\)"/\1/p' main.go)"
           tag="${REQUESTED_TAG:-$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)}"
-          if [[ "$tag" == "v$source_version" ]]; then
+          if [[ -f packaging/github-only-releases.txt ]] && grep -Fxq "$tag" packaging/github-only-releases.txt; then
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo "Website/APT publication intentionally held for GitHub-only release $tag." >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$tag" == "v$source_version" ]]; then
             echo 'publish=true' >> "$GITHUB_OUTPUT"
           else
             echo 'publish=false' >> "$GITHUB_OUTPUT"

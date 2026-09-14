@@ -225,13 +225,12 @@ jobs:
           body: |
             ## What's new in ${{ github.ref_name }}
 
-            - Restored native Ubuntu task-card dragging and workflow-column reordering by retaining GTK's drop destination. Windows' native drop policy is unchanged.
-            - Drops over card buttons and empty-column labels now reach the correct drop target.
-            - Collapsed columns keep vertical labels and counts inside their narrow rails.
-            - Distinct tinted category headers, subtle full-card coloring, and clear space between wrapped titles and hover actions.
-            - Task files remain ordinary Markdown; existing tags, dates, descriptions, recovery and saving behavior are preserved.
-            - Built with Bun 1.4.2 and Go 1.27.1. No browser engine, Node or Bun bundled.
-            - All platform packages are built and checked from this tag; signed APT and the website follow automatically. Store submission/review status is tracked separately.
+            - Search filters cards directly in the current List, Board, or Calendar view, with highlighted matches.
+            - Compact All / Open / Done pills replace the completion dropdown.
+            - The inline search field replaces the separate results sidebar and keeps the layout steady.
+            - Existing Markdown files, task edits, recovery and saving behavior are preserved.
+            - GitHub-only patch by owner request. Microsoft Store, Scoop, WinGet, Snap, website and APT updates are held for a larger release.
+            - Built with Bun 1.4.2 and Go 1.27.1; no browser engine, Node or Bun bundled.
 
             ## Install
 

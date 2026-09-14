@@ -2,7 +2,22 @@
 
 Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.14.2
+## GitHub-only patch: 0.14.3
+
+The owner explicitly requested this patch on GitHub only. Microsoft Store and all
+other distribution updates are held for a larger change. This overrides the normal
+all-store follow-through for this version. `github-only-releases.txt` records the
+exception; the website/APT workflow checks it before deployment. Building platform
+artifacts does not submit them to stores. Do not update Scoop/WinGet manifests,
+create another Store submission, or change the existing 0.14.2 submission.
+
+Changes: inline task filtering with highlighted card matches, compact All/Open/Done
+pills and no search sidebar. Browser UI checks, 93 frontend tests, both frontend
+builds and Go checks passed for the feature. Manual Windows keyboard/native checks
+remain unverified as documented in PR #14. Release validation is recorded in the
+GitHub tag workflow; do not report publication before its publish job completes.
+
+## Previous full distribution release: 0.14.2
 
 Source `28334ce5a04b5ee86e257e7e7aae1adfc3be094e`, immutable tag `v0.14.2`.
 The owner resumed publication on 14 September after the remote Windows drag test

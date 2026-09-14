@@ -1,5 +1,11 @@
 # TODO
 
+## Completed (v0.14.3)
+
+- [x] Inline task filtering and highlighted matches without a sidebar
+- [x] Compact All/Open/Done pills instead of the completion dropdown
+- [x] GitHub-only patch; other distribution updates held for a larger release
+
 ## Completed (v0.14.2)
 
 - [x] Restore Ubuntu native task drops and column ordering; preserve Windows drop policy
