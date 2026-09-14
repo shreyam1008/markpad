@@ -8,24 +8,24 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: APT repository for markpad
-Date: Sun, 13 Sep 2026 16:25:23 +0000
+Date: Mon, 14 Sep 2026 04:33:06 +0000
 MD5Sum:
- 81b7063f2c5a5f1a8adae6258231ada0              467 main/binary-amd64/Packages
- 0acfb48d9a242e00ed3dc21b7b4dc8fc              364 main/binary-amd64/Packages.gz
+ 8140cf8aa5f4a8006ea3f99c899dbfa0              467 main/binary-amd64/Packages
+ bf1c33139360622861bbb4898d3aad54              363 main/binary-amd64/Packages.gz
 SHA256:
- a3408441deca8cc547845146b25dd9179b57f4325ffdd8634af91af483a789ca              467 main/binary-amd64/Packages
- 48910958e18f18c7e791796b60051f561ba2431b662f05e720af301f555d725e              364 main/binary-amd64/Packages.gz
+ be4f4c31e1c22fd4bc6e445d830c303307fb74155e0c00d5b1f58fb80537d1da              467 main/binary-amd64/Packages
+ f9c5a99a45ad86e298edd0226da478965ebd1878c72efdd88f94c27352812293              363 main/binary-amd64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqmznMACgkQju+lBvr4
-FAlUcAwA38p7uYs1g73o4D6snNtOpBXcSsiHRoPj5s+MdUmIRLs4gOmgmWQHPi5W
-6oSGyai17yTvzVsHrPntOPFf04rCllTLcenMOYiWhqzj0ZjKc2mb3Gxr1Vzbi0XU
-STv/KNYvP2Qr+yHFwcQaSOpcKSFWlIpIjmokh6TsBhH/bdcpJhd1RGItkOqeRbJ/
-lPB7t5NfJwOFxfdi0moNK8Q72DkY2ooyNbJzyxGorDzoSyAeycPkOlGgj3OewSLo
-dykquNmZ6JmjD9VxSSwzv8CLWG0aVgY7XyuU6oPtdb/+ffh02CouZAzBag0vMZwq
-L88ab4AtGoIwVMrHaf4Gu1R9bqBPJ7C0H//vqhOjvUzZhNaW1ouWWklk4OHzsjNw
-MvK+1hoXBqAQjnDkgxjE/J2M6rhBqqcseRpT1JKrzTHtLkA/UH6EJySoj6kVP8V6
-YZeidqQtUzcHOF+0d1M1uMfw+MEd3ycwV8iKfpUDkiZwFJ+YM5UqdJPy1Y47rl+X
-yf3lthhP
-=r5p7
+iQGzBAEBCAAdFiEENbgN3Y03gf03gf4Yju+lBvr4FAkFAmqneQIACgkQju+lBvr4
+FAmppgwAyugd1AJ4AWWFttgeml6t5yNh+XQSYLP+hV9HZKxM0pjoVvoPTU5F5NR5
+CuEZurK0rDMR1jvG8d0I7LLHsD4n7Byw9ty7AseP98h6fpzq+pgY6USFDQW4bwMe
+NFBjr+Uo3Qwc+CpgEay1PN8nBCQMTH8f0kqPpT8yyNmW01nH5t+cwEWY6/y9013H
+rOImnh86lyAaQjGgGttTpRE6LkLlyJKW3HINjUZkoQQBPBUl+0KR8oeU4s6eeSsN
+2pfDunIYQxCh45hdeXIL7Z7TjoNOKsY3D3PjY2BMYtG93eZRPHsBxR0cx0S7Nzxy
++XMrut337MooqUOSWwAXI2TuWHdDeJDRww5sTsVCpd251/rOYNr+Ax88xlP9h1Ef
+c2mf9w4fFrBCQ1Nb38CZZFQLA/KBf5jiIqvc6NT4Zq32XMBATYhtsI9739+gBbSW
+V2cdfZnNdIBX5Y3FVd0AoihoONpt9js1FUW//fDOk8fzy0KRdKDl+41ZMcGpYT+D
+D1qO6gLS
+=xEfI
 -----END PGP SIGNATURE-----

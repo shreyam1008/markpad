@@ -1,8 +1,8 @@
 # Quillpane feature roadmap
 
-Updated for v0.14.1 on 2026-09-13. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
+Updated for v0.14.2 on 2026-09-14. Help is visible in the title bar and Settings, with installed/latest versions and checksum-verified installer downloads. GitHub, Snap, MSIX, APT and desktop packages share a release tag. Store publication still requires the respective account credentials and certification. GitHub issues are the live cards; this document explains why they are ordered this way.
 
-## Stable baseline — v0.14.1
+## Stable baseline — v0.14.2
 
 Quillpane (formerly Markpad) is a local Markdown notepad for individual files:
 
@@ -40,7 +40,7 @@ visible region efficiently; an infinite navigation surface must not allocate an
 infinite document. Measure Windows and Linux memory and input latency before
 selecting a canvas dependency or promising a release date.
 
-This is roadmap work, **not a shipped feature in 0.14.1**. Cloud collaboration,
+This is roadmap work, **not a shipped feature in 0.14.2**. Cloud collaboration,
 web embeds and a drawing suite are outside the first version.
 
 ## Later — presentation and measured runtime improvements

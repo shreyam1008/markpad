@@ -1,13 +1,13 @@
 Package: markpad
-Version: 0.14.1
+Version: 0.14.2
 Architecture: amd64
 Maintainer: Shreyam Adhikari
 Depends: libgtk-3-0, libwebkit2gtk-4.1-0
-Filename: pool/main/d/markpad/markpad_0.14.1_amd64.deb
-Size: 5330666
-MD5sum: ac66a8defede4968825e40d2ea12d942
-SHA1: 51b0748fd5a6deb1a43c7376318836ce5c992f2d
-SHA256: 6f694598e00deb2bcb34209db5a6882a278e8bf35298226d5bbe14a9a73bd779
+Filename: pool/main/d/markpad/markpad_0.14.2_amd64.deb
+Size: 5330974
+MD5sum: c11de426831d611afd88f5e1318366d0
+SHA1: cd2ac647e83e6fa0204e01db1e5f1aa381b7bb1b
+SHA256: dbce8102bfb252d34badc4324f1d25d1cdec005d4db372eecf40b25a908aa3ac
 Section: utils
 Priority: optional
 Description: Small native Markdown notepad with split view and session restore
