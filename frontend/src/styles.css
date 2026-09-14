@@ -5432,8 +5432,7 @@ textarea {
   padding: 12px;
 }
 .task-document.task-board .task-card {
-  background: var(--mp-paper);
-  border-left: 2px solid rgb(var(--task-rgb) / 45%);
+  background: rgb(var(--task-rgb) / 10%);
 }
 .task-document.task-board .task-card.is-drop-target {
   background: var(--mp-selected);

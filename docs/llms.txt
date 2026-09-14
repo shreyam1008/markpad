@@ -5,7 +5,7 @@
 
 Canonical site: https://quillpane.shreyam1008.com.np/
 Repository: https://github.com/shreyam1008/markpad
-Current stable release: v0.14.1
+Current stable release: v0.14.2
 Maintainer: Shreyam Adhikari — https://shreyam1008.com.np/
 
 ## Public documentation

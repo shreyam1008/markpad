@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -11,6 +14,33 @@ import (
 // renamed without a separate, platform-tested migration.
 func TestRebrandPreservesDurableIdentities(t *testing.T) {
 	t.Parallel()
+	// Scoop must keep the last verified installer until the next release artifact
+	// exists. Validate its own version/hash without requiring a future download.
+	scoopBytes, err := os.ReadFile("packaging/scoop/markpad.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var scoop struct {
+		Version      string `json:"version"`
+		Architecture map[string]struct {
+			URL  string `json:"url"`
+			Hash string `json:"hash"`
+		} `json:"architecture"`
+	}
+	if err := json.Unmarshal(scoopBytes, &scoop); err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`^\d+\.\d+\.\d+$`).MatchString(scoop.Version) {
+		t.Fatal("Scoop must declare a release version")
+	}
+	installer := scoop.Architecture["64bit"]
+	wantURL := "https://github.com/shreyam1008/markpad/releases/download/v" + scoop.Version + "/markpad-setup.exe"
+	if installer.URL != wantURL {
+		t.Fatalf("Scoop installer identity/version mismatch: %s", installer.URL)
+	}
+	if hash, err := hex.DecodeString(installer.Hash); err != nil || len(hash) != 32 || strings.Trim(installer.Hash, "0") == "" {
+		t.Fatal("Scoop must retain a non-placeholder installer SHA256")
+	}
 
 	checks := []struct {
 		path string
@@ -39,7 +69,7 @@ func TestRebrandPreservesDurableIdentities(t *testing.T) {
 			"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Markpad",
 		}},
 		{"packaging/scoop/markpad.json", []string{
-			"https://github.com/shreyam1008/markpad/releases/download/v" + Version + "/markpad-setup.exe",
+			wantURL,
 			"C:\\\\Program Files (x86)\\\\Markpad\\\\markpad.exe",
 		}},
 		{"packaging/winget/manifests/s/ShreyamAdhikari/Markpad/0.9.2/ShreyamAdhikari.Markpad.yaml", []string{

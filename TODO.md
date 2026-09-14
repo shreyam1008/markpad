@@ -1,5 +1,11 @@
 # TODO
 
+## Completed (v0.14.2)
+
+- [x] Restore Ubuntu native task drops and column ordering; preserve Windows drop policy
+- [x] Keep collapsed category labels/counts inside their rail and reserve wrapped-title action space
+- [x] Distinct category headers and subtle full-card tint
+
 ## Completed (v0.1–v0.13.5)
 
 - [x] Driver.js detailed Help tour with restart, keyboard exit, and narrow-window behavior

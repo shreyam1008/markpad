@@ -2,15 +2,15 @@
 
 Publisher: Shreyam Adhikari (`shreyam1008@gmail.com`)
 
-Release target: v0.14.1
+Release target: v0.14.2
 
 Current execution state and human gates: [publication checklist](PUBLICATION-TODO.md).
 
 ## GitHub release first
 
-After local checks, push `main` and only the annotated release tag atomically: `git push --atomic origin main v0.14.1`. `.github/workflows/release.yml` builds:
+After local checks, push `main` and only the annotated release tag atomically: `git push --atomic origin main v0.14.2`. `.github/workflows/release.yml` builds:
 
-- `markpad`, `markpad_0.14.1_amd64.deb`, and `Markpad.AppImage` for Linux. These legacy artifact names remain stable while the app displays as Quillpane.
+- `markpad`, `markpad_0.14.2_amd64.deb`, and `Markpad.AppImage` for Linux. These legacy artifact names remain stable while the app displays as Quillpane.
 - `markpad-setup.exe` for Windows, with the unchanged Markpad ICO embedded into both application and installer.
 - `Markpad.dmg` and `Markpad-macOS.zip`, with the unchanged Markpad ICNS in the app bundle.
 
@@ -30,7 +30,7 @@ available:
 ```sh
 sudo snap install snapcraft --classic
 snapcraft
-snap install --dangerous ./quillpane_0.14.1_amd64.snap
+snap install --dangerous ./quillpane_0.14.2_amd64.snap
 ```
 
 The release workflow checks the Snap version and publishes its SHA256 alongside
@@ -39,7 +39,7 @@ archive, pinned by its published SHA256, because the Go Snap channel lags upstre
 
 The public candidate channel was verified at 0.13.4, revision 1, on 13 September.
 The GitHub publishing secret is not configured. Once owner credentials are ready,
-run `Publish verified Snap artifact` with `v0.14.1`, test candidate installation
+run `Publish verified Snap artifact` with `v0.14.2`, test candidate installation
 and upgrade on Linux, then promote the tested revision to stable. Do not treat
 an attached GitHub Snap as a Store update.
 
@@ -70,7 +70,7 @@ offline dependencies to the release only after that work is reconciled.
 
 ## WinGet
 
-The `0.14.1` manifest directory uses the published installer and verified SHA256.
+The `0.14.2` manifest directory uses the published installer and verified SHA256.
 Local `winget validate` passes. Existing [PR #430348](https://github.com/microsoft/winget-pkgs/pull/430348)
 was updated instead of creating a duplicate. `ShreyamAdhikari.Markpad` remains the
 compatibility ID and Quillpane the display name. Upstream review is pending;
@@ -79,7 +79,7 @@ remain unchanged.
 
 ## Scoop
 
-The local template and personal bucket serve `0.14.1` using the verified release
+The local template and personal bucket serve `0.14.2` using the verified release
 installer SHA256. The bucket autoupdate test now reads Quillpane's manifest version
 instead of forcing an obsolete version. This is a personal-bucket channel, not
 the default Scoop bucket.

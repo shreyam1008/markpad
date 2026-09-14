@@ -2,7 +2,20 @@
 
 Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
 
-## Current release: 0.14.1
+## Hotfix target: 0.14.2
+
+Prepared from `fix/ubuntu-task-board` commit `ae6f938` with Linux native dragging,
+collapsed-column layout and task-card readability fixes. Local checks passed;
+Windows desktop interaction testing remains blocked by desktop capture/access.
+See [patch verification](../docs/task-hotfix-0.14.2.md).
+
+Publication is pending the annotated tag and platform release gates. Existing
+0.14.1 package hashes below remain valid only for that previous release. Update
+Scoop, WinGet and Microsoft Store only from verified 0.14.2 release artifacts.
+Snap credentials and the independent Flathub portal/submission gates remain
+unresolved; do not present either as a published 0.14.2 channel.
+
+## Previous release: 0.14.1
 
 The 0.14.0 tag was not published: Snap could not install the unavailable Go 1.27
 Snap channel. 0.14.1 pins the official Go 1.27.1 archive and its published SHA256;

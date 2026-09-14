@@ -225,12 +225,12 @@ jobs:
           body: |
             ## What's new in ${{ github.ref_name }}
 
-            - Markdown task files with List, Board and Calendar views, draggable/collapsible workflow columns, selectable tags, dates and local times.
-            - Compact cards with fixed metadata placement, custom category menus, editable descriptions and right-click actions.
-            - Category/tag management dialog with automatic colors and an OKLCH wheel; custom choices stay in the file.
-            - Highlighted task search and a calendar month with a daily agenda on the right, other scheduled days and unscheduled tasks.
-            - Recoverable task Trash, source-preserving edits, existing recovery drafts, atomic saving and external-change protection.
-            - Updated dependencies with Bun 1.4.2 and Go 1.27.1, deferred Windows diagrams and bounded large-text rendering. No browser engine, Node or Bun bundled.
+            - Restored native Ubuntu task-card dragging and workflow-column reordering by retaining GTK's drop destination. Windows' native drop policy is unchanged.
+            - Drops over card buttons and empty-column labels now reach the correct drop target.
+            - Collapsed columns keep vertical labels and counts inside their narrow rails.
+            - Distinct tinted category headers, subtle full-card coloring, and clear space between wrapped titles and hover actions.
+            - Task files remain ordinary Markdown; existing tags, dates, descriptions, recovery and saving behavior are preserved.
+            - Built with Bun 1.4.2 and Go 1.27.1. No browser engine, Node or Bun bundled.
             - All platform packages are built and checked from this tag; signed APT and the website follow automatically. Store submission/review status is tracked separately.
 
             ## Install
