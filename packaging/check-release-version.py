@@ -20,6 +20,7 @@ manifest = ET.parse(root / 'packaging/windows/store/AppxManifest.xml')
 identity = manifest.getroot().find('{http://schemas.microsoft.com/appx/manifest/foundation/windows10}Identity')
 assert identity.attrib['Version'] == version + '.0'
 assert f'"softwareVersion": "{version}"' in (root / 'docs/index.html').read_text(encoding="utf-8")
+assert json.loads((root / 'docs/openapi.json').read_text(encoding="utf-8"))['info']['version'] == version, 'Public documentation catalog version differs from application'
 for name in ('packaging/linux/io.github.markpad.metainfo.xml', 'packaging/flatpak/io.github.shreyam1008.markpad.metainfo.xml'):
     assert ET.parse(root / name).find('releases/release').attrib['version'] == version, name
 assert 'craftctl set version="$version"' in (root / 'snap/snapcraft.yaml').read_text(encoding="utf-8")
