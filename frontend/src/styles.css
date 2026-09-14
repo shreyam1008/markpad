@@ -4386,6 +4386,16 @@ textarea {
 .task-card.is-dragging {
   opacity: 0.55;
 }
+/* GTK can reject drops on descendants such as controls or empty-state text.
+   Route hit testing to the actual drop zones only for the active gesture. */
+.task-document.has-active-drag .task-column *,
+.task-document.has-active-drag .task-card * {
+  pointer-events: none;
+}
+.task-document.has-active-drag .task-column .task-card,
+.task-document.has-active-drag .task-column .task-column-grip {
+  pointer-events: auto;
+}
 .task-document .is-drop-target {
   outline: 2px solid var(--mp-selected-border);
   outline-offset: -2px;
@@ -4896,26 +4906,49 @@ textarea {
 }
 .task-column h2 {
   margin: 0 0 var(--mp-space-4);
+  padding: var(--mp-space-2);
+  border: 1px solid rgb(var(--task-rgb) / 32%);
+  border-radius: var(--mp-radius-3);
+  background: rgb(var(--task-rgb) / 16%);
 }
 .task-column.is-collapsed {
   flex: 0 0 44px;
-  padding: var(--mp-space-3);
+  padding: var(--mp-space-2);
 }
 .task-column.is-collapsed h2 {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
 }
 .task-column.is-collapsed .task-column-toggle {
-  writing-mode: vertical-rl;
+  /* WebKitGTK does not lay out a vertical-writing native button consistently.
+     Keep the controls in a normal column; rotate only the text inside it. */
+  writing-mode: horizontal-tb;
+  flex-direction: column;
+  justify-content: flex-start;
   padding: var(--mp-space-4) 0;
   min-height: 120px;
-  width: 30px;
+  width: 100%;
 }
 .task-column.is-collapsed .task-count {
-  margin: var(--mp-space-2) 0 0;
+  margin: 0;
+  flex-shrink: 0;
   writing-mode: horizontal-tb;
 }
 .task-column.is-collapsed .task-column-name {
+  display: block;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  width: 1.5em;
+  max-height: 20em;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+.task-column.is-collapsed .task-category-dot {
+  margin-bottom: var(--mp-space-2);
 }
 .task-workflow .task-column:not(.is-collapsed) {
   flex: 0 0 clamp(16em, calc((100% - 36px) / 4), 21em);
@@ -5398,8 +5431,16 @@ textarea {
   gap: 6px;
   padding: 12px;
 }
+.task-document.task-board .task-card {
+  background: var(--mp-paper);
+  border-left: 2px solid rgb(var(--task-rgb) / 45%);
+}
+.task-document.task-board .task-card.is-drop-target {
+  background: var(--mp-selected);
+}
 .task-board .task-check {
-  padding-right: 34px;
+  /* Reserve both action buttons even before hover, including GTK font metrics. */
+  padding-right: 54px;
 }
 .task-card-actions > .task-quiet,
 .task-card-actions > .task-icon-button {

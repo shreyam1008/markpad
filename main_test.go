@@ -6,6 +6,20 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/menu"
 )
 
+func TestNativeDragAndDrop(t *testing.T) {
+	for _, goos := range []string{"linux", "windows", "darwin"} {
+		t.Run(goos, func(t *testing.T) {
+			got := nativeDragAndDrop(goos)
+			if !got.EnableFileDrop {
+				t.Fatal("native file opening must remain enabled")
+			}
+			if got.DisableWebViewDrop != (goos != "linux") {
+				t.Fatal("GTK must accept internal drops; other platforms retain their existing policy")
+			}
+		})
+	}
+}
+
 func TestNativeApplicationMenuHiddenOnLinux(t *testing.T) {
 	appMenu := menu.NewMenu()
 

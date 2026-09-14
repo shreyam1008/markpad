@@ -914,7 +914,7 @@ export function TaskDocument({
         {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           ref={root}
-          className={`task-document task-${trashOpen ? "list" : mode}${doc.workflow ? " task-workflow" : ""}`}
+          className={`task-document task-${trashOpen ? "list" : mode}${doc.workflow ? " task-workflow" : ""}${dragged || draggedColumn !== null ? " has-active-drag" : ""}`}
           style={{ fontSize: textSize }}
           onKeyDown={(event) => {
             // Keep native text-field undo local; saved task changes use document undo.

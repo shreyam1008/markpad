@@ -29,6 +29,16 @@ func nativeApplicationMenu(goos string, appMenu *menu.Menu) *menu.Menu {
 	return appMenu
 }
 
+func nativeDragAndDrop(goos string) *options.DragAndDrop {
+	return &options.DragAndDrop{
+		EnableFileDrop: true,
+		// On GTK this removes the entire drop destination, including in-app
+		// task/column drops. Wails' file-drop listener already prevents file
+		// navigation while leaving internal HTML drags alone.
+		DisableWebViewDrop: goos != "linux",
+	}
+}
+
 func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Println(Version)
@@ -165,10 +175,7 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: frontendAssets(),
 		},
-		DragAndDrop: &options.DragAndDrop{
-			EnableFileDrop:     true,
-			DisableWebViewDrop: true,
-		},
+		DragAndDrop: nativeDragAndDrop(goruntime.GOOS),
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId:               singleInstanceID,
 			OnSecondInstanceLaunch: app.onSecondInstanceLaunch,
