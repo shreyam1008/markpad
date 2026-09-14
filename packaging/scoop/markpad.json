@@ -1,12 +1,12 @@
 {
-  "version": "0.14.1",
+  "version": "0.14.2",
   "description": "Quillpane is a native Markdown notepad and task planner with local files, boards, tags and a calendar. No bundled browser engine or cloud account.",
   "homepage": "https://quillpane.shreyam1008.com.np/",
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/shreyam1008/markpad/releases/download/v0.14.1/markpad-setup.exe",
-      "hash": "5b4dbf396a2af7a7ed1e42b138a685f45a76e2085e31619a399a95e4500108c0"
+      "url": "https://github.com/shreyam1008/markpad/releases/download/v0.14.2/markpad-setup.exe",
+      "hash": "9e9a036a83249704edb818b1b20044db519945884363649e0bb2605a0f27f0a9"
     }
   },
   "installer": {

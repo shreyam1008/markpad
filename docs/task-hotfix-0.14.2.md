@@ -37,9 +37,17 @@ non-placeholder SHA256, allowing the previous verified package to remain intact
 until new release artifacts exist.
 
 Source `28334ce5a04b5ee86e257e7e7aae1adfc3be094e` and annotated tag `v0.14.2`
-were pushed atomically. [Release run 34804710420](https://github.com/shreyam1008/markpad/actions/runs/34804710420)
-passed its version, Linux, Windows and macOS jobs but was intentionally cancelled
-before publication while the native drag result was investigated. Snap was cancelled;
-publication and APT deployment did not run. [Linux CI](https://github.com/shreyam1008/markpad/actions/runs/34804709729)
-passed. No 0.14.2 release assets have been published. See the
-[publication checklist](../packaging/PUBLICATION-TODO.md) for actual channel states.
+were pushed atomically. The release was initially cancelled to investigate native
+Windows drag input. The owner explicitly requested publication to resume despite
+the remaining manual verification. Diagnostics and speculative changes are absent
+from the immutable release source.
+
+[Release run 34804710420](https://github.com/shreyam1008/markpad/actions/runs/34804710420)
+then passed all version, Linux, Windows, macOS, Snap, publication and signed APT/site
+jobs. **0.14.2 is published** with ten assets. The website and signed APT serve
+0.14.2; anonymous APT install/removal passed. Microsoft Store accepted the matching
+0.14.2.0 package and release notes as Submission 4, in certification with automatic
+publication after approval. Scoop and the existing WinGet PR use the verified
+public installer digest. See the [publication checklist](../packaging/PUBLICATION-TODO.md)
+for exact channel states and external blockers. Publication does not turn the
+remaining native Windows manual checks into passes.

@@ -2,33 +2,44 @@
 
 Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
 
-## Hotfix target: 0.14.2
+## Current release: 0.14.2
 
-Prepared from `fix/ubuntu-task-board` commit `ae6f938` with Linux native dragging,
-collapsed-column layout and task-card readability fixes. Local checks passed;
-Windows collapse and keyboard reordering passed after remote reconnection;
-manual native dragging and save/reopen remain unverified.
+Source `28334ce5a04b5ee86e257e7e7aae1adfc3be094e`, immutable tag `v0.14.2`.
+The owner resumed publication on 14 September after the remote Windows drag test
+remained inconclusive. Native collapsed headings and keyboard column reordering
+passed; manual Windows card/column dragging and save/reopen remain unverified.
 See [patch verification](../docs/task-hotfix-0.14.2.md).
 
-Source `28334ce` and annotated tag `v0.14.2` are pushed. Release run
-[`34804710420`](https://github.com/shreyam1008/markpad/actions/runs/34804710420)
-was intentionally cancelled before publication after the automated native drag
-test failed to deliver a `dragover` event. Version/Linux/Windows/macOS jobs passed;
-Snap was cancelled. Linux CI `34804709729` passed. **0.14.2 is not published.**
-Complete manual Windows card/column dragging and save/reopen, then rerun the
-cancelled release if the exact tagged source passes. If a code fix is needed,
-use a fresh patch tag rather than moving `v0.14.2`.
+| Channel | Verified state on 14 September 2026 |
+|---|---|
+| GitHub | **0.14.2 published**, all ten assets; [release](https://github.com/shreyam1008/markpad/releases/tag/v0.14.2) |
+| Website / signed APT | **0.14.2 published**; public schema and package hash match; anonymous HTTPS APT install/removal passed |
+| Microsoft Store | **0.14.2.0 submitted**, Submission 4 `1152921505701883603`, Partner Center shows **In certification**; auto-publish enabled. Public version remains 0.14.1.0 until approval |
+| Scoop personal bucket | **0.14.2 published**, verified installer hash; commit `7ee86486a719146a6843c07283d415f82ef2e796` |
+| WinGet | Existing [PR #430348](https://github.com/microsoft/winget-pkgs/pull/430348) updated to **0.14.2**, head `1ed743602b003764ce89776fc2221ce45fa73291`; upstream checks/review tracked on that head; not in default source yet |
+| Snap Store | **0.13.4 candidate, revision 1**; 0.14.2 artifact built, publishing blocked on owner credentials |
+| Flathub | **Not published**; portal file-open acceptance and human audit/submission remain required |
+| AlternativeTo | Existing notes-first/task feature/screenshots suggestions and Go + TypeScript correction remain under moderation; no duplicate submission |
 
-Microsoft Store Submission 4 (`1152921505701883603`) is an inspected draft with
-0.14.2 release notes saved. Its package is still the inherited 0.14.1.0 MSIX;
-do not submit it until the verified new package replaces that inherited package.
-The live Store release remains Submission 3, version 0.14.1.0.
+[Release workflow 34804710420](https://github.com/shreyam1008/markpad/actions/runs/34804710420)
+passed every platform, publication and signed APT/site job after resuming the
+cancelled jobs. Windows/MSIX/Debian downloads match GitHub asset digests; the Snap
+checksum receipt matches its published asset digest. MSIX identity, architecture,
+version and publisher were checked before upload; Partner Center validated it.
+Updated release notes were saved, and the existing screenshots and listing retained.
 
-Existing
-0.14.1 package hashes below remain valid only for that previous release. Update
-Scoop, WinGet and Microsoft Store only from verified 0.14.2 release artifacts.
-Snap credentials and the independent Flathub portal/submission gates remain
-unresolved; do not present either as a published 0.14.2 channel.
+Verified 0.14.2 SHA256 values:
+- Windows installer: `9e9a036a83249704edb818b1b20044db519945884363649e0bb2605a0f27f0a9`
+- MSIX: `adec603267b8df3f673ac70ce6b2e40ecef676f4f863d85341b09bf6bc21a7e0`
+- Debian: `dbce8102bfb252d34badc4324f1d25d1cdec005d4db372eecf40b25a908aa3ac`
+- Snap: `f9e119c375b6955b2d4dad3d4517c1fe84230847393757aa09b661e6ce807f40`
+
+Next actions: await Microsoft certification and WinGet moderation; configure
+`SNAPCRAFT_STORE_CREDENTIALS` through the owner's separate setup, then dispatch
+`Publish verified Snap artifact` for **v0.14.2**, test candidate install/upgrade
+before promoting stable. Reconcile the separate Flatpak portal branch and refresh
+its source pins only after acceptance passes. Never use the historical versions below
+as the next publication target.
 
 ## Previous release: 0.14.1
 
