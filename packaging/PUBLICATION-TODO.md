@@ -1,6 +1,6 @@
 # Publication execution checklist
 
-Updated: 2026-09-13. Existing logo and compatibility identifiers stay unchanged.
+Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
 
 ## Current release: 0.14.1
 
@@ -8,16 +8,17 @@ The 0.14.0 tag was not published: Snap could not install the unavailable Go 1.27
 Snap channel. 0.14.1 pins the official Go 1.27.1 archive and its published SHA256;
 application behavior is unchanged from the 120-check visual candidate.
 
-| Channel | Verified state on 13 September 2026 |
+| Channel | Verified state on 14 September 2026 |
 |---|---|
 | GitHub | **0.14.1 published**, source `a00635d42d6292829df9d528ffa5221173f56da3`; all ten assets present |
 | Website / signed APT | **0.14.1 published**; anonymous website schema and APT version/hash verified; signed HTTPS installation/removal passed |
-| Microsoft Store | **0.14.1.0 submitted, in certification**, Submission 3 `1152921505701880695`; 0.13.8.0 remains live until approval |
+| Microsoft Store | **0.14.1.0 live**, Submission 3 `1152921505701880695`; Partner Center confirms the latest product is available |
 | Scoop personal bucket | **0.14.1 published** with the verified installer URL/hash; commit `34fa290b4b33aafd5fcaf13e615c94b12fddcf75` |
-| WinGet | Existing **PR #430348 updated to 0.14.1**, local validation passes; upstream checks/review pending; not in the default source yet |
+| WinGet | Existing **PR #430348 updated to 0.14.1**, all ten upstream package validations and CLA pass; moderator review/merge pending; not in the default source yet |
 | Snap Store | **0.13.4 candidate, revision 1** confirmed through the public Snap API; 0.14.1 update blocked on owner publishing credentials |
 | Flathub | **Not published**; separate portal acceptance and human-authored submission gates remain |
-| Portfolio distribution tracker | Updated to these versions and states in `shreyam1008/buggy` commit `17abfe1` |
+| AlternativeTo | Public listing; corrected 0.14.1 copy, Microsoft Store link, task features and four current screenshots submitted for moderation on 14 September |
+| Portfolio distribution tracker | Reconciled in the [14 September checkpoint](https://github.com/shreyam1008/buggy/blob/master/docs/projects/quillpane-publication-2026-09-14.md) |
 
 Evidence:
 - [GitHub release](https://github.com/shreyam1008/markpad/releases/tag/v0.14.1)
@@ -46,7 +47,9 @@ version. Commit `a6e3e6a` reads Quillpane's manifest version for that check; see
 [passing verification run](https://github.com/shreyam1008/scoop-bucket/actions/runs/34767431699), including install, update, uninstall and autoupdate checks.
 No ProtoPeek application or package manifest was changed.
 
-Snap's `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets. Once the
+Snap's `SNAPCRAFT_STORE_CREDENTIALS` remains absent from GitHub secrets. The signed-in
+dashboard's upload page only supplies CLI instructions; there is no browser artifact
+uploader. Public API still reports only 0.13.4 candidate revision 1 on 14 September. Once the
 owner's separate setup is ready, dispatch `Publish verified Snap artifact` with
 `v0.14.1`, test candidate install/upgrade on Linux and promote the tested revision.
 Do not publish superseded versions from historical instructions below. The separate
