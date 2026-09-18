@@ -41,6 +41,7 @@ import yaml from "highlight.js/lib/languages/yaml";
 import { marked, type Tokens } from "marked";
 
 import { fileExtension } from "../workspace/documents";
+import { containHighlightedCode } from "./code-blocks";
 import { exceedsHighlightLimit } from "./text-blocks";
 
 let languagesReady = false;
@@ -135,7 +136,16 @@ export function parseMarkdown(content: string): string {
 
 export function renderMarkdown(content: string): string {
   try {
-    return DOMPurify.sanitize(parseMarkdown(content), {
+    const parsed = parseMarkdown(content);
+    if (parsed.length >= 100_000) {
+      const fragment = DOMPurify.sanitize(parsed, {
+        USE_PROFILES: { html: true },
+        ADD_ATTR: ["target", "rel"],
+        RETURN_DOM_FRAGMENT: true,
+      });
+      return groupMarkdownPreview(fragment);
+    }
+    return DOMPurify.sanitize(parsed, {
       USE_PROFILES: { html: true },
       ADD_ATTR: ["target", "rel"],
     });
@@ -143,6 +153,35 @@ export function renderMarkdown(content: string): string {
     const message = error instanceof Error ? error.message : String(error);
     return `<div class="preview-error"><strong>Preview unavailable</strong><span>${escapeHTML(message)}</span></div>`;
   }
+}
+
+/** Keep all text available to selection, links and accessibility, but let the
+ * browser skip entire offscreen sections instead of maintaining a containment
+ * root for every paragraph in a very large document. Never split HTML strings:
+ * a section boundary must fall between complete, already sanitized DOM nodes.
+ */
+function groupMarkdownPreview(fragment: DocumentFragment): string {
+  const output = document.createElement("div");
+  if (fragment.childElementCount < 512) {
+    output.append(fragment);
+    return output.innerHTML;
+  }
+  let section = document.createElement("div");
+  section.className = "markdown-section";
+  output.append(section);
+  let elements = 0;
+  while (fragment.firstChild) {
+    const node = fragment.firstChild;
+    if (node.nodeType === Node.ELEMENT_NODE && elements === 64) {
+      section = document.createElement("div");
+      section.className = "markdown-section";
+      output.append(section);
+      elements = 0;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) elements++;
+    section.append(node);
+  }
+  return output.innerHTML;
 }
 
 export function isRelativeMarkdownAsset(source: string): boolean {
@@ -167,7 +206,10 @@ export function renderCode(content: string, path: string): string {
     const value = hljs.getLanguage(language)
       ? hljs.highlight(content, { language }).value
       : escapeHTML(content);
-    return `<pre><code class="hljs language-${language}">${value}</code></pre>`;
+    return containHighlightedCode(
+      `<pre><code class="hljs language-${language}">${value}</code></pre>`,
+      content,
+    );
   } catch {
     return `<pre class="plain-text-view">${escapeHTML(content)}</pre>`;
   }

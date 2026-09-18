@@ -9,10 +9,12 @@ export function HelpContent({
   onAbout,
   onChangelog,
   onTour,
+  onBeforeInstall,
 }: {
   onAbout(): void;
   onChangelog(): void;
   onTour(): void;
+  onBeforeInstall?(): Promise<void>;
 }) {
   const [storage, setStorage] = useState("Loading location…");
   const [error, setError] = useState("");
@@ -39,7 +41,7 @@ export function HelpContent({
   ];
   return (
     <div className="help-content">
-      <UpdateCheck />
+      <UpdateCheck onBeforeInstall={onBeforeInstall} />
       <section className="help-section">
         <h3>Make yourself at home</h3>
         <p>A 16-step tour of your files, writing tools, previews, and settings.</p>

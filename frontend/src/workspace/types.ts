@@ -81,6 +81,7 @@ export interface EditorStats {
 export interface MarkpadAPI {
   CheckForUpdates(): Promise<UpdateInfo>;
   DownloadAndOpenUpdate(): Promise<string>;
+  CheckExternalChange(id: string): Promise<SaveConflictInfo | null>;
   GetSession(): Promise<SessionState>;
   GetActiveContent(): Promise<string>;
   GetNoteContent(id: string): Promise<string>;

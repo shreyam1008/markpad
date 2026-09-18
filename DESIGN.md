@@ -163,6 +163,17 @@ Theme changes remount only the preview renderer, not the editor or the document 
 
 ## Performance and loading
 
+Large Markdown previews group complete sanitized top-level nodes into sections
+of at most 64 elements when generated HTML reaches 100,000 characters and
+512 elements. Content visibility applies to sections; the complete selectable
+document remains mounted. Small documents keep their original tree. Outlines
+above 512 headings similarly group 64 unchanged buttons without truncation.
+Large bounded ASCII code previews highlight the complete source first, then
+contain 64-line blocks without changing syntax scopes or text. Unsupported
+width estimates retain the original code layout. Native checks must cover
+scrolling, group boundaries, selection and navigation; DOM tests alone cannot
+validate layout or memory. Do not trade these behaviors for a lower idle number.
+
 Quillpane is a Wails application targeting the operating system webview. Report release binary sizes under the measurement policy in `BUNDLE_BUDGET.md`. Full Mermaid rendering must remain bounded and offline. The production frontend is intentionally one module for Linux WebKitGTK compatibility.
 
 - No runtime font downloads, preload splash art, or heavyweight asset decoding. Only the explicit Help update check may request public GitHub release metadata; document rendering remains offline.

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -195,6 +196,17 @@ func (s *Store) preserveCorruptSession(data []byte) (string, error) {
 }
 
 func (s *Store) Save(sess *Session) error {
+	return s.save(sess, false)
+}
+
+// SaveIfChanged preserves the same atomic persistence as Save, without replacing
+// a session whose on-disk bytes already match. Reading the file rather than
+// caching acknowledgements also repairs missing files and retries failed saves.
+func (s *Store) SaveIfChanged(sess *Session) error {
+	return s.save(sess, true)
+}
+
+func (s *Store) save(sess *Session, skipIdentical bool) error {
 	if err := os.MkdirAll(s.root, 0o755); err != nil {
 		return err
 	}
@@ -202,7 +214,11 @@ func (s *Store) Save(sess *Session) error {
 	if err != nil {
 		return err
 	}
-	return atomicWrite(filepath.Join(s.root, sessionFile), data, 0o644)
+	path := filepath.Join(s.root, sessionFile)
+	if skipIdentical && persistedFileMatches(path, string(data)) {
+		return nil
+	}
+	return atomicWrite(path, data, 0o644)
 }
 
 func (s *Store) DraftPath(doc *Document) string {
@@ -236,6 +252,45 @@ func (s *Store) WriteDraft(doc *Document, content string) error {
 	}
 	doc.TaskBoard = isMarkdownDocument(doc) && isTaskContent(content)
 	return nil
+}
+
+// WriteDraftIfChanged reports whether recovery bytes were written. A missing
+// draft must be recreated even when ReadDraft could fall back to the saved file.
+func (s *Store) WriteDraftIfChanged(doc *Document, content string) (bool, error) {
+	if persistedFileMatches(s.DraftPath(doc), content) {
+		// Path/format may have changed without a content edit (for example rename).
+		doc.TaskBoard = isMarkdownDocument(doc) && isTaskContent(content)
+		return false, nil
+	}
+	if err := s.WriteDraft(doc, content); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// Compare using a fixed buffer, not another full-size copy of a large draft.
+// Close the read handle before any caller attempts atomic replacement on Windows.
+func persistedFileMatches(path, expected string) bool {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() || info.Size() != int64(len(expected)) {
+		return false
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	var buffer [4096]byte
+	for offset := 0; offset < len(expected); {
+		length := min(len(buffer), len(expected)-offset)
+		if _, err := io.ReadFull(file, buffer[:length]); err != nil || string(buffer[:length]) != expected[offset:offset+length] {
+			return false
+		}
+		offset += length
+	}
+	// A file that grew after the size check is not identical either.
+	n, err := file.Read(buffer[:1])
+	return n == 0 && err == io.EOF
 }
 
 const taskMarker = "<!-- quillpane:tasks -->"

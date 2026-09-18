@@ -74,6 +74,44 @@ function SectionHead({
   );
 }
 
+const OutlineItems = memo(function OutlineItems({
+  outline,
+  onOutline,
+}: {
+  outline: OutlineItem[];
+  onOutline(line: number): void;
+}) {
+  const button = (item: OutlineItem, index: number) => (
+    <button
+      key={`${item.line}-${index}`}
+      className="w-full py-1 pr-2 text-left text-[11px] text-muted truncate hover:text-accent hover:bg-hover rounded"
+      style={{ paddingLeft: `${8 + (item.level - 1) * 10}px` }}
+      onClick={() => onOutline(item.line)}
+    >
+      {item.text}
+    </button>
+  );
+  if (outline.length <= 512) return outline.map(button);
+  const groups = [];
+  for (let start = 0; start < outline.length; start += 64) {
+    const items = outline.slice(start, start + 64);
+    groups.push(
+      <div
+        className="outline-render-group"
+        key={start}
+        // Estimate the inherited line box plus the buttons' existing vertical
+        // padding. `auto` remembers actual height after native layout occurs.
+        style={{
+          containIntrinsicBlockSize: `auto calc(${items.length}lh + ${items.length * 8}px)`,
+        }}
+      >
+        {items.map((item, index) => button(item, start + index))}
+      </div>,
+    );
+  }
+  return groups;
+});
+
 function SidebarView({
   session,
   collapsed,
@@ -343,17 +381,7 @@ function SidebarView({
               closed={sections.outline}
               onToggle={toggle}
             />
-            {!sections.outline &&
-              outline.map((item, index) => (
-                <button
-                  key={`${item.line}-${index}`}
-                  className="w-full py-1 pr-2 text-left text-[11px] text-muted truncate hover:text-accent hover:bg-hover rounded"
-                  style={{ paddingLeft: `${8 + (item.level - 1) * 10}px` }}
-                  onClick={() => onOutline(item.line)}
-                >
-                  {item.text}
-                </button>
-              ))}
+            {!sections.outline && <OutlineItems outline={outline} onOutline={onOutline} />}
           </section>
         )}
 

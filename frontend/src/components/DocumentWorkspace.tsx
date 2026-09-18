@@ -26,6 +26,7 @@ import {
   outlineFromMarkdown,
   typeLabel,
 } from "../workspace/documents";
+import { DraftSync, ReadPositionSync } from "../workspace/draft-sync";
 import { isTaskDocument } from "../workspace/tasks";
 import type {
   NoteInfo,
@@ -35,6 +36,7 @@ import type {
   ViewMode,
 } from "../workspace/types";
 import { CodeEditor, type EditorHandle } from "./CodeEditor";
+import { ExternalChangeBanner } from "./ExternalChangeBanner";
 import { SaveConflictDialog } from "./SaveConflictDialog";
 import { TaskDocument } from "./TaskDocument";
 import { TextViewer } from "./TextViewer";
@@ -409,6 +411,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       "",
     );
     const [saveConflictError, setSaveConflictError] = useState("");
+    const [externalChange, setExternalChange] = useState<SaveConflictInfo>();
+    const [externalChangeHidden, setExternalChangeHidden] = useState(false);
+    const [externalChangeBusy, setExternalChangeBusy] = useState(false);
+    const [externalChangeError, setExternalChangeError] = useState("");
+    const externalChangeKey = useRef("");
     const editor = useRef<EditorHandle | null>(null);
     const viewer = useRef<HTMLDivElement>(null);
     const area = useRef<HTMLDivElement>(null);
@@ -423,6 +430,28 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     });
     const contentRef = useRef(initialContent);
     const dirtyRef = useRef(note?.dirty ?? false);
+    const [draftSync] = useState(
+      () =>
+        new DraftSync({ content: initialContent, dirty: note?.dirty ?? false }, async (draft) => {
+          if (note?.id) await client.updateDraft(note.id, draft.content, draft.dirty);
+        }),
+    );
+    const mounted = useRef(true);
+    const [positionSync] = useState(
+      () =>
+        new ReadPositionSync(
+          { editor: note?.scrollTop ?? 0, viewer: note?.viewTop ?? 0, cursor: note?.cursor ?? 0 },
+          async (position) => {
+            if (note?.id)
+              await client.updateReadPosition(
+                note.id,
+                position.editor,
+                position.viewer,
+                position.cursor,
+              );
+          },
+        ),
+    );
     const draftTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const readTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -438,6 +467,70 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     const resizing = useRef(false);
     const type = fileType(note?.path, note?.kind);
     const readOnly = isReadOnly(type);
+    const readDraft = useCallback(
+      () => ({ content: contentRef.current, dirty: dirtyRef.current }),
+      [],
+    );
+    const readPosition = useCallback(
+      () => ({
+        editor: editor.current?.scrollTop ?? 0,
+        viewer: viewer.current?.scrollTop ?? 0,
+        cursor: editor.current?.selectionStart ?? 0,
+      }),
+      [],
+    );
+
+    useEffect(() => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
+        // A late edit during native navigation still needs its queued recovery
+        // write. The callback suppresses session/UI updates after unmount.
+        clearTimeout(readTimer.current);
+      };
+    }, []);
+
+    // Poll only the active saved source. The Go check hashes within its
+    // existing bounded source limit and never changes the draft or baseline.
+    useEffect(() => {
+      if (!note?.id || !note.path || readOnly || !window.go?.main?.App) return;
+      let active = true;
+      let checking = false;
+      const check = async () => {
+        if (!active || checking) return;
+        checking = true;
+        try {
+          const conflict = await client.checkExternalChange(note.id);
+          if (!active) return;
+          if (!conflict) {
+            externalChangeKey.current = "";
+            setExternalChange(undefined);
+            setExternalChangeHidden(false);
+            setExternalChangeError("");
+            return;
+          }
+          const key = `${conflict.kind}\0${conflict.path}\0${conflict.modified}`;
+          if (externalChangeKey.current !== key) {
+            externalChangeKey.current = key;
+            setExternalChangeHidden(false);
+            setExternalChangeError("");
+            onStatus("File changed outside Quillpane");
+          }
+          setExternalChange(conflict);
+        } catch {
+          // A transient read or permission error must not interrupt editing;
+          // Save still presents the authoritative conflict when needed.
+        } finally {
+          checking = false;
+        }
+      };
+      void check();
+      const timer = window.setInterval(() => void check(), 2000);
+      return () => {
+        active = false;
+        window.clearInterval(timer);
+      };
+    }, [note?.id, note?.path, onStatus, readOnly]);
 
     const updateHistoryButtons = useCallback(() => {
       onHistoryAvailability(
@@ -558,14 +651,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       if (!note?.id) return;
       clearTimeout(readTimer.current);
       readTimer.current = setTimeout(() => {
-        void client.updateReadPosition(
-          note.id,
-          editor.current?.scrollTop ?? 0,
-          viewer.current?.scrollTop ?? 0,
-          editor.current?.selectionStart ?? 0,
-        );
+        void positionSync.flush(readPosition).catch((error) => {
+          if (mounted.current) onStatus(`Could not save reading position: ${String(error)}`);
+        });
       }, 180);
-    }, [note?.id]);
+    }, [note?.id, onStatus, positionSync, readPosition]);
 
     const scrollPane = useCallback(
       (side: "editor" | "viewer") => {
@@ -584,20 +674,23 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       [savePosition, syncScroll, viewMode],
     );
 
+    const noteId = note?.id;
     const flush = useCallback(async () => {
       clearTimeout(draftTimer.current);
-      if (note?.id && !readOnly) {
-        await client.updateDraft(note.id, contentRef.current, dirtyRef.current);
+      clearTimeout(readTimer.current);
+      try {
+        if (noteId && !readOnly) {
+          await draftSync.flush(readDraft);
+        }
+        if (noteId) {
+          await positionSync.flush(readPosition);
+        }
+        if (noteId && !readOnly) await draftSync.flush(readDraft);
+      } catch (error) {
+        if (mounted.current) onStatus(`Could not preserve document state: ${String(error)}`);
+        throw error;
       }
-      if (note?.id) {
-        await client.updateReadPosition(
-          note.id,
-          editor.current?.scrollTop ?? 0,
-          viewer.current?.scrollTop ?? 0,
-          editor.current?.selectionStart ?? 0,
-        );
-      }
-    }, [note?.id, readOnly]);
+    }, [draftSync, noteId, onStatus, positionSync, readDraft, readOnly, readPosition]);
 
     const record = useCallback(
       (value: string, start: number, end: number) => {
@@ -628,12 +721,22 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     const scheduleDraft = useCallback(() => {
       clearTimeout(draftTimer.current);
       if (note) {
-        draftTimer.current = setTimeout(async () => {
-          await client.updateDraft(note.id, contentRef.current, dirtyRef.current);
-          onSession(await client.session());
+        draftTimer.current = setTimeout(() => {
+          void (async () => {
+            try {
+              if (!(await draftSync.flush(readDraft)) || !mounted.current) return;
+              const session = await client.session();
+              if (mounted.current && session.activeId === note.id) {
+                onSession(session);
+                onDirty(dirtyRef.current);
+              }
+            } catch (error) {
+              if (mounted.current) onStatus(`Draft recovery failed: ${String(error)}`);
+            }
+          })();
         }, DRAFT_DELAY);
       }
-    }, [note, onSession]);
+    }, [draftSync, note, onDirty, onSession, onStatus, readDraft]);
 
     const changeContent = useCallback(
       (value: string, start?: number, end?: number) => {
@@ -641,6 +744,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         setContent(value);
         contentRef.current = value;
         const dirty = committedDirty.current || value !== committed.current;
+        const wasDirty = dirtyRef.current;
         dirtyRef.current = dirty;
         onDirty(dirty);
         if (type !== "code") {
@@ -650,10 +754,16 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             end ?? editor.current?.selectionEnd ?? 0,
           );
         }
-        if (note && dirty && !note.dirty) void client.markDirty(note.id);
+        if (note && dirty && !wasDirty) {
+          void draftSync
+            .mutate(() => client.markDirty(note.id))
+            .catch((error) => {
+              if (mounted.current) onStatus(`Could not mark draft dirty: ${String(error)}`);
+            });
+        }
         scheduleDraft();
       },
-      [note, onDirty, readOnly, record, scheduleDraft, type],
+      [draftSync, note, onDirty, onStatus, readOnly, record, scheduleDraft, type],
     );
 
     const stepHistory = useCallback(
@@ -786,28 +896,53 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
     }, []);
 
     const acceptSavedSession = useCallback(
-      (session: SessionState, status = "Saved") => {
+      (session: SessionState, savedContent: string, status = "Saved") => {
         const active = session.notes.find((item) => item.id === session.activeId);
         if (active?.dirty) return false;
-        committed.current = contentRef.current;
+        committed.current = savedContent;
         committedDirty.current = false;
-        dirtyRef.current = false;
-        onDirty(false);
+        dirtyRef.current = contentRef.current !== savedContent;
         onSession(session);
-        onStatus(status);
+        onDirty(dirtyRef.current);
+        onStatus(dirtyRef.current ? `${status} · newer edits remain unsaved` : status);
         setSaveConflict(undefined);
         setSaveConflictError("");
-        return true;
+        setExternalChange(undefined);
+        setExternalChangeHidden(false);
+        setExternalChangeError("");
+        externalChangeKey.current = "";
+        return !dirtyRef.current;
       },
       [onDirty, onSession, onStatus],
     );
+
+    const reloadExternalChange = useCallback(async () => {
+      if (!externalChange || externalChangeBusy) return;
+      setExternalChangeBusy(true);
+      setExternalChangeError("");
+      try {
+        const savedContent = contentRef.current;
+        const session = await draftSync.mutate(() => client.reloadSource(savedContent));
+        setExternalChange(undefined);
+        setExternalChangeHidden(false);
+        externalChangeKey.current = "";
+        await onDocument(session, `Reloaded disk version · ${PRODUCT_NAME} draft kept in history`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setExternalChangeError(message);
+        onStatus(`External reload failed: ${message}`);
+      } finally {
+        setExternalChangeBusy(false);
+      }
+    }, [draftSync, externalChange, externalChangeBusy, onDocument, onStatus]);
 
     const saveCurrent = useCallback(
       async (overwrite = false) => {
         if (readOnly) return false;
         onStatus(overwrite ? "Overwriting changed file…" : "Saving…");
         try {
-          const result = await client.save(contentRef.current, overwrite);
+          const savedContent = contentRef.current;
+          const result = await draftSync.mutate(() => client.save(savedContent, overwrite));
           if (result.conflict) {
             onSession(result.session);
             setSaveConflict(result.conflict);
@@ -815,32 +950,33 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             onStatus("Save paused · choose how to resolve the disk change");
             return false;
           }
-          const saved = acceptSavedSession(result.session);
+          const saved = acceptSavedSession(result.session, savedContent);
           return saved;
         } catch (error) {
           onStatus(`Save failed: ${String(error)}`);
           return false;
         }
       },
-      [acceptSavedSession, onSession, onStatus, readOnly],
+      [acceptSavedSession, draftSync, onSession, onStatus, readOnly],
     );
 
     const saveAsCurrent = useCallback(async () => {
       if (readOnly) return false;
       onStatus("Save As…");
       try {
-        const session = await client.saveAs(contentRef.current);
+        const savedContent = contentRef.current;
+        const session = await draftSync.mutate(() => client.saveAs(savedContent));
         const active = session.notes.find((item) => item.id === session.activeId);
         if (active?.dirty) {
           onStatus("Save As cancelled");
           return false;
         }
-        return acceptSavedSession(session);
+        return acceptSavedSession(session, savedContent);
       } catch (error) {
         onStatus(`Save As failed: ${String(error)}`);
         return false;
       }
-    }, [acceptSavedSession, onStatus, readOnly]);
+    }, [acceptSavedSession, draftSync, onStatus, readOnly]);
 
     const resolveSaveConflict = useCallback(
       async (resolution: "copy" | "reload" | "overwrite") => {
@@ -848,18 +984,19 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         setSaveConflictBusy(resolution);
         setSaveConflictError("");
         try {
+          const savedContent = contentRef.current;
           if (resolution === "copy") {
-            const session = await client.saveAs(contentRef.current);
+            const session = await draftSync.mutate(() => client.saveAs(savedContent));
             const active = session.notes.find((item) => item.id === session.activeId);
             if (active?.dirty) {
               onStatus("Save a Copy cancelled · your draft is still open");
               return;
             }
-            acceptSavedSession(session, "Saved a copy");
+            acceptSavedSession(session, savedContent, "Saved a copy");
             return;
           }
           if (resolution === "reload") {
-            const session = await client.reloadSource(contentRef.current);
+            const session = await draftSync.mutate(() => client.reloadSource(savedContent));
             setSaveConflict(undefined);
             await onDocument(
               session,
@@ -867,13 +1004,13 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             );
             return;
           }
-          const result = await client.save(contentRef.current, true);
+          const result = await draftSync.mutate(() => client.save(savedContent, true));
           if (result.conflict) {
             setSaveConflict(result.conflict);
             onSession(result.session);
             return;
           }
-          acceptSavedSession(result.session, "Disk version overwritten");
+          acceptSavedSession(result.session, savedContent, "Disk version overwritten");
         } catch (error) {
           setSaveConflictError(error instanceof Error ? error.message : String(error));
           onStatus(`Conflict resolution failed: ${String(error)}`);
@@ -881,7 +1018,15 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
           setSaveConflictBusy("");
         }
       },
-      [acceptSavedSession, onDocument, onSession, onStatus, saveConflict, saveConflictBusy],
+      [
+        acceptSavedSession,
+        draftSync,
+        onDocument,
+        onSession,
+        onStatus,
+        saveConflict,
+        saveConflictBusy,
+      ],
     );
 
     useImperativeHandle(
@@ -891,12 +1036,20 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         save: () => saveCurrent(),
         saveAs: saveAsCurrent,
         async revert() {
+          clearTimeout(draftTimer.current);
           setContent(committed.current);
           contentRef.current = committed.current;
           dirtyRef.current = committedDirty.current;
           onDirty(committedDirty.current);
-          if (note)
-            onSession(await client.revert(note.id, committed.current, committedDirty.current));
+          const revertedContent = committed.current;
+          const revertedDirty = committedDirty.current;
+          if (note) {
+            onSession(
+              await draftSync.mutate(() => client.revert(note.id, revertedContent, revertedDirty)),
+            );
+            onDirty(dirtyRef.current);
+          }
+          scheduleDraft();
           onStatus("Reverted");
         },
         undo: () => stepHistory(-1),
@@ -924,6 +1077,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         getContent: () => contentRef.current,
       }),
       [
+        draftSync,
         findNext,
         flush,
         format,
@@ -933,6 +1087,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         onStatus,
         saveAsCurrent,
         saveCurrent,
+        scheduleDraft,
         stepHistory,
         textSize,
       ],
@@ -943,7 +1098,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
 
     return (
       <>
-        <div className="document-workspace flex-1 flex flex-col overflow-hidden">
+        <div className="document-workspace relative flex-1 flex flex-col overflow-hidden">
           {viewMode === "split" && (
             <div className="split-scroll-rail">
               <button
@@ -1131,6 +1286,18 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             )}
           </div>
         </div>
+        {externalChange && !externalChangeHidden ? (
+          <ExternalChangeBanner
+            conflict={externalChange}
+            busy={externalChangeBusy}
+            error={externalChangeError}
+            onKeepEditing={() => {
+              setExternalChangeHidden(true);
+              onStatus(`Keeping ${PRODUCT_NAME} version; Save will still pause before overwriting`);
+            }}
+            onReload={() => void reloadExternalChange()}
+          />
+        ) : null}
         <SaveConflictDialog
           conflict={saveConflict}
           busy={saveConflictBusy}

@@ -82,6 +82,20 @@ func TestInstallerPlatformRouting(t *testing.T) {
 	}
 }
 
+func TestDownloadUpdateRefusesDirtySessionBeforeNetwork(t *testing.T) {
+	app := newDocumentTestApp(t)
+	path := filepath.Join(t.TempDir(), "note.md")
+	if err := os.WriteFile(path, []byte("saved"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := app.sess.AddFile(path, "saved")
+	doc.Dirty = true
+
+	if _, err := app.DownloadAndOpenUpdate(); err == nil || !strings.Contains(err.Error(), "save your open documents") {
+		t.Fatalf("dirty update request = %v", err)
+	}
+}
+
 func TestDecodeUpdate(t *testing.T) {
 	for _, tc := range []struct {
 		tag                string

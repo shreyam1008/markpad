@@ -125,6 +125,43 @@ func TestReloadActiveFromDiskPreservesMarkpadDraftInHistory(t *testing.T) {
 	}
 }
 
+func TestCheckExternalChangeReportsDiskEditsWithoutTouchingDraft(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "watch.md")
+	if err := os.WriteFile(path, []byte("opened content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	app := newDocumentTestApp(t)
+	doc := app.sess.AddFile(path, "opened content")
+	app.sess.ActiveID = doc.ID
+	if err := app.store.WriteDraft(doc, "unsaved Quillpane draft"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("new disk content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	conflict, err := app.CheckExternalChange(doc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conflict == nil || conflict.Kind != string(session.SourceModified) || conflict.Path != doc.Path {
+		t.Fatalf("external change = %#v", conflict)
+	}
+	draft, err := app.store.ReadDraft(doc)
+	if err != nil || draft != "unsaved Quillpane draft" {
+		t.Fatalf("poll changed recovery draft = %q, %v", draft, err)
+	}
+
+	if err := os.WriteFile(path, []byte("opened content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	conflict, err = app.CheckExternalChange(doc.ID)
+	if err != nil || conflict != nil {
+		t.Fatalf("unchanged source = %#v, %v", conflict, err)
+	}
+}
+
 func TestDeleteFileCleansOpenDocumentState(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

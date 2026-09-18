@@ -20,7 +20,7 @@ The active view, selection, and scroll position should remain stable while switc
 
 ## Saving and recovery
 
-Save writes to the current path. Save As chooses a new path. Failed writes must leave editor content intact and produce a visible error. Quillpane records the disk content it opened or last saved; if that source changes, is replaced, disappears, or cannot be verified after a legacy-session restore, a normal save pauses before writing. The user must explicitly choose to keep editing, save a copy, reload the disk version, overwrite it, or recreate a deleted file.
+Save writes to the current path. Save As chooses a new path. Failed writes must leave editor content intact and produce a visible error. Quillpane checks the active saved source periodically and shows a non-blocking external-change banner when the disk version changes, while leaving the in-app draft untouched. Reload uses the same protected path as a save conflict: it records the Quillpane draft and disk version in History before adopting the newer file. If the source is replaced, disappears, or cannot be verified after a legacy-session restore, a normal save pauses before writing. The user must explicitly choose to keep editing, save a copy, reload the disk version, overwrite it, or recreate a deleted file.
 
 Conflict reload first records the current Quillpane draft in Version History, then makes the verified disk content the clean recovery copy. Overwrite and recreate are explicit destructive choices.
 

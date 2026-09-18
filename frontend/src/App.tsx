@@ -106,6 +106,7 @@ function ModalLayer({
   onAbout,
   onChangelog,
   onTour,
+  onBeforeInstall,
 }: {
   modal?: Modal;
   onClose(): void;
@@ -114,6 +115,7 @@ function ModalLayer({
   onAbout(): void;
   onChangelog(): void;
   onTour(): void;
+  onBeforeInstall?(): Promise<void>;
 }) {
   const [name, setName] = useState(modal?.kind === "rename" ? modal.note.title : "");
   useEffect(() => setName(modal?.kind === "rename" ? modal.note.title : ""), [modal]);
@@ -184,12 +186,25 @@ function ModalLayer({
     );
   } else if (modal.kind === "help") {
     title = "Help & updates";
-    body = <HelpContent onAbout={onAbout} onChangelog={onChangelog} onTour={onTour} />;
+    body = (
+      <HelpContent
+        onAbout={onAbout}
+        onChangelog={onChangelog}
+        onTour={onTour}
+        onBeforeInstall={onBeforeInstall}
+      />
+    );
   } else if (modal.kind === "changelog") {
     title = "Changelog";
     body = (
       <div className="space-y-3">
         <section>
+          <h3 className="font-bold">0.14.4 · Safer reloads & updates</h3>
+          <p>
+            See when an open file changes outside Quillpane, keep editing safely or reload the disk
+            version with both drafts preserved in History. Verified Windows and Linux updates now
+            hand off cleanly after documents are saved.
+          </p>
           <h3 className="font-bold">0.14.3 · Simple task filters</h3>
           <p>
             Filter cards in place with highlighted matches and compact All, Open and Done pills. No
@@ -481,10 +496,15 @@ function App() {
     async (id: string) => {
       if (id === state.session.activeId) return;
       await workspace.current?.flush();
-      await client.activate(id);
-      await loadDocument(await client.session());
+      try {
+        await client.activate(id);
+        await loadDocument(await client.session());
+      } catch (error) {
+        setStatus(`Could not open document: ${String(error)}`);
+        throw error;
+      }
     },
-    [loadDocument, state.session.activeId],
+    [loadDocument, setStatus, state.session.activeId],
   );
 
   const create = useCallback(
@@ -526,6 +546,10 @@ function App() {
     },
     [loadDocument, setStatus],
   );
+
+  const flushBeforeUpdate = useCallback(async () => {
+    await workspace.current?.flush();
+  }, []);
 
   const startTour = useCallback(() => {
     setModal(undefined);
@@ -1318,6 +1342,7 @@ function App() {
                 onAbout={() => showModal({ kind: "about" })}
                 onTour={startTour}
                 onChangelog={() => showModal({ kind: "changelog" })}
+                onBeforeInstall={flushBeforeUpdate}
               />
             ) : null}
           </div>
@@ -1346,6 +1371,7 @@ function App() {
         onAbout={() => showModal({ kind: "about" })}
         onTour={startTour}
         onChangelog={() => showModal({ kind: "changelog" })}
+        onBeforeInstall={flushBeforeUpdate}
       />
 
       {contextMenu && (

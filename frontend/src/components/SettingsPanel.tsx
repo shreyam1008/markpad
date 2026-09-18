@@ -40,6 +40,7 @@ interface Props {
   onAbout(): void;
   onChangelog(): void;
   onTour(): void;
+  onBeforeInstall?(): Promise<void>;
 }
 
 const categories = [
@@ -94,6 +95,7 @@ export function SettingsPanel({
   onAbout,
   onChangelog,
   onTour,
+  onBeforeInstall,
 }: Props) {
   const [category, setCategory] = useState<SettingsCategory>("appearance");
   const hotkeys = useMemo(() => Array.from(getHotkeyManager().registrations.state.values()), []);
@@ -156,7 +158,12 @@ export function SettingsPanel({
                 <h2>Help & updates</h2>
                 <p>About the app, installed version, and updates.</p>
               </div>
-              <HelpContent onAbout={onAbout} onChangelog={onChangelog} onTour={onTour} />
+              <HelpContent
+                onAbout={onAbout}
+                onChangelog={onChangelog}
+                onTour={onTour}
+                onBeforeInstall={onBeforeInstall}
+              />
             </section>
           ) : null}
           {category === "appearance" ? (

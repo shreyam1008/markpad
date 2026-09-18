@@ -1,8 +1,8 @@
 export const PRODUCT_NAME = "Quillpane";
 export const PREVIEW_PRODUCT_NAME = "Quillpane";
 export const LEGACY_PRODUCT_NAME = "Markpad";
-export const VERSION = "0.14.3";
-export const VERSION_NAME = "Simple task filters";
+export const VERSION = "0.14.4";
+export const VERSION_NAME = "Safer reloads & updates";
 
 // The custom domain is the canonical public site now that DNS, Pages, HTTPS,
 // and the legacy redirect have been verified. Keep the old address explicit

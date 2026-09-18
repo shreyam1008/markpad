@@ -1,5 +1,11 @@
 # Bundle and runtime measurement policy
 
+Rendering regression tests use `happy-dom` 20.14.5 as a development-only DOM,
+never an application import. This permits offline tests of the real sanitizer
+and complete text/tree preservation; string mocks do not cover those behaviors.
+Its contribution to embedded JavaScript is zero. Native layout/memory checks
+remain separate. No new production rendering dependency is introduced.
+
 Quillpane uses Go, Wails and the OS WebView. Go embeds only the generated production frontend. The owner removed the old Linux 16 MiB and Windows 16.1 MiB hard ceilings on 2026-09-12; sizes must still be measured and reported. No browser engine, Node, Bun, development dependency tree or source maps belong in release artifacts.
 
 See [task planning and calendar](docs/tasks-release-design-2026-09.md) for current sizes, and the [badge/shared-renderer follow-up](docs/performance-followup-2026-09.md) for large-code measurements.

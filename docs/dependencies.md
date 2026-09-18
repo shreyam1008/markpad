@@ -1,5 +1,12 @@
 # Dependencies
 
+The Wails rendering optimization adds `happy-dom` 20.14.5 (MIT) as an exact
+development-only dependency. A separate DOM test process exercises the actual
+DOMPurify renderer and verifies large-document tree, text and sanitization
+fidelity. String-only tests cannot exercise that boundary. It is never imported
+by application code or included in the embedded assets. Native engine layout
+and memory still require desktop measurements; Happy DOM is not a substitute.
+
 Audited on 2026-09-12. Direct versions are exact pins and `frontend/bun.lock` is committed. All direct frontend/build versions matched the npm registry's stable `latest` tag; a frozen install and `bun outdated` completed successfully. This is a dated audit, not a promise that future registry versions match this document.
 
 | Package | Before → candidate | Use | Declared license |

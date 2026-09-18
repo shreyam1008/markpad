@@ -6,6 +6,13 @@
 - [x] Compact All/Open/Done pills instead of the completion dropdown
 - [x] GitHub-only patch; other distribution updates held for a larger release
 
+## Completed (v0.14.4)
+
+- [x] Surface external edits to open files with explicit keep-editing and disk-reload actions
+- [x] Preserve Quillpane drafts and disk versions in History during an external reload
+- [x] Verify and hand off clean Windows/Linux updates after open documents are saved
+- [x] GitHub-only patch; store and other distribution submissions held for later
+
 ## Completed (v0.14.2)
 
 - [x] Restore Ubuntu native task drops and column ordering; preserve Windows drop policy

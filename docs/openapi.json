@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Quillpane public documentation resources",
-    "version": "0.14.3",
+    "version": "0.14.4",
     "description": "Read-only documentation and discovery resources for Quillpane. The desktop application is local-first and does not expose a hosted API."
   },
   "servers": [{ "url": "https://quillpane.shreyam1008.com.np" }],

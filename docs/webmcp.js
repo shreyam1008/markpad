@@ -8,7 +8,7 @@
       name: "get_quillpane_release",
       description: "Return the current public Quillpane release and its GitHub release URL.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
-      execute: () => ({ version: "0.13.4", name: "Quillpane", url: "https://github.com/shreyam1008/markpad/releases/tag/v0.13.4" })
+      execute: () => ({ version: "0.14.4", name: "Quillpane", url: "https://github.com/shreyam1008/markpad/releases/tag/v0.14.4" })
     },
     {
       name: "open_quillpane_resource",

@@ -200,6 +200,21 @@ func checkExternalChange(doc *Document) (*SourceState, error) {
 	return current, nil
 }
 
+// CheckExternalChange inspects the saved source without changing the document
+// or its baseline. The desktop boundary uses this for a lightweight proactive
+// warning before the user presses Save.
+func (s *Store) CheckExternalChange(doc *Document) (*ExternalChangeError, error) {
+	_, err := checkExternalChange(doc)
+	if err == nil {
+		return nil, nil
+	}
+	var changed *ExternalChangeError
+	if errors.As(err, &changed) {
+		return changed, nil
+	}
+	return nil, err
+}
+
 // RefreshSourceState accepts content read by the desktop boundary only when it
 // still matches the current path. It is used by the explicit reload flow so a
 // second external edit during reload cannot establish the wrong baseline.

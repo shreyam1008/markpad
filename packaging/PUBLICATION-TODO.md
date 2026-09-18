@@ -1,6 +1,19 @@
 # Publication execution checklist
 
-Updated: 2026-09-14. Existing logo and compatibility identifiers stay unchanged.
+Updated: 2026-09-18. Existing logo and compatibility identifiers stay unchanged.
+
+## GitHub-only patch: 0.14.4
+
+The owner requested the GitHub commit and release first; store and other
+distribution submissions are intentionally deferred. `github-only-releases.txt`
+records the exception, so the website/APT workflow will not publish this tag.
+The release workflow may build matching platform artifacts, but no Store, Snap,
+Scoop, WinGet, Flathub, website, or APT submission is claimed here.
+
+Changes: external-file change warnings with draft-preserving reload History,
+verified Windows/Linux update handoff after a clean save, and the associated
+performance and recovery checks. Release validation is recorded by the GitHub
+tag workflow; do not report publication before its publish job completes.
 
 ## GitHub-only patch: 0.14.3
 

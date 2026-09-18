@@ -19,17 +19,43 @@ import {
 import { X } from "./icons";
 
 export const TaskColorContext = createContext<TaskColors>(emptyTaskColors());
+const COLOR_STYLE_CACHE_LIMIT = 256;
+const colorStyles = new WeakMap<
+  TaskColors,
+  Map<string, { color?: TaskColor; l: number; c: number; h: number; style: CSSProperties }>
+>();
+
 export function colorStyle(
   colors: TaskColors,
   kind: keyof TaskColors,
   name: string,
 ): CSSProperties {
-  const color = Object.hasOwn(colors[kind], name) ? colors[kind][name] : automaticTaskColor(name);
-  return {
+  const custom = Object.hasOwn(colors[kind], name) ? colors[kind][name] : undefined;
+  const key = `${kind}\0${name}`;
+  let cache = colorStyles.get(colors);
+  const cached = cache?.get(key);
+  if (
+    cached &&
+    cached.color === custom &&
+    (!custom || (cached.l === custom.l && cached.c === custom.c && cached.h === custom.h))
+  )
+    return cached.style;
+  const color = custom ?? automaticTaskColor(name);
+  const style = Object.freeze({
     "--task-custom-light": `rgb(${colorRGB({ ...color, l: 0.42, c: Math.min(color.c, 0.13) }).join(" ")})`,
     "--task-custom-dark": `rgb(${colorRGB({ ...color, l: 0.82, c: Math.min(color.c, 0.13) }).join(" ")})`,
     "--task-custom-rgb": colorRGB(color).join(" "),
-  } as CSSProperties;
+  }) as CSSProperties;
+  if (!cache) {
+    cache = new Map();
+    colorStyles.set(colors, cache);
+  }
+  // Parsed color objects disappear with their document generation. Bound each
+  // live object's cache too, including arbitrary automatically colored tags.
+  if (!cache.has(key) && cache.size >= COLOR_STYLE_CACHE_LIMIT)
+    cache.delete(cache.keys().next().value!);
+  cache.set(key, { color: custom, l: color.l, c: color.c, h: color.h, style });
+  return style;
 }
 export function useTaskColor(kind: keyof TaskColors, name: string) {
   return colorStyle(useContext(TaskColorContext), kind, name);

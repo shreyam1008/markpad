@@ -169,6 +169,21 @@ type SaveConflictInfo struct {
 	Modified string `json:"modified"`
 }
 
+func saveConflictInfo(changed *session.ExternalChangeError) *SaveConflictInfo {
+	if changed == nil {
+		return nil
+	}
+	modified := ""
+	if changed.Current != nil && !changed.Current.ModifiedAt.IsZero() {
+		modified = changed.Current.ModifiedAt.Format(time.RFC3339Nano)
+	}
+	return &SaveConflictInfo{
+		Kind:     string(changed.Kind),
+		Path:     changed.Path,
+		Modified: modified,
+	}
+}
+
 type SaveResult struct {
 	Session  SessionState      `json:"session"`
 	Conflict *SaveConflictInfo `json:"conflict,omitempty"`
@@ -225,39 +240,91 @@ func (a *App) GetSession() SessionState {
 	return state
 }
 
-func (a *App) GetActiveContent() string {
+func (a *App) GetActiveContent() (string, error) {
 	a.contentMu.Lock()
 	defer a.contentMu.Unlock()
-	doc := a.sess.Active()
-	if doc == nil {
-		return ""
-	}
-	content, err := a.store.ReadDraft(doc)
-	if err != nil {
-		return ""
-	}
-	return content
+	return a.readRecoveryContent(a.sess.Active())
 }
 
-func (a *App) GetNoteContent(id string) string {
+func (a *App) GetNoteContent(id string) (string, error) {
 	a.contentMu.Lock()
 	defer a.contentMu.Unlock()
-	doc := a.sess.Find(id)
-	if doc == nil {
-		return ""
-	}
-	content, err := a.store.ReadDraft(doc)
-	if err != nil {
-		return ""
-	}
-	return content
+	return a.readRecoveryContent(a.sess.Find(id))
 }
 
-func (a *App) SetActive(id string) {
-	if a.sess.Find(id) != nil {
+// Content returned to the editor is acknowledged as recovered. Repair only a
+// missing draft; never replace an existing dirty draft with its saved source.
+// Reading the source fallback must not refresh the external-change baseline.
+func (a *App) readRecoveryContent(doc *session.Document) (string, error) {
+	if doc == nil || isReadOnlyPath(doc.Path) {
+		return "", nil
+	}
+	data, err := os.ReadFile(a.store.DraftPath(doc))
+	if err == nil {
+		return string(data), nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("read recovery draft for %q: %w", doc.Title, err)
+	}
+	if doc.Path != "" {
+		data, err = readOpenFile(doc.Path)
+		if err != nil {
+			return "", fmt.Errorf("recover %q from its saved file: %w", doc.Title, err)
+		}
+		if looksBinary(data) {
+			data = nil
+		}
+	}
+	content := string(data)
+	if err := a.store.WriteDraft(doc, content); err != nil {
+		return "", fmt.Errorf("repair recovery draft for %q: %w", doc.Title, err)
+	}
+	return content, nil
+}
+
+// Validate recovery before changing the active document. Ordinary switches only
+// check the existing file; they do not read or rewrite its complete contents.
+func (a *App) ensureRecoveryContent(doc *session.Document) error {
+	if doc == nil || isReadOnlyPath(doc.Path) {
+		return nil
+	}
+	file, err := os.Open(a.store.DraftPath(doc))
+	if err == nil {
+		info, statErr := file.Stat()
+		closeErr := file.Close()
+		if statErr != nil {
+			return fmt.Errorf("inspect recovery draft for %q: %w", doc.Title, statErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("close recovery draft for %q: %w", doc.Title, closeErr)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("recovery draft for %q is not a regular file", doc.Title)
+		}
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("read recovery draft for %q: %w", doc.Title, err)
+	}
+	_, err = a.readRecoveryContent(doc)
+	return err
+}
+
+func (a *App) SetActive(id string) error {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
+	if doc := a.sess.Find(id); doc != nil {
+		if err := a.ensureRecoveryContent(doc); err != nil {
+			return err
+		}
+		previous := a.sess.ActiveID
 		a.sess.ActiveID = id
-		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+		if err := a.store.Save(a.sess); err != nil {
+			a.sess.ActiveID = previous
+			return fmt.Errorf("persist active document: %w", err)
+		}
 	}
+	return nil
 }
 
 func (a *App) SetViewMode(id string, mode string) {
@@ -272,17 +339,20 @@ func (a *App) SetViewMode(id string, mode string) {
 	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
 }
 
-func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor int) {
+func (a *App) UpdateReadPosition(id string, scrollTop int, viewTop int, cursor int) error {
 	a.contentMu.Lock()
 	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
-		return
+		return nil
 	}
 	doc.ScrollTop = scrollTop
 	doc.ViewTop = viewTop
 	doc.Cursor = cursor
-	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	if err := a.store.SaveIfChanged(a.sess); err != nil {
+		return fmt.Errorf("persist reading position: %w", err)
+	}
+	return nil
 }
 
 func (a *App) NewNote() SessionState {
@@ -305,23 +375,34 @@ func (a *App) NewNoteOfType(format string) SessionState {
 	return a.GetSession()
 }
 
-func (a *App) UpdateContent(id string, content string, dirty bool) {
+func (a *App) UpdateContent(id string, content string, dirty bool) error {
 	a.contentMu.Lock()
 	defer a.contentMu.Unlock()
 	doc := a.sess.Find(id)
 	if doc == nil {
-		return
+		return nil
 	}
 	if isReadOnlyPath(doc.Path) {
-		return
+		return nil
 	}
-	doc.Dirty = dirty
-	doc.UpdatedAt = time.Now()
+	title := doc.Title
 	if doc.Path == "" {
-		doc.Title = session.TitleFromContent(content, "")
+		title = session.TitleFromContent(content, "")
 	}
-	a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, content))
-	a.recordBackgroundError("session persistence", a.store.Save(a.sess))
+	metadataChanged := doc.Dirty != dirty || doc.Title != title
+	doc.Dirty = dirty
+	doc.Title = title
+	written, err := a.store.WriteDraftIfChanged(doc, content)
+	if err != nil {
+		return fmt.Errorf("preserve recovery draft: %w", err)
+	}
+	if written || metadataChanged {
+		doc.UpdatedAt = time.Now()
+	}
+	if err := a.store.SaveIfChanged(a.sess); err != nil {
+		return fmt.Errorf("persist updated document: %w", err)
+	}
+	return nil
 }
 
 func (a *App) MarkDirty(id string) {
@@ -380,17 +461,9 @@ func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
 		if persistErr := a.store.Save(a.sess); persistErr != nil {
 			return SaveResult{Session: a.GetSession()}, fmt.Errorf("persist conflicted draft: %w", persistErr)
 		}
-		modified := ""
-		if changed.Current != nil && !changed.Current.ModifiedAt.IsZero() {
-			modified = changed.Current.ModifiedAt.Format(time.RFC3339Nano)
-		}
 		return SaveResult{
-			Session: a.GetSession(),
-			Conflict: &SaveConflictInfo{
-				Kind:     string(changed.Kind),
-				Path:     changed.Path,
-				Modified: modified,
-			},
+			Session:  a.GetSession(),
+			Conflict: saveConflictInfo(changed),
 		}, nil
 	}
 	a.recordBackgroundError("session persistence", a.store.SaveSnapshot(doc.ID, content, "save"))
@@ -401,6 +474,26 @@ func (a *App) SaveActive(content string, overwrite bool) (SaveResult, error) {
 	if overwrite {
 	}
 	return SaveResult{Session: a.GetSession()}, nil
+}
+
+// CheckExternalChange is a read-only source check for the active workspace.
+// It deliberately does not read the document body or mutate the recovery
+// draft, so polling cannot replace the user's in-app edits.
+func (a *App) CheckExternalChange(id string) (*SaveConflictInfo, error) {
+	a.contentMu.Lock()
+	defer a.contentMu.Unlock()
+	if a.sess == nil {
+		return nil, nil
+	}
+	doc := a.sess.Find(id)
+	if doc == nil || doc.Path == "" || isReadOnlyPath(doc.Path) {
+		return nil, nil
+	}
+	changed, err := a.store.CheckExternalChange(doc)
+	if err != nil {
+		return nil, fmt.Errorf("check source file: %w", err)
+	}
+	return saveConflictInfo(changed), nil
 }
 
 // ReloadActiveFromDisk is an explicit conflict resolution. The Quillpane draft
@@ -592,6 +685,9 @@ func (a *App) openPath(path string) (SessionState, error) {
 	}
 	path = canonicalPath(path)
 	if doc := a.sess.FindFile(path); doc != nil {
+		if err := a.ensureRecoveryContent(doc); err != nil {
+			return a.GetSession(), err
+		}
 		a.sess.ActiveID = doc.ID
 		a.sess.AddRecent(path)
 		if err := a.store.Save(a.sess); err != nil {

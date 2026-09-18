@@ -103,6 +103,30 @@ body,
   contain-intrinsic-size: auto 2rem;
 }
 
+#viewer > .markdown-section {
+  contain-intrinsic-size: auto 128rem;
+}
+
+#viewer > .markdown-section > * {
+  contain: layout style paint;
+}
+
+#viewer > .markdown-section:first-child > :first-child {
+  margin-top: 0 !important;
+}
+
+#viewer > .markdown-section:last-child > :last-child {
+  margin-bottom: 0 !important;
+}
+
+@media print {
+  #viewer > .markdown-section,
+  #viewer > .markdown-section > * {
+    content-visibility: visible;
+    contain: none;
+  }
+}
+
 .plain-text-view {
   margin: 0;
   border: 0;
@@ -2380,6 +2404,111 @@ textarea {
   color: var(--mp-selected-text);
 }
 
+/* Proactive source warnings float above the workspace so the fixed shell rails
+   and editor/preview geometry do not jump when a file changes on disk. */
+.external-change-banner {
+  position: absolute;
+  z-index: 30;
+  top: var(--mp-space-6);
+  left: 50%;
+  display: flex;
+  width: min(760px, calc(100% - 24px));
+  box-sizing: border-box;
+  align-items: center;
+  gap: var(--mp-space-6);
+  transform: translateX(-50%);
+  border: 1px solid var(--mp-warning-border);
+  border-radius: var(--mp-radius-4);
+  background: var(--mp-warning-soft);
+  padding: var(--mp-space-5) var(--mp-space-6);
+  color: var(--mp-warning);
+  box-shadow: var(--mp-shadow-menu);
+}
+
+.external-change-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--mp-control-height);
+  height: var(--mp-control-height);
+  align-items: center;
+  justify-content: center;
+  color: var(--mp-warning);
+}
+
+.external-change-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.external-change-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: var(--mp-space-1);
+  color: var(--mp-text);
+  font-size: var(--mp-text-11);
+  line-height: 1.4;
+}
+
+.external-change-copy strong {
+  color: var(--mp-warning);
+  font-size: var(--mp-text-12);
+}
+
+.external-change-copy code {
+  overflow: hidden;
+  color: var(--mp-muted);
+  font-family: var(--mp-font-code);
+  font-size: var(--mp-text-9);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-change-error {
+  color: var(--mp-danger-hover);
+}
+
+.external-change-dismiss {
+  display: inline-flex;
+  width: var(--mp-control-height);
+  min-width: var(--mp-control-height);
+  height: var(--mp-control-height);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--mp-radius-2);
+  background: transparent;
+  color: var(--mp-muted);
+  cursor: pointer;
+}
+
+.external-change-dismiss:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.external-change-dismiss:hover:not(:disabled),
+.external-change-dismiss:focus-visible {
+  border-color: var(--mp-warning-border);
+  background: var(--mp-hover);
+  color: var(--mp-text);
+}
+
+.external-change-dismiss svg {
+  width: 15px;
+  height: 15px;
+}
+
+.external-change-banner .confirm-btn {
+  flex: 0 0 auto;
+}
+
+.external-change-banner .confirm-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 @media (max-width: 440px) {
   .modal-overlay,
   .close-overlay,
@@ -2393,6 +2522,20 @@ textarea {
   }
 
   .close-actions .confirm-btn {
+    width: 100%;
+  }
+
+  .external-change-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--mp-space-4);
+  }
+
+  .external-change-copy {
+    flex-basis: calc(100% - 48px);
+  }
+
+  .external-change-banner .confirm-btn {
     width: 100%;
   }
 }
@@ -4114,6 +4257,13 @@ textarea {
   display: block;
   content-visibility: auto;
 }
+
+/* Whole-source syntax is retained in selectable newline-aligned blocks; the
+   webview can skip offscreen line layout without dropping selection or text. */
+.code-view-block {
+  display: block;
+  content-visibility: auto;
+}
 /* File-backed task lists share the workbench's theme and scale. */
 .task-document {
   color: var(--mp-text);
@@ -5696,4 +5846,15 @@ textarea {
   max-height: 24px;
   flex: 0 0 24px;
   padding: 0;
+}
+
+/* Retain every heading button while skipping offscreen large-outline layout. */
+.outline-render-group {
+  content-visibility: auto;
+}
+
+@media print {
+  .outline-render-group {
+    content-visibility: visible;
+  }
 }

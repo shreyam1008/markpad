@@ -149,6 +149,91 @@ func installLinuxUpdate(ctx context.Context, source, asset string) error {
 	return err
 }
 
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+func powerShellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
+// startAfterExit starts a small detached handoff that waits for the running
+// process to disappear before launching the replacement. This is required on
+// Windows, where the live executable is locked, and also lets Linux restart
+// cleanly after an atomic replacement or package install.
+func startAfterExit(pid int, executable string, args ...string) (*exec.Cmd, error) {
+	if pid <= 0 || !filepath.IsAbs(executable) {
+		return nil, fmt.Errorf("could not identify the installed application")
+	}
+	info, err := os.Stat(executable)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("installed application path is not a regular file")
+	}
+	if runtime.GOOS == "windows" {
+		argumentList := ""
+		for _, arg := range args {
+			argumentList += ", " + powerShellQuote(arg)
+		}
+		script := fmt.Sprintf(
+			"$quillpanePid=%d; while (Get-Process -Id $quillpanePid -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 200 }; Start-Process -FilePath %s -ArgumentList @(%s)",
+			pid,
+			powerShellQuote(executable),
+			strings.TrimPrefix(argumentList, ", "),
+		)
+		return exec.Command("powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script), nil
+	}
+	command := "while kill -0 " + strconv.Itoa(pid) + " 2>/dev/null; do sleep 0.2; done; exec " + shellQuote(executable)
+	for _, arg := range args {
+		command += " " + shellQuote(arg)
+	}
+	return exec.Command("sh", "-c", command), nil
+}
+
+func (a *App) restartAfterUpdate() error {
+	executable, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	if runtime.GOOS == "linux" && os.Getenv("APPIMAGE") != "" {
+		executable = os.Getenv("APPIMAGE")
+	}
+	handoff, err := startAfterExit(os.Getpid(), executable)
+	if err != nil {
+		return err
+	}
+	if err := handoff.Start(); err != nil {
+		return fmt.Errorf("start application restart: %w", err)
+	}
+	go func() { _ = handoff.Wait() }()
+	if a.ctx != nil {
+		a.quitConfirmed.Store(true)
+		go func() {
+			time.Sleep(250 * time.Millisecond)
+			wailsruntime.Quit(a.ctx)
+		}()
+	}
+	return nil
+}
+
+func (a *App) installWindowsUpdate(source string) error {
+	handoff, err := startAfterExit(os.Getpid(), source, "/S")
+	if err != nil {
+		return err
+	}
+	if err := handoff.Start(); err != nil {
+		return fmt.Errorf("start Windows installer: %w", err)
+	}
+	go func() { _ = handoff.Wait() }()
+	if a.ctx != nil {
+		a.quitConfirmed.Store(true)
+		go func() {
+			time.Sleep(250 * time.Millisecond)
+			wailsruntime.Quit(a.ctx)
+		}()
+	}
+	return nil
+}
+
 func replacePortableUpdate(source, destination string) error {
 	if !filepath.IsAbs(destination) {
 		return fmt.Errorf("could not identify the installed application")
@@ -264,8 +349,9 @@ func copyVerifiedUpdate(destination io.Writer, source io.Reader, size int64, dig
 	return nil
 }
 
-// DownloadAndOpenUpdate hands a verified package to the OS installer. It never
-// quits the editor or bypasses OS authorization and Store-managed installations.
+// DownloadAndOpenUpdate downloads and verifies a release, then completes the
+// platform's installation handoff. It never bypasses OS authorization or
+// Store-managed installations, and it refuses to close a dirty session.
 func (a *App) DownloadAndOpenUpdate() (string, error) {
 	if !a.updateMu.TryLock() {
 		return "", fmt.Errorf("an update is already in progress")
@@ -273,6 +359,9 @@ func (a *App) DownloadAndOpenUpdate() (string, error) {
 	defer a.updateMu.Unlock()
 	if managedUpdateChannel() != "" {
 		return "", fmt.Errorf("this installation must be updated through its store")
+	}
+	if a.unsavedDocumentCount() > 0 {
+		return "", fmt.Errorf("save your open documents before installing the update")
 	}
 	info, err := a.CheckForUpdates()
 	if err != nil {
@@ -346,18 +435,30 @@ func (a *App) DownloadAndOpenUpdate() (string, error) {
 	} else if err = os.Rename(file.Name(), destination); err != nil {
 		return "", err
 	}
-	wailsruntime.EventsEmit(a.ctx, "update:progress", updateProgress{"Opening installer", 100})
+	// The first check protects the download start. Check again before any
+	// platform handoff in case a document became dirty while the download ran.
+	if a.unsavedDocumentCount() > 0 {
+		return "", fmt.Errorf("save your open documents before installing the update")
+	}
+	wailsruntime.EventsEmit(a.ctx, "update:progress", updateProgress{"Starting installer", 100})
 	if runtime.GOOS == "linux" {
 		wailsruntime.EventsEmit(a.ctx, "update:progress", updateProgress{"Installing update; authorize the system prompt if shown", 100})
 		if err := installLinuxUpdate(ctx, destination, info.Asset); err != nil {
 			return "", err
 		}
-		return "Update installed. Save your work and restart Quillpane to run version " + info.Latest + ".", nil
+		if err := a.restartAfterUpdate(); err != nil {
+			return "Update installed. Restart Quillpane to run version " + info.Latest + ".", nil
+		}
+		return "Update installed. Restarting Quillpane with version " + info.Latest + ".", nil
 	}
 	var command *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		command = exec.Command("rundll32.exe", "url.dll,FileProtocolHandler", destination)
+		wailsruntime.EventsEmit(a.ctx, "update:progress", updateProgress{"Installing update; authorize Windows if prompted", 100})
+		if err := a.installWindowsUpdate(destination); err != nil {
+			return "", fmt.Errorf("installer downloaded but could not start: %w", err)
+		}
+		return "Update downloaded. Quillpane is closing while Windows finishes the installation.", nil
 	case "darwin":
 		command = exec.Command("open", destination)
 	default:

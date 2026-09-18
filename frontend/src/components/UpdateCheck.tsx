@@ -5,7 +5,7 @@ import { SOURCE_URL, VERSION, VERSION_NAME } from "../brand";
 import { client } from "../workspace/client";
 import type { UpdateInfo } from "../workspace/types";
 
-export function UpdateCheck() {
+export function UpdateCheck({ onBeforeInstall }: { onBeforeInstall?(): Promise<void> }) {
   const [busy, setBusy] = useState(false);
 
   const [result, setResult] = useState<UpdateInfo>();
@@ -73,6 +73,13 @@ export function UpdateCheck() {
 
   const download = async () => {
     if (busy || downloading) return;
+
+    try {
+      await onBeforeInstall?.();
+    } catch (error) {
+      if (mounted.current) setMessage(`Could not preserve document state: ${String(error)}`);
+      return;
+    }
 
     setDownloading(true);
 
@@ -179,10 +186,10 @@ export function UpdateCheck() {
       </button>
       {result?.available && (
         <p>
-          The download is checked against its release checksum before opening. Save your work and
-          close Quillpane before completing installation. Windows opens Setup; macOS opens the DMG;
-          Linux updates the existing binary, AppImage or Debian package, with a system authorization
-          prompt when needed. Store installations use their store updater. Existing notes and
+          The download is checked against its release checksum first. Save your work before
+          installing: Windows runs the signed setup after Quillpane closes, while Linux updates the
+          existing binary, AppImage, or Debian package and restarts the app. A system authorization
+          prompt may appear. Store installations use their store updater; existing notes and
           settings are preserved.
         </p>
       )}

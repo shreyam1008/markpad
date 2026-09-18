@@ -4,6 +4,7 @@ import type {
   FileInfo,
   HistoryEntry,
   MarkpadAPI,
+  SaveConflictInfo,
   SaveResult,
   SessionState,
   ViewMode,
@@ -18,6 +19,8 @@ function api(): MarkpadAPI {
 export const client = {
   checkForUpdates: () => api().CheckForUpdates(),
   downloadAndOpenUpdate: () => api().DownloadAndOpenUpdate(),
+  checkExternalChange: (id: string): Promise<SaveConflictInfo | null> =>
+    api().CheckExternalChange(id),
   session: (): Promise<SessionState> => api().GetSession(),
   activeContent: (): Promise<string> => api().GetActiveContent(),
   content: (id: string): Promise<string> => api().GetNoteContent(id),

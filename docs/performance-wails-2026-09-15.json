@@ -1,0 +1,1287 @@
+{
+  "matrix": {
+    "complete": true,
+    "trials": 48,
+    "samples": 7176,
+    "candidateSHA256": "13bcf8b99318dd6238c95003ce778e9f3430e4d919be97c9c2029998ab6bb3ca",
+    "baseCommit": "258bad98a257d747e9b36a7a0d8e5fe1b4f73d4a",
+    "workingTree": true,
+    "measuredSourceManifest": "optimized-source.json",
+    "laterSourceChanges": [
+      "frontend/src/components/DocumentWorkspace.tsx"
+    ],
+    "excluded": [
+      "opt-final-md100_code-1-baseline (post-measurement cleanup observation denied)"
+    ],
+    "rows": [
+      {
+        "name": "opt-final-md100_prose-1-baseline",
+        "kind": "baseline",
+        "case": "md100_prose",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 86.515625,
+        "commitMiB": 170.13671875,
+        "peakPrivateMiB": 91.85546875,
+        "cpuMs": 2640.625,
+        "maxSampleGapMs": 115.6407999843359
+      },
+      {
+        "name": "opt-final-md100_prose-1-candidate",
+        "kind": "candidate",
+        "case": "md100_prose",
+        "repeat": 1,
+        "samples": 149,
+        "privateMiB": 118.59765625,
+        "commitMiB": 170.4921875,
+        "peakPrivateMiB": 124.93359375,
+        "cpuMs": 2750.0,
+        "maxSampleGapMs": 106.44750000536442
+      },
+      {
+        "name": "opt-final-md100_prose-2-candidate",
+        "kind": "candidate",
+        "case": "md100_prose",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 85.30859375,
+        "commitMiB": 169.08984375,
+        "peakPrivateMiB": 91.609375,
+        "cpuMs": 2750.0,
+        "maxSampleGapMs": 102.62540000677109
+      },
+      {
+        "name": "opt-final-md100_prose-2-baseline",
+        "kind": "baseline",
+        "case": "md100_prose",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 86.49609375,
+        "commitMiB": 169.84375,
+        "peakPrivateMiB": 92.44140625,
+        "cpuMs": 2625.0,
+        "maxSampleGapMs": 104.51279999315739
+      },
+      {
+        "name": "opt-final-md100_rich-1-baseline",
+        "kind": "baseline",
+        "case": "md100_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 91.375,
+        "commitMiB": 174.6015625,
+        "peakPrivateMiB": 97.33203125,
+        "cpuMs": 4406.25,
+        "maxSampleGapMs": 119.20029999315739
+      },
+      {
+        "name": "opt-final-md100_rich-1-candidate",
+        "kind": "candidate",
+        "case": "md100_rich",
+        "repeat": 1,
+        "samples": 145,
+        "privateMiB": 91.892578125,
+        "commitMiB": 174.744140625,
+        "peakPrivateMiB": 96.93359375,
+        "cpuMs": 3281.25,
+        "maxSampleGapMs": 149.25180000066757
+      },
+      {
+        "name": "opt-final-md100_rich-2-candidate",
+        "kind": "candidate",
+        "case": "md100_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 93.38671875,
+        "commitMiB": 176.796875,
+        "peakPrivateMiB": 99.5703125,
+        "cpuMs": 3343.75,
+        "maxSampleGapMs": 107.6617999970913
+      },
+      {
+        "name": "opt-final-md100_rich-2-baseline",
+        "kind": "baseline",
+        "case": "md100_rich",
+        "repeat": 2,
+        "samples": 149,
+        "privateMiB": 91.5703125,
+        "commitMiB": 174.3203125,
+        "peakPrivateMiB": 97.15625,
+        "cpuMs": 3468.75,
+        "maxSampleGapMs": 117.13030000030994
+      },
+      {
+        "name": "opt-final-b-heading_stress-1-baseline",
+        "kind": "baseline",
+        "case": "heading_stress",
+        "repeat": 1,
+        "samples": 148,
+        "privateMiB": 631.3125,
+        "commitMiB": 719.7734375,
+        "peakPrivateMiB": 713.046875,
+        "cpuMs": 15437.5,
+        "maxSampleGapMs": 120.62680001556873
+      },
+      {
+        "name": "opt-final-b-heading_stress-1-candidate",
+        "kind": "candidate",
+        "case": "heading_stress",
+        "repeat": 1,
+        "samples": 147,
+        "privateMiB": 234.87109375,
+        "commitMiB": 322.01171875,
+        "peakPrivateMiB": 244.5703125,
+        "cpuMs": 5890.625,
+        "maxSampleGapMs": 126.44130000472069
+      },
+      {
+        "name": "opt-final-b-heading_stress-2-candidate",
+        "kind": "candidate",
+        "case": "heading_stress",
+        "repeat": 2,
+        "samples": 147,
+        "privateMiB": 227.13671875,
+        "commitMiB": 313.982421875,
+        "peakPrivateMiB": 239.125,
+        "cpuMs": 4937.5,
+        "maxSampleGapMs": 180.92790000140667
+      },
+      {
+        "name": "opt-final-b-heading_stress-2-baseline",
+        "kind": "baseline",
+        "case": "heading_stress",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 634.88671875,
+        "commitMiB": 723.734375,
+        "peakPrivateMiB": 667.34375,
+        "cpuMs": 15296.875,
+        "maxSampleGapMs": 117.48240001499653
+      },
+      {
+        "name": "opt-final-b-source_ts-1-baseline",
+        "kind": "baseline",
+        "case": "source_ts",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 283.44921875,
+        "commitMiB": 368.69140625,
+        "peakPrivateMiB": 305.73828125,
+        "cpuMs": 14265.625,
+        "maxSampleGapMs": 104.53150001168251
+      },
+      {
+        "name": "opt-final-b-source_ts-1-candidate",
+        "kind": "candidate",
+        "case": "source_ts",
+        "repeat": 1,
+        "samples": 148,
+        "privateMiB": 125.74609375,
+        "commitMiB": 209.88671875,
+        "peakPrivateMiB": 134.5859375,
+        "cpuMs": 8031.25,
+        "maxSampleGapMs": 135.0063000023365
+      },
+      {
+        "name": "opt-final-b-source_ts-2-candidate",
+        "kind": "candidate",
+        "case": "source_ts",
+        "repeat": 2,
+        "samples": 149,
+        "privateMiB": 125.244140625,
+        "commitMiB": 209.580078125,
+        "peakPrivateMiB": 135.53515625,
+        "cpuMs": 7765.625,
+        "maxSampleGapMs": 109.54510000348091
+      },
+      {
+        "name": "opt-final-b-source_ts-2-baseline",
+        "kind": "baseline",
+        "case": "source_ts",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 288.595703125,
+        "commitMiB": 373.880859375,
+        "peakPrivateMiB": 328.1484375,
+        "cpuMs": 14296.875,
+        "maxSampleGapMs": 103.87320001423359
+      },
+      {
+        "name": "opt-final-b-md100_code-1-baseline",
+        "kind": "baseline",
+        "case": "md100_code",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 98.046875,
+        "commitMiB": 181.82421875,
+        "peakPrivateMiB": 102.640625,
+        "cpuMs": 4062.5,
+        "maxSampleGapMs": 107.14899998903275
+      },
+      {
+        "name": "opt-final-b-md100_code-1-candidate",
+        "kind": "candidate",
+        "case": "md100_code",
+        "repeat": 1,
+        "samples": 148,
+        "privateMiB": 94.8203125,
+        "commitMiB": 178.21875,
+        "peakPrivateMiB": 101.19921875,
+        "cpuMs": 3968.75,
+        "maxSampleGapMs": 133.17090000212193
+      },
+      {
+        "name": "opt-final-b-md100_code-2-candidate",
+        "kind": "candidate",
+        "case": "md100_code",
+        "repeat": 2,
+        "samples": 149,
+        "privateMiB": 98.373046875,
+        "commitMiB": 182.900390625,
+        "peakPrivateMiB": 104.12890625,
+        "cpuMs": 4968.75,
+        "maxSampleGapMs": 137.06669999659061
+      },
+      {
+        "name": "opt-final-b-md100_code-2-baseline",
+        "kind": "baseline",
+        "case": "md100_code",
+        "repeat": 2,
+        "samples": 148,
+        "privateMiB": 97.732421875,
+        "commitMiB": 181.77734375,
+        "peakPrivateMiB": 105.91015625,
+        "cpuMs": 4218.75,
+        "maxSampleGapMs": 145.06140001118183
+      },
+      {
+        "name": "opt-final-b-md1000_rich-1-baseline",
+        "kind": "baseline",
+        "case": "md1000_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 99.4765625,
+        "commitMiB": 182.712890625,
+        "peakPrivateMiB": 106.19140625,
+        "cpuMs": 4265.625,
+        "maxSampleGapMs": 109.2015999853611
+      },
+      {
+        "name": "opt-final-b-md1000_rich-1-candidate",
+        "kind": "candidate",
+        "case": "md1000_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 101.20703125,
+        "commitMiB": 184.99609375,
+        "peakPrivateMiB": 109.0703125,
+        "cpuMs": 3765.625,
+        "maxSampleGapMs": 107.08979998528957
+      },
+      {
+        "name": "opt-final-b-md1000_rich-2-candidate",
+        "kind": "candidate",
+        "case": "md1000_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 99.490234375,
+        "commitMiB": 183.00390625,
+        "peakPrivateMiB": 108.796875,
+        "cpuMs": 2984.375,
+        "maxSampleGapMs": 102.59610000252724
+      },
+      {
+        "name": "opt-final-b-md1000_rich-2-baseline",
+        "kind": "baseline",
+        "case": "md1000_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 100.58984375,
+        "commitMiB": 184.10546875,
+        "peakPrivateMiB": 108.63671875,
+        "cpuMs": 3140.625,
+        "maxSampleGapMs": 109.3437000066042
+      },
+      {
+        "name": "opt-final-b-md5000_rich-1-baseline",
+        "kind": "baseline",
+        "case": "md5000_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 124.87109375,
+        "commitMiB": 208.953125,
+        "peakPrivateMiB": 138.11328125,
+        "cpuMs": 4000.0,
+        "maxSampleGapMs": 101.70260000228882
+      },
+      {
+        "name": "opt-final-b-md5000_rich-1-candidate",
+        "kind": "candidate",
+        "case": "md5000_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 120.796875,
+        "commitMiB": 204.16015625,
+        "peakPrivateMiB": 131.38671875,
+        "cpuMs": 3687.5,
+        "maxSampleGapMs": 115.09420001506805
+      },
+      {
+        "name": "opt-final-b-md5000_rich-2-candidate",
+        "kind": "candidate",
+        "case": "md5000_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 119.138671875,
+        "commitMiB": 202.884765625,
+        "peakPrivateMiB": 128.5390625,
+        "cpuMs": 3796.875,
+        "maxSampleGapMs": 104.48709999024868
+      },
+      {
+        "name": "opt-final-b-md5000_rich-2-baseline",
+        "kind": "baseline",
+        "case": "md5000_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 126.318359375,
+        "commitMiB": 209.822265625,
+        "peakPrivateMiB": 141.2734375,
+        "cpuMs": 3937.5,
+        "maxSampleGapMs": 102.84919999539852
+      },
+      {
+        "name": "opt-final-b-longline1mib-1-baseline",
+        "kind": "baseline",
+        "case": "longline1mib",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 220.125,
+        "commitMiB": 309.57421875,
+        "peakPrivateMiB": 246.140625,
+        "cpuMs": 3984.375,
+        "maxSampleGapMs": 105.67520000040531
+      },
+      {
+        "name": "opt-final-b-longline1mib-1-candidate",
+        "kind": "candidate",
+        "case": "longline1mib",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 220.4765625,
+        "commitMiB": 310.01953125,
+        "peakPrivateMiB": 287.46875,
+        "cpuMs": 3421.875,
+        "maxSampleGapMs": 102.0819000005722
+      },
+      {
+        "name": "opt-final-b-longline1mib-2-candidate",
+        "kind": "candidate",
+        "case": "longline1mib",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 220.6015625,
+        "commitMiB": 309.94140625,
+        "peakPrivateMiB": 280.265625,
+        "cpuMs": 3921.875,
+        "maxSampleGapMs": 102.86120000481606
+      },
+      {
+        "name": "opt-final-b-longline1mib-2-baseline",
+        "kind": "baseline",
+        "case": "longline1mib",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 221.75,
+        "commitMiB": 310.0,
+        "peakPrivateMiB": 277.9296875,
+        "cpuMs": 3265.625,
+        "maxSampleGapMs": 102.1283999979496
+      },
+      {
+        "name": "opt-final-b-large_text-1-baseline",
+        "kind": "baseline",
+        "case": "large_text",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 102.43359375,
+        "commitMiB": 186.8359375,
+        "peakPrivateMiB": 107.7421875,
+        "cpuMs": 2593.75,
+        "maxSampleGapMs": 103.61859999597073
+      },
+      {
+        "name": "opt-final-b-large_text-1-candidate",
+        "kind": "candidate",
+        "case": "large_text",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 102.7421875,
+        "commitMiB": 187.08203125,
+        "peakPrivateMiB": 108.68359375,
+        "cpuMs": 2515.625,
+        "maxSampleGapMs": 102.51729999482632
+      },
+      {
+        "name": "opt-final-b-large_text-2-candidate",
+        "kind": "candidate",
+        "case": "large_text",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 102.65625,
+        "commitMiB": 187.0703125,
+        "peakPrivateMiB": 108.1484375,
+        "cpuMs": 2437.5,
+        "maxSampleGapMs": 102.39330001175404
+      },
+      {
+        "name": "opt-final-b-large_text-2-baseline",
+        "kind": "baseline",
+        "case": "large_text",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 105.4765625,
+        "commitMiB": 189.4140625,
+        "peakPrivateMiB": 108.21484375,
+        "cpuMs": 2828.125,
+        "maxSampleGapMs": 130.39959999918938
+      },
+      {
+        "name": "opt-final-b-large_json-1-baseline",
+        "kind": "baseline",
+        "case": "large_json",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 97.9609375,
+        "commitMiB": 181.48046875,
+        "peakPrivateMiB": 103.2421875,
+        "cpuMs": 2687.5,
+        "maxSampleGapMs": 103.18019999563694
+      },
+      {
+        "name": "opt-final-b-large_json-1-candidate",
+        "kind": "candidate",
+        "case": "large_json",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 97.525390625,
+        "commitMiB": 181.416015625,
+        "peakPrivateMiB": 102.8828125,
+        "cpuMs": 2328.125,
+        "maxSampleGapMs": 101.84230001270771
+      },
+      {
+        "name": "opt-final-b-large_json-2-candidate",
+        "kind": "candidate",
+        "case": "large_json",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 99.1875,
+        "commitMiB": 182.79296875,
+        "peakPrivateMiB": 104.328125,
+        "cpuMs": 2625.0,
+        "maxSampleGapMs": 104.01710000634193
+      },
+      {
+        "name": "opt-final-b-large_json-2-baseline",
+        "kind": "baseline",
+        "case": "large_json",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 98.15234375,
+        "commitMiB": 181.6796875,
+        "peakPrivateMiB": 103.015625,
+        "cpuMs": 2171.875,
+        "maxSampleGapMs": 105.98970000445843
+      },
+      {
+        "name": "opt-final-b-tasks500-1-baseline",
+        "kind": "baseline",
+        "case": "tasks500",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 227.71484375,
+        "commitMiB": 314.0859375,
+        "peakPrivateMiB": 251.328125,
+        "cpuMs": 9406.25,
+        "maxSampleGapMs": 113.13409999012947
+      },
+      {
+        "name": "opt-final-b-tasks500-1-candidate",
+        "kind": "candidate",
+        "case": "tasks500",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 227.783203125,
+        "commitMiB": 314.50390625,
+        "peakPrivateMiB": 251.51953125,
+        "cpuMs": 9343.75,
+        "maxSampleGapMs": 110.40950000286102
+      },
+      {
+        "name": "opt-final-b-tasks500-2-candidate",
+        "kind": "candidate",
+        "case": "tasks500",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 226.748046875,
+        "commitMiB": 313.7890625,
+        "peakPrivateMiB": 249.5,
+        "cpuMs": 8640.625,
+        "maxSampleGapMs": 111.51919999718666
+      },
+      {
+        "name": "opt-final-b-tasks500-2-baseline",
+        "kind": "baseline",
+        "case": "tasks500",
+        "repeat": 2,
+        "samples": 149,
+        "privateMiB": 227.1484375,
+        "commitMiB": 314.0078125,
+        "peakPrivateMiB": 249.0234375,
+        "cpuMs": 9109.375,
+        "maxSampleGapMs": 111.40189999341965
+      },
+      {
+        "name": "opt-final-b-image-1-baseline",
+        "kind": "baseline",
+        "case": "image",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 82.49609375,
+        "commitMiB": 166.828125,
+        "peakPrivateMiB": 88.359375,
+        "cpuMs": 1921.875,
+        "maxSampleGapMs": 108.71130001544952
+      },
+      {
+        "name": "opt-final-b-image-1-candidate",
+        "kind": "candidate",
+        "case": "image",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 84.875,
+        "commitMiB": 169.41015625,
+        "peakPrivateMiB": 89.82421875,
+        "cpuMs": 2000.0,
+        "maxSampleGapMs": 107.76620000600815
+      },
+      {
+        "name": "opt-final-b-image-2-candidate",
+        "kind": "candidate",
+        "case": "image",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 82.59765625,
+        "commitMiB": 167.88671875,
+        "peakPrivateMiB": 88.18359375,
+        "cpuMs": 1890.625,
+        "maxSampleGapMs": 101.37510000169277
+      },
+      {
+        "name": "opt-final-b-image-2-baseline",
+        "kind": "baseline",
+        "case": "image",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 80.87109375,
+        "commitMiB": 165.87890625,
+        "peakPrivateMiB": 89.21875,
+        "cpuMs": 2109.375,
+        "maxSampleGapMs": 106.03640000522137
+      }
+    ],
+    "cases": [
+      {
+        "case": "md100_prose",
+        "baseline": {
+          "privateMiB": 86.505859375,
+          "commitMiB": 169.990234375,
+          "privateRangeMiB": [
+            86.49609375,
+            86.515625
+          ],
+          "peakPrivateMiB": 92.44140625
+        },
+        "candidate": {
+          "privateMiB": 101.953125,
+          "commitMiB": 169.791015625,
+          "privateRangeMiB": [
+            85.30859375,
+            118.59765625
+          ],
+          "peakPrivateMiB": 124.93359375
+        }
+      },
+      {
+        "case": "md100_rich",
+        "baseline": {
+          "privateMiB": 91.47265625,
+          "commitMiB": 174.4609375,
+          "privateRangeMiB": [
+            91.375,
+            91.5703125
+          ],
+          "peakPrivateMiB": 97.33203125
+        },
+        "candidate": {
+          "privateMiB": 92.6396484375,
+          "commitMiB": 175.7705078125,
+          "privateRangeMiB": [
+            91.892578125,
+            93.38671875
+          ],
+          "peakPrivateMiB": 99.5703125
+        }
+      },
+      {
+        "case": "heading_stress",
+        "baseline": {
+          "privateMiB": 633.099609375,
+          "commitMiB": 721.75390625,
+          "privateRangeMiB": [
+            631.3125,
+            634.88671875
+          ],
+          "peakPrivateMiB": 713.046875
+        },
+        "candidate": {
+          "privateMiB": 231.00390625,
+          "commitMiB": 317.9970703125,
+          "privateRangeMiB": [
+            227.13671875,
+            234.87109375
+          ],
+          "peakPrivateMiB": 244.5703125
+        }
+      },
+      {
+        "case": "source_ts",
+        "baseline": {
+          "privateMiB": 286.0224609375,
+          "commitMiB": 371.2861328125,
+          "privateRangeMiB": [
+            283.44921875,
+            288.595703125
+          ],
+          "peakPrivateMiB": 328.1484375
+        },
+        "candidate": {
+          "privateMiB": 125.4951171875,
+          "commitMiB": 209.7333984375,
+          "privateRangeMiB": [
+            125.244140625,
+            125.74609375
+          ],
+          "peakPrivateMiB": 135.53515625
+        }
+      },
+      {
+        "case": "md100_code",
+        "baseline": {
+          "privateMiB": 97.8896484375,
+          "commitMiB": 181.80078125,
+          "privateRangeMiB": [
+            97.732421875,
+            98.046875
+          ],
+          "peakPrivateMiB": 105.91015625
+        },
+        "candidate": {
+          "privateMiB": 96.5966796875,
+          "commitMiB": 180.5595703125,
+          "privateRangeMiB": [
+            94.8203125,
+            98.373046875
+          ],
+          "peakPrivateMiB": 104.12890625
+        }
+      },
+      {
+        "case": "md1000_rich",
+        "baseline": {
+          "privateMiB": 100.033203125,
+          "commitMiB": 183.4091796875,
+          "privateRangeMiB": [
+            99.4765625,
+            100.58984375
+          ],
+          "peakPrivateMiB": 108.63671875
+        },
+        "candidate": {
+          "privateMiB": 100.3486328125,
+          "commitMiB": 184.0,
+          "privateRangeMiB": [
+            99.490234375,
+            101.20703125
+          ],
+          "peakPrivateMiB": 109.0703125
+        }
+      },
+      {
+        "case": "md5000_rich",
+        "baseline": {
+          "privateMiB": 125.5947265625,
+          "commitMiB": 209.3876953125,
+          "privateRangeMiB": [
+            124.87109375,
+            126.318359375
+          ],
+          "peakPrivateMiB": 141.2734375
+        },
+        "candidate": {
+          "privateMiB": 119.9677734375,
+          "commitMiB": 203.5224609375,
+          "privateRangeMiB": [
+            119.138671875,
+            120.796875
+          ],
+          "peakPrivateMiB": 131.38671875
+        }
+      },
+      {
+        "case": "longline1mib",
+        "baseline": {
+          "privateMiB": 220.9375,
+          "commitMiB": 309.787109375,
+          "privateRangeMiB": [
+            220.125,
+            221.75
+          ],
+          "peakPrivateMiB": 277.9296875
+        },
+        "candidate": {
+          "privateMiB": 220.5390625,
+          "commitMiB": 309.98046875,
+          "privateRangeMiB": [
+            220.4765625,
+            220.6015625
+          ],
+          "peakPrivateMiB": 287.46875
+        }
+      },
+      {
+        "case": "large_text",
+        "baseline": {
+          "privateMiB": 103.955078125,
+          "commitMiB": 188.125,
+          "privateRangeMiB": [
+            102.43359375,
+            105.4765625
+          ],
+          "peakPrivateMiB": 108.21484375
+        },
+        "candidate": {
+          "privateMiB": 102.69921875,
+          "commitMiB": 187.076171875,
+          "privateRangeMiB": [
+            102.65625,
+            102.7421875
+          ],
+          "peakPrivateMiB": 108.68359375
+        }
+      },
+      {
+        "case": "large_json",
+        "baseline": {
+          "privateMiB": 98.056640625,
+          "commitMiB": 181.580078125,
+          "privateRangeMiB": [
+            97.9609375,
+            98.15234375
+          ],
+          "peakPrivateMiB": 103.2421875
+        },
+        "candidate": {
+          "privateMiB": 98.3564453125,
+          "commitMiB": 182.1044921875,
+          "privateRangeMiB": [
+            97.525390625,
+            99.1875
+          ],
+          "peakPrivateMiB": 104.328125
+        }
+      },
+      {
+        "case": "tasks500",
+        "baseline": {
+          "privateMiB": 227.431640625,
+          "commitMiB": 314.046875,
+          "privateRangeMiB": [
+            227.1484375,
+            227.71484375
+          ],
+          "peakPrivateMiB": 251.328125
+        },
+        "candidate": {
+          "privateMiB": 227.265625,
+          "commitMiB": 314.146484375,
+          "privateRangeMiB": [
+            226.748046875,
+            227.783203125
+          ],
+          "peakPrivateMiB": 251.51953125
+        }
+      },
+      {
+        "case": "image",
+        "baseline": {
+          "privateMiB": 81.68359375,
+          "commitMiB": 166.353515625,
+          "privateRangeMiB": [
+            80.87109375,
+            82.49609375
+          ],
+          "peakPrivateMiB": 89.21875
+        },
+        "candidate": {
+          "privateMiB": 83.736328125,
+          "commitMiB": 168.6484375,
+          "privateRangeMiB": [
+            82.59765625,
+            84.875
+          ],
+          "peakPrivateMiB": 89.82421875
+        }
+      }
+    ]
+  },
+  "finalArtifact": {
+    "sha256": "ba848e1c592a2082ef052739892cc86b4defd3a3e15ef425362cc73467df7867",
+    "bytes": 18852352,
+    "sourceManifestSHA256": "2bd2d6ee613b581f983f0b77540b1bf16f5febd121d23e6b49865e8fa077cbd1"
+  },
+  "native": {
+    "visualAndPersistenceChecksPassed": true,
+    "counterSeriesExcluded": true,
+    "samples": 2921,
+    "incompleteSamples": 1,
+    "error": "WinError87 querying PID7224",
+    "copyRecovery": {
+      "passed": true,
+      "copiedCharacters": 359,
+      "exactContiguousSourceMatch": true,
+      "sourceUnchanged": true,
+      "dirtyAfterSwitchBack": true
+    }
+  },
+  "finalSequences": {
+    "complete": true,
+    "samples": 3044,
+    "artifacts": {
+      "baseline": "c1505fdc2a29f8f18012bb29d4c5d2146f1cdf5d8e4ba853a3255d6cd43289eb",
+      "candidate": "ba848e1c592a2082ef052739892cc86b4defd3a3e15ef425362cc73467df7867"
+    },
+    "runs": [
+      {
+        "name": "opt-final-sequence-2-baseline",
+        "kind": "baseline",
+        "count": 2,
+        "selections": 24,
+        "samples": 492,
+        "phases": {
+          "short": {
+            "samples": 360,
+            "medianPrivateMiB": 105.41796875,
+            "peakPrivateMiB": 119.7421875,
+            "medianCommitMiB": 188.2890625
+          },
+          "sequence_final_idle": {
+            "samples": 80,
+            "medianPrivateMiB": 103.126953125,
+            "peakPrivateMiB": 104.1328125,
+            "medianCommitMiB": 185.337890625
+          }
+        },
+        "helperExitMedianMs": 205.27460000448627,
+        "helperExitMaxMs": 216.13500000967178,
+        "profileBytesAfter": 3988630
+      },
+      {
+        "name": "opt-final-sequence-2-candidate",
+        "kind": "candidate",
+        "count": 2,
+        "selections": 24,
+        "samples": 492,
+        "phases": {
+          "short": {
+            "samples": 360,
+            "medianPrivateMiB": 105.45703125,
+            "peakPrivateMiB": 118.9609375,
+            "medianCommitMiB": 190.064453125
+          },
+          "sequence_final_idle": {
+            "samples": 80,
+            "medianPrivateMiB": 99.271484375,
+            "peakPrivateMiB": 100.15625,
+            "medianCommitMiB": 183.142578125
+          }
+        },
+        "helperExitMedianMs": 203.8029000032111,
+        "helperExitMaxMs": 222.78599999845028,
+        "profileBytesAfter": 3988809
+      },
+      {
+        "name": "opt-final-sequence-10-baseline",
+        "kind": "baseline",
+        "count": 10,
+        "selections": 44,
+        "samples": 1030,
+        "phases": {
+          "short": {
+            "samples": 360,
+            "medianPrivateMiB": 108.49609375,
+            "peakPrivateMiB": 124.09375,
+            "medianCommitMiB": 192.0546875
+          },
+          "mixed1": {
+            "samples": 269,
+            "medianPrivateMiB": 307.2890625,
+            "peakPrivateMiB": 671.1875,
+            "medianCommitMiB": 403.48828125
+          },
+          "mixed2": {
+            "samples": 270,
+            "medianPrivateMiB": 518.0546875,
+            "peakPrivateMiB": 695.36328125,
+            "medianCommitMiB": 611.05078125
+          },
+          "sequence_final_idle": {
+            "samples": 79,
+            "medianPrivateMiB": 193.78125,
+            "peakPrivateMiB": 488.20703125,
+            "medianCommitMiB": 283.12890625
+          }
+        },
+        "helperExitMedianMs": 206.14020000357414,
+        "helperExitMaxMs": 219.7347999899648,
+        "profileBytesAfter": 75244905
+      },
+      {
+        "name": "opt-final-sequence-10-candidate",
+        "kind": "candidate",
+        "count": 10,
+        "selections": 44,
+        "samples": 1030,
+        "phases": {
+          "short": {
+            "samples": 360,
+            "medianPrivateMiB": 110.28515625,
+            "peakPrivateMiB": 126.2578125,
+            "medianCommitMiB": 196.78515625
+          },
+          "mixed1": {
+            "samples": 269,
+            "medianPrivateMiB": 233.33984375,
+            "peakPrivateMiB": 301.1484375,
+            "medianCommitMiB": 324.33984375
+          },
+          "mixed2": {
+            "samples": 269,
+            "medianPrivateMiB": 241.05859375,
+            "peakPrivateMiB": 325.29296875,
+            "medianCommitMiB": 333.01953125
+          },
+          "sequence_final_idle": {
+            "samples": 80,
+            "medianPrivateMiB": 170.3515625,
+            "peakPrivateMiB": 240.13671875,
+            "medianCommitMiB": 260.203125
+          }
+        },
+        "helperExitMedianMs": 205.76750000327593,
+        "helperExitMaxMs": 227.10489999735728,
+        "profileBytesAfter": 75318368
+      }
+    ]
+  },
+  "finalAssets": {
+    "windows": {
+      "chunk-jt70zwh9.js": {
+        "bytes": 1248265,
+        "sha256": "c93b043fb254061437af1e5682ed404ad947a7e01a269d3665912d710f27e010"
+      },
+      "chunk-v4xrsv2j.css": {
+        "bytes": 152226,
+        "sha256": "5681b21c4c3c9a146eaf2d1c3163de23a83633427c1a563665a6405098bd06c9"
+      },
+      "diagrams-b72m7dvw.js": {
+        "bytes": 5365297,
+        "sha256": "e037d4097f836dd9b0c9c764049de0df65b770ee11f46e2a96db37096fb3c5d6"
+      },
+      "index.html": {
+        "bytes": 1366,
+        "sha256": "a8994891ad4706cdc3e790e1ff0898e1231ad8200e54287440ae05c62527bc85"
+      },
+      "markpad-mark-hzrxwmt6.svg": {
+        "bytes": 603,
+        "sha256": "03dde51c45a6db03030190e8b6009e3a2feb9ea03437c776bd0e811af24e2573"
+      }
+    },
+    "linux": {
+      "chunk-1fap653g.css": {
+        "bytes": 153373,
+        "sha256": "e3045f468d11f056cc6aa5571a164b6a522ff41db05b0f1518be968db7dcea41"
+      },
+      "chunk-qq9x01eq.js": {
+        "bytes": 6597015,
+        "sha256": "2ba1dbc5557afaeba0d3dd51b3c642605e977af59940484278e95c9582406672"
+      },
+      "index.html": {
+        "bytes": 1366,
+        "sha256": "78e74fc0c26810b83fac6e6180a336af3136748aea131749f3195696e4e61bdc"
+      },
+      "markpad-mark-hzrxwmt6.svg": {
+        "bytes": 603,
+        "sha256": "03dde51c45a6db03030190e8b6009e3a2feb9ea03437c776bd0e811af24e2573"
+      }
+    }
+  },
+  "checks": {
+    "frontendUnitTests": 116,
+    "previewDOMCases": 8,
+    "workspaceDOM": true,
+    "goCanonicalSuite": true,
+    "typecheck": true,
+    "format": true,
+    "lintExitZero": true,
+    "existingLintWarningsRemain": true,
+    "offlineAssets": true,
+    "nativeWindowsObserved": true,
+    "nativeLinuxVerified": false,
+    "published": false,
+    "goFormatting": {
+      "scope": "29 core files returned by rg --files -g *.go",
+      "gitLFNormalization": true,
+      "preservedCRLF": [
+        "main.go"
+      ]
+    }
+  },
+  "finalRenderRepeat": {
+    "complete": true,
+    "trials": 12,
+    "samples": 1799,
+    "candidateSHA256": "ba848e1c592a2082ef052739892cc86b4defd3a3e15ef425362cc73467df7867",
+    "baseCommit": "258bad98a257d747e9b36a7a0d8e5fe1b4f73d4a",
+    "workingTree": true,
+    "measuredSourceManifest": "final-source.json",
+    "laterSourceChanges": [],
+    "excluded": [],
+    "rows": [
+      {
+        "name": "opt-sealed-md100_rich-1-baseline",
+        "kind": "baseline",
+        "case": "md100_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 89.94921875,
+        "commitMiB": 172.01953125,
+        "peakPrivateMiB": 96.94921875,
+        "cpuMs": 2609.375,
+        "maxSampleGapMs": 102.90200001001358
+      },
+      {
+        "name": "opt-sealed-md100_rich-1-candidate",
+        "kind": "candidate",
+        "case": "md100_rich",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 91.31640625,
+        "commitMiB": 175.83203125,
+        "peakPrivateMiB": 97.86328125,
+        "cpuMs": 2671.875,
+        "maxSampleGapMs": 101.70720000565052
+      },
+      {
+        "name": "opt-sealed-md100_rich-2-candidate",
+        "kind": "candidate",
+        "case": "md100_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 92.51171875,
+        "commitMiB": 177.27734375,
+        "peakPrivateMiB": 99.6484375,
+        "cpuMs": 2312.5,
+        "maxSampleGapMs": 102.23929999768734
+      },
+      {
+        "name": "opt-sealed-md100_rich-2-baseline",
+        "kind": "baseline",
+        "case": "md100_rich",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 92.05078125,
+        "commitMiB": 177.1796875,
+        "peakPrivateMiB": 97.05859375,
+        "cpuMs": 2406.25,
+        "maxSampleGapMs": 101.2480999827385
+      },
+      {
+        "name": "opt-sealed-heading_stress-1-baseline",
+        "kind": "baseline",
+        "case": "heading_stress",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 626.71875,
+        "commitMiB": 717.5,
+        "peakPrivateMiB": 663.6640625,
+        "cpuMs": 14421.875,
+        "maxSampleGapMs": 105.00519999861717
+      },
+      {
+        "name": "opt-sealed-heading_stress-1-candidate",
+        "kind": "candidate",
+        "case": "heading_stress",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 225.51171875,
+        "commitMiB": 312.9609375,
+        "peakPrivateMiB": 242.47265625,
+        "cpuMs": 4281.25,
+        "maxSampleGapMs": 104.14959998428822
+      },
+      {
+        "name": "opt-sealed-heading_stress-2-candidate",
+        "kind": "candidate",
+        "case": "heading_stress",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 230.55078125,
+        "commitMiB": 318.140625,
+        "peakPrivateMiB": 241.8984375,
+        "cpuMs": 3859.375,
+        "maxSampleGapMs": 112.15800000727177
+      },
+      {
+        "name": "opt-sealed-heading_stress-2-baseline",
+        "kind": "baseline",
+        "case": "heading_stress",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 718.962890625,
+        "commitMiB": 776.677734375,
+        "peakPrivateMiB": 797.0078125,
+        "cpuMs": 14968.75,
+        "maxSampleGapMs": 104.7774000018835
+      },
+      {
+        "name": "opt-sealed-source_ts-1-baseline",
+        "kind": "baseline",
+        "case": "source_ts",
+        "repeat": 1,
+        "samples": 150,
+        "privateMiB": 238.7578125,
+        "commitMiB": 324.21484375,
+        "peakPrivateMiB": 302.62109375,
+        "cpuMs": 6531.25,
+        "maxSampleGapMs": 102.58599999547005
+      },
+      {
+        "name": "opt-sealed-source_ts-1-candidate",
+        "kind": "candidate",
+        "case": "source_ts",
+        "repeat": 1,
+        "samples": 149,
+        "privateMiB": 137.0546875,
+        "commitMiB": 188.89453125,
+        "peakPrivateMiB": 145.046875,
+        "cpuMs": 1328.125,
+        "maxSampleGapMs": 102.17720001935959
+      },
+      {
+        "name": "opt-sealed-source_ts-2-candidate",
+        "kind": "candidate",
+        "case": "source_ts",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 104.0859375,
+        "commitMiB": 188.12109375,
+        "peakPrivateMiB": 110.921875,
+        "cpuMs": 1406.25,
+        "maxSampleGapMs": 105.65669998526573
+      },
+      {
+        "name": "opt-sealed-source_ts-2-baseline",
+        "kind": "baseline",
+        "case": "source_ts",
+        "repeat": 2,
+        "samples": 150,
+        "privateMiB": 143.8125,
+        "commitMiB": 228.625,
+        "peakPrivateMiB": 159.84375,
+        "cpuMs": 1765.625,
+        "maxSampleGapMs": 102.7902999818325
+      }
+    ],
+    "cases": [
+      {
+        "case": "md100_rich",
+        "baseline": {
+          "privateMiB": 91.0,
+          "commitMiB": 174.599609375,
+          "privateRangeMiB": [
+            89.94921875,
+            92.05078125
+          ],
+          "peakPrivateMiB": 97.05859375
+        },
+        "candidate": {
+          "privateMiB": 91.9140625,
+          "commitMiB": 176.5546875,
+          "privateRangeMiB": [
+            91.31640625,
+            92.51171875
+          ],
+          "peakPrivateMiB": 99.6484375
+        }
+      },
+      {
+        "case": "heading_stress",
+        "baseline": {
+          "privateMiB": 672.8408203125,
+          "commitMiB": 747.0888671875,
+          "privateRangeMiB": [
+            626.71875,
+            718.962890625
+          ],
+          "peakPrivateMiB": 797.0078125
+        },
+        "candidate": {
+          "privateMiB": 228.03125,
+          "commitMiB": 315.55078125,
+          "privateRangeMiB": [
+            225.51171875,
+            230.55078125
+          ],
+          "peakPrivateMiB": 242.47265625
+        }
+      },
+      {
+        "case": "source_ts",
+        "baseline": {
+          "privateMiB": 191.28515625,
+          "commitMiB": 276.419921875,
+          "privateRangeMiB": [
+            143.8125,
+            238.7578125
+          ],
+          "peakPrivateMiB": 302.62109375
+        },
+        "candidate": {
+          "privateMiB": 120.5703125,
+          "commitMiB": 188.5078125,
+          "privateRangeMiB": [
+            104.0859375,
+            137.0546875
+          ],
+          "peakPrivateMiB": 145.046875
+        }
+      }
+    ]
+  },
+  "comparisonTotals": {
+    "trials": 64,
+    "completeSamples": 12019
+  }
+}

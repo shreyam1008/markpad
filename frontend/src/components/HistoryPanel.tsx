@@ -15,13 +15,35 @@ interface Props {
   onStatus(status: string): void;
 }
 
+let snapshotDateFormat: Intl.DateTimeFormat | undefined;
+
 function snapshotTime(timestamp: string) {
   const value = new Date(timestamp);
   if (Number.isNaN(value.valueOf())) return timestamp;
-  return new Intl.DateTimeFormat(undefined, {
+  snapshotDateFormat ??= new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(value);
+  });
+  return snapshotDateFormat.format(value);
+}
+
+function sourceLabel(source: string) {
+  switch (source) {
+    case "before-external-reload":
+      return "Before disk reload";
+    case "external-reload":
+      return "Reloaded from disk";
+    case "save-as":
+      return "Saved as";
+    case "open":
+      return "Opened";
+    case "save":
+      return "Saved";
+    case "restore":
+      return "Restored version";
+    default:
+      return source;
+  }
 }
 
 export function HistoryPanel({ open, note, currentContent, onClose, onRestore, onStatus }: Props) {
@@ -196,7 +218,7 @@ export function HistoryPanel({ open, note, currentContent, onClose, onRestore, o
               type="button"
               key={entry.timestamp}
               className="history-entry"
-              title={`${entry.source} · ${snapshotTime(entry.timestamp)}`}
+              title={`${sourceLabel(entry.source)} · ${snapshotTime(entry.timestamp)}`}
               onClick={() => void selectEntry(entry)}
             >
               <span className="history-timeline" aria-hidden="true">
@@ -204,7 +226,7 @@ export function HistoryPanel({ open, note, currentContent, onClose, onRestore, o
               </span>
               <span className="history-entry-copy">
                 <span className="history-entry-topline">
-                  <strong>{entry.source}</strong>
+                  <strong>{sourceLabel(entry.source)}</strong>
                   <time dateTime={entry.timestamp}>{entry.timeAgo}</time>
                 </span>
                 <span className="history-preview">{entry.preview || "Empty document"}</span>

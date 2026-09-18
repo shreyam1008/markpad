@@ -218,9 +218,13 @@ export function TaskTagPicker({
     [query, setQuery] = useState(""),
     [error, setError] = useState("");
   const anchor = useRef<HTMLButtonElement>(null);
-  const names = [...new Set([...value, ...options])]
-    .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 50);
+  // Hundreds of closed card pickers need only their button/pills. Build the
+  // searchable choices when this picker actually mounts its popup.
+  const names = open
+    ? [...new Set([...value, ...options])]
+        .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 50)
+    : [];
   const choose = (name: string) => {
     try {
       onChange(taskTags(value.includes(name) ? value.filter((v) => v !== name) : [...value, name]));

@@ -8,13 +8,13 @@ Quillpane (formerly Markpad) is a local Wails desktop application with three del
 
 Platform-specific operations belong at this boundary. Session persistence must not depend on Wails or browser state.
 
-`updates.go` performs an on-demand, timeout-bounded GitHub stable-release check from Help. It sends no document data. Installer downloads are bounded by the release asset size and checked against its SHA-256 digest before the OS installer opens. Linux replaces the current portable executable atomically, or uses system authorization to update the installed binary/package; it does not create another PATH copy. The editor never quits automatically. Store-managed installations keep their store update path. Preview selections and Copy Path use the Wails native clipboard; preview keyboard copy also handles webviews that omit DOM clipboard events.
+`updates.go` performs an on-demand, timeout-bounded GitHub stable-release check from Help. It sends no document data. Installer downloads are bounded by the release asset size and checked against its SHA-256 digest before installation. A clean session is required; Windows hands the verified setup to a detached wait-for-exit helper, and Linux updates the current portable executable or package with authorization when needed, then restarts the app. Store-managed installations keep their store update path. Preview selections and Copy Path use the Wails native clipboard; preview keyboard copy also handles webviews that omit DOM clipboard events.
 
 ## Session domain
 
 `internal/session` owns open-document metadata, drafts, favorites, recent files, preferences, scroll state, bounded saved-version history, and the content fingerprint last opened or saved for each source file.
 
-Session and draft writes are atomic. Dirty drafts survive ordinary application exit. Explicitly discarding an unsaved document may remove its draft. Normal saves stream-hash the current source and stop on an external modification, deletion, replacement, or unverifiable legacy baseline. Explicit conflict reload preserves the Quillpane draft in history first. Saved-version history is local and is not a version-control or synchronization system.
+Session and draft writes are atomic. Dirty drafts survive ordinary application exit. Explicitly discarding an unsaved document may remove its draft. The active saved source can be checked read-only from the frontend on a bounded interval; this surfaces external modification, deletion, replacement, or an unverifiable legacy baseline without changing the draft. Normal saves still stream-hash the current source and stop before writing. Explicit conflict reload preserves the Quillpane draft and reloaded source in history first. Saved-version history is local and is not a version-control or synchronization system.
 
 ## File safety
 
