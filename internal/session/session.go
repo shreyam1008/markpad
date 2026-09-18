@@ -791,5 +791,11 @@ func samePath(a string, b string) bool {
 	if errB == nil {
 		b = bb
 	}
+	if resolved, err := filepath.EvalSymlinks(a); err == nil {
+		a = resolved
+	}
+	if resolved, err := filepath.EvalSymlinks(b); err == nil {
+		b = resolved
+	}
 	return filepath.Clean(a) == filepath.Clean(b)
 }
