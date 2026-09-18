@@ -713,7 +713,7 @@ func (a *App) openPath(path string) (SessionState, error) {
 		a.sess.AddRecent(path)
 		a.recordBackgroundError("session persistence", a.store.WriteDraft(doc, ""))
 		a.recordBackgroundError("session persistence", a.store.Save(a.sess))
-	a.refreshWindowTitle()
+		a.refreshWindowTitle()
 		return a.GetSession(), nil
 	}
 	doc := a.sess.AddFile(path, string(data))
