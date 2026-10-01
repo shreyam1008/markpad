@@ -57,6 +57,10 @@ sleep 1
 import -display "$DISPLAY" -window "$window_id" dist/help.png
 tesseract dist/help.png stdout --psm 11 2>>dist/appimage.log >dist/help.txt
 grep -qi 'Installed version' dist/help.txt
-grep -Fq "$QUILLPANE_EXPECTED_VERSION" dist/help.txt
 grep -qi 'Check for updates' dist/help.txt
+# Sparse-text OCR can omit the small colored version badge. Enlarge and
+# threshold the same captured pixels, then read the Help panel as a text block.
+magick dist/help.png -resize 300% -colorspace Gray -threshold 70% dist/help-ocr.png
+tesseract dist/help-ocr.png stdout --psm 6 2>>dist/appimage.log >dist/help-ocr.txt
+grep -Fq "$QUILLPANE_EXPECTED_VERSION" dist/help-ocr.txt
 echo "Debian 13 AppImage smoke passed: normal FUSE launch, file argument, rendered content, and matching installed version."
