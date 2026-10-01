@@ -47,10 +47,10 @@ test -n "$window_id"
 for _ in $(seq 1 20); do
   import -display "$DISPLAY" -window "$window_id" dist/appimage.png
   tesseract dist/appimage.png stdout --psm 11 2>>dist/appimage.log >dist/appimage.txt
-  if grep -q 'AppImage sentinel 12345' dist/appimage.txt; then break; fi
+  if grep -Fiq 'AppImage sentinel 12345' dist/appimage.txt; then break; fi
   sleep 0.5
 done
-grep -q 'AppImage sentinel 12345' dist/appimage.txt
+grep -Fiq 'AppImage sentinel 12345' dist/appimage.txt
 xdotool windowfocus --sync "$window_id"
 xdotool key --clearmodifiers F1
 sleep 1
