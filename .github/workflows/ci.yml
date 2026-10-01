@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v5
         with:
           go-version: "1.27.1"
@@ -33,6 +35,7 @@ jobs:
             -o Dpkg::Use-Pty=0 \
             install -y --no-install-recommends \
             gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev ripgrep \
+            wget file desktop-file-utils \
             xvfb xauth xdotool xclip imagemagick tesseract-ocr
       - name: Install frontend dependencies
         run: make setup
@@ -40,6 +43,29 @@ jobs:
         run: make check
       - name: Smoke-test the rendered Linux window
         run: bash .github/scripts/linux-ui-smoke.sh
+      - name: Build and inspect AppImage
+        run: |
+          python3 packaging/check-release-version.py
+          bash packaging/linux/build-appimage.sh
+      - name: Reject the reported missing-entrypoint regression
+        run: |
+          # Immutable broken release fixture from issue #16, not a version expectation.
+          wget -q -O dist/broken.AppImage \
+            https://github.com/shreyam1008/markpad/releases/download/v0.14.4/Markpad.AppImage
+          echo '332e995dbadc43d988cb687d42ac994db93fb5c26d7ac53047fc6901596bc8dc  dist/broken.AppImage' | sha256sum -c -
+          chmod +x dist/broken.AppImage
+          if bash packaging/linux/check-appimage.sh dist/broken.AppImage dist/markpad >dist/appimage-regression.log 2>&1; then
+            echo 'The entrypoint check accepted the broken release' >&2
+            exit 1
+          fi
+          grep -Fx 'AppImage has no executable AppRun entrypoint' dist/appimage-regression.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: |
+            dist/Markpad.AppImage
+            dist/Markpad.AppImage.sha256
+          if-no-files-found: error
       - name: Upload Linux UI smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -53,3 +79,24 @@ jobs:
             dist/linux-ui-help.png
             dist/linux-ui-help.txt
           if-no-files-found: ignore
+
+  debian-appimage:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: dist
+      - name: Launch AppImage on Debian 13 through FUSE
+        run: bash packaging/linux/test-appimage-debian.sh
+      - name: Upload Debian 13 launch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-appimage-smoke
+          path: dist/debian-appimage
+          if-no-files-found: error

@@ -79,18 +79,9 @@ jobs:
           sed -i 's/^[[:space:]]*//' build/deb/DEBIAN/control
           dpkg-deb --build build/deb "dist/markpad_${VERSION}_amd64.deb"
       - name: Build AppImage
-        run: |
-          mkdir -p build/Markpad.AppDir/usr/bin build/Markpad.AppDir/usr/share/applications build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps build/Markpad.AppDir/usr/share/metainfo
-          cp dist/markpad build/Markpad.AppDir/usr/bin/markpad
-          cp packaging/linux/markpad.desktop build/Markpad.AppDir/usr/share/applications/markpad.desktop
-          cp packaging/linux/markpad.svg build/Markpad.AppDir/usr/share/icons/hicolor/scalable/apps/markpad.svg
-          cp packaging/linux/markpad.svg build/Markpad.AppDir/markpad.svg
-          cp packaging/linux/io.github.markpad.metainfo.xml build/Markpad.AppDir/usr/share/metainfo/io.github.markpad.metainfo.xml
-          ln -s usr/share/applications/markpad.desktop build/Markpad.AppDir/markpad.desktop
-          wget -q -O appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-          chmod +x appimagetool
-          ./appimagetool --appimage-extract
-          ARCH=x86_64 ./squashfs-root/AppRun build/Markpad.AppDir dist/Markpad.AppImage
+        run: bash packaging/linux/build-appimage.sh
+      - name: Launch the release AppImage on Debian 13 through FUSE
+        run: bash packaging/linux/test-appimage-debian.sh
       - uses: actions/upload-artifact@v4
         with:
           name: linux
