@@ -18,6 +18,7 @@ describe("unified shortcuts", () => {
     expect(shortcutLabel("file.save")).toMatch(/(?:Ctrl|⌘).*S/);
     expect(shortcutLabel("appearance.interface-in")).toEndWith("+");
     expect(shortcutLabel("appearance.text-in")).toContain("Alt");
+    expect(shortcutLabel("navigation.find-open")).toMatch(/(?:Ctrl|⌘).*Shift.*F/);
   });
 
   test("routes native menu accelerators through the same React actions", async () => {

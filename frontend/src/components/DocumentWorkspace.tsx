@@ -15,7 +15,12 @@ import { shouldCoalesceLargeEdit } from "../history/edit";
 import { previewSelection, writeClipboard } from "../preview/clipboard";
 import { isRelativeMarkdownAsset, renderCode, renderMarkdown } from "../preview/render";
 import { pairedScrollTop } from "../preview/scroll";
-import { exceedsHighlightLimit, findText } from "../preview/text-blocks";
+import {
+  editorOffsetForSource,
+  exceedsHighlightLimit,
+  findText,
+  sourceOffsetForEditor,
+} from "../preview/text-blocks";
 import { client } from "../workspace/client";
 import {
   editorStats,
@@ -98,6 +103,8 @@ export interface DocumentWorkspaceHandle {
   redo(): void;
   format(action: string): void;
   findNext(query: string): { index: number; count: number };
+  focusFind(): void;
+  revealMatch(start: number, end: number): void;
   goToLine(line: number): void;
   getContent(): string;
 }
@@ -878,22 +885,44 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       [changeContent],
     );
 
-    const findNext = useCallback((query: string) => {
+    const revealMatch = useCallback((start: number, end: number, focus = true) => {
       const input = editor.current;
-      if (!input || !query) {
-        setFindInfo("");
-        return { index: 0, count: 0 };
+      if (!input) return;
+      start = editorOffsetForSource(contentRef.current, start);
+      end = editorOffsetForSource(contentRef.current, end);
+      if (focus) input.focus();
+      if (input instanceof HTMLTextAreaElement) {
+        input.setSelectionRange(start, end);
+        revealWrappedTextareaPosition(input, start);
+      } else {
+        input.revealSelection?.(start, end);
       }
-      const match = findText(contentRef.current, query, input.selectionEnd);
-      if (!match.count) {
-        setFindInfo("No results");
-        return { index: 0, count: 0 };
-      }
-      input.focus();
-      input.setSelectionRange(match.position, match.position + query.length);
-      setFindInfo(`${match.index + 1} of ${match.count}`);
-      return { index: match.index, count: match.count };
     }, []);
+
+    const findNext = useCallback(
+      (query: string, direction: 1 | -1 = 1, fromStart = false) => {
+        const input = editor.current;
+        if (!input || !query) {
+          setFindInfo("");
+          return { index: 0, count: 0 };
+        }
+        const after = fromStart ? 0 : direction === -1 ? input.selectionStart : input.selectionEnd;
+        const match = findText(
+          contentRef.current,
+          query,
+          sourceOffsetForEditor(contentRef.current, after),
+          direction,
+        );
+        if (!match.count) {
+          setFindInfo("No results");
+          return { index: 0, count: 0 };
+        }
+        revealMatch(match.position, match.position + query.length, false);
+        setFindInfo(`${match.index + 1} of ${match.count}`);
+        return { index: match.index, count: match.count };
+      },
+      [revealMatch],
+    );
 
     const acceptSavedSession = useCallback(
       (session: SessionState, savedContent: string, status = "Saved") => {
@@ -1056,6 +1085,11 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         redo: () => stepHistory(1),
         format,
         findNext,
+        focusFind() {
+          findInput.current?.focus();
+          findInput.current?.select();
+        },
+        revealMatch,
         goToLine(line: number) {
           const input = editor.current;
           if (!input) return;
@@ -1065,20 +1099,14 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
             if (newline < 0) break;
             position = newline + 1;
           }
-          input.focus();
-          input.setSelectionRange(position, position);
-          if (input instanceof HTMLTextAreaElement) {
-            revealWrappedTextareaPosition(input, position);
-          } else {
-            const lineHeight = input.lineHeight ?? Math.max(16, textSize * 1.72);
-            input.scrollTop = Math.max(0, line * lineHeight - input.clientHeight / 3);
-          }
+          revealMatch(position, position);
         },
         getContent: () => contentRef.current,
       }),
       [
         draftSync,
         findNext,
+        revealMatch,
         flush,
         format,
         note,
@@ -1089,7 +1117,6 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
         saveCurrent,
         scheduleDraft,
         stepHistory,
-        textSize,
       ],
     );
 
@@ -1122,19 +1149,59 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
               <input
                 ref={findInput}
                 value={findQuery}
+                aria-label="Find in current note"
                 onChange={(event) => {
                   setFindQuery(event.target.value);
-                  findNext(event.target.value);
+                  findNext(event.target.value, 1, true);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") findNext(findQuery);
-                  if (event.key === "Escape") onCloseFind();
+                  if (event.nativeEvent.isComposing) return;
+                  if (
+                    (event.ctrlKey || event.metaKey) &&
+                    ["z", "y", "b", "i", "k"].includes(event.key.toLowerCase())
+                  ) {
+                    event.stopPropagation();
+                  }
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    findNext(findQuery, event.shiftKey ? -1 : 1);
+                  }
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    onCloseFind();
+                    editor.current?.focus();
+                  }
                 }}
-                placeholder="Find in editor…"
+                placeholder="Find in current note…"
                 className="flex-1 bg-transparent border-none outline-none text-[13px]"
               />
-              <span className="text-[11px] text-muted">{findInfo}</span>
-              <button className="text-muted hover:text-ink" onClick={onCloseFind}>
+              <output className="find-count text-[11px] text-muted" aria-live="polite">
+                {findInfo}
+              </output>
+              <button
+                aria-label="Previous match"
+                title="Previous match (Shift+Enter)"
+                className="find-action"
+                onClick={() => findNext(findQuery, -1)}
+              >
+                ↑
+              </button>
+              <button
+                aria-label="Next match"
+                title="Next match (Enter)"
+                className="find-action"
+                onClick={() => findNext(findQuery)}
+              >
+                ↓
+              </button>
+              <button
+                aria-label="Close find"
+                className="find-action"
+                onClick={() => {
+                  onCloseFind();
+                  editor.current?.focus();
+                }}
+              >
                 ×
               </button>
             </div>

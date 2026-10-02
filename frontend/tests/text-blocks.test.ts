@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { countText, exceedsHighlightLimit, findText, textBlocks } from "../src/preview/text-blocks";
+import {
+  countText,
+  editorOffsetForSource,
+  exceedsHighlightLimit,
+  findText,
+  sourceOffsetForEditor,
+  textBlocks,
+} from "../src/preview/text-blocks";
 import { outlineFromMarkdown } from "../src/workspace/documents";
 
 describe("large text processing", () => {
@@ -15,6 +22,30 @@ describe("large text processing", () => {
     expect(findText(text, "X", 1)).toEqual({ count: 1_000_000, index: 1, position: 2 });
     expect(findText(text, "x", text.length)).toEqual({ count: 1_000_000, index: 0, position: 0 });
     expect(findText(text, "missing", 0)).toEqual({ count: 0, index: 0, position: -1 });
+  });
+  test("find searches literal punctuation and preserves source offsets after Unicode case folding", () => {
+    expect(findText("İ prefix 😀 [note]", "[NOTE]", 0)).toEqual({
+      count: 1,
+      index: 0,
+      position: 12,
+    });
+    expect(findText("a.b a?b", "a.b", 0)).toEqual({ count: 1, index: 0, position: 0 });
+  });
+  test("previous find moves backwards and wraps to the last match", () => {
+    expect(findText("note note note", "NOTE", 5, -1)).toEqual({ count: 3, index: 0, position: 0 });
+    expect(findText("note note note", "note", 0, -1)).toEqual({ count: 3, index: 2, position: 10 });
+  });
+  test("maps CRLF source selections to editor positions without rewriting the source", () => {
+    const source = "first\r\nsecond\r\n😀 note\r\nlast";
+    const normalized = source.replace(/\r\n/g, "\n");
+    const start = source.indexOf("note");
+    const editorStart = editorOffsetForSource(source, start);
+    const editorEnd = editorOffsetForSource(source, start + 4);
+    expect(normalized.slice(editorStart, editorEnd)).toBe("note");
+    expect(sourceOffsetForEditor(source, editorStart)).toBe(start);
+    expect(sourceOffsetForEditor(source, editorEnd)).toBe(start + 4);
+    expect(editorOffsetForSource(source, source.length)).toBe(normalized.length);
+    expect(sourceOffsetForEditor(source, normalized.length)).toBe(source.length);
   });
   test("retains every byte and newline across blocks", () => {
     for (const text of ["", "a\r\nb\n", "x".repeat(100000), "a😀\r\n".repeat(100000)]) {

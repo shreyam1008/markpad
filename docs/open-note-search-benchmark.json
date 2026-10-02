@@ -1,0 +1,89 @@
+{
+  "timestampUTC": "2026-10-02T09:05:48.676Z",
+  "runtime": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0",
+  "fixture": {
+    "synthetic": true,
+    "normalNotes": 20,
+    "normalCharacters": 655680,
+    "largeNotes": 8,
+    "largeCharacters": 16000128,
+    "warmups": 5,
+    "noteBody": "# Planning notes\nAn ordinary paragraph about release ownership and practical next steps.\n"
+  },
+  "results": [
+    {
+      "name": "20 x 32KiB / sparse exact",
+      "medianMs": 0.9,
+      "p95Ms": 1.1,
+      "samples": 30,
+      "matches": 20,
+      "truncated": false
+    },
+    {
+      "name": "20 x 32KiB / missing exact",
+      "medianMs": 0.8,
+      "p95Ms": 0.9,
+      "samples": 30,
+      "matches": 0,
+      "truncated": false
+    },
+    {
+      "name": "20 x 32KiB / common exact capped",
+      "medianMs": 0.1,
+      "p95Ms": 0.2,
+      "samples": 30,
+      "matches": 300,
+      "truncated": true
+    },
+    {
+      "name": "20 x 32KiB / one typo",
+      "medianMs": 1.2,
+      "p95Ms": 1.4,
+      "samples": 30,
+      "matches": 300,
+      "truncated": true
+    },
+    {
+      "name": "20 x 32KiB / fuzzy no match",
+      "medianMs": 3.5,
+      "p95Ms": 4.5,
+      "samples": 30,
+      "matches": 0,
+      "truncated": false
+    },
+    {
+      "name": "8 x 2MB / missing exact",
+      "medianMs": 31.3,
+      "p95Ms": 40.8,
+      "samples": 10,
+      "matches": 0,
+      "truncated": false
+    },
+    {
+      "name": "8 x 2MB / fuzzy no match",
+      "medianMs": 177.5,
+      "p95Ms": 210,
+      "samples": 10,
+      "matches": 0,
+      "truncated": false
+    }
+  ],
+  "cancellation": {
+    "cancelled": true,
+    "abortAtMs": 20.4,
+    "settledAtMs": 27.9
+  },
+  "renderer": "native Windows WebView2",
+  "version": "0.14.4",
+  "sourceBaseCommit": "2f8df24b0d7ec8524115b8a1b6b48614587585c4",
+  "sourceSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+  "helperSha256": "9ca1cc1dd49eda26524aadc63ee2520a516b3f329b225d524859f8da5ad5d055",
+  "webView": {
+    "Browser": "Edg/154.0.4258.48",
+    "Protocol-Version": "1.3",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0",
+    "V8-Version": "15.4.11.6",
+    "WebKit-Version": "537.36 (@80bb122d4912059dc0cf309273bbe3191ae80a62)"
+  },
+  "limitations": "Injected isolated bundle of the production search helper runs in the actual native WebView2 JS engine. Includes matching, snippets, and cooperative event-loop yields; excludes native buffer reads, UI debounce, layout, and cold startup. Synthetic warm buffers and capped common results do not establish a universally fastest engine."
+}

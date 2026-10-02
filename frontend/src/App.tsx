@@ -14,6 +14,7 @@ import { PRODUCT_NAME, SOURCE_URL, VERSION } from "./brand";
 import { AppTitlebar } from "./components/AppTitlebar";
 import { CloseDialog } from "./components/CloseDialog";
 import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
+import { ContentSearchPanel } from "./components/ContentSearchPanel";
 import { DeleteDialog, type DeleteTarget } from "./components/DeleteDialog";
 import { DocumentWorkspace, type DocumentWorkspaceHandle } from "./components/DocumentWorkspace";
 import { HelpContent } from "./components/HelpContent";
@@ -66,6 +67,7 @@ import { writeClipboard } from "./preview/clipboard";
 import { createHotkeyDefinitions, shortcutLabel } from "./shortcuts";
 import { clampFloatingPosition } from "./ui/floating";
 import { client } from "./workspace/client";
+import type { OpenNoteSearchMatch } from "./workspace/content-search";
 import {
   availableViews,
   fileType,
@@ -74,7 +76,7 @@ import {
   viewLabel,
 } from "./workspace/documents";
 import { initialWorkspaceState, workspaceReducer } from "./workspace/state";
-import { TASK_BOARD_TEMPLATE } from "./workspace/tasks";
+import { isTaskDocument, TASK_BOARD_TEMPLATE } from "./workspace/tasks";
 import type {
   DraftFormat,
   FileInfo,
@@ -393,6 +395,8 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storagePath, setStoragePath] = useState("Available in the desktop app");
   const [findOpen, setFindOpen] = useState(false);
+  const [contentSearchOpen, setContentSearchOpen] = useState(false);
+  const [searchSelection, setSearchSelection] = useState<OpenNoteSearchMatch>();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteScope, setPaletteScope] = useState<PaletteScope>("all");
   const [modal, setModal] = useState<Modal>();
@@ -437,15 +441,41 @@ function App() {
 
   const setStatus = useCallback((status: string) => dispatch({ type: "status", status }), []);
   const showModal = useCallback((next: Modal) => {
+    setContentSearchOpen(false);
     setSettingsOpen(false);
     setModal(next);
   }, []);
   const showFind = useCallback(() => {
+    if (!active || readOnly) return;
+    setContentSearchOpen(false);
     setPaletteOpen(false);
     setHistoryOpen(false);
     setSettingsOpen(false);
     setModal(undefined);
+    if (
+      state.viewMode === "viewer" &&
+      !(activeType === "md" && isTaskDocument(workspace.current?.getContent() ?? state.content))
+    ) {
+      dispatch({ type: "view", mode: "markdown" });
+      void client.setView(active.id, "markdown");
+    }
     setFindOpen(true);
+    requestAnimationFrame(() => workspace.current?.focusFind());
+  }, [active, activeType, readOnly, state.content, state.viewMode]);
+  const showContentSearch = useCallback(() => {
+    setFindOpen(false);
+    setPaletteOpen(false);
+    setHistoryOpen(false);
+    setSettingsOpen(false);
+    setModal(undefined);
+    setContextMenu(undefined);
+    setContentSearchOpen(true);
+  }, []);
+  const loadSearchContent = useCallback((id: string) => {
+    if (id === sessionRef.current.activeId && workspace.current) {
+      return Promise.resolve(workspace.current.getContent());
+    }
+    return client.content(id);
   }, []);
   const updateHistoryAvailability = useCallback((undo: boolean, redo: boolean) => {
     setUndoAvailable(undo);
@@ -461,7 +491,9 @@ function App() {
       const content = await client.activeContent();
       dispatch({ type: "document", session, content });
       setActiveDirty(session.notes.find((note) => note.id === session.activeId)?.dirty ?? false);
+      setContentSearchOpen(false);
       setFindOpen(false);
+      setSearchSelection(undefined);
       if (status) setStatus(status);
     },
     [setStatus],
@@ -506,6 +538,42 @@ function App() {
     },
     [loadDocument, setStatus, state.session.activeId],
   );
+
+  const selectSearchResult = useCallback(
+    async (match: OpenNoteSearchMatch) => {
+      if (!sessionRef.current.notes.some((note) => note.id === match.noteId)) {
+        throw new Error("This note is no longer open. Reopen Search to refresh results.");
+      }
+      const content = await loadSearchContent(match.noteId);
+      if (content.slice(match.start, match.end) !== match.text) {
+        throw new Error("This note changed. Reopen Search to refresh results.");
+      }
+      await activate(match.noteId);
+      dispatch({ type: "view", mode: "markdown" });
+      await client.setView(match.noteId, "markdown");
+      setContentSearchOpen(false);
+      setSearchSelection(match);
+    },
+    [activate, loadSearchContent],
+  );
+
+  useEffect(() => {
+    if (!searchSelection) return;
+    if (state.session.activeId !== searchSelection.noteId || state.viewMode === "viewer") {
+      setSearchSelection(undefined);
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      const source = workspace.current?.getContent();
+      if (source?.slice(searchSelection.start, searchSelection.end) === searchSelection.text) {
+        workspace.current?.revealMatch(searchSelection.start, searchSelection.end);
+      } else {
+        setStatus("This note changed. Reopen Search to refresh results.");
+      }
+      setSearchSelection(undefined);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [searchSelection, state.session.activeId, state.contentVersion, state.viewMode, setStatus]);
 
   const create = useCallback(
     async (format: DraftFormat | "tasks" = "md") => {
@@ -556,12 +624,14 @@ function App() {
     setSettingsOpen(false);
     setHistoryOpen(false);
     setPaletteOpen(false);
+    setContentSearchOpen(false);
     setFindOpen(false);
     setContextMenu(undefined);
     setTourOpen(true);
   }, []);
 
   const showPalette = useCallback((scope: PaletteScope) => {
+    setContentSearchOpen(false);
     setFindOpen(false);
     setHistoryOpen(false);
     setSettingsOpen(false);
@@ -571,6 +641,7 @@ function App() {
   }, []);
 
   const toggleHistory = useCallback(() => {
+    setContentSearchOpen(false);
     setFindOpen(false);
     setPaletteOpen(false);
     setModal(undefined);
@@ -579,6 +650,7 @@ function App() {
   }, []);
 
   const showQuitDialog = useCallback((dirtyCount: number) => {
+    setContentSearchOpen(false);
     setFindOpen(false);
     setPaletteOpen(false);
     setSettingsOpen(false);
@@ -589,6 +661,7 @@ function App() {
   }, []);
 
   const showPreferences = useCallback(async () => {
+    setContentSearchOpen(false);
     setFindOpen(false);
     setPaletteOpen(false);
     setHistoryOpen(false);
@@ -605,11 +678,23 @@ function App() {
   const chooseView = useCallback(
     (mode: ViewMode) => {
       if (!active || !availableViews(fileType(active.path, active.kind)).includes(mode)) return;
+      setContentSearchOpen(false);
       dispatch({ type: "view", mode });
       void client.setView(active.id, mode);
     },
     [active],
   );
+
+  const editDocument = useCallback((edit: () => void) => {
+    // Native menu accelerators also arrive when a query field has focus.
+    if (
+      document.activeElement instanceof HTMLInputElement &&
+      document.activeElement.closest("#find-bar, #content-search-panel")
+    )
+      return;
+    setContentSearchOpen(false);
+    edit();
+  }, []);
 
   const cycleDocument = useCallback(
     (direction: number) => {
@@ -842,6 +927,13 @@ function App() {
         run: showFind,
       },
       {
+        id: "edit.find-open",
+        title: "Search open notes",
+        category: "Edit",
+        shortcut: shortcutLabel("navigation.find-open"),
+        run: showContentSearch,
+      },
+      {
         id: "edit.undo",
         title: "Undo",
         category: "Edit",
@@ -938,6 +1030,7 @@ function App() {
       requestClose,
       requestDeleteNote,
       showFind,
+      showContentSearch,
       showModal,
       showPreferences,
       toggleHistory,
@@ -958,6 +1051,7 @@ function App() {
         setDeleteTarget(undefined);
         setDeleteError("");
       }
+      setContentSearchOpen(false);
       setFindOpen(false);
     },
     new: () => create("md"),
@@ -969,8 +1063,8 @@ function App() {
       await workspace.current?.saveAs();
     },
     close: () => requestClose(active),
-    undo: () => workspace.current?.undo(),
-    redo: () => workspace.current?.redo(),
+    undo: () => editDocument(() => workspace.current?.undo()),
+    redo: () => editDocument(() => workspace.current?.redo()),
     nextfile: () => cycleDocument(1),
     previousfile: () => cycleDocument(-1),
     vieweditor: () => chooseView("markdown"),
@@ -979,6 +1073,7 @@ function App() {
     toggleview: () => chooseView(modes[(modes.indexOf(state.viewMode) + 1) % modes.length]),
     togglesidebar: () => setSidebarCollapsed((value) => !value),
     find: showFind,
+    findopen: showContentSearch,
     history: toggleHistory,
     zoomin: () => adjustUiZoom(1),
     zoomout: () => adjustUiZoom(-1),
@@ -986,9 +1081,9 @@ function App() {
     textzoomin: () => adjustTextZoom(1),
     textzoomout: () => adjustTextZoom(-1),
     textzoomreset: () => adjustTextZoom(0),
-    formatbold: () => workspace.current?.format("bold"),
-    formatitalic: () => workspace.current?.format("italic"),
-    formatlink: () => workspace.current?.format("link"),
+    formatbold: () => editDocument(() => workspace.current?.format("bold")),
+    formatitalic: () => editDocument(() => workspace.current?.format("italic")),
+    formatlink: () => editDocument(() => workspace.current?.format("link")),
     delete: () => {
       if (active) requestDeleteNote(active);
     },
@@ -1037,6 +1132,7 @@ function App() {
       "viewpreview",
       "togglesidebar",
       "find",
+      "findopen",
       "history",
       "zoomin",
       "zoomout",
@@ -1158,7 +1254,7 @@ function App() {
               : paletteScope === "actions"
                 ? "more"
                 : undefined
-            : findOpen
+            : contentSearchOpen || findOpen
               ? "search"
               : historyOpen
                 ? "history"
@@ -1167,7 +1263,7 @@ function App() {
                   : undefined
         }
         onFiles={() => showPalette("files")}
-        onSearch={showFind}
+        onSearch={showContentSearch}
         onHistory={toggleHistory}
         onSettings={() => void showPreferences()}
         onMore={() => showPalette("actions")}
@@ -1325,6 +1421,15 @@ function App() {
                 requestAnimationFrame(() => workspace.current?.goToLine(line));
               }}
             />
+            {contentSearchOpen ? (
+              <ContentSearchPanel
+                notes={state.session.notes}
+                activeId={state.session.activeId}
+                loadContent={loadSearchContent}
+                onSelect={selectSearchResult}
+                onClose={() => setContentSearchOpen(false)}
+              />
+            ) : null}
             <HistoryPanel
               open={historyOpen}
               note={active}

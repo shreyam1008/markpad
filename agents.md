@@ -92,7 +92,7 @@ Read `DESIGN.md` before any visual or interaction change. It is the source of tr
 Quillpane opens individual files and recovery drafts. The folder workspace feature was removed in 0.13.6 at the product owner's request, including scanning, folder search, draft filing, persisted roots, and their commands. Legacy session roots are ignored; documents and recovery drafts remain compatible.
 
 - `Ctrl+O` opens files and `Ctrl+P` searches open documents and actions.
-- `Ctrl+F` searches the active document. Favorites and recents reopen individual files.
+- `Ctrl+F` searches the active document; `Ctrl+Shift+F` searches content across open text notes and unsaved drafts. Search uses live buffers, selects exact source offsets, and never scans recents or folders. Favorites and recents reopen individual files.
 - File badges use one compact extension label with semantic color; do not add a second icon beside MD/JSON/etc. Task boards use a single boxed board glyph in place of the MD label, with an accessible task label. Color is never the sole identifier.
 - Split scroll sync follows normalized reading progress in either direction and can be turned off.
 - Help exposes About, installed/latest versions, updates, and the offline Driver.js tour. Starting or leaving the tour must not change or save documents.

@@ -92,7 +92,7 @@ export function AppTitlebar({
               aria-pressed={activeSurface === "search"}
               data-tour="search"
               onClick={onSearch}
-              title={`Find in file (${shortcutLabel("navigation.find")})`}
+              title={`Search open notes (${shortcutLabel("navigation.find-open")})`}
             >
               <Search />
               <span>Search</span>

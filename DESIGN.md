@@ -67,6 +67,7 @@ Avoid timers, looping animations, layout measurement loops, and broad React rere
 | Sidebar           | `--mp-sidebar-width`           | 244 px default; responsive token overrides only  |
 | Collapsed sidebar | `--mp-sidebar-collapsed-width` | 44 px fixed                                      |
 | History inspector | `--mp-history-width`           | 304 px overlay; never resizes the document       |
+| Content search    | `--mp-search-width`            | 430 px overlay; never resizes the document       |
 | Settings inspector| `--mp-settings-width`          | 544 px overlay; absent from layout when closed   |
 | Command palette   | `--mp-command-width`           | 680 px maximum; fixed search/results/footer grid |
 | Icon action       | `--mp-control-height`          | 28 px square unless explicitly documented        |

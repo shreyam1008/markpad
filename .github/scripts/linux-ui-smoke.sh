@@ -40,7 +40,15 @@ if ! xdotool getdisplaygeometry >/dev/null 2>&1; then
 fi
 
 printf 'Clipboard sentinel 12345\n' >dist/clipboard-smoke.md
-dbus-run-session -- ./dist/markpad "$PWD/dist/clipboard-smoke.md" >dist/linux-ui-smoke.log 2>&1 &
+{
+  printf '# First note\r\nUnicode compass 🧭 writing\r\n'
+  for _ in $(seq 1 65); do printf 'An ordinary line of writing.\r\n'; done
+  printf 'Morning orchard plan\r\n'
+} >dist/search-first.md
+printf '# Second note\n\nEvening orchard walk\n' >dist/search-second.md
+printf '// Source notes\r\n// 🧭 Keep local notes\r\nconst orchard = '\''code-needle'\'';\r\n' >dist/search-code.ts
+sha256sum dist/clipboard-smoke.md dist/search-first.md dist/search-second.md dist/search-code.ts >dist/linux-ui-search-source.sha256
+dbus-run-session -- ./dist/markpad "$PWD/dist/search-first.md" "$PWD/dist/search-second.md" "$PWD/dist/search-code.ts" "$PWD/dist/clipboard-smoke.md" >dist/linux-ui-smoke.log 2>&1 &
 app_pid=$!
 
 window_id=""
@@ -138,3 +146,109 @@ import -display "$DISPLAY" -window "$window_id" dist/linux-ui-tour-return.png
 tesseract dist/linux-ui-tour-return.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-tour-return.txt
 grep -Eqi 'Installed version' dist/linux-ui-tour-return.txt
 echo "Linux Driver.js tour opens and returns safely to Help."
+
+# Verify content search in the actual GTK/WebKit window with native keyboard
+# input, rendered snippets, and exact selection read back from the OS clipboard.
+capture_search() {
+  local name="$1"
+  import -display "$DISPLAY" -window "$window_id" "dist/linux-ui-${name}.png"
+  tesseract "dist/linux-ui-${name}.png" stdout --psm 6 2>>dist/linux-ui-smoke.log >"dist/linux-ui-${name}.txt"
+}
+paste_query() {
+  printf '%s' "$1" | xclip -selection clipboard
+  xdotool key --clearmodifiers ctrl+a ctrl+v
+  sleep 0.5
+}
+assert_selection() {
+  xdotool key --clearmodifiers ctrl+c
+  sleep 0.3
+  local selection
+  selection="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
+  if [[ "$selection" != "$1" ]]; then
+    echo "Search selected '$selection', expected exact text '$1'" >&2
+    exit 1
+  fi
+}
+
+xdotool key --clearmodifiers Escape ctrl+1
+sleep 0.3
+xdotool mousemove --window "$window_id" 600 300 click 1
+xdotool key --clearmodifiers ctrl+End Return
+xdotool type --clearmodifiers 'Unflushed marigold change'
+# Open immediately after editing so active content cannot rely on disk autosave.
+xdotool key --clearmodifiers ctrl+shift+f
+sleep 0.5
+paste_query 'marigold'
+capture_search search-unsaved-edit
+grep -Eqi 'Unflushed.*marigold|marigold.*change' dist/linux-ui-search-unsaved-edit.txt
+xdotool key --clearmodifiers Return
+sleep 0.5
+assert_selection 'marigold'
+[[ "$(cat dist/clipboard-smoke.md)" == 'Clipboard sentinel 12345' ]]
+
+xdotool key --clearmodifiers ctrl+shift+f
+sleep 0.3
+paste_query 'orchard'
+capture_search search-open-notes
+grep -Eqi 'Morning.*orchard|orchard.*plan' dist/linux-ui-search-open-notes.txt
+grep -Eqi 'Evening.*orchard|orchard.*walk' dist/linux-ui-search-open-notes.txt
+
+# A specific phrase targets the distant line in the first note. Native copy
+# proves selection of the complete match; visible context proves it was revealed.
+paste_query 'Morning orchard'
+xdotool key --clearmodifiers Return
+sleep 0.5
+assert_selection 'Morning orchard'
+capture_search search-exact-line
+grep -Eqi 'Morning.*orchard.*plan' dist/linux-ui-search-exact-line.txt
+[[ "$(tail -n 1 dist/search-first.md)" == $'Morning orchard plan\r' ]]
+
+xdotool key --clearmodifiers ctrl+f
+sleep 0.3
+paste_query 'orchard'
+capture_search find-current-note
+grep -Eqi '1[[:space:]]+of[[:space:]]+1' dist/linux-ui-find-current-note.txt
+xdotool key --clearmodifiers Return
+sleep 0.3
+xdotool key --clearmodifiers Escape
+sleep 0.3
+assert_selection 'orchard'
+xdotool key --clearmodifiers ctrl+shift+f
+sleep 0.3
+paste_query 'orcherd'
+capture_search search-typo-off
+grep -Eqi 'No (results|matches|matching)' dist/linux-ui-search-typo-off.txt
+tesseract dist/linux-ui-search-typo-off.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-search-typo-off.tsv
+read -r typo_x typo_y < <(awk -F '\t' '$12 == "Allow" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-search-typo-off.tsv)
+[[ -n "${typo_x:-}" && -n "${typo_y:-}" ]]
+xdotool mousemove --window "$window_id" "$typo_x" "$typo_y" click 1
+sleep 0.5
+capture_search search-one-typo
+grep -Eqi 'Morning.*orchard|orchard.*plan' dist/linux-ui-search-one-typo.txt
+grep -Eqi 'Evening.*orchard|orchard.*walk' dist/linux-ui-search-one-typo.txt
+
+xdotool key --clearmodifiers Escape ctrl+n
+sleep 0.3
+xdotool mousemove --window "$window_id" 600 300 click 1
+printf '# A fresh thought\nA violet comet worth remembering.\n' | xclip -selection clipboard
+xdotool key --clearmodifiers ctrl+a ctrl+v ctrl+shift+f
+sleep 0.5
+paste_query 'violet'
+capture_search search-unsaved-draft
+grep -Eqi 'violet.*comet|comet.*worth' dist/linux-ui-search-unsaved-draft.txt
+xdotool key --clearmodifiers Return
+sleep 0.5
+assert_selection 'violet'
+
+xdotool key --clearmodifiers ctrl+shift+f
+sleep 0.3
+paste_query 'code-needle'
+xdotool key --clearmodifiers Return
+sleep 0.5
+assert_selection 'code-needle'
+capture_search search-code-selection
+grep -Eqi 'const.*orchard|orchard.*code-needle' dist/linux-ui-search-code-selection.txt
+[[ "$(tail -n 1 dist/search-code.ts)" == "const orchard = 'code-needle';"$'\r' ]]
+sha256sum --check dist/linux-ui-search-source.sha256
+
+echo "Linux native content search passed: open notes, latest unsaved edits, a new draft, exact distant and CodeMirror selection with CRLF/Unicode, current-note find, and opt-in one-typo search."
