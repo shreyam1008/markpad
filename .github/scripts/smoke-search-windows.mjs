@@ -157,6 +157,12 @@ async function assertClipboard(expected, description, normalizeCRLF = false) {
   checks.push(description);
   return readback.text;
 }
+async function seedClipboard(label) {
+  const sentinel = `quillpane-copy-smoke:${label}:${Date.now()}`;
+  if (!(await evaluate(`window.runtime.ClipboardSetText(${JSON.stringify(sentinel)})`)))
+    throw Error(`${label}: could not seed the native clipboard`);
+  await until(() => evaluate(`window.runtime.ClipboardGetText().then(text=>text===${JSON.stringify(sentinel)})`), `${label}: native clipboard sentinel was not installed`);
+}
 async function finishToast(lastCopyAt, label) {
   await pause(Math.max(0, 700 - (Date.now() - lastCopyAt)));
   if (!(await evaluate(visibleToast))) throw Error(`${label}: toast disappeared before 700 ms`);
@@ -173,6 +179,7 @@ async function finishToast(lastCopyAt, label) {
 }
 async function nativeCopy(expected, label, { shot, repeat = false, normalizeCRLF = false } = {}) {
   await until(async () => !(await evaluate(visibleToast)), `${label}: earlier toast did not hide`);
+  await seedClipboard(label);
   const before = await evaluate(copyState);
   const firstCopyAt = Date.now();
   await key("c", "KeyC", 67, 2);
@@ -192,6 +199,7 @@ async function nativeCopy(expected, label, { shot, repeat = false, normalizeCRLF
   let lastCopyAt = firstCopyAt;
   if (repeat) {
     await pause(Math.max(0, 600 - (Date.now() - firstCopyAt)));
+    await seedClipboard(`${label} repeat`);
     lastCopyAt = Date.now();
     await key("c", "KeyC", 67, 2);
     await assertClipboard(
@@ -212,6 +220,7 @@ async function nativeCopy(expected, label, { shot, repeat = false, normalizeCRLF
   });
 }
 async function copyFilePath(title, expected) {
+  await seedClipboard('Copy Path');
   const before = await evaluate(copyState);
   const point = await evaluate(
     `(()=>{const row=[...document.querySelectorAll('.note-item')].find(item=>item.querySelector('.note-title')?.textContent===${JSON.stringify(title)});if(!row)throw Error('Copy Path note missing');const box=row.getBoundingClientRect();return{x:box.left+80,y:box.top+box.height/2};})()`,
@@ -280,6 +289,7 @@ try {
   await evaluate("localStorage.setItem('markpad-preferences-v1',JSON.stringify({version:1,themeMode:'light',palette:'markpad',uiScale:1,textSize:14,lineSpacing:'comfortable',readingWidth:'balanced',reducedMotion:true}))");
   await call("Page.reload");
   await assert("!!window.go?.main?.App && !!document.querySelector('#content-area')", "Native app reloads with isolated preferences");
+  const nativeViewport = await evaluate("({width:innerWidth,height:innerHeight,sidebarWidth:document.querySelector('#sidebar').getBoundingClientRect().width})");
   await key("1", "Digit1", 49, 2);
   await assert(`document.querySelector('textarea#editor')?.value===${JSON.stringify(beta)}`, "Ctrl+1 opens the current note editor");
   // Open search immediately after a real native edit; do not wait for autosave.
@@ -367,6 +377,7 @@ try {
   await key("ArrowLeft", "ArrowLeft", 37);
   await nativeCopy("const orchard = 'local';", "CodeMirror current line without selection", { shot: "copy-toast-narrow" });
   await call("Emulation.clearDeviceMetricsOverride");
+  await until(() => evaluate(`innerWidth===${nativeViewport.width}&&innerHeight===${nativeViewport.height}&&document.querySelector('#sidebar').getBoundingClientRect().width===${nativeViewport.sidebarWidth}`), 'Native viewport and responsive shell restoration did not settle');
   await evaluate("document.documentElement.dataset.appearance='light';document.documentElement.style.colorScheme='light'");
   await copyFilePath("Example.ts", codePath);
   if (await readFile(alphaPath, "utf8") !== alpha || await readFile(codePath, "utf8") !== code)

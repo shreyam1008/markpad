@@ -114,9 +114,12 @@ fi
 echo "Linux UI smoke passed: visible Quillpane content rendered without a duplicate native menu."
 
 capture_search() {
-  local name="$1"
+  local name="$1" segmentation=6
+  # Toasts form a small separate column above the document. Sparse text OCR
+  # finds that isolated message without changing the search-result checks.
+  if [[ "$name" == search-toast-* ]]; then segmentation=11; fi
   import -display "$DISPLAY" -window "$window_id" "dist/linux-ui-${name}.png"
-  tesseract "dist/linux-ui-${name}.png" stdout --psm 6 2>>dist/linux-ui-smoke.log >"dist/linux-ui-${name}.txt"
+  tesseract "dist/linux-ui-${name}.png" stdout --psm "$segmentation" 2>>dist/linux-ui-smoke.log >"dist/linux-ui-${name}.txt"
 }
 
 # Exercise the OS clipboard from rendered Markdown, not a browser-only mock.

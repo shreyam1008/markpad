@@ -12,6 +12,7 @@ export function ClipboardToast() {
     let copyTimer: ReturnType<typeof setTimeout>;
     const show = () => {
       version++;
+      clearTimeout(copyTimer);
       clearTimeout(hideTimer);
       setVisible(true);
       hideTimer = setTimeout(() => setVisible(false), 1000);
@@ -30,25 +31,25 @@ export function ClipboardToast() {
       if (!suppliedText && !text) return;
       const current = ++version;
       clearTimeout(copyTimer);
+      let attempts = 0;
       // Leave editor copy untouched, then verify the OS clipboard after its default action.
-      copyTimer = setTimeout(() => {
+      const verify = () => {
+        if (!mounted || current !== version) return;
         const read = window.runtime?.ClipboardGetText;
         if (!read) {
           show();
           return;
         }
-        void read().then(
-          (copied) => {
-            if (
-              mounted &&
-              current === version &&
-              copied.replace(/\r\n/g, "\n") === text.replace(/\r\n/g, "\n")
-            )
-              show();
-          },
-          () => {},
-        );
-      }, 0);
+        const retry = () => {
+          if (mounted && current === version && ++attempts < 3) copyTimer = setTimeout(verify, 25);
+        };
+        void read().then((copied) => {
+          if (!mounted || current !== version) return;
+          if (copied.replace(/\r\n/g, "\n") === text.replace(/\r\n/g, "\n")) show();
+          else retry();
+        }, retry);
+      };
+      copyTimer = setTimeout(verify, 0);
     };
     window.addEventListener("copy", copy);
     return () => {
