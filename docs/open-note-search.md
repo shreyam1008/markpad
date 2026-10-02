@@ -14,8 +14,8 @@ The document layout does not resize. See [light](images/open-note-search/light.p
 native Windows screenshots.
 
 Only currently open text notes and drafts participate. The active note comes
-directly from the live editor buffer; other notes come from the desktop's existing
-open-document API, which includes recovery drafts. Search does not save user
+directly from the live editor buffer; other notes come from a bounded, paginated
+native read API that prefers recovery drafts. Search does not save user
 files, open recents, scan folders, or retain an index after the inspector closes.
 
 Exact case-insensitive literal matches come first. **Allow one typo** is opt-in:
@@ -23,46 +23,29 @@ one insertion, deletion, substitution, or adjacent transposition in a single wor
 of 4–64 Unicode characters. Near matches are visibly labeled. Queries are bounded
 to 256 UTF-16 code units, results to 300, and the inspector's temporary source
 snapshot to 16 Mi UTF-16 code units. Omitted notes, unreadable notes, and additional
-matches have explicit notices. Search scans 32KiB windows, yields after about 8ms,
-and cancels superseded requests. Result selection validates current source again
+matches have explicit notices. Exact search scans 32 Ki-unit windows; typo scans
+use 4 Ki-unit windows, yield after about 8ms, and cancel superseded requests.
+Highlights show the entire searched span. Result selection validates current source again
 before revealing it, so stale positions cannot select unrelated text.
 
 ## Engine choice and measurements
 
 No dependency, daemon, bundled executable, or persistent index was added.
 The existing webview JavaScript engine performs literal matching over live buffers;
-a small bounded helper handles snippets, source locations, and one-typo matching.
+a bounded helper handles snippets, lazy source locations, and one-typo matching.
+Allocation-light ASCII tokenization retains the Unicode fallback. The native
+bridge emits at most 1 Mi UTF-16 units and examines 128 IDs per page. Large
+accepted notes span pages; incomplete or changed notes are never searched. A
+note that exceeds the remaining scope budget is omitted, and later smaller notes
+still qualify. No giant draft is read into memory simply to discover it is too big.
 
-[ripgrep](https://github.com/BurntSushi/ripgrep#quick-examples-comparing-tools)
-is a strong disk/regex search tool, but its maintainers explicitly caution that a
-single benchmark cannot establish a universally fastest tool.
-[ugrep](https://github.com/Genivia/ugrep#fuzzy-search-with--z) provides edit-distance
-fuzzy search, while [fzf](https://github.com/junegunn/fzf#usage) selects entries from
-an input list. Passing open buffers to a native process adds encoding, launch,
-decoding, note-identity, and UTF-16 mapping work. Writing unsaved text to temporary
-files just to search it would add persistence and cleanup work without helping
-this workload.
-
-Synthetic warm-buffer measurements on Windows, 2 October 2026, in the actual
-Wails WebView2 renderer (Edge 154.0.4258.48, V8 15.4.11.6), with five warmups:
-
-| Workload | Samples | Median | p95 |
-|---|---:|---:|---:|
-| 20 × 32KiB notes, sparse exact | 30 | 0.9ms | 1.1ms |
-| Same, no exact match | 30 | 0.8ms | 0.9ms |
-| Same, one-typo search | 30 | 1.2ms | 1.4ms |
-| Same, fuzzy no match | 30 | 3.5ms | 4.5ms |
-| 8 × 2MB notes, no exact match | 10 | 31.3ms | 40.8ms |
-| Same, fuzzy no match | 10 | 177.5ms | 210ms |
-
-These measure matching, snippets, locations, and cooperative event-loop yields;
-they exclude desktop reads, the UI's 80ms query debounce, layout, and cold startup.
-Common matches stop at the result cap. A cooperative abort was observed in the
-native renderer. On the same Windows host, ripgrep 15.2.0 over stdin, including
-process launch, encoding and JSON decoding, took a median 26.15ms (p95 31.87ms)
-for the sparse 640KiB fixture. That comparison supports avoiding a process boundary
-here; it is not a Linux disk-search ranking. The complete native helper measurement
-is retained in [the benchmark evidence](open-note-search-benchmark.json).
+See [the scaling experiment](search-scalability.md) for native small-to-large,
+1,000-file, CPU, memory, retention and responsiveness evidence, highlights,
+library/tool comparisons, and reproduction. Warm matching excludes native reads,
+the UI's 80ms query debounce and layout; actual panel timings include them. Native
+Windows measurements and separate Node/V8 library comparisons remain distinct.
+The [initial benchmark](open-note-search-benchmark.json) is retained as historical
+evidence for the original search implementation, not the optimized build.
 
 Reproduce the cross-runtime benchmark with
 `bun .github/scripts/benchmark-content-search.ts`; set `SEARCH_BENCH_RG=none` to
@@ -75,19 +58,21 @@ ships in the production application.
 
 ## Verification
 
-Unit and DOM coverage checks literal/Unicode/CRLF offsets, chunk boundaries,
+Unit and DOM coverage checks literal/Unicode/CRLF offsets, scan and transfer boundaries,
 snippets, all four typo operations, exact-first grouping, keyboard/focus behavior,
-live drafts, stale/cancelled loads, unreadable notes, and memory/result limits.
+live drafts, stale/cancelled loads, unreadable notes, full highlights, fragmented
+large notes, changed partial reads, and memory/result limits. Go tests verify
+whole-note UTF-16 admission, bounded native pages, invalid UTF-8 replacement,
+recovery precedence and unchanged source/recovery files.
 The native Windows smoke exercises actual Ctrl+F/Ctrl+Shift+F, unsaved edits and
 drafts, distant source selection/scrolling, CRLF+emoji Markdown and CodeMirror,
 native menu edit isolation, light/dark/narrow layout, and offline operation.
 
-The Windows production build remains version 0.14.4 and measures 18,881,536 bytes.
-Embedded assets measure 1,264,692 bytes for the app JavaScript, 158,098 for CSS,
-5,365,297 for the existing offline diagram script, 1,366 for HTML, and 611 for the
-product SVG. Production `--version`, synchronized metadata, and the offline asset
-scan pass. Go formatting was checked after normalizing checkout CRLF to LF, without
-changing unrelated source files.
+The Windows production version and build identity are derived from synchronized
+release metadata and the actual executable; current sizes and hashes are recorded
+in the scaling evidence and pull request. Production `--version`, synchronized
+metadata, and the offline asset scan are checked. Go formatting is checked after
+normalizing checkout CRLF to LF, without changing unrelated source files.
 
 The existing Ubuntu 24.04 on-change CI runs `make check` and now also searches two
 notes in GTK/WebKit, selects exact source through the native clipboard, searches

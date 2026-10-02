@@ -7,13 +7,18 @@ import {
   type SearchableNote,
 } from "../workspace/content-search";
 import { fileType, isReadOnly } from "../workspace/documents";
-import type { NoteInfo } from "../workspace/types";
+import type { NoteInfo, OpenNoteSearchCursor, OpenNoteSearchSnapshot } from "../workspace/types";
 import { Search, X } from "./icons";
 
 interface Props {
   notes: NoteInfo[];
   activeId: string;
   loadContent(id: string): Promise<string>;
+  loadSnapshot(
+    ids: string[],
+    budgetUnits: number,
+    cursor: OpenNoteSearchCursor | null,
+  ): Promise<OpenNoteSearchSnapshot>;
   onSelect(match: OpenNoteSearchMatch): Promise<void>;
   onClose(): void;
 }
@@ -45,7 +50,14 @@ const MAX_SNAPSHOT_CHARACTERS = 16 * 1024 * 1024;
 const SEARCH_DELAY_MS = 80;
 const EMPTY_MATCHES: OpenNoteSearchMatch[] = [];
 
-export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onClose }: Props) {
+export function ContentSearchPanel({
+  notes,
+  activeId,
+  loadContent,
+  loadSnapshot,
+  onSelect,
+  onClose,
+}: Props) {
   const [query, setQuery] = useState("");
   const [fuzzy, setFuzzy] = useState(false);
   const [snapshot, setSnapshot] = useState<Snapshot>();
@@ -58,6 +70,7 @@ export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onC
   const restoreFocus = useRef(true);
   const notesRef = useRef(notes);
   const loadRef = useRef(loadContent);
+  const snapshotLoadRef = useRef(loadSnapshot);
   const closeRef = useRef(onClose);
   const mounted = useRef(false);
   const instance = useId();
@@ -65,16 +78,21 @@ export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onC
   useEffect(() => {
     notesRef.current = notes;
     loadRef.current = loadContent;
+    snapshotLoadRef.current = loadSnapshot;
     closeRef.current = onClose;
-  }, [loadContent, notes, onClose]);
+  }, [loadContent, loadSnapshot, notes, onClose]);
 
   // Metadata updates keep the cached contents unless the searchable scope changes.
-  const scopeKey = JSON.stringify([
-    activeId,
-    ...notes
-      .filter((note) => !isReadOnly(fileType(note.path || note.title, note.kind)))
-      .map((note) => [note.id, note.title, note.path, note.kind]),
-  ]);
+  const scopeKey = useMemo(
+    () =>
+      JSON.stringify([
+        activeId,
+        ...notes
+          .filter((note) => !isReadOnly(fileType(note.path || note.title, note.kind)))
+          .map((note) => [note.id, note.title, note.path, note.kind]),
+      ]),
+    [activeId, notes],
+  );
   const [observedScope, setObservedScope] = useState(scopeKey);
   if (observedScope !== scopeKey) {
     setObservedScope(scopeKey);
@@ -123,21 +141,84 @@ export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onC
     const load = async () => {
       const next: Snapshot = { key: scopeKey, notes: [], skipped: 0, failed: [] };
       let characters = 0;
-      for (let index = 0; index < searchable.length; index++) {
-        if (cancelled) return;
-        const note = searchable[index];
+      const current = searchable.find((note) => note.id === activeId);
+      if (current) {
         try {
-          const content = await loadRef.current(note.id);
+          const content = await loadRef.current(current.id);
           if (cancelled) return;
-          if (characters + content.length > MAX_SNAPSHOT_CHARACTERS) {
-            next.skipped = searchable.length - index;
-            break;
+          if (content.length > MAX_SNAPSHOT_CHARACTERS) {
+            next.skipped++;
+          } else {
+            characters = content.length;
+            next.notes.push({ id: current.id, title: current.title, content });
           }
-          characters += content.length;
-          next.notes.push({ id: note.id, title: note.title, content });
         } catch {
           if (cancelled) return;
-          next.failed.push(note.title);
+          next.failed.push(current.title);
+        }
+      }
+      const inactive = searchable.filter((note) => note.id !== current?.id);
+      if (inactive.length && characters === MAX_SNAPSHOT_CHARACTERS) {
+        next.skipped += inactive.length;
+      } else if (inactive.length) {
+        const metadata = new Map(inactive.map((note) => [note.id, note]));
+        let pending = inactive.map((note) => note.id);
+        let cursor: OpenNoteSearchCursor | null = null;
+        let partial: { id: string; parts: string[]; units: number } | undefined;
+        try {
+          while (pending.length) {
+            const loaded = await snapshotLoadRef.current(
+              pending,
+              MAX_SNAPSHOT_CHARACTERS - characters,
+              cursor,
+            );
+            if (cancelled) return;
+            if (
+              partial &&
+              (loaded.failedIds.includes(partial.id) || loaded.skippedIds.includes(partial.id))
+            ) {
+              partial = undefined;
+            }
+            for (const fragment of loaded.notes) {
+              const note = metadata.get(fragment.id);
+              if (!note || (partial && partial.id !== note.id)) {
+                throw new Error("Unexpected search fragment");
+              }
+              const units = (partial?.units ?? 0) + fragment.content.length;
+              if (characters + units > MAX_SNAPSHOT_CHARACTERS) {
+                throw new Error("Search fragment exceeded its budget");
+              }
+              if (!fragment.complete) {
+                partial ??= { id: note.id, parts: [], units: 0 };
+                partial.parts.push(fragment.content);
+                partial.units = units;
+              } else {
+                const content = partial
+                  ? [...partial.parts, fragment.content].join("")
+                  : fragment.content;
+                partial = undefined;
+                characters += content.length;
+                next.notes.push({ id: note.id, title: note.title, content });
+              }
+            }
+            next.skipped += loaded.skippedIds.length;
+            for (const id of loaded.failedIds) {
+              next.failed.push(metadata.get(id)?.title ?? id);
+            }
+            if (!loaded.pendingIds.length && partial) throw new Error("Incomplete search note");
+            const continuation = loaded.nextCursor;
+            if (
+              loaded.pendingIds.length >= pending.length &&
+              (!continuation || continuation.offsetBytes <= (cursor?.offsetBytes ?? 0))
+            ) {
+              throw new Error("Search snapshot did not advance");
+            }
+            pending = loaded.pendingIds;
+            cursor = continuation;
+          }
+        } catch {
+          if (cancelled) return;
+          next.failed.push(...pending.map((id) => metadata.get(id)?.title ?? id));
         }
       }
       if (!cancelled) setSnapshot(next);
@@ -359,7 +440,9 @@ export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onC
         {!loading && snapshot?.failed.length ? (
           <p className="content-search-error" role="alert">
             Could not read {snapshot.failed.length}{" "}
-            {snapshot.failed.length === 1 ? "note" : "notes"}: {snapshot.failed.join(", ")}. Close
+            {snapshot.failed.length === 1 ? "note" : "notes"}:{" "}
+            {snapshot.failed.slice(0, 3).join(", ")}
+            {snapshot.failed.length > 3 ? `, and ${snapshot.failed.length - 3} more` : ""}. Close
             and reopen to retry.
           </p>
         ) : null}
@@ -377,7 +460,10 @@ export function ContentSearchPanel({ notes, activeId, loadContent, onSelect, onC
         ) : loading || searching ? (
           <p className="content-search-empty">{loading ? "Reading open notes…" : "Searching…"}</p>
         ) : !matches.length && !error ? (
-          <p className="content-search-empty">No matching text in open notes.</p>
+          <p className="content-search-empty">
+            No matching text in{" "}
+            {snapshot?.skipped || snapshot?.failed.length ? "the searched notes" : "open notes"}.
+          </p>
         ) : null}
         {ready
           ? Array.from(groups, ([noteId, group]) => (

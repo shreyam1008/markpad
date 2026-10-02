@@ -4,6 +4,8 @@ import type {
   FileInfo,
   HistoryEntry,
   MarkpadAPI,
+  OpenNoteSearchCursor,
+  OpenNoteSearchSnapshot,
   SaveConflictInfo,
   SaveResult,
   SessionState,
@@ -24,6 +26,11 @@ export const client = {
   session: (): Promise<SessionState> => api().GetSession(),
   activeContent: (): Promise<string> => api().GetActiveContent(),
   content: (id: string): Promise<string> => api().GetNoteContent(id),
+  searchSnapshot: (
+    ids: string[],
+    budgetUnits: number,
+    cursor: OpenNoteSearchCursor | null,
+  ): Promise<OpenNoteSearchSnapshot> => api().GetOpenNoteSearchSnapshot(ids, budgetUnits, cursor),
   activate: (id: string): Promise<void> => api().SetActive(id),
   setView: (id: string, mode: ViewMode): Promise<void> => api().SetViewMode(id, mode),
   updateReadPosition: (id: string, editor: number, viewer: number, cursor: number): Promise<void> =>

@@ -2,7 +2,10 @@
 
 Open-note content search adds no dependency or runtime executable. Its temporary
 snapshot is capped at 16 Mi UTF-16 code units and released when the inspector
-closes. Matches and snippets are bounded, large scans yield and cancel, and no
+closes. Inactive note reads cross the native bridge in 1 Mi-unit/128-ID pages;
+whole-note admission and UTF-8 rune boundaries are preserved. Oversized drafts
+are validated without retaining their full content and omitted before later smaller notes are read.
+Matches and snippets are bounded, large scans yield and cancel, and no
 folder scan or persistent index runs at startup. The native-renderer measurements
 and reproducible benchmark are documented in [open-note search](docs/open-note-search.md).
 

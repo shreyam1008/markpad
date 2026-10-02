@@ -4,7 +4,11 @@ import assert from "node:assert/strict";
 import { Window } from "happy-dom";
 
 import type { OpenNoteSearchMatch } from "../../src/workspace/content-search";
-import type { NoteInfo } from "../../src/workspace/types";
+import type {
+  NoteInfo,
+  OpenNoteSearchCursor,
+  OpenNoteSearchSnapshot,
+} from "../../src/workspace/types";
 
 const window = new Window();
 Object.assign(globalThis, {
@@ -64,12 +68,18 @@ const onSelect = async (match: OpenNoteSearchMatch) => {
 };
 const wait = (milliseconds = 120) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+const snapshotCalls: { ids: string[]; budget: number }[] = [];
 
 async function render(
   notes: NoteInfo[],
   activeId: string,
   loadContent: (id: string) => Promise<string>,
   select = onSelect,
+  loadSnapshot?: (
+    ids: string[],
+    budget: number,
+    cursor: OpenNoteSearchCursor | null,
+  ) => Promise<OpenNoteSearchSnapshot>,
 ) {
   await act(async () => {
     root.render(
@@ -77,6 +87,32 @@ async function render(
         notes,
         activeId,
         loadContent,
+        loadSnapshot:
+          loadSnapshot ??
+          (async (ids, budget) => {
+            snapshotCalls.push({ ids, budget });
+            const snapshot: OpenNoteSearchSnapshot = {
+              notes: [],
+              skippedIds: [],
+              failedIds: [],
+              pendingIds: [],
+              nextCursor: null,
+            };
+            let remaining = budget;
+            for (const id of ids) {
+              try {
+                const content = await loadContent(id);
+                if (content.length > remaining) snapshot.skippedIds.push(id);
+                else {
+                  snapshot.notes.push({ id, content, complete: true });
+                  remaining -= content.length;
+                }
+              } catch {
+                snapshot.failedIds.push(id);
+              }
+            }
+            return snapshot;
+          }),
         onSelect: select,
         onClose,
       }),
@@ -159,7 +195,12 @@ assert.deepEqual(bubbledKeys, [], "query editing shortcuts cannot reach document
 window.document.removeEventListener("keydown", recordKey);
 await settle(20);
 assert.deepEqual(reads, ["draft", "saved"], "the active unsaved draft is read before saved notes");
-assert.equal(mostLiveReads, 1, "native reads stay sequential");
+assert.equal(mostLiveReads, 1, "the live buffer is read before requesting inactive contents");
+assert.deepEqual(
+  snapshotCalls,
+  [{ ids: ["saved"], budget: 16 * 1024 * 1024 - contents.draft.length }],
+  "small inactive text notes fit one bounded native page",
+);
 await type("needle");
 await settle();
 assert.equal(element.querySelectorAll(".content-search-result").length, 4);
@@ -421,17 +462,225 @@ await clear();
 
 const largeReads: string[] = [];
 const large = "x".repeat(9 * 1024 * 1024);
-await render([note("large"), note("overflow"), note("never-read")], "large", async (id) => {
-  largeReads.push(id);
-  return large;
-});
-await settle(20);
-assert.deepEqual(
-  largeReads,
-  ["large", "overflow"],
-  "the snapshot cap stops subsequent native reads",
+await render(
+  [note("large"), note("overflow"), note("later")],
+  "large",
+  async (id) => {
+    largeReads.push(id);
+    return large;
+  },
+  onSelect,
+  async (ids, budget) => {
+    assert.deepEqual(ids, ["overflow", "later"]);
+    assert.equal(budget, 7 * 1024 * 1024, "native budget subtracts the latest active buffer");
+    return {
+      notes: [{ id: "later", content: "a later target", complete: true }],
+      skippedIds: ["overflow"],
+      failedIds: [],
+      pendingIds: [],
+      nextCursor: null,
+    };
+  },
 );
-assert.match(element.textContent ?? "", /2 open notes were not searched/);
+await settle(20);
+assert.deepEqual(largeReads, ["large"], "inactive contents never use the unbounded note API");
+assert.match(element.textContent ?? "", /1 open note was not searched/);
+await type("target");
+await settle();
+assert.equal(
+  element.querySelector("mark")?.textContent,
+  "target",
+  "a skipped large note does not hide later small notes",
+);
+await type("missing");
+await settle();
+assert.match(
+  element.textContent ?? "",
+  /No matching text in the searched notes/,
+  "partial-scope misses do not claim all notes were searched",
+);
+await clear();
+
+await render(
+  [note("overflow"), note("later")],
+  "overflow",
+  async () => "x".repeat(17 * 1024 * 1024),
+  onSelect,
+  async (ids, budget) => {
+    assert.deepEqual(ids, ["later"]);
+    assert.equal(
+      budget,
+      16 * 1024 * 1024,
+      "omitting a giant live note preserves the budget for other notes",
+    );
+    return {
+      notes: [{ id: "later", content: "tiny target", complete: true }],
+      skippedIds: [],
+      failedIds: [],
+      pendingIds: [],
+      nextCursor: null,
+    };
+  },
+);
+await type("target");
+await settle();
+assert.equal(element.querySelector("mark")?.textContent, "target");
+assert.match(element.textContent ?? "", /1 open note was not searched/);
+await clear();
+
+await render(
+  [note("active"), note("failed-a"), note("failed-b")],
+  "active",
+  async () => "live target",
+  onSelect,
+  async () => {
+    throw new Error("native snapshot failed");
+  },
+);
+await type("target");
+await settle();
+assert.equal(
+  element.querySelector("mark")?.textContent,
+  "target",
+  "a native snapshot failure retains the latest live buffer",
+);
+assert.match(element.textContent ?? "", /Could not read 2 notes/);
+await clear();
+
+const pageCursor: OpenNoteSearchCursor = {
+  id: "paged",
+  offsetBytes: 9,
+  sourcePath: "private-draft",
+  size: 19,
+  modTime: "1234567890123456789",
+  totalUnits: 19,
+  emittedUnits: 9,
+};
+const pageRequests: (OpenNoteSearchCursor | null)[] = [];
+await render(
+  [note("active"), note("paged"), note("later")],
+  "active",
+  async () => "live",
+  onSelect,
+  async (ids, budget, cursor) => {
+    pageRequests.push(cursor);
+    assert.equal(budget, 16 * 1024 * 1024 - 4, "partial notes are charged once, on completion");
+    assert.deepEqual(ids, ["paged", "later"]);
+    return cursor
+      ? {
+          notes: [
+            { id: "paged", content: "ged needle", complete: true },
+            { id: "later", content: "later text", complete: true },
+          ],
+          skippedIds: [],
+          failedIds: [],
+          pendingIds: [],
+          nextCursor: null,
+        }
+      : {
+          notes: [{ id: "paged", content: "needle pa", complete: false }],
+          skippedIds: [],
+          failedIds: [],
+          pendingIds: ["paged", "later"],
+          nextCursor: pageCursor,
+        };
+  },
+);
+await type("paged");
+await settle();
+assert.deepEqual(pageRequests, [null, pageCursor], "the native cursor is returned unchanged");
+assert.equal(element.querySelector("mark")?.textContent, "paged", "matches span bridge pages");
+assert.match(element.querySelector(".content-search-result")?.textContent ?? "", /Line 1:8/);
+await clear();
+
+let changingPages = 0;
+await render(
+  [note("active"), note("paged"), note("later")],
+  "active",
+  async () => "live",
+  onSelect,
+  async (_ids, budget) => {
+    assert.equal(
+      budget,
+      16 * 1024 * 1024 - 4,
+      "discarded fragments leave later notes their full budget",
+    );
+    changingPages++;
+    if (changingPages === 1)
+      return {
+        notes: [{ id: "paged", content: "stale target", complete: false }],
+        skippedIds: [],
+        failedIds: [],
+        pendingIds: ["paged", "later"],
+        nextCursor: pageCursor,
+      };
+    return {
+      notes: [{ id: "later", content: "fresh target", complete: true }],
+      skippedIds: [],
+      failedIds: ["paged"],
+      pendingIds: [],
+      nextCursor: null,
+    };
+  },
+);
+await type("target");
+await settle();
+assert.equal(
+  element.querySelectorAll("mark").length,
+  1,
+  "incomplete changed notes are never searched",
+);
+assert.match(element.querySelector(".content-search-snippet")?.textContent ?? "", /fresh target/);
+assert.match(element.textContent ?? "", /Could not read 1 note: paged\.txt/);
+await clear();
+
+const cancelledPage = deferred<OpenNoteSearchSnapshot>();
+let cancelledPageCalls = 0;
+await render(
+  [note("active"), note("paged"), note("later")],
+  "active",
+  async () => "live",
+  onSelect,
+  async () => {
+    cancelledPageCalls++;
+    return cancelledPage.promise;
+  },
+);
+await settle(10);
+await clear();
+await act(async () => {
+  cancelledPage.resolve({
+    notes: [{ id: "paged", content: "needle pa", complete: false }],
+    skippedIds: [],
+    failedIds: [],
+    pendingIds: ["paged", "later"],
+    nextCursor: pageCursor,
+  });
+});
+await settle(10);
+assert.equal(cancelledPageCalls, 1, "closing search stops requesting remaining pages");
+
+await render(
+  [note("active"), note("stalled")],
+  "active",
+  async () => "live target",
+  onSelect,
+  async () => ({
+    notes: [],
+    skippedIds: [],
+    failedIds: [],
+    pendingIds: ["stalled"],
+    nextCursor: null,
+  }),
+);
+await type("target");
+await settle();
+assert.equal(
+  element.querySelector("mark")?.textContent,
+  "target",
+  "a stalled page preserves complete notes",
+);
+assert.match(element.textContent ?? "", /Could not read 1 note: stalled\.txt/);
 await clear();
 
 await act(async () => {

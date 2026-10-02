@@ -59,8 +59,19 @@ printf 'Clipboard sentinel 12345\n' >dist/clipboard-smoke.md
 } >dist/search-first.md
 printf '# Second note\n\nEvening orchard walk\n' >dist/search-second.md
 printf '// Source notes\r\n// 🧭 Keep local notes\r\nconst orchard = '\''code-needle'\'';\r\n' >dist/search-code.ts
-sha256sum dist/clipboard-smoke.md dist/search-first.md dist/search-second.md dist/search-code.ts >dist/linux-ui-search-source.sha256
-dbus-run-session -- ./dist/markpad "$PWD/dist/search-first.md" "$PWD/dist/search-second.md" "$PWD/dist/search-code.ts" "$PWD/dist/clipboard-smoke.md" >dist/linux-ui-smoke.log 2>&1 &
+# An inactive editable text note must span native search pages. Ordinary short
+# lines keep this test about paging and exact offsets, rather than long-line layout.
+{
+  printf 'Plain text paging fixture\r\nUnicode compass 🧭 and cedar café\r\n'
+  for _ in $(seq 1 20000); do printf 'Quiet cedar paths beside a calm river carry patient afternoon light.\r\n'; done
+  printf 'Cypress paging marker: cypress paging needle beside the far bank.\r\n'
+} >dist/search-paged.txt
+paged_units=$(( $(iconv -f UTF-8 -t UTF-16LE dist/search-paged.txt | wc -c) / 2 ))
+paged_bytes="$(wc -c <dist/search-paged.txt)"
+(( paged_units > 1048576 && paged_bytes < 2097152 ))
+printf 'Paging fixture: %s UTF-16 units; %s UTF-8 bytes\n' "$paged_units" "$paged_bytes" >dist/linux-ui-search-paging-fixture.txt
+sha256sum dist/clipboard-smoke.md dist/search-first.md dist/search-second.md dist/search-code.ts dist/search-paged.txt >dist/linux-ui-search-source.sha256
+dbus-run-session -- ./dist/markpad "$PWD/dist/search-first.md" "$PWD/dist/search-second.md" "$PWD/dist/search-code.ts" "$PWD/dist/search-paged.txt" "$PWD/dist/clipboard-smoke.md" >dist/linux-ui-smoke.log 2>&1 &
 app_pid=$!
 
 window_id=""
@@ -172,6 +183,9 @@ paste_query() {
   sleep 0.5
 }
 assert_selection() {
+  # A failed copy must not pass because paste_query already put the expected
+  # query on the clipboard. Replace it before reading the native selection.
+  printf '%s' '__search_selection_not_copied__' | xclip -selection clipboard
   xdotool key --clearmodifiers ctrl+c
   sleep 0.3
   local selection
@@ -265,6 +279,29 @@ assert_selection 'code-needle'
 capture_search search-code-selection
 grep -Eqi 'const.*orchard|orchard.*code-needle' dist/linux-ui-search-code-selection.txt
 [[ "$(tail -n 1 dist/search-code.ts)" == "const orchard = 'code-needle';"$'\r' ]]
+
+# This saved note has stayed inactive, so finding its distant literal requires
+# the native paged reader, complete-note assembly, and exact Unicode/CRLF offsets.
+xdotool key --clearmodifiers ctrl+shift+f
+sleep 0.3
+paste_query 'cypress paging needle'
+for _ in $(seq 1 20); do
+  capture_search search-paged-notes
+  if grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-notes.txt; then
+    break
+  fi
+  sleep 0.25
+done
+grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-notes.txt
+xdotool key --clearmodifiers Return
+sleep 0.5
+assert_selection 'cypress paging needle'
+capture_search search-paged-selection
+grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-selection.txt
+if grep -Eqi 'Search[[:space:]]+open[[:space:]]+notes' dist/linux-ui-search-paged-selection.txt; then
+  echo "Paged result did not navigate from search to the source editor" >&2
+  exit 1
+fi
 sha256sum --check dist/linux-ui-search-source.sha256
 
-echo "Linux native content search passed: open notes, latest unsaved edits, a new draft, exact distant and CodeMirror selection with CRLF/Unicode, current-note find, and opt-in one-typo search."
+echo "Linux native content search passed: open notes, latest unsaved edits, a new draft, exact distant and CodeMirror selection with CRLF/Unicode, inactive saved-note paging, current-note find, and opt-in one-typo search."

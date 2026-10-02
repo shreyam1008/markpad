@@ -1,0 +1,621 @@
+{
+  "schemaVersion": 1,
+  "scope": "Sanitized subset of synthetic live-buffer Node engine comparisons; separate from native app measurements.",
+  "runtime": "v24.19.0 / V8 13.6.233.17-node.51",
+  "platform": "win32",
+  "osRelease": "10.0.26300",
+  "cpu": "Intel(R) Core(TM) Ultra 7 265K",
+  "sourceBaseCommit": "de8e99b275328984456968251ecf7d8950eb3ec6",
+  "nativeToolVersions": {
+    "go": "go1.27.1 windows/amd64",
+    "ripgrep": "15.2.0",
+    "provenance": "Versions confirmed on the same host after the timed matrix; original matrix metadata did not capture per-row native tool versions. An adjacent recorded Node benchmark also captured ripgrep 15.2.0."
+  },
+  "resultLimit": 300,
+  "queryMetricColumns": [
+    "medianMs",
+    "p95Ms",
+    "meanJsProcessCpuMs",
+    "meanNativeGoCpuMs",
+    "count",
+    "truncated",
+    "matchesReferenceSignature",
+    "samples",
+    "maximumTimerLatenessMs"
+  ],
+  "referenceSignature": "Ordered note IDs, original UTF-16 start/end, line/column, text, fuzzy flag, and truncation. Full snippet equality is not compared here; separate Unicode/CRLF highlight probes cover source selections.",
+  "measuredMatrixScope": [
+    {
+      "fixture": "one-tiny",
+      "notes": 1,
+      "querySnapshotUtf16Units": 1024,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "20-tiny",
+      "notes": 20,
+      "querySnapshotUtf16Units": 20480,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "20-normal",
+      "notes": 20,
+      "querySnapshotUtf16Units": 655360,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "100-normal",
+      "notes": 100,
+      "querySnapshotUtf16Units": 3276800,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "1000-tiny",
+      "notes": 1000,
+      "querySnapshotUtf16Units": 1024000,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "eight-large",
+      "notes": 8,
+      "querySnapshotUtf16Units": 16777216,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    },
+    {
+      "fixture": "1000-medium",
+      "notes": 1000,
+      "querySnapshotUtf16Units": 16777000,
+      "engines": ["current", "ufuzzy", "minisearch", "go", "ripgrep"]
+    }
+  ],
+  "solutionStatus": [
+    {
+      "engine": "current",
+      "status": "Warm query, build/update, memory and source-contract measurements",
+      "dependencyAdded": false
+    },
+    {
+      "engine": "ufuzzy",
+      "version": "1.0.19",
+      "status": "Measured candidate filter plus source verifier",
+      "semantics": "Whole-note Unicode filtering is synchronous; bounded 32 Ki filtering measured separately."
+    },
+    {
+      "engine": "minisearch",
+      "version": "7.2.0",
+      "status": "Measured word index plus source verifier",
+      "semantics": "Interior substrings and adjacent swaps fail the required contract; fast indexed misses do not establish equivalent search."
+    },
+    {
+      "engine": "go",
+      "status": "Measured resident stdlib regexp worker",
+      "semantics": "Exact-only query includes JSON IPC and source offsets; UTF-8 snippet context differs from JS. This implementation does not establish maximum Go performance."
+    },
+    {
+      "engine": "ripgrep",
+      "status": "Measured live UTF-8 stdin subprocess",
+      "semantics": "Single-line exact-only query includes launch, pipes, JSON parsing and note/source mapping; buffer preparation is separate. No disk-search or Linux ranking."
+    },
+    {
+      "engine": "fuse",
+      "version": "7.5.0",
+      "status": "Semantic source-offset probes and bundle/install sizes; no warm timing matrix",
+      "semantics": "Raw offsets shifted after tested Unicode lowercase expansion; a source map or verifier is required."
+    },
+    {
+      "engine": "flexsearch",
+      "version": "0.8.212",
+      "status": "Assessed indexing semantics; bundle/install sizes measured; no warm timing matrix"
+    },
+    {
+      "engine": "ugrep",
+      "version": null,
+      "status": "Official-source assessment only; not benchmarked"
+    },
+    {
+      "engine": "fzf",
+      "version": null,
+      "status": "Official-source assessment only; not benchmarked"
+    }
+  ],
+  "packageSizes": [
+    {
+      "name": "@leeoniya/ufuzzy",
+      "version": "1.0.19",
+      "license": "MIT",
+      "installedBytes": 134546,
+      "minifiedBrowserBytes": 8672,
+      "gzipBrowserBytes": 4278,
+      "runtimeNetwork": false
+    },
+    {
+      "name": "fuse.js",
+      "version": "7.5.0",
+      "license": "Apache-2.0",
+      "installedBytes": 417199,
+      "minifiedBrowserBytes": 26842,
+      "gzipBrowserBytes": 9639,
+      "runtimeNetwork": false
+    },
+    {
+      "name": "minisearch",
+      "version": "7.2.0",
+      "license": "MIT",
+      "installedBytes": 826513,
+      "minifiedBrowserBytes": 17894,
+      "gzipBrowserBytes": 5882,
+      "runtimeNetwork": false
+    },
+    {
+      "name": "flexsearch",
+      "version": "0.8.212",
+      "license": "Apache-2.0",
+      "installedBytes": 2334755,
+      "minifiedBrowserBytes": 50714,
+      "gzipBrowserBytes": 17406,
+      "runtimeNetwork": false
+    }
+  ],
+  "runs": [
+    {
+      "id": "baseline-and-engine-comparison",
+      "timestampUTC": "2026-10-02T09:47:17.330Z",
+      "helperSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+      "referenceSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+      "rows": [
+        {
+          "fixture": "one-tiny",
+          "engine": "current",
+          "notes": 1,
+          "querySnapshotUtf16Units": 1024,
+          "postUpdateUtf16Units": 1022,
+          "syntheticSourceBuildMs": 0.1241,
+          "adapterBuildOrLoadMs": 0.3726,
+          "oneNoteAdapterUpdateMs": 0.1518,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 5518256,
+            "rss": 62754816,
+            "external": 2578217,
+            "additionalIndexHeap": 5160,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [0.0117, 0.0371, 0, null, 1, false, true, 9, 0],
+            "interior-substring": [0.0043, 0.0053, 0, null, 1, false, true, 9, 10.7976],
+            "missing-exact": [0.0044, 0.0094, 0, null, 0, false, true, 9, 13.138],
+            "common-exact": [0.0176, 0.0908, 0, null, 16, false, true, 9, 12.1394],
+            "typo": [0.0696, 0.1252, 0, null, 16, false, true, 9, 12.341],
+            "fuzzy-missing": [0.0328, 0.0335, 0, null, 0, false, true, 9, 13.6719]
+          }
+        },
+        {
+          "fixture": "20-tiny",
+          "engine": "current",
+          "notes": 20,
+          "querySnapshotUtf16Units": 20480,
+          "postUpdateUtf16Units": 20478,
+          "syntheticSourceBuildMs": 0.1819,
+          "adapterBuildOrLoadMs": 0.8023,
+          "oneNoteAdapterUpdateMs": 0.1038,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 5560304,
+            "rss": 62853120,
+            "external": 2578217,
+            "additionalIndexHeap": 5160,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [0.1225, 0.2125, 0, null, 20, false, true, 9, 11.7068],
+            "interior-substring": [0.0626, 0.1191, 0, null, 20, false, true, 9, 0],
+            "missing-exact": [0.0655, 0.0918, 0, null, 0, false, true, 9, 0],
+            "common-exact": [0.2662, 1.4177, 0, null, 300, true, true, 9, 0.6988],
+            "typo": [0.9596, 1.7696, 1.7778, null, 300, true, true, 9, 1.9233],
+            "fuzzy-missing": [0.6492, 1.8409, 0, null, 0, false, true, 9, 0.1322]
+          }
+        },
+        {
+          "fixture": "20-normal",
+          "engine": "current",
+          "notes": 20,
+          "querySnapshotUtf16Units": 655360,
+          "postUpdateUtf16Units": 655358,
+          "syntheticSourceBuildMs": 2.9693,
+          "adapterBuildOrLoadMs": 0.4723,
+          "oneNoteAdapterUpdateMs": 0.1285,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 6835096,
+            "rss": 66510848,
+            "external": 2578217,
+            "additionalIndexHeap": 9696,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [1.252, 1.5065, 1.6667, null, 20, false, true, 9, 0.7798],
+            "interior-substring": [1.3595, 1.4995, 0, null, 20, false, true, 9, 2.287],
+            "missing-exact": [1.1474, 1.236, 0, null, 0, false, true, 9, 2.2752],
+            "common-exact": [0.2514, 0.5752, 0, null, 300, true, true, 9, 0],
+            "typo": [2.1673, 3.03, 3.4444, null, 300, true, true, 9, 1.3028],
+            "fuzzy-missing": [30.851, 35.1706, 33, null, 0, false, true, 9, 12.4304]
+          }
+        },
+        {
+          "fixture": "100-normal",
+          "engine": "current",
+          "notes": 100,
+          "querySnapshotUtf16Units": 3276800,
+          "postUpdateUtf16Units": 3276798,
+          "syntheticSourceBuildMs": 15.6422,
+          "adapterBuildOrLoadMs": 0.4416,
+          "oneNoteAdapterUpdateMs": 0.1317,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 12090584,
+            "rss": 78786560,
+            "external": 2578217,
+            "additionalIndexHeap": 9696,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [6.1613, 7.4582, 10.5556, null, 100, false, true, 9, 6.933],
+            "interior-substring": [5.876, 7.6458, 5.2222, null, 100, false, true, 9, 6.34],
+            "missing-exact": [5.1923, 19.3566, 3.4444, null, 0, false, true, 9, 7.2597],
+            "common-exact": [0.2559, 0.452, 0, null, 300, true, true, 9, 11.6374],
+            "typo": [7.9693, 24.3471, 5.2222, null, 300, true, true, 9, 7.2391],
+            "fuzzy-missing": [174.0033, 184.3944, 104.2222, null, 0, false, true, 9, 15.5212]
+          }
+        },
+        {
+          "fixture": "1000-tiny",
+          "engine": "current",
+          "notes": 1000,
+          "querySnapshotUtf16Units": 1024000,
+          "postUpdateUtf16Units": 1023998,
+          "syntheticSourceBuildMs": 3.6054,
+          "adapterBuildOrLoadMs": 0.4325,
+          "oneNoteAdapterUpdateMs": 0.0628,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 7734752,
+            "rss": 67538944,
+            "external": 2578217,
+            "additionalIndexHeap": 5160,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [0.8506, 1.399, 0, null, 300, true, true, 9, 0.2289],
+            "interior-substring": [0.6735, 1.0215, 0, null, 300, true, true, 9, 0.4523],
+            "missing-exact": [2.0567, 2.9652, 3.4444, null, 0, false, true, 9, 2.8243],
+            "common-exact": [0.2339, 0.6251, 0, null, 300, true, true, 9, 12.6669],
+            "typo": [3.1058, 4.4823, 1.7778, null, 300, true, true, 9, 4.2083],
+            "fuzzy-missing": [47.2008, 55.7262, 41.7778, null, 0, false, true, 9, 14.679]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "current",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 90.9543,
+          "adapterBuildOrLoadMs": 0.4743,
+          "oneNoteAdapterUpdateMs": 0.1053,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39074488,
+            "rss": 149385216,
+            "external": 2578217,
+            "additionalIndexHeap": 5160,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [56.6775, 61.779, 53.2, null, 8, false, true, 5, 15.0168],
+            "interior-substring": [60.7745, 69.5809, 18.8, null, 8, false, true, 5, 15.656],
+            "missing-exact": [52.5673, 79.2233, 9.4, null, 0, false, true, 5, 14.8218],
+            "common-exact": [0.1874, 0.2647, 3.2, null, 300, true, true, 5, 0],
+            "typo": [78.2837, 190.4523, 68.8, null, 300, true, true, 5, 26.6623],
+            "fuzzy-missing": [905.034, 1192.072, 631.2, null, 0, false, true, 5, 22.5374]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "ufuzzy",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 69.5255,
+          "adapterBuildOrLoadMs": 9.8588,
+          "oneNoteAdapterUpdateMs": 0.0841,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39178128,
+            "rss": 150573056,
+            "external": 2578217,
+            "additionalIndexHeap": 108872,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [90.431, 118.3289, 31, null, 8, false, true, 5, 23.06],
+            "interior-substring": [95.4536, 113.5778, 46.8, null, 8, false, true, 5, 23.3601],
+            "missing-exact": [4.7158, 7.3176, 3.2, null, 0, false, true, 5, 5.2121],
+            "common-exact": [0.2348, 0.3136, 0, null, 300, true, true, 5, 0],
+            "typo": [76.4597, 93.494, 68.8, null, 300, true, true, 5, 23.1892],
+            "fuzzy-missing": [344.4412, 366.8612, 337.4, null, 0, false, true, 5, 393.1872]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "minisearch",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 83.1687,
+          "adapterBuildOrLoadMs": 1253.4324,
+          "oneNoteAdapterUpdateMs": 152.0558,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 120584744,
+            "rss": 349294592,
+            "external": 2578217,
+            "additionalIndexHeap": 81515480,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [58.468, 62.9629, 9.4, null, 8, false, true, 5, 15.0353],
+            "interior-substring": [0.0037, 0.0086, 0, null, 0, false, false, 5, 0.5978],
+            "missing-exact": [0.0035, 0.0056, 0, null, 0, false, true, 5, 0],
+            "common-exact": [0.3289, 0.5327, 0, null, 300, true, true, 5, 0],
+            "typo": [0.0319, 0.0599, 0, null, 0, false, false, 5, 0],
+            "fuzzy-missing": [0.0096, 0.012, 0, null, 0, false, true, 5, 14.0253]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "go",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 110.8914,
+          "adapterBuildOrLoadMs": 215.7189,
+          "oneNoteAdapterUpdateMs": 25.5573,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39144784,
+            "rss": 142708736,
+            "external": 2578281,
+            "additionalIndexHeap": 75528,
+            "additionalExternal": 64
+          },
+          "residentGoBeforeQueriesBytes": {
+            "heapAllocated": 17167424,
+            "privateCommitted": 58490880
+          },
+          "queries": {
+            "sparse-exact": [313.2632, 368.7493, 0, 256.25, 8, false, true, 5, 15.0238],
+            "interior-substring": [257.6808, 456.5893, 3.2, 246.875, 8, false, true, 5, 15.6226],
+            "missing-exact": [193.5154, 212.8146, 0, 190.625, 0, false, true, 5, 14.7386],
+            "common-exact": [2.8635, 5.4317, 0, 0, 300, true, true, 5, 0.8387]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "ripgrep",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 121.191,
+          "adapterBuildOrLoadMs": 47.0527,
+          "oneNoteAdapterUpdateMs": 43.7688,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39078384,
+            "rss": 154062848,
+            "external": 19355480,
+            "additionalIndexHeap": 8360,
+            "additionalExternal": 16777263
+          },
+          "queries": {
+            "sparse-exact": [87.0967, 102.0631, 71.8, null, 8, false, true, 5, 33.4606],
+            "interior-substring": [97.3487, 104.8319, 78, null, 8, false, true, 5, 30.3361],
+            "missing-exact": [52.7045, 64.9763, 15.6, null, 0, false, true, 5, 14.5498],
+            "common-exact": [43.3513, 50.4033, 18.8, null, 300, true, true, 5, 16.6549]
+          }
+        },
+        {
+          "fixture": "1000-medium",
+          "engine": "current",
+          "notes": 1000,
+          "querySnapshotUtf16Units": 16777000,
+          "postUpdateUtf16Units": 16776998,
+          "syntheticSourceBuildMs": 73.3479,
+          "adapterBuildOrLoadMs": 0.3673,
+          "oneNoteAdapterUpdateMs": 0.0938,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39249424,
+            "rss": 145522688,
+            "external": 2578217,
+            "additionalIndexHeap": 5160,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [14.7243, 23.0707, 6.2, null, 300, true, true, 5, 7.3099],
+            "interior-substring": [16.1911, 19.3278, 18.8, null, 300, true, true, 5, 7.4253],
+            "missing-exact": [61.3812, 62.6088, 43.8, null, 0, false, true, 5, 14.9397],
+            "common-exact": [0.58, 0.6635, 0, null, 300, true, true, 5, 0],
+            "typo": [62.7555, 65.1148, 15.8, null, 300, true, true, 5, 18.6403],
+            "fuzzy-missing": [900.1974, 1205.4562, 490.6, null, 0, false, true, 5, 24.233]
+          }
+        }
+      ]
+    },
+    {
+      "id": "selected4Ki-algorithm",
+      "timestampUTC": "2026-10-02T10:01:41.787Z",
+      "helperSha256": "153a34e49427a93209f996b964cb82e900f3277e091cb866adae7b6242ad4888",
+      "referenceSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+      "rows": [
+        {
+          "fixture": "20-normal",
+          "engine": "current",
+          "notes": 20,
+          "querySnapshotUtf16Units": 655360,
+          "postUpdateUtf16Units": 655358,
+          "syntheticSourceBuildMs": 4.0319,
+          "adapterBuildOrLoadMs": 0.5039,
+          "oneNoteAdapterUpdateMs": 0.0835,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 6849248,
+            "rss": 65699840,
+            "external": 2578217,
+            "additionalIndexHeap": 9800,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [0.9043, 7.5201, 0, null, 20, false, true, 9, 0.6548],
+            "interior-substring": [1.2006, 1.6211, 1.6667, null, 20, false, true, 9, 1.0269],
+            "missing-exact": [0.0778, 0.0995, 0, null, 0, false, true, 9, 13.4017],
+            "common-exact": [0.2094, 0.5795, 0, null, 300, true, true, 9, 13.0922],
+            "typo": [0.7843, 5.8336, 1.7778, null, 300, true, true, 9, 0],
+            "fuzzy-missing": [4.6012, 20.5922, 8.6667, null, 0, false, true, 9, 7.7565]
+          }
+        },
+        {
+          "fixture": "eight-large",
+          "engine": "current",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 78.9757,
+          "adapterBuildOrLoadMs": 0.9097,
+          "oneNoteAdapterUpdateMs": 0.1048,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39088640,
+            "rss": 140472320,
+            "external": 2578217,
+            "additionalIndexHeap": 5264,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [49.853, 65.342, 9.4, null, 8, false, true, 5, 14.1258],
+            "interior-substring": [60.0133, 77.3911, 50, null, 8, false, true, 5, 15.2538],
+            "missing-exact": [6.9723, 14.2088, 9.4, null, 0, false, true, 5, 3.4918],
+            "common-exact": [0.2309, 0.2469, 0, null, 300, true, true, 5, 0],
+            "typo": [7.1064, 24.9633, 9.4, null, 300, true, true, 5, 5.637],
+            "fuzzy-missing": [193.7501, 207.7202, 84.4, null, 0, false, true, 5, 23.3244]
+          }
+        },
+        {
+          "fixture": "1000-medium",
+          "engine": "current",
+          "notes": 1000,
+          "querySnapshotUtf16Units": 16777000,
+          "postUpdateUtf16Units": 16776998,
+          "syntheticSourceBuildMs": 59.9784,
+          "adapterBuildOrLoadMs": 0.5811,
+          "oneNoteAdapterUpdateMs": 0.1222,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39263552,
+            "rss": 138051584,
+            "external": 2578217,
+            "additionalIndexHeap": 5264,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [16.4399, 16.8759, 3.2, null, 300, true, true, 5, 6.746],
+            "interior-substring": [7.274, 25.0285, 9.4, null, 300, true, true, 5, 7.1979],
+            "missing-exact": [4.0908, 4.9782, 3.2, null, 0, false, true, 5, 5.2545],
+            "common-exact": [0.2433, 0.2698, 3, null, 300, true, true, 5, 0],
+            "typo": [6.5068, 7.1031, 9.4, null, 300, true, true, 5, 4.7663],
+            "fuzzy-missing": [172.9536, 197.6907, 125.2, null, 0, false, true, 5, 15.2727]
+          }
+        }
+      ],
+      "limitation": "Timed scratch helper, not final production bytes. Production changed the equivalent non-ASCII regex and long-match snippet bound; final differential correctness evidence is separate."
+    },
+    {
+      "id": "bounded-ufuzzy-candidate",
+      "timestampUTC": "2026-10-02T09:55:00.411Z",
+      "helperSha256": "ce29faf3d0bf949160d2a79d9b7e8759a8e7856463e4b7cc7de769e2d78e6aa9",
+      "referenceSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+      "rows": [
+        {
+          "fixture": "eight-large",
+          "engine": "ufuzzy-bounded",
+          "notes": 8,
+          "querySnapshotUtf16Units": 16777216,
+          "postUpdateUtf16Units": 16777214,
+          "syntheticSourceBuildMs": 108.2501,
+          "adapterBuildOrLoadMs": 7.6602,
+          "oneNoteAdapterUpdateMs": 0.14,
+          "indexedNodePostGCBytes": {
+            "heapUsed": 39186992,
+            "rss": 142315520,
+            "external": 2578217,
+            "additionalIndexHeap": 108976,
+            "additionalExternal": 0
+          },
+          "queries": {
+            "sparse-exact": [58.5044, 63.2482, 31.2, null, 8, false, true, 5, 19.2573],
+            "interior-substring": [61.274, 67.9347, 15.6, null, 8, false, true, 5, 20.9997],
+            "missing-exact": [5.7232, 12.9072, 6.4, null, 0, false, true, 5, 3.147],
+            "common-exact": [0.2726, 0.3109, 0, null, 300, true, true, 5, 0],
+            "typo": [8.2012, 30.4666, 6.4, null, 300, true, true, 5, 15.1419],
+            "fuzzy-missing": [687.8442, 709.211, 359.4, null, 0, false, true, 5, 21.6224]
+          }
+        }
+      ],
+      "limitation": "Uses the preceding lazy-location/ASCII-comparator variant, not the selected 4 Ki tokenizer."
+    }
+  ],
+  "productionDifferentialOracle": {
+    "helperSha256": "f293a6c36aa5274e5b0e143b2c289df7a89c1c0ffcb5e985aad81fed6b1df1e9",
+    "referenceSha256": "6ac6594f93b0d3ff5fae4c601a8875ee8d33a6ca51d4eef4980b4128e3892647",
+    "checked": 4392,
+    "passed": true,
+    "scope": "ASCII queries 4–64 characters; insertion/deletion/substitution/swap positions; ASCII/Unicode suffixes; starts 0/4095/32765; compared against preserved baseline helper.",
+    "adversarial": [
+      {
+        "name": "8MiB-long-ASCII-word",
+        "utf16Units": 8388608,
+        "count": 0,
+        "truncated": false,
+        "matchesReference": true
+      },
+      {
+        "name": "128KiB-dense64-word-miss",
+        "utf16Units": 131076,
+        "count": 0,
+        "truncated": false,
+        "matchesReference": true
+      },
+      {
+        "name": "128KiB-dense64-word-near-cap",
+        "utf16Units": 131076,
+        "count": 300,
+        "truncated": true,
+        "matchesReference": true
+      }
+    ],
+    "limitation": "Single adversarial correctness probes are not warm performance measurements."
+  },
+  "limitations": [
+    "Fresh isolated Node/V8 processes; two warmups then 9 samples, or 5 at at least 8 Mi nominal UTF-16 units. Background desktop activity is not fully controlled.",
+    "Warm queries include bounded results, source locations and cooperative yields; exclude disk reads, native app bridge, UI debounce, DOM layout, preview, saving and activation.",
+    "The full baseline matrix covers 35 engine/fixture combinations. This subset preserves all baseline-helper scaling rows, largest comparator rows, three selected-algorithm rows and one bounded-uFuzzy row.",
+    "Node memory is post-forced-GC heap/RSS/external bytes around adapter construction, not peak whole-app or private committed memory. Go reports separate pre-query GC heap and private committed snapshots.",
+    "CPU is JS-process delta and, where available, resident Go process delta. Windows accounting granularity can report zero for short samples; zero is not zero work. Ripgrep child CPU and peak memory were not measured.",
+    "The separate 1 ms timer diagnostic records maximum lateness including Windows scheduler jitter, not directly timed synchronous-call duration.",
+    "Synthetic source generation/materialization is separate from adapter construction. Adapter update excludes generation of replacement JS text. Timed queries precede the update shortening one note by 2 UTF-16 units.",
+    "Many-note size uses floor(total/count); the 1000-medium corpus has 16777000 units rather than exactly 16777216.",
+    "Only ASCII single-line exact queries enter the ripgrep timing matrix; unsupported multiline and fuzzy semantics are not treated as equivalent.",
+    "Failed reference signatures are not comparable fast results. A successful all-miss query alone does not prove literal substring or typo semantics.",
+    "Package sizes are full-entry minified/gzip browser bundles and installed directories, not incremental app bundle deltas. Libraries can run offline when bundled; subprocess tools require a native executable.",
+    "Recorded reports predate final harness environment/cache-key metadata. Source hashes identify the tested helper; current reproduction script is not claimed to have identical bytes to the earlier harness.",
+    "This evidence does not attribute native large-textarea layout memory to the search helper or hidden reveal mirror."
+  ],
+  "reproduction": {
+    "workingDirectory": "Repository root",
+    "harness": ".github/scripts/compare-content-search.ts",
+    "scratch": "Ignored dist/search-scaling-comparison",
+    "setup": "bun .github/scripts/compare-content-search.ts --setup",
+    "build": "bun build .github/scripts/compare-content-search.ts --target=node --outfile=dist/search-scaling-comparison/compare.mjs",
+    "run": "node --expose-gc dist/search-scaling-comparison/compare.mjs",
+    "focusedArguments": "--engines=current --fixtures=20-normal,eight-large,1000-medium",
+    "sourceArguments": "--source=chosen-self-contained-helper.ts --reference-source=preserved-baseline.ts",
+    "oracleArguments": "--oracle --source=frontend/src/workspace/content-search.ts --reference-source=preserved-baseline.ts",
+    "baselineReference": "Extract frontend/src/workspace/content-search.ts from sourceBaseCommit into ignored scratch. Git line endings may change its byte hash without changing behavior; record the extracted hash.",
+    "constraints": "Serialize against builds/native profiling; frozen helpers must have no relative runtime imports. Missing Go/ripgrep tools are labeled unavailable. Resume requires matching source/reference/harness/environment keys."
+  }
+}

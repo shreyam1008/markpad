@@ -485,6 +485,25 @@ function App() {
     dispatch({ type: "session", session });
     setActiveDirty(session.notes.find((note) => note.id === session.activeId)?.dirty ?? false);
   }, []);
+  // Keep the memoized note list intact when opening or closing search.
+  const toggleSidebar = useCallback(() => setSidebarCollapsed((value) => !value), []);
+  const toggleNoteStar = useCallback(
+    (id: string) => void client.toggleStar(id).then(acceptSession),
+    [acceptSession],
+  );
+  const removeRecent = useCallback(
+    (path: string) => void client.removeRecent(path).then(acceptSession),
+    [acceptSession],
+  );
+  const reorderNotes = useCallback(
+    (ids: string[]) => void client.reorder(ids).then(acceptSession),
+    [acceptSession],
+  );
+  const showNoteContext = useCallback(
+    (note: NoteInfo, x: number, y: number) => setContextMenu({ note, x, y, placed: false }),
+    [],
+  );
+  const goToOutline = useCallback((line: number) => workspace.current?.goToLine(line), []);
 
   const loadDocument = useCallback(
     async (session: SessionState, status?: string) => {
@@ -1274,17 +1293,17 @@ function App() {
           session={displaySession}
           collapsed={sidebarCollapsed}
           outline={outline}
-          onCollapse={() => setSidebarCollapsed((value) => !value)}
-          onOpen={() => void open()}
-          onNew={(format) => void create(format)}
-          onActivate={(id) => void activate(id)}
-          onOpenPath={(path) => void openPath(path)}
-          onToggleStar={(id) => void client.toggleStar(id).then(acceptSession)}
+          onCollapse={toggleSidebar}
+          onOpen={open}
+          onNew={create}
+          onActivate={activate}
+          onOpenPath={openPath}
+          onToggleStar={toggleNoteStar}
           onClose={requestClose}
-          onRemoveRecent={(path) => void client.removeRecent(path).then(acceptSession)}
-          onReorder={(ids) => void client.reorder(ids).then(acceptSession)}
-          onContext={(note, x, y) => setContextMenu({ note, x, y, placed: false })}
-          onOutline={(line) => workspace.current?.goToLine(line)}
+          onRemoveRecent={removeRecent}
+          onReorder={reorderNotes}
+          onContext={showNoteContext}
+          onOutline={goToOutline}
         />
         <main className="markpad-main flex-1 min-w-0 flex flex-col overflow-hidden bg-surface">
           <div className="document-rail flex items-center justify-between px-4 py-2 border-b border-border-soft gap-3 min-h-[44px]">
@@ -1426,6 +1445,7 @@ function App() {
                 notes={state.session.notes}
                 activeId={state.session.activeId}
                 loadContent={loadSearchContent}
+                loadSnapshot={client.searchSnapshot}
                 onSelect={selectSearchResult}
                 onClose={() => setContentSearchOpen(false)}
               />

@@ -2,8 +2,11 @@ export const MAX_CONTENT_QUERY_LENGTH = 256;
 
 const MAX_RESULTS = 500;
 const SCAN_CHUNK_SIZE = 32_768;
+const FUZZY_SCAN_CHUNK_SIZE = 4_096;
 const SNIPPET_LENGTH = 160;
 const WORD = /[\p{L}\p{N}\p{M}_]/u;
+const ASCII_WORD = /^[A-Za-z0-9_]+$/;
+const NON_ASCII = /[\u0080-\uffff]/;
 
 export interface ContentSearchMatch {
   /** Selection offsets in the original buffer, in UTF-16 code units. */
@@ -47,19 +50,23 @@ interface CompiledQuery {
   exact: RegExp;
   width: number;
   fuzzyNeedle: string[] | null;
+  asciiNeedle: number[] | null;
 }
 
 function compileQuery(query: string, fuzzy: boolean): CompiledQuery | null {
   if (!query.trim() || query.length > MAX_CONTENT_QUERY_LENGTH) return null;
   const exact = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
   const letters = Array.from(query.toLowerCase());
+  const fuzzyNeedle =
+    fuzzy && letters.length >= 4 && letters.length <= 64 && /^[\p{L}\p{N}\p{M}_]+$/u.test(query)
+      ? letters
+      : null;
   return {
     exact,
     width: query.length,
-    fuzzyNeedle:
-      fuzzy && letters.length >= 4 && letters.length <= 64 && /^[\p{L}\p{N}\p{M}_]+$/u.test(query)
-        ? letters
-        : null,
+    fuzzyNeedle,
+    asciiNeedle:
+      fuzzyNeedle && ASCII_WORD.test(query) ? letters.map((letter) => letter.charCodeAt(0)) : null,
   };
 }
 
@@ -101,6 +108,37 @@ function oneTypo(needle: string[], word: string[]): boolean {
   return left === needle.length && right === word.length;
 }
 
+function asciiCode(word: string, index: number): number {
+  const code = word.charCodeAt(index);
+  return code >= 65 && code <= 90 ? code + 32 : code;
+}
+
+function oneAsciiTypo(needle: number[], word: string): boolean {
+  if (Math.abs(needle.length - word.length) > 1) return false;
+  let index = 0;
+  while (index < needle.length && index < word.length && needle[index] === asciiCode(word, index))
+    index++;
+  if (index === needle.length && index === word.length) return false;
+  let left = index;
+  let right = index;
+  if (needle.length > word.length) left++;
+  else if (word.length > needle.length) right++;
+  else if (
+    needle[index] === asciiCode(word, index + 1) &&
+    needle[index + 1] === asciiCode(word, index)
+  ) {
+    left += 2;
+    right += 2;
+  } else {
+    left++;
+    right++;
+  }
+  while (left < needle.length && right < word.length) {
+    if (needle[left++] !== asciiCode(word, right++)) return false;
+  }
+  return left === needle.length && right === word.length;
+}
+
 function safeBoundary(content: string, index: number): number {
   const previous = content.charCodeAt(index - 1);
   const next = content.charCodeAt(index);
@@ -118,7 +156,10 @@ function makeMatch(
   fuzzy: boolean,
 ): ContentSearchMatch {
   const snippetStart = safeBoundary(content, Math.max(0, start - 48));
-  const snippetEnd = Math.min(content.length, safeBoundary(content, snippetStart + SNIPPET_LENGTH));
+  const snippetEnd = Math.min(
+    content.length,
+    safeBoundary(content, Math.max(snippetStart + SNIPPET_LENGTH, end + 24)),
+  );
   const prefix = snippetStart > 0 ? "…" : "";
   const suffix = snippetEnd < content.length ? "…" : "";
   // Replace each control code unit separately so the highlight offsets remain stable.
@@ -147,25 +188,33 @@ function* scanNote(
   let locationCursor = 0;
   let nextExactStart = 0;
   const words = /[\p{L}\p{N}\p{M}_]+/gu;
+  const asciiWords = /[A-Za-z0-9_]+/g;
+  const lineBreaks = /[\r\n]/g;
   const advanceLocation = (end: number) => {
-    for (; locationCursor < end; locationCursor++) {
-      const character = content.charCodeAt(locationCursor);
-      if (character === 13 || (character === 10 && content.charCodeAt(locationCursor - 1) !== 13)) {
+    const block = content.slice(locationCursor, end);
+    lineBreaks.lastIndex = 0;
+    let found: RegExpExecArray | null;
+    while ((found = lineBreaks.exec(block)) !== null) {
+      const offset = locationCursor + found.index;
+      if (block.charCodeAt(found.index) === 13 || content.charCodeAt(offset - 1) !== 13) {
         line++;
-        lineStart = locationCursor + 1;
-      } else if (character === 10) {
-        lineStart = locationCursor + 1;
       }
+      lineStart = offset + 1;
     }
+    locationCursor = end;
   };
 
   for (let chunkStart = 0; chunkStart < content.length;) {
-    const chunkEnd = Math.min(content.length, safeBoundary(content, chunkStart + SCAN_CHUNK_SIZE));
+    const chunkEnd = Math.min(
+      content.length,
+      safeBoundary(content, chunkStart + (fuzzy ? FUZZY_SCAN_CHUNK_SIZE : SCAN_CHUNK_SIZE)),
+    );
     // Exact matches can span chunks; fuzzy tokens are at most 65 Unicode characters.
     const overlap = fuzzy ? 132 : query.width;
     const windowEnd = Math.min(content.length, safeBoundary(content, chunkEnd + overlap));
     const window = content.slice(chunkStart, windowEnd);
-    const expression = fuzzy ? words : query.exact;
+    // ASCII blocks use the equivalent cheaper tokenizer; other scripts retain Unicode rules.
+    const expression = fuzzy ? (NON_ASCII.test(window) ? words : asciiWords) : query.exact;
     expression.lastIndex = fuzzy ? 0 : Math.max(0, nextExactStart - chunkStart);
     let found: RegExpExecArray | null;
     while ((found = expression.exec(window)) !== null) {
@@ -178,7 +227,9 @@ function* scanNote(
           !needle ||
           found[0].length < needle.length - 1 ||
           found[0].length > (needle.length + 1) * 2 ||
-          !oneTypo(needle, Array.from(found[0].toLowerCase()))
+          !(query.asciiNeedle && ASCII_WORD.test(found[0])
+            ? oneAsciiTypo(query.asciiNeedle, found[0])
+            : oneTypo(needle, Array.from(found[0].toLowerCase())))
         ) {
           continue;
         }
@@ -196,10 +247,13 @@ function* scanNote(
       } else {
         nextExactStart = end;
       }
-      advanceLocation(start);
+      while (locationCursor < start) {
+        // Compute source locations only for results, yielding through a distant prefix.
+        advanceLocation(Math.min(start, locationCursor + SCAN_CHUNK_SIZE));
+        yield null;
+      }
       yield makeMatch(content, start, end, line, lineStart, fuzzy);
     }
-    advanceLocation(chunkEnd);
     chunkStart = chunkEnd;
     yield null;
   }

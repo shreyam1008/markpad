@@ -45,6 +45,21 @@ describe("note content search", () => {
     expect(match.snippet.endsWith("…")).toBe(true);
   });
 
+  test("shows the entire searched span in long literal and Unicode near-match highlights", () => {
+    const query = `needle-${"x".repeat(249)}`;
+    const content = `${"prefix ".repeat(100)}${query}${" tail".repeat(100)}`;
+    const literal = searchNoteContent(content, query).matches[0];
+    expect(literal.snippet.slice(literal.highlightStart, literal.highlightEnd)).toBe(query);
+    expect(literal.snippet.length).toBeLessThanOrEqual(331);
+    const word = `${"𐐀".repeat(63)}𐐁`;
+    const near = searchNoteContent(`${"prefix ".repeat(100)}${word} tail`, "𐐨".repeat(64), {
+      fuzzy: true,
+    }).matches[0];
+    expect(near.fuzzy).toBe(true);
+    expect(near.snippet.slice(near.highlightStart, near.highlightEnd)).toBe(word);
+    expect(near.text).toBe(word);
+  });
+
   test("finds matches crossing scan windows once, with correct locations", () => {
     const prefix = `${"line\r\n".repeat(5_460)}xxx`;
     const content = `${prefix}cross-window\n𐐀cross-window`;
@@ -117,6 +132,72 @@ describe("note content search", () => {
     expect(
       searchNoteContent(`${"a".repeat(32_768)}meetign`, "meeting", { fuzzy: true }).matches,
     ).toEqual([]);
+  });
+
+  test("matches the one-edit contract across mixed-case short words", () => {
+    const distance = (left: string, right: string): number => {
+      const rows = Array.from({ length: left.length + 1 }, (_, index) =>
+        Array.from({ length: right.length + 1 }, (_, column) =>
+          index === 0 ? column : column === 0 ? index : 0,
+        ),
+      );
+      for (let row = 1; row <= left.length; row++) {
+        for (let column = 1; column <= right.length; column++) {
+          rows[row][column] = Math.min(
+            rows[row - 1][column] + 1,
+            rows[row][column - 1] + 1,
+            rows[row - 1][column - 1] + (left[row - 1] === right[column - 1] ? 0 : 1),
+          );
+          if (
+            row > 1 &&
+            column > 1 &&
+            left[row - 1] === right[column - 2] &&
+            left[row - 2] === right[column - 1]
+          ) {
+            rows[row][column] = Math.min(rows[row][column], rows[row - 2][column - 2] + 1);
+          }
+        }
+      }
+      return rows[left.length][right.length];
+    };
+    const query = "abcd";
+    for (const size of [3, 4, 5]) {
+      for (let value = 0; value < 4 ** size; value++) {
+        let index = value;
+        let word = "";
+        for (let offset = 0; offset < size; offset++) {
+          const letter = "abcd"[index % 4];
+          word += offset % 2 ? letter.toUpperCase() : letter;
+          index = Math.floor(index / 4);
+        }
+        const content = `🧭\r\n${word}`;
+        const result = searchNoteContent(content, query, { fuzzy: true });
+        const literal = word.toLowerCase().indexOf(query);
+        if (literal >= 0) {
+          expect(result.matches).toHaveLength(1);
+          expect(result.matches[0]).toMatchObject({
+            start: 4 + literal,
+            end: 8 + literal,
+            fuzzy: false,
+          });
+        } else if (distance(query, word.toLowerCase()) === 1) {
+          expect(result.matches).toHaveLength(1);
+          expect(result.matches[0]).toMatchObject({ start: 4, end: 4 + word.length, fuzzy: true });
+        } else expect(result.matches).toHaveLength(0);
+        for (const match of result.matches) {
+          expect(content.slice(match.start, match.end)).toBe(match.text);
+          expect(match.snippet.slice(match.highlightStart, match.highlightEnd)).toBe(match.text);
+          expect(match.line).toBe(2);
+        }
+      }
+    }
+  });
+
+  test("locates a distant result without losing CRLF or bare-CR line positions", () => {
+    const prefix = `x${"\r\nline\rnext\n".repeat(50_000)}`;
+    const match = searchNoteContent(`${prefix}needle`, "needle").matches[0];
+    expect(match).toMatchObject({ start: prefix.length, line: 150_001, column: 1, text: "needle" });
+    expect(match.snippet.slice(match.highlightStart, match.highlightEnd)).toBe("needle");
   });
 
   test("returns cancellation explicitly for an already aborted request", () => {

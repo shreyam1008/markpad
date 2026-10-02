@@ -53,8 +53,25 @@ const HISTORY_CHAR_LIMIT = 1_000_000;
 const LOCAL_IMAGE_LIMIT = 24;
 const LOCAL_IMAGE_CACHE_CHAR_LIMIT = 12 * 1024 * 1024;
 
-function revealWrappedTextareaPosition(input: HTMLTextAreaElement, position: number) {
+function revealTextareaPosition(input: HTMLTextAreaElement, position: number) {
   const style = getComputedStyle(input);
+  const content = input.value;
+  const unwrapped = input.wrap === "off";
+  let line = 0;
+  let lineStart = 0;
+  if (unwrapped) {
+    // Native textarea selection does not scroll in every OS webview. Hard lines
+    // have exact fixed-height geometry; never lay out a second full prefix.
+    for (let newline = content.indexOf("\n"); newline >= 0 && newline < position;) {
+      line++;
+      lineStart = newline + 1;
+      newline = content.indexOf("\n", lineStart);
+    }
+    input.scrollTop = Math.max(
+      0,
+      parseFloat(style.paddingTop) + line * parseFloat(style.lineHeight) - input.clientHeight / 3,
+    );
+  }
   const mirror = document.createElement("div");
   Object.assign(mirror.style, {
     position: "fixed",
@@ -66,7 +83,7 @@ function revealWrappedTextareaPosition(input: HTMLTextAreaElement, position: num
     height: "auto",
     padding: style.padding,
     border: "0",
-    whiteSpace: "pre-wrap",
+    whiteSpace: unwrapped ? "pre" : "pre-wrap",
     overflowWrap: style.overflowWrap,
     wordBreak: style.wordBreak,
     tabSize: style.tabSize,
@@ -78,12 +95,17 @@ function revealWrappedTextareaPosition(input: HTMLTextAreaElement, position: num
     letterSpacing: style.letterSpacing,
     lineHeight: style.lineHeight,
   });
-  mirror.textContent = input.value.slice(0, position);
+  // For plain text, only the current hard line is needed to reveal its column.
+  mirror.textContent = content.slice(unwrapped ? lineStart : 0, position);
   const marker = document.createElement("span");
-  marker.textContent = input.value.slice(position, position + 1) || "\u200b";
+  marker.textContent = content.slice(position, position + 1) || "\u200b";
   mirror.append(marker);
   document.body.append(mirror);
-  input.scrollTop = Math.max(0, marker.offsetTop - input.clientHeight / 3);
+  if (unwrapped) {
+    input.scrollLeft = Math.max(0, marker.offsetLeft - input.clientWidth / 3);
+  } else {
+    input.scrollTop = Math.max(0, marker.offsetTop - input.clientHeight / 3);
+  }
   mirror.remove();
 }
 
@@ -893,7 +915,7 @@ export const DocumentWorkspace = forwardRef<DocumentWorkspaceHandle, Props>(
       if (focus) input.focus();
       if (input instanceof HTMLTextAreaElement) {
         input.setSelectionRange(start, end);
-        revealWrappedTextareaPosition(input, start);
+        revealTextareaPosition(input, start);
       } else {
         input.revealSelection?.(start, end);
       }
