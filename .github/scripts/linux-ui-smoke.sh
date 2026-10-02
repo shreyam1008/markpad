@@ -235,10 +235,9 @@ sleep 0.3
 paste_query 'orcherd'
 capture_search search-typo-off
 grep -Eqi 'No (results|matches|matching)' dist/linux-ui-search-typo-off.txt
-tesseract dist/linux-ui-search-typo-off.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-search-typo-off.tsv
-read -r typo_x typo_y < <(awk -F '\t' '$12 == "Allow" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-search-typo-off.tsv)
-[[ -n "${typo_x:-}" && -n "${typo_y:-}" ]]
-xdotool mousemove --window "$window_id" "$typo_x" "$typo_y" click 1
+# Query remains focused. Its next semantic control is the typo checkbox;
+# native Tab/Space verifies keyboard access without OCR-derived coordinates.
+xdotool key --clearmodifiers Tab space
 sleep 0.5
 capture_search search-one-typo
 grep -Eqi 'Morning.*orchard|orchard.*plan' dist/linux-ui-search-one-typo.txt
