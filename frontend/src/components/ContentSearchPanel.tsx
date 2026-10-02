@@ -135,8 +135,6 @@ export function ContentSearchPanel({
     const searchable = notesRef.current.filter(
       (note) => !isReadOnly(fileType(note.path || note.title, note.kind)),
     );
-    const activeIndex = searchable.findIndex((note) => note.id === activeId);
-    if (activeIndex > 0) searchable.unshift(...searchable.splice(activeIndex, 1));
 
     const load = async () => {
       const next: Snapshot = { key: scopeKey, notes: [], skipped: 0, failed: [] };

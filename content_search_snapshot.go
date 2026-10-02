@@ -229,12 +229,12 @@ func readOpenNoteSearchFragment(store *session.Store, document *session.Document
 		result.totalUnits, result.complete = result.units, true
 		return result, nil
 	}
-	if !searchSourceUnchanged(source) {
-		return result, errors.New("open-note search source changed before its read")
-	}
 	var offset int64
 	var emitted int
 	if cursor == nil {
+		if !searchSourceUnchanged(source) {
+			return result, errors.New("open-note search source changed before its read")
+		}
 		byteBudget := int64(budgetUnits) * 3
 		if source.info.Size() > byteBudget {
 			result.oversized = true

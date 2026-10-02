@@ -356,9 +356,8 @@ func TestSearchSnapshotPagesLargeNotesWithoutSplittingRunes(t *testing.T) {
 	if pages < 3 || strings.Join(pieces, "") != content {
 		t.Fatalf("fragmented source changed: %d pages", pages)
 	}
-	wantBridged := strings.ToValidUTF8(content, "�")
-	// ToValidUTF8 coalesces invalid runs; bridge JSON replaces each invalid byte.
-	wantBridged = strings.Replace(wantBridged, "�", "���", 1)
+	// Bridge JSON replaces each invalid byte, including bytes in truncated runes.
+	wantBridged := strings.ReplaceAll(content, "\xff\xf0\x9f", "���")
 	if strings.Join(bridgedPieces, "") != wantBridged {
 		t.Fatal("bridge fragments split a rune or changed invalid-byte replacements")
 	}
@@ -471,7 +470,7 @@ func TestSearchTextFragmentHandlesFragmentedRunesAndInvalidEOF(t *testing.T) {
 			if err != nil || gotUnits > budget {
 				t.Fatalf("fragment budget %d = units %d err %v", budget, gotUnits, err)
 			}
-			if budget == units && string(fragment) != content {
+			if budget == units && fragment != content {
 				t.Fatal("fragmented reader changed original bytes")
 			}
 			if utf8.ValidString(content) && !utf8.ValidString(fragment) {
