@@ -1,5 +1,14 @@
 # Bundle and runtime measurement policy
 
+Open-note content search adds no dependency or runtime executable. Its temporary
+snapshot is capped at 16 Mi UTF-16 code units and released when the inspector
+closes. Inactive note reads cross the native bridge in 1 Mi-unit/128-ID pages;
+whole-note admission and UTF-8 rune boundaries are preserved. Oversized drafts
+are validated without retaining their full content and omitted before later smaller notes are read.
+Matches and snippets are bounded, large scans yield and cancel, and no
+folder scan or persistent index runs at startup. The native-renderer measurements
+and reproducible benchmark are documented in [open-note search](docs/open-note-search.md).
+
 Rendering regression tests use `happy-dom` 20.14.5 as a development-only DOM,
 never an application import. This permits offline tests of the real sanitizer
 and complete text/tree preservation; string mocks do not cover those behaviors.

@@ -33,7 +33,7 @@ A saved file can be permanently deleted only after a clear frontend confirmation
 Quillpane opens individual files and recovery drafts. The folder workspace feature was removed in 0.13.6 at the product owner's request, including scanning, folder search, draft filing, persisted roots, and their commands. Legacy session roots are ignored; documents and recovery drafts remain compatible.
 
 - `Ctrl+O` opens files and `Ctrl+P` searches open documents and actions.
-- `Ctrl+F` searches the active document. Favorites and recents reopen individual files.
+- `Ctrl+F` searches the active document; `Ctrl+Shift+F` searches open text notes and unsaved drafts. Favorites and recents reopen individual files.
 - File badges combine a symbol, extension, and semantic color; color is never the sole identifier.
 - Split scroll sync follows normalized reading progress in either direction and can be turned off.
 - Help exposes About, installed/latest versions, updates, and the offline Driver.js tour. Starting or leaving the tour must not change or save documents.
@@ -41,7 +41,7 @@ Quillpane opens individual files and recovery drafts. The folder workspace featu
 
 ## Keyboard workflow
 
-`Ctrl+P` opens the command palette, which searches visibly separated Files and Actions; prefixing a query with `>` limits it to actions. `Ctrl+F` searches the active file. Arrow keys select results and Enter opens or runs them. `Ctrl+Tab` and `Ctrl+Shift+Tab` move between open documents. `Ctrl+1`, `Ctrl+2`, and `Ctrl+3` select Editor, Split, and Preview/Code View when supported. Holding Ctrl or Command reveals shortcut badges on primary controls.
+`Ctrl+P` opens the command palette, which searches visibly separated Files and Actions; prefixing a query with `>` limits it to actions. `Ctrl+F` searches the active file, including unsaved edits, and reveals the selected source match; Enter/Shift+Enter advance/backtrack with wrap-around while keeping query focus. `Ctrl+Shift+F` and the title-bar Search button open the content inspector. Results group by note with highlighted snippets and one-based line/column positions; selecting a result opens Editor at the exact match. Arrow keys choose results and Enter opens them. The optional Allow one typo toggle accepts one insertion, deletion, substitution or adjacent transposition in a single word of 4–64 characters; exact results come first. Only open text files and drafts are read, never recents, favorites, binary documents or folders. The inspector retains at most 16 Mi characters while open and shows up to 300 results; an explicit notice identifies omitted notes or additional results. Closing it releases the snapshot, and reopening refreshes the content. `Ctrl+Tab` and `Ctrl+Shift+Tab` move between open documents. `Ctrl+1`, `Ctrl+2`, and `Ctrl+3` select Editor, Split, and Preview/Code View when supported. Holding Ctrl or Command reveals shortcut badges on primary controls.
 
 The session file, drafts, and history are stored below the user configuration directory. Writes use replacement through a temporary file so interrupted writes do not partially overwrite the previous state.
 

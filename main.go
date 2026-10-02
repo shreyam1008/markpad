@@ -113,6 +113,9 @@ func main() {
 	viewMenu.AddText("Find", keys.CmdOrCtrl("f"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:find")
 	})
+	viewMenu.AddText("Search Open Notes", keys.Combo("f", keys.CmdOrCtrlKey, keys.ShiftKey), func(cd *menu.CallbackData) {
+		runtime.EventsEmit(app.ctx, "menu:findopen")
+	})
 	viewMenu.AddText("Version History", keys.CmdOrCtrl("h"), func(cd *menu.CallbackData) {
 		runtime.EventsEmit(app.ctx, "menu:history")
 	})

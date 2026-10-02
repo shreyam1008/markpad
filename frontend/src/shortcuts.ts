@@ -20,6 +20,7 @@ export type ShortcutAction =
   | "rename"
   | "delete"
   | "find"
+  | "findopen"
   | "undo"
   | "redo"
   | "formatbold"
@@ -171,7 +172,15 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDefinition> = [
     "find",
     "Navigation",
     "Find in file",
-    "Search inside the current editable file.",
+    "Search the current note, including unsaved edits.",
+  ),
+  shortcut(
+    "navigation.find-open",
+    "Mod+Shift+F",
+    "findopen",
+    "Navigation",
+    "Search open notes",
+    "Search content across open notes and unsaved drafts.",
   ),
   shortcut(
     "navigation.history",

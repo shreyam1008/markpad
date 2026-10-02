@@ -78,7 +78,30 @@ export interface EditorStats {
   readMinutes: number;
 }
 
+export interface OpenNoteSearchCursor {
+  id: string;
+  offsetBytes: number;
+  sourcePath: string;
+  size: number;
+  modTime: string;
+  totalUnits: number;
+  emittedUnits: number;
+}
+
+export interface OpenNoteSearchSnapshot {
+  notes: { id: string; content: string; complete: boolean }[];
+  skippedIds: string[];
+  failedIds: string[];
+  pendingIds: string[];
+  nextCursor: OpenNoteSearchCursor | null;
+}
+
 export interface MarkpadAPI {
+  GetOpenNoteSearchSnapshot(
+    ids: string[],
+    budgetUnits: number,
+    cursor: OpenNoteSearchCursor | null,
+  ): Promise<OpenNoteSearchSnapshot>;
   CheckForUpdates(): Promise<UpdateInfo>;
   DownloadAndOpenUpdate(): Promise<string>;
   CheckExternalChange(id: string): Promise<SaveConflictInfo | null>;
@@ -121,6 +144,7 @@ export interface MarkpadAPI {
 
 export interface MarkpadRuntime {
   ClipboardSetText?(text: string): Promise<boolean>;
+  ClipboardGetText?(): Promise<string>;
   Environment?(): Promise<{ platform?: string }>;
   EventsOn(name: string, callback: (...args: unknown[]) => void): () => void;
   OnFileDrop(

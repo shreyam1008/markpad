@@ -52,4 +52,6 @@ jobs:
             dist/linux-ui-clipboard.png
             dist/linux-ui-help.png
             dist/linux-ui-help.txt
+            dist/linux-ui-search*
+            dist/linux-ui-find*
           if-no-files-found: ignore

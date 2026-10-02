@@ -65,6 +65,7 @@ export function HelpContent({
             ["file.open", "Open a file"],
             ["file.new", "New note"],
             ["navigation.find", "Find in this file"],
+            ["navigation.find-open", "Search open notes"],
             ["view.split", "Split preview"],
           ].map(([id, label]) => (
             <div key={id}>

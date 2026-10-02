@@ -121,6 +121,72 @@ await act(async () => {
 });
 assert.equal(draftWrites.length, 0, "clean flush skips the source bridge");
 assert.equal(positionWrites, 0, "unchanged positions skip the position bridge");
+
+const editor = element.querySelector("textarea");
+assert.ok(editor, "the saved text note has a source editor");
+await act(async () => {
+  handle.current!.revealMatch(6, 10);
+});
+assert.deepEqual(
+  [editor.selectionStart, editor.selectionEnd],
+  [6, 10],
+  "revealing an open-note match selects its exact source offsets",
+);
+assert.equal(editor.value.slice(editor.selectionStart, editor.selectionEnd), "note");
+assert.equal(window.document.activeElement, editor, "revealing a match focuses the editor");
+assert.equal(handle.current!.getContent(), "Saved note", "revealing a match preserves source");
+assert.equal(backendContent, "Saved note", "revealing a match does not write the saved source");
+assert.equal(draftWrites.length, 0, "revealing a match does not write a recovery draft");
+
+const queryInput = window.document.createElement("input");
+queryInput.type = "search";
+queryInput.value = "Saved";
+window.document.body.append(queryInput);
+queryInput.focus();
+await act(async () => {
+  assert.deepEqual(
+    handle.current!.findNext(queryInput.value),
+    { index: 0, count: 1 },
+    "current-note find reports the matching source occurrence",
+  );
+});
+assert.equal(window.document.activeElement, queryInput, "finding text preserves query focus");
+assert.deepEqual(
+  [editor.selectionStart, editor.selectionEnd],
+  [0, 5],
+  "current-note find selects the exact source range after wrapping",
+);
+assert.equal(editor.value.slice(editor.selectionStart, editor.selectionEnd), "Saved");
+assert.equal(queryInput.value, "Saved", "navigation does not replace the query");
+
+await act(async () => {
+  assert.deepEqual(
+    handle.current!.findNext("absent search phrase"),
+    { index: 0, count: 0 },
+    "a missing query reports no current-note matches",
+  );
+});
+assert.deepEqual(
+  [editor.selectionStart, editor.selectionEnd],
+  [0, 5],
+  "a missing query leaves the existing source selection intact",
+);
+assert.equal(window.document.activeElement, queryInput, "a missing query preserves query focus");
+assert.equal(editor.value, "Saved note", "search navigation leaves the editor source intact");
+assert.equal(
+  handle.current!.getContent(),
+  "Saved note",
+  "search navigation preserves live content",
+);
+assert.equal(backendContent, "Saved note", "search navigation leaves saved content untouched");
+assert.equal(backendDirty, false, "search navigation does not dirty backend content");
+assert.equal(reportedDirty, false, "search navigation leaves the clean note clean");
+assert.equal(draftWrites.length, 0, "search navigation never writes a recovery draft");
+queryInput.remove();
+await act(async () => {
+  handle.current!.revealMatch(0, 0);
+});
+
 await act(async () => {
   handle.current!.format("bold");
 });
@@ -181,4 +247,6 @@ await act(async () => {
   root.unmount();
 });
 await window.happyDOM.close();
-console.log("Workspace DOM: clean flush, delayed save edits, and visible recovery retry passed");
+console.log(
+  "Workspace DOM: exact search selection/focus, clean flush, delayed save edits, and visible recovery retry passed",
+);

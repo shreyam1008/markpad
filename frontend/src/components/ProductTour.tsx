@@ -80,7 +80,7 @@ const steps: DriveStep[] = [
     popover: {
       title: "Find within this file",
       description:
-        "Search finds text in the current editable document. Ctrl+F (Command+F on macOS) opens it; Enter advances through matches.",
+        "Search finds text across open notes and unsaved drafts. Ctrl+Shift+F opens it; Ctrl+F finds in the current note. Use Command on macOS. Enter opens a result; Shift+Enter goes backwards in the current note.",
     },
   },
   {

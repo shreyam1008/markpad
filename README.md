@@ -88,7 +88,7 @@ The release binary embeds the compiled frontend. Node and node_modules are not r
 - **File info** — Click (i) in the title bar for name, path, size, type, modified date, and Open Folder
 - **Formatting toolbar** — Bold, italic, headings, code, links, images, lists, tables, blockquotes
 - **Auto-list continuation** — Enter continues bullets, numbered lists, task lists. Empty prefix ends the list
-- **Find** — `Ctrl+F` with wrap-around
+- **Find** — `Ctrl+F` in the current note, with next/previous wrap-around; `Ctrl+Shift+F` across open notes and unsaved drafts, with highlighted snippets and optional one-typo matching
 - **Autosaved drafts** — Unsaved work survives app close
 - **Status bar** — File type, line/word/char counts, reading time, encoding
 - **In-app changelog** — Help > Changelog shows version history
@@ -176,7 +176,8 @@ Quillpane exists because many "lightweight" editors ship a browser engine. This 
 | `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Interface scale up / down / reset |
 | `Ctrl+scroll` | Interface scale up / down |
 | `Ctrl+H` | Version history |
-| `Ctrl+F` | Find |
+| `Ctrl+F` | Find in current note |
+| `Ctrl+Shift+F` | Search open notes |
 | `Ctrl+P` | Find files and actions |
 | `Ctrl+B/I/K` | Bold / Italic / Link |
 | `Ctrl+Del` | Delete current file or draft (with confirmation) |

@@ -38,23 +38,55 @@ export function countText(content: string) {
 }
 
 /** Count all results, retaining only the next position rather than an unbounded match array. */
-export function findText(content: string, query: string, after: number) {
+export function findText(content: string, query: string, after: number, direction: 1 | -1 = 1) {
   if (!query) return { count: 0, index: 0, position: -1 };
-  const haystack = content.toLowerCase();
-  const needle = query.toLowerCase();
+  // Unicode case folding can change string length (for example İ). Match the
+  // original source so editor positions always remain UTF-16 offsets.
+  const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
   let count = 0;
   let first = -1;
   let position = -1;
   let index = 0;
-  let offset = 0;
-  while ((offset = haystack.indexOf(needle, offset)) >= 0) {
+  let last = -1;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(content)) !== null) {
+    const offset = match.index;
+    last = offset;
     if (first < 0) first = offset;
-    if (position < 0 && offset >= after) {
+    if (
+      (direction === 1 && position < 0 && offset >= after) ||
+      (direction === -1 && offset < after)
+    ) {
       position = offset;
       index = count;
     }
     count++;
-    offset += needle.length;
+  }
+  if (direction === -1 && position < 0 && count) {
+    position = last;
+    index = count - 1;
   }
   return { count, index, position: position < 0 ? first : position };
+}
+
+/** Textarea and CodeMirror count CRLF as one editor character. Keep source intact. */
+export function editorOffsetForSource(content: string, offset: number): number {
+  const end = Math.max(0, Math.min(content.length, Math.trunc(offset)));
+  let removed = 0;
+  for (let index = 0; index < end; index++) {
+    if (content.charCodeAt(index) === 13 && content.charCodeAt(index + 1) === 10) {
+      removed++;
+      index++;
+    }
+  }
+  return end - removed;
+}
+
+export function sourceOffsetForEditor(content: string, offset: number): number {
+  const end = Math.max(0, Math.trunc(offset));
+  let source = 0;
+  for (let editor = 0; editor < end && source < content.length; editor++) {
+    source += content.charCodeAt(source) === 13 && content.charCodeAt(source + 1) === 10 ? 2 : 1;
+  }
+  return source;
 }

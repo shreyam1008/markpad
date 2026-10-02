@@ -43,6 +43,7 @@ export interface EditorHandle {
   readonly lineHeight?: number;
   focus(): void;
   setSelectionRange(start: number, end: number): void;
+  revealSelection?(start: number, end: number): void;
   undo?(): boolean;
   redo?(): boolean;
 }
@@ -437,6 +438,15 @@ export const CodeEditor = forwardRef<EditorHandle, Props>(function CodeEditor(
         currentView.dispatch({
           selection: { anchor: clamp(start, max), head: clamp(end, max) },
           scrollIntoView: false,
+        });
+      },
+      revealSelection(start, end) {
+        const currentView = view.current;
+        if (!currentView) return;
+        const max = currentView.state.doc.length;
+        currentView.dispatch({
+          selection: { anchor: clamp(start, max), head: clamp(end, max) },
+          scrollIntoView: true,
         });
       },
       undo() {
