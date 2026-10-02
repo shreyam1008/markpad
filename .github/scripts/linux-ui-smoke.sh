@@ -185,15 +185,48 @@ paste_query() {
 assert_selection() {
   # A failed copy must not pass because paste_query already put the expected
   # query on the clipboard. Replace it before reading the native selection.
-  printf '%s' '__search_selection_not_copied__' | xclip -selection clipboard
-  xdotool key --clearmodifiers ctrl+c
-  sleep 0.3
-  local selection
-  selection="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
-  if [[ "$selection" != "$1" ]]; then
-    echo "Search selected '$selection', expected exact text '$1'" >&2
-    exit 1
+  local expected="$1" sentinel='__search_selection_not_copied__' selection=""
+  local attempt=0 started deadline now remaining read_timeout read_status=0
+  local trace='dist/linux-ui-search-clipboard.log'
+  printf '%s' "$sentinel" | xclip -selection clipboard
+  if ! selection="$(timeout 2 xclip -selection clipboard -o -target UTF8_STRING 2>>"$trace")" || [[ "$selection" != "$sentinel" ]]; then
+    echo "Could not confirm the native clipboard sentinel before Ctrl+C for '$expected'" >&2
+    return 1
   fi
+  started="$(date +%s%3N)"
+  deadline=$((started + 10000))
+  # Loading a large note activates a new native editor asynchronously. Retry
+  # copying its existing selection until X11 supplies the complete exact text.
+  # A missing target, stale query, or partial selection never counts as success.
+  while (( $(date +%s%3N) < deadline )); do
+    attempt=$((attempt + 1))
+    xdotool key --clearmodifiers ctrl+c
+    sleep 0.1
+    now="$(date +%s%3N)"
+    remaining=$((deadline - now))
+    if (( remaining <= 0 )); then break; fi
+    if (( remaining > 1000 )); then remaining=1000; fi
+    printf -v read_timeout '%d.%03ds' "$((remaining / 1000))" "$((remaining % 1000))"
+    printf 'Ctrl+C expected=%q attempt=%s elapsed=%sms\n' "$expected" "$attempt" "$((now - started))" >>"$trace"
+    if selection="$(timeout "$read_timeout" xclip -selection clipboard -o -target UTF8_STRING 2>>"$trace")"; then
+      now="$(date +%s%3N)"
+      if [[ "$selection" == "$expected" ]]; then
+        printf 'Exact native selection copied after %s attempts in %sms\n' "$attempt" "$((now - started))" >>"$trace"
+        return 0
+      fi
+      read_status=0
+      printf 'Clipboard mismatch: %s characters, preview=%q\n' "${#selection}" "${selection:0:120}" >>"$trace"
+    else
+      read_status=$?
+      now="$(date +%s%3N)"
+      printf 'Clipboard read failed: exit=%s elapsed=%sms\n' "$read_status" "$((now - started))" >>"$trace"
+    fi
+    sleep 0.15
+  done
+  printf 'Final clipboard targets for failed native selection:\n' >>"$trace"
+  timeout 1 xclip -selection clipboard -o -target TARGETS >>"$trace" 2>&1 || true
+  echo "Native Ctrl+C did not copy the full selected source '$expected' within 10 seconds (attempts=$attempt, last read exit=$read_status); see $trace" >&2
+  return 1
 }
 
 xdotool key --clearmodifiers Escape ctrl+1
@@ -295,13 +328,20 @@ done
 grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-notes.txt
 xdotool key --clearmodifiers Return
 sleep 0.5
-assert_selection 'cypress paging needle'
-capture_search search-paged-selection
+for _ in $(seq 1 20); do
+  capture_search search-paged-selection
+  if grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-selection.txt &&
+    ! grep -Eqi 'Search[[:space:]]+open[[:space:]]+notes' dist/linux-ui-search-paged-selection.txt; then
+    break
+  fi
+  sleep 0.25
+done
 grep -Eqi 'Cypress.*paging.*marker' dist/linux-ui-search-paged-selection.txt
 if grep -Eqi 'Search[[:space:]]+open[[:space:]]+notes' dist/linux-ui-search-paged-selection.txt; then
   echo "Paged result did not navigate from search to the source editor" >&2
   exit 1
 fi
+assert_selection 'cypress paging needle'
 sha256sum --check dist/linux-ui-search-source.sha256
 
 echo "Linux native content search passed: open notes, latest unsaved edits, a new draft, exact distant and CodeMirror selection with CRLF/Unicode, inactive saved-note paging, current-note find, and opt-in one-typo search."
