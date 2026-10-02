@@ -12,6 +12,7 @@ import {
 
 import { PRODUCT_NAME, SOURCE_URL, VERSION } from "./brand";
 import { AppTitlebar } from "./components/AppTitlebar";
+import { ClipboardToast } from "./components/ClipboardToast";
 import { CloseDialog } from "./components/CloseDialog";
 import { CommandPalette, type PaletteAction, type PaletteScope } from "./components/CommandPalette";
 import { ContentSearchPanel } from "./components/ContentSearchPanel";
@@ -1265,6 +1266,7 @@ function App() {
       className="markpad-shell flex h-full w-full flex-col"
       style={{ zoom: preferences.uiScale }}
     >
+      <ClipboardToast />
       <AppTitlebar
         activeSurface={
           paletteOpen

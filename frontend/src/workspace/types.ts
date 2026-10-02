@@ -144,6 +144,7 @@ export interface MarkpadAPI {
 
 export interface MarkpadRuntime {
   ClipboardSetText?(text: string): Promise<boolean>;
+  ClipboardGetText?(): Promise<string>;
   Environment?(): Promise<{ platform?: string }>;
   EventsOn(name: string, callback: (...args: unknown[]) => void): () => void;
   OnFileDrop(

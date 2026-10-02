@@ -1,6 +1,10 @@
 import { afterEach, expect, test } from "bun:test";
 
-import { previewSelection, writeClipboard } from "../src/preview/clipboard";
+import {
+  previewSelection,
+  subscribeClipboardCopies,
+  writeClipboard,
+} from "../src/preview/clipboard";
 
 const originalWindow = globalThis.window;
 afterEach(() => {
@@ -26,6 +30,8 @@ test("preview copy accepts only non-collapsed selections wholly inside the pane"
 
 test("native clipboard preserves exact Unicode text and ignores an empty selection", async () => {
   const writes: string[] = [];
+  let notifications = 0;
+  const unsubscribe = subscribeClipboardCopies(() => notifications++);
   globalThis.window = {
     runtime: {
       ClipboardSetText: async (text: string) => {
@@ -34,13 +40,28 @@ test("native clipboard preserves exact Unicode text and ignores an empty selecti
       },
     },
   } as unknown as Window & typeof globalThis;
-  await writeClipboard("");
-  await writeClipboard("Hello 🌍\nNext line");
-  expect(writes).toEqual(["Hello 🌍\nNext line"]);
+  try {
+    await writeClipboard("");
+    expect(notifications).toBe(0);
+    await writeClipboard("Hello 🌍\nNext line");
+    expect(writes).toEqual(["Hello 🌍\nNext line"]);
+    expect(notifications).toBe(1);
+  } finally {
+    unsubscribe();
+  }
+  await writeClipboard("later");
+  expect(notifications).toBe(1);
 });
 
-test("native clipboard failures are reported rather than claiming success", async () => {
+test("native clipboard failures are reported without a copy notification", async () => {
   globalThis.window = { runtime: { ClipboardSetText: async () => false } } as unknown as Window &
     typeof globalThis;
-  expect(writeClipboard("selected")).rejects.toThrow("Clipboard write failed");
+  let notifications = 0;
+  const unsubscribe = subscribeClipboardCopies(() => notifications++);
+  try {
+    await expect(writeClipboard("selected")).rejects.toThrow("Clipboard write failed");
+    expect(notifications).toBe(0);
+  } finally {
+    unsubscribe();
+  }
 });

@@ -39,6 +39,7 @@ const checks = [];
 const screenshots = [];
 const errors = [];
 const network = [];
+const copyTimings = [];
 let call;
 let evaluate;
 async function until(fn, description) {
@@ -132,6 +133,129 @@ async function choose(title) {
   );
   await evaluate(`[...document.querySelectorAll('.content-search-result')].find(button=>button.getAttribute('aria-label').includes(${JSON.stringify(title)})).click()`);
 }
+const visibleToast =
+  "document.querySelector('.clipboard-toast-message')?.textContent==='Copied to clipboard'";
+const copyState = `(()=>{
+  const editor=document.querySelector('textarea#editor'),code=document.querySelector('.cm-content');
+  const rect=selector=>{const box=document.querySelector(selector)?.getBoundingClientRect();return box&&[box.x,box.y,box.width,box.height];};
+  return {
+    focus:document.activeElement===editor?'textarea':document.activeElement===code?'code':document.activeElement?.tagName,
+    selected:editor?editor.value.slice(editor.selectionStart,editor.selectionEnd):window.getSelection().toString(),
+    source:editor?.value??code?.textContent,
+    start:editor?.selectionStart,end:editor?.selectionEnd,
+    scrollTop:editor?.scrollTop??document.querySelector('.cm-scroller')?.scrollTop,
+    scrollLeft:editor?.scrollLeft??document.querySelector('.cm-scroller')?.scrollLeft,
+    content:rect('#content-area'),sidebar:rect('#sidebar'),pane:rect(editor?'textarea#editor':'.cm-editor')
+  };
+})()`;
+async function assertClipboard(expected, description, normalizeCRLF = false) {
+  const normalize = (text) => normalizeCRLF ? text.replace(/\r\n/g, "\n") : text;
+  const readback = await until(async () => {
+    const text = await evaluate("window.runtime.ClipboardGetText()");
+    return normalize(text) === normalize(expected) && { text };
+  }, description);
+  checks.push(description);
+  return readback.text;
+}
+async function finishToast(lastCopyAt, label) {
+  await pause(Math.max(0, 700 - (Date.now() - lastCopyAt)));
+  if (!(await evaluate(visibleToast))) throw Error(`${label}: toast disappeared before 700 ms`);
+  checks.push(`${label}: copy confirmation remains visible before its deadline`);
+  while (Date.now() - lastCopyAt <= 1600) {
+    if (!(await evaluate(visibleToast))) {
+      const hiddenAfterMs = Date.now() - lastCopyAt;
+      checks.push(`${label}: copy confirmation auto-hides after approximately one second`);
+      return hiddenAfterMs;
+    }
+    await pause(40);
+  }
+  throw Error(`${label}: copy confirmation did not hide within 1600 ms`);
+}
+async function nativeCopy(expected, label, { shot, repeat = false, normalizeCRLF = false } = {}) {
+  await until(async () => !(await evaluate(visibleToast)), `${label}: earlier toast did not hide`);
+  const before = await evaluate(copyState);
+  const firstCopyAt = Date.now();
+  await key("c", "KeyC", 67, 2);
+  const readback = await assertClipboard(expected, `${label}: native clipboard contains the copied text${normalizeCRLF ? ' (CRLF normalized only for comparison)' : ' exactly'}`, normalizeCRLF);
+  await assert(visibleToast, `${label}: native Ctrl+C shows copy confirmation`);
+  const shownAfterMs = Date.now() - firstCopyAt;
+  await assert(
+    `JSON.stringify(${copyState})===${JSON.stringify(JSON.stringify(before))}`,
+    `${label}: copying preserves focus, selection, source and pane geometry`,
+  );
+  if (shot) await screenshot(shot);
+  if (shot === "copy-toast-narrow")
+    await assert(
+      "(()=>{const box=document.querySelector('.clipboard-toast-message').getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&document.documentElement.scrollWidth<=innerWidth;})()",
+      "Copy confirmation fits the narrow native viewport",
+    );
+  let lastCopyAt = firstCopyAt;
+  if (repeat) {
+    await pause(Math.max(0, 600 - (Date.now() - firstCopyAt)));
+    lastCopyAt = Date.now();
+    await key("c", "KeyC", 67, 2);
+    await assertClipboard(
+      expected,
+      `${label}: repeated native copy preserves exact clipboard text`,
+      normalizeCRLF,
+    );
+  }
+  const hiddenAfterLastCopyMs = await finishToast(lastCopyAt, label);
+  if (repeat) checks.push(`${label}: repeated copies restart the confirmation deadline`);
+  copyTimings.push({
+    label,
+    expectedDurationMs: 1000,
+    shownAfterMs,
+    repeatedAtMs: repeat ? lastCopyAt - firstCopyAt : null,
+    hiddenAfterLastCopyMs,
+    ...(normalizeCRLF ? { clipboardComparison: { normalizeCRLF: true, expectedFromSource: expected, nativeReadback: readback } } : {}),
+  });
+}
+async function copyFilePath(title, expected) {
+  const before = await evaluate(copyState);
+  const point = await evaluate(
+    `(()=>{const row=[...document.querySelectorAll('.note-item')].find(item=>item.querySelector('.note-title')?.textContent===${JSON.stringify(title)});if(!row)throw Error('Copy Path note missing');const box=row.getBoundingClientRect();return{x:box.left+80,y:box.top+box.height/2};})()`,
+  );
+  await call("Input.dispatchMouseEvent", {
+    type: "mousePressed",
+    ...point,
+    button: "right",
+    buttons: 2,
+    clickCount: 1,
+  });
+  await call("Input.dispatchMouseEvent", {
+    type: "mouseReleased",
+    ...point,
+    button: "right",
+    buttons: 0,
+    clickCount: 1,
+  });
+  await assert(
+    "[...document.querySelectorAll('.context-menu button')].some(button=>button.textContent.trim()==='Copy Path')",
+    "Native note context menu exposes Copy Path",
+  );
+  const started = Date.now();
+  await evaluate(
+    "[...document.querySelectorAll('.context-menu button')].find(button=>button.textContent.trim()==='Copy Path').click()",
+  );
+  await assertClipboard(expected, "Copy Path writes the exact file path to the native clipboard");
+  await assert(visibleToast, "Successful explicit clipboard write shows copy confirmation");
+  const after = await evaluate(copyState);
+  if (
+    before.source !== after.source ||
+    JSON.stringify(before.content) !== JSON.stringify(after.content) ||
+    JSON.stringify(before.sidebar) !== JSON.stringify(after.sidebar) ||
+    JSON.stringify(before.pane) !== JSON.stringify(after.pane)
+  )
+    throw Error("Copy Path changed source or pane geometry");
+  checks.push("Copy Path preserves source and pane geometry");
+  await assert(
+    "document.querySelector('.clipboard-toast')?.matches('output,[role=\"status\"]') && document.querySelector('.clipboard-toast')?.getAttribute('aria-live')==='polite' && getComputedStyle(document.querySelector('.clipboard-toast')).pointerEvents==='none' && !document.querySelector('.clipboard-toast').contains(document.activeElement)",
+    "Copy confirmation is a polite passive status region without focus",
+  );
+  const hiddenAfterLastCopyMs = await finishToast(started, "Copy Path");
+  copyTimings.push({ label: "Copy Path", expectedDurationMs: 1000, hiddenAfterLastCopyMs });
+}
 try {
   const targets = await until(async () => {
     const list = await (await fetch("http://127.0.0.1:49271/json/list")).json();
@@ -187,6 +311,11 @@ try {
   await assert(`(()=>{const editor=document.querySelector('textarea#editor');return editor&&editor.selectionStart===${position}&&editor.selectionEnd===${position + 7}&&editor.scrollTop>0;})()`, "Cross-note result selects and reveals the exact distant match");
   await screenshot("exact-line");
   await assert("!document.querySelector('.content-search-panel') && document.activeElement===document.querySelector('textarea#editor')", "Result navigation restores editor focus");
+  await nativeCopy("orchard", "Textarea selection", { shot: "copy-toast-light" });
+  const unicodePrefix = alpha.slice(0, alpha.indexOf("An ordinary"));
+  await evaluate(`document.querySelector('textarea#editor').setSelectionRange(0,${unicodePrefix.replace(/\r\n/g, "\n").length})`);
+  await nativeCopy(unicodePrefix, "Textarea multiline Unicode selection", { normalizeCRLF: true });
+  await evaluate(`document.querySelector('textarea#editor').setSelectionRange(${position},${position + 7})`);
 
   await key("f", "KeyF", 70, 2);
   await assert("!!document.querySelector('#find-bar') && !document.querySelector('.content-search-panel')", "Ctrl+F keeps current-document find separate");
@@ -232,6 +361,14 @@ try {
   await choose("Example.ts");
   await assert("!!document.querySelector('.cm-content') && document.activeElement===document.querySelector('.cm-content') && window.getSelection().toString()==='orchard'", "Cross-note result selects exact source in native CodeMirror");
   await screenshot("code-selection");
+  await evaluate("document.documentElement.dataset.appearance='dark';document.documentElement.style.colorScheme='dark'");
+  await nativeCopy("orchard", "CodeMirror selection", { shot: "copy-toast-dark", repeat: true });
+  await call("Emulation.setDeviceMetricsOverride", { width: 720, height: 800, deviceScaleFactor: 1, mobile: false });
+  await key("ArrowLeft", "ArrowLeft", 37);
+  await nativeCopy("const orchard = 'local';", "CodeMirror current line without selection", { shot: "copy-toast-narrow" });
+  await call("Emulation.clearDeviceMetricsOverride");
+  await evaluate("document.documentElement.dataset.appearance='light';document.documentElement.style.colorScheme='light'");
+  await copyFilePath("Example.ts", codePath);
   if (await readFile(alphaPath, "utf8") !== alpha || await readFile(codePath, "utf8") !== code)
     throw Error("Search changed a source file");
   if (errors.length) throw Error("Native runtime errors: " + JSON.stringify(errors));
@@ -280,7 +417,7 @@ try {
       limitations: "Injected isolated bundle of the production search helper runs in the actual native WebView2 JS engine. Includes matching, snippets, and cooperative event-loop yields; excludes native buffer reads, UI debounce, layout, and cold startup. Synthetic warm buffers and capped common results do not establish a universally fastest engine.",
     }, null, 2));
   }
-  await writeFile(resolve(output + ".json"), JSON.stringify({ renderer: "native Windows WebView2", version, testedCommit, binarySha256, profilingBuild: true, checks, screenshots, errors, remoteRequests, profile }, null, 2));
+  await writeFile(resolve(output + ".json"), JSON.stringify({ renderer: "native Windows WebView2", version, testedCommit, binarySha256, profilingBuild: true, checks, copyTimings, screenshots, errors, remoteRequests, profile }, null, 2));
   console.log(JSON.stringify({ checks: checks.length, version, testedCommit, screenshots, profile }, null, 2));
 } catch (error) {
   if (call) {

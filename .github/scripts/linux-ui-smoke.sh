@@ -113,6 +113,12 @@ fi
 
 echo "Linux UI smoke passed: visible Quillpane content rendered without a duplicate native menu."
 
+capture_search() {
+  local name="$1"
+  import -display "$DISPLAY" -window "$window_id" "dist/linux-ui-${name}.png"
+  tesseract "dist/linux-ui-${name}.png" stdout --psm 6 2>>dist/linux-ui-smoke.log >"dist/linux-ui-${name}.txt"
+}
+
 # Exercise the OS clipboard from rendered Markdown, not a browser-only mock.
 tesseract dist/linux-ui-smoke.png stdout --psm 6 tsv 2>>dist/linux-ui-smoke.log >dist/linux-ui-smoke.tsv
 read -r word_x word_y < <(awk -F '\t' '$12 == "sentinel" { print int($7+$9/2), int($8+$10/2); exit }' dist/linux-ui-smoke.tsv)
@@ -125,11 +131,20 @@ xdotool mousemove --window "$window_id" "$word_x" "$word_y" click --repeat 2 --d
 xdotool key --clearmodifiers ctrl+c
 sleep 0.5
 import -display "$DISPLAY" -window "$window_id" dist/linux-ui-clipboard.png
+capture_search search-toast-preview-visible
+grep -Eq 'Copied[[:space:]]+to[[:space:]]+clipboard' dist/linux-ui-search-toast-preview-visible.txt
 copied="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
 if [[ "${copied// /}" != "sentinel" ]]; then
   echo "Preview Ctrl+C did not copy the selected word" >&2
   exit 1
 fi
+sleep 1.2
+capture_search search-toast-preview-expired
+if grep -Eq 'Copied[[:space:]]+to[[:space:]]+clipboard' dist/linux-ui-search-toast-preview-expired.txt; then
+  echo "Preview copy toast remained visible after its one-second lifetime" >&2
+  false
+fi
+[[ "$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)" == "$copied" ]]
 xdotool key --clearmodifiers ctrl+x
 sleep 0.5
 copied="$(timeout 5 xclip -selection clipboard -o -target UTF8_STRING)"
@@ -172,11 +187,6 @@ echo "Linux Driver.js tour opens and returns safely to Help."
 
 # Verify content search in the actual GTK/WebKit window with native keyboard
 # input, rendered snippets, and exact selection read back from the OS clipboard.
-capture_search() {
-  local name="$1"
-  import -display "$DISPLAY" -window "$window_id" "dist/linux-ui-${name}.png"
-  tesseract "dist/linux-ui-${name}.png" stdout --psm 6 2>>dist/linux-ui-smoke.log >"dist/linux-ui-${name}.txt"
-}
 paste_query() {
   printf '%s' "$1" | xclip -selection clipboard
   xdotool key --clearmodifiers ctrl+a ctrl+v
@@ -212,6 +222,13 @@ assert_selection() {
       now="$(date +%s%3N)"
       if [[ "$selection" == "$expected" ]]; then
         printf 'Exact native selection copied after %s attempts in %sms\n' "$attempt" "$((now - started))" >>"$trace"
+        # Check one textarea copy and one CodeMirror copy. Capture their toast
+        # promptly; OCR processes the frozen pixels after the one-second timer.
+        if [[ "$expected" == 'marigold' || "$expected" == 'code-needle' ]]; then
+          sleep 0.1
+          capture_search "search-toast-native-${expected}"
+          grep -Eq 'Copied[[:space:]]+to[[:space:]]+clipboard' "dist/linux-ui-search-toast-native-${expected}.txt"
+        fi
         return 0
       fi
       read_status=0

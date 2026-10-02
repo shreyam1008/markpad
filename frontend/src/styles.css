@@ -2367,6 +2367,25 @@ textarea {
   color: var(--mp-danger);
 }
 
+.clipboard-toast {
+  position: fixed;
+  top: calc(var(--mp-titlebar-height) + var(--mp-space-4));
+  right: var(--mp-space-6);
+  max-width: calc(100% - 2 * var(--mp-space-6));
+  z-index: 120;
+  pointer-events: none;
+}
+
+.clipboard-toast-message {
+  display: block;
+  padding: var(--mp-space-4) var(--mp-space-6);
+  border: 1px solid var(--mp-success-border);
+  border-radius: var(--mp-radius-3);
+  background: var(--mp-success-soft);
+  color: var(--mp-ink);
+  font-size: var(--mp-text-12);
+}
+
 .status-bar {
   height: var(--mp-status-height);
   min-height: var(--mp-status-height) !important;
