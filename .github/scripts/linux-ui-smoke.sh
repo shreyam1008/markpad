@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 mkdir -p dist
 export DISPLAY=:99
@@ -17,6 +17,18 @@ cleanup() {
   rm -rf "$XDG_CONFIG_HOME"
 }
 trap cleanup EXIT
+
+report_failure() {
+  local exit_code="$1" line="$2" command="$3"
+  trap - ERR
+  printf 'Linux native smoke failed at line %s (exit %s): %s\n' "$line" "$exit_code" "$command" | tee -a dist/linux-ui-smoke.log >&2
+  if [[ -n "${window_id:-}" ]]; then
+    import -display "$DISPLAY" -window "$window_id" dist/linux-ui-search-failure.png 2>>dist/linux-ui-smoke.log || true
+    tesseract dist/linux-ui-search-failure.png stdout --psm 6 2>>dist/linux-ui-smoke.log >dist/linux-ui-search-failure.txt || true
+  fi
+  return "$exit_code"
+}
+trap 'report_failure "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
 Xvfb "$DISPLAY" -screen 0 1280x800x24 -nolisten tcp >dist/linux-ui-xvfb.log 2>&1 &
 xvfb_pid=$!
@@ -207,7 +219,12 @@ xdotool key --clearmodifiers ctrl+f
 sleep 0.3
 paste_query 'orchard'
 capture_search find-current-note
-grep -Eqi '1[[:space:]]+of[[:space:]]+1' dist/linux-ui-find-current-note.txt
+# Whole-window block OCR can omit this isolated small count. Read its actual
+# pixels at the fixed 36 + 42 + 34 px shell offset, enlarged for single-line OCR.
+find_count_left=$(( $(identify -format '%w' dist/linux-ui-find-current-note.png) - 195 ))
+convert dist/linux-ui-find-current-note.png -crop "80x44+${find_count_left}+110" +repage -resize 300% dist/linux-ui-find-count.png
+tesseract dist/linux-ui-find-count.png stdout --psm 7 -c tessedit_char_whitelist=0123456789of 2>>dist/linux-ui-smoke.log >dist/linux-ui-find-count.txt
+grep -Eqi '(^|[^0-9])1[[:space:]]*of[[:space:]]*1([^0-9]|$)' dist/linux-ui-find-count.txt
 xdotool key --clearmodifiers Return
 sleep 0.3
 xdotool key --clearmodifiers Escape
